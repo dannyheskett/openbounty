@@ -412,6 +412,7 @@
 		"title_new_adventure":	"New Game",
 		"title_load_adventure":	"Load Saved Game",
 		"title_credits":	"Credits",
+		"title_intro":	"Introduction",
 		"new_game_confirm":	"Start a new game? Unsaved progress will be lost.",
 		"hero_name_label":	"Hero Name:",
 		"combat_act_wait":	"Wait",
@@ -985,5 +986,12 @@
 			"temple":	"The Temple of Artemis is one of the wonders of the world, %HERO%. Enter, and I will teach you a rite.",
 			"siege":	"Ephesus has changed masters a dozen times, %HERO%, and every one of them brought engineers. Come to the workshop."
 		}
+	},
+	"intro":	{
+		"eagle_1":	"The Rhine frontier. Night, in the dark forests beyond the edge of the Empire.",
+		"eagle_2":	"Three legions marched into the forest. Their general trusted a friend.",
+		"eagle_3":	"The friend was a traitor. Out of the trees came the tribes, from every side at once.",
+		"eagle_4":	"The eagle of the legion fell where the legion died...",
+		"eagle_5":	"...and it has never been found."
 	}
 }

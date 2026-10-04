@@ -2606,6 +2606,8 @@ static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
             act->loop   = !cJSON_IsFalse(cJSON_GetObjectItem(a, "loop"));
             act->start  = json_num(a, "start", 0);
             act->end    = json_num(a, "end", -1);   // -1: to the beat's end (set below)
+            act->fade_in  = json_num(a, "fade_in", 0);
+            act->fade_out = json_num(a, "fade_out", 0);
         }
     }
 

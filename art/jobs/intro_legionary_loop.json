@@ -2,20 +2,20 @@
  "id": "intro_legionary_loop",
  "prompt": "breathes and shifts his weight behind the shield, rain dripping from the helmet, his feet still, smooth loop",
  "style": "rd_advanced_animation__custom_action",
- "width": 64,
- "height": 64,
+ "width": 96,
+ "height": 96,
  "seed": 15502,
  "frames_duration": 8,
  "return_spritesheet": true,
  "input_image_path": "build/art/intro_legionary/run01/01_raw.png",
  "input_image_keep_alpha": true,
- "bypass_prompt_expansion": true,
+ "bypass_prompt_expansion": false,
  "raw_only": true,
  "figure": false,
  "target": [
-  64,
-  64
+  96,
+  96
  ],
  "_pack_path": "art/intro/legionary_00..07.png",
- "_note": "Introduction sprite loop (#154), 2026-10-03: custom action on intro_legionary run01, eight frames at 64, alpha kept."
+ "_note": "Introduction sprite loop (#154), 2026-10-03: the figure loop route (as headman_italia_loop): custom action on intro_legionary run01, eight frames at 96, alpha kept."
 }

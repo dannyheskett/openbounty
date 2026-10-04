@@ -484,6 +484,7 @@ typedef struct {
     double start, end;              // seconds into the beat it is on screen;
                                     // the move runs across them
     bool   loop;                    // false: the frames play once and hold the last
+    double fade_in, fade_out;       // seconds it fades up after start / away before end
 } ResIntroActor;
 
 typedef struct {

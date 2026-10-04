@@ -170,9 +170,13 @@ static void draw_picture(const ResIntro *in, const ResIntroBeat *b, double t,
         if (!act->loop) f = f < act->frame_count ? f : act->frame_count - 1;   // once, then hold
         else f = ((f % act->frame_count) + act->frame_count) % act->frame_count;
         ResIntroPt p = lerp_pt(act->at, act->to, ka);
+        // Faded up after its start and away before its end, when asked.
+        double fa = 1;
+        if (act->fade_in > 0)  fa = fmin(fa, clamp01((tb - act->start) / act->fade_in));
+        if (act->fade_out > 0) fa = fmin(fa, clamp01((act->end - tb) / act->fade_out));
         blit_tinted(intro_tex(act->frames[f]),
                     l->pic_x + (p.x - pan.x) * l->scale, l->pic_y + (p.y - pan.y) * l->scale,
-                    l->scale, act->mirror, a);
+                    l->scale, act->mirror, (unsigned char)(a * fa));
     }
     if (b->rain) draw_rain(in, tb, l, a);
     for (int i = 0; i < b->flash_count; i++) {

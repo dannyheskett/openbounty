@@ -1,0 +1,322 @@
+{
+ "version": 1,
+ "frame": [
+  240,
+  102
+ ],
+ "type_cps": 28,
+ "read_cps": 14,
+ "min_hold": 2.0,
+ "_note": "The Introduction (#154): background art, animated sprites and text. Scene 1 so far.",
+ "scenes": [
+  {
+   "id": "eagle",
+   "fade_in": 2.0,
+   "fade_out": 2.0,
+   "beats": [
+    {
+     "backdrop": "art/intro/bg_forest_night.png",
+     "weather": "rain",
+     "say": "eagle_1"
+    },
+    {
+     "backdrop": "art/intro/bg_forest_night.png",
+     "weather": "rain",
+     "say": "eagle_2",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/legionary_00.png",
+        "art/intro/legionary_01.png",
+        "art/intro/legionary_02.png",
+        "art/intro/legionary_03.png",
+        "art/intro/legionary_04.png",
+        "art/intro/legionary_05.png",
+        "art/intro/legionary_06.png",
+        "art/intro/legionary_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        10,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_00.png",
+        "art/intro/legionary_01.png",
+        "art/intro/legionary_02.png",
+        "art/intro/legionary_03.png",
+        "art/intro/legionary_04.png",
+        "art/intro/legionary_05.png",
+        "art/intro/legionary_06.png",
+        "art/intro/legionary_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        72,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_00.png",
+        "art/intro/legionary_01.png",
+        "art/intro/legionary_02.png",
+        "art/intro/legionary_03.png",
+        "art/intro/legionary_04.png",
+        "art/intro/legionary_05.png",
+        "art/intro/legionary_06.png",
+        "art/intro/legionary_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        134,
+        6
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_forest_night.png",
+     "weather": "rain",
+     "say": "eagle_3",
+     "flashes": [
+      0.8
+     ],
+     "actors": [
+      {
+       "frames": [
+        "art/intro/legionary_00.png",
+        "art/intro/legionary_01.png",
+        "art/intro/legionary_02.png",
+        "art/intro/legionary_03.png",
+        "art/intro/legionary_04.png",
+        "art/intro/legionary_05.png",
+        "art/intro/legionary_06.png",
+        "art/intro/legionary_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        10,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_00.png",
+        "art/intro/legionary_01.png",
+        "art/intro/legionary_02.png",
+        "art/intro/legionary_03.png",
+        "art/intro/legionary_04.png",
+        "art/intro/legionary_05.png",
+        "art/intro/legionary_06.png",
+        "art/intro/legionary_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        72,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_00.png",
+        "art/intro/legionary_01.png",
+        "art/intro/legionary_02.png",
+        "art/intro/legionary_03.png",
+        "art/intro/legionary_04.png",
+        "art/intro/legionary_05.png",
+        "art/intro/legionary_06.png",
+        "art/intro/legionary_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        134,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/warrior_00.png",
+        "art/intro/warrior_01.png",
+        "art/intro/warrior_02.png",
+        "art/intro/warrior_03.png"
+       ],
+       "fps": 8,
+       "at": [
+        -96,
+        6
+       ],
+       "to": [
+        20,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/warrior_00.png",
+        "art/intro/warrior_01.png",
+        "art/intro/warrior_02.png",
+        "art/intro/warrior_03.png"
+       ],
+       "fps": 8,
+       "at": [
+        240,
+        6
+       ],
+       "to": [
+        150,
+        6
+       ],
+       "mirror": true
+      },
+      {
+       "frames": [
+        "art/intro/warrior_00.png",
+        "art/intro/warrior_01.png",
+        "art/intro/warrior_02.png",
+        "art/intro/warrior_03.png"
+       ],
+       "fps": 8,
+       "at": [
+        -96,
+        8
+       ],
+       "to": [
+        60,
+        8
+       ],
+       "start": 1.2
+      },
+      {
+       "frames": [
+        "art/intro/warrior_00.png",
+        "art/intro/warrior_01.png",
+        "art/intro/warrior_02.png",
+        "art/intro/warrior_03.png"
+       ],
+       "fps": 8,
+       "at": [
+        240,
+        8
+       ],
+       "to": [
+        100,
+        8
+       ],
+       "mirror": true,
+       "start": 1.2
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_forest_floor.png",
+     "weather": "rain",
+     "say": "eagle_4",
+     "duration": 6.3,
+     "flashes": [
+      1.6
+     ],
+     "actors": [
+      {
+       "frames": [
+        "art/intro/aquilifer_00.png"
+       ],
+       "at": [
+        69,
+        8
+       ],
+       "end": 1.6
+      },
+      {
+       "frames": [
+        "art/intro/aquilifer_00.png",
+        "art/intro/aquilifer_01.png",
+        "art/intro/aquilifer_02.png",
+        "art/intro/aquilifer_03.png",
+        "art/intro/aquilifer_04.png",
+        "art/intro/aquilifer_05.png"
+       ],
+       "fps": 4,
+       "at": [
+        69,
+        8
+       ],
+       "loop": false,
+       "start": 1.6
+      },
+      {
+       "frames": [
+        "art/intro/warrior_00.png",
+        "art/intro/warrior_01.png",
+        "art/intro/warrior_02.png",
+        "art/intro/warrior_03.png"
+       ],
+       "fps": 8,
+       "at": [
+        -96,
+        6
+       ],
+       "to": [
+        21,
+        6
+       ],
+       "end": 1.6
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_forest_floor.png",
+     "weather": "rain",
+     "say": "eagle_5",
+     "duration": 6.5,
+     "flashes": [
+      0.0
+     ],
+     "actors": [
+      {
+       "frames": [
+        "art/intro/aquilifer_05.png"
+       ],
+       "at": [
+        69,
+        8
+       ],
+       "end": 0.3,
+       "fade_out": 0.3
+      },
+      {
+       "frames": [
+        "art/intro/carrier_00.png",
+        "art/intro/carrier_01.png",
+        "art/intro/carrier_02.png",
+        "art/intro/carrier_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        103,
+        8
+       ],
+       "to": [
+        245,
+        8
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "title",
+   "fade_in": 1.0,
+   "fade_out": 1.5,
+   "beats": [
+    {
+     "still": "art/ui/splash_title.png",
+     "duration": 6.0
+    }
+   ]
+  }
+ ]
+}

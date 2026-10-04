@@ -4725,6 +4725,7 @@
 			}],
 		"copyright":	["King's Bounty copyright 1990", "New World Computing, Inc"]
 	},
+	"intro":	"intro.json",
 	"audio":	{
 		"tracks":	{
 			"openworld":	"audio/openworld.ogg",
