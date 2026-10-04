@@ -1913,6 +1913,8 @@ batches. The reference groups by what the art IS, not by engine.
 
     def group_of(name, d):
         p = d.get("_pack_path", "")
+        if name.startswith("intro_"):
+            return "Introduction"
         for frag, g in (("art/troops/", "Troops"), ("art/portraits/", "Portraits and faces"),
                         ("art/villains/", "Villains"), ("art/classes/", "Hero classes"),
                         ("art/tiles/", "Map tiles and terrain"), ("art/scenes/", "Scenes"),

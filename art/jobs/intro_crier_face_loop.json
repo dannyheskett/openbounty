@@ -17,5 +17,5 @@
   128
  ],
  "_pack_path": "art/portraits/intro_crier_00..07.png",
- "_note": "2026-10-03, Introduction (#154) scene 2: the villain/town-portrait loop route: eight frames at 128 on run01, each frame centre-cropped to 96."
+ "_note": "2026-10-04, Introduction (#154) scene 2: the villain/town-portrait loop route: eight frames at 128 on intro_crier_face run02, each frame centre-cropped to 96 with romeart.py crop. run01 (on the old face) was replaced; run02 is installed."
 }

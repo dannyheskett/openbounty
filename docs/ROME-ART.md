@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-368 jobs. A job with a **Pack path** has produced that file in the pack; a
+407 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -81,6 +81,281 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/classes/sibylla_walk_00..03.png`
 - **prompt:** horse walking to the right, steady steps, rider still, smooth loop
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=assets/glory-of-rome/art/classes/sibylla_hero.png`, `raw_only=true`, `return_spritesheet=true`, `seed=7471`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
+## Introduction
+
+### intro_aquilifer
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 15513)
+- **Pack path:** `art/intro/aquilifer_00..05.png (via intro_aquilifer_fall)`
+- **prompt:** a Roman standard-bearer in a lion pelt over his helmet and shoulders, holding a tall golden eagle standard upright beside him
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15513`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### intro_aquilifer_fall
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 15513)
+- **Pack path:** `art/intro/aquilifer_00..05.png`
+- **prompt:** staggers back and falls to the ground, the golden eagle standard toppling down with him
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=6`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_aquilifer/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15513`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
+### intro_bg_battlefield
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 15607)
+- **Pack path:** `art/intro/bg_battlefield.png`
+- **prompt:** an open grassy battlefield on a wide plain under a stormy grey sky, trampled grass and mud in the foreground, a few broken spears in the ground, low hills and a dark forest far behind, the ground filling the lower half, no people anywhere, empty
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=15607`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### intro_bg_city_gate
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 15612)
+- **Pack path:** `art/intro/bg_city_gate.png`
+- **prompt:** the great stone gate of ancient Rome at dawn, a tall arched gateway in the city wall on the left, a wide empty paved Roman road in the foreground with grass verges, cypress trees and hills under a golden sunrise sky, no people anywhere, empty
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=15612`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### intro_bg_forest_floor
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 15511)
+- **Pack path:** `art/intro/bg_forest_floor.png`
+- **prompt:** close view of the muddy floor of a dark northern forest at night, puddles of rainwater reflecting cold moonlight, tangled tree roots and dead leaves, black tree trunks at the edges, no people anywhere, empty
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=15511`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### intro_bg_forest_night
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 15501)
+- **Pack path:** `art/intro/bg_forest_night.png`
+- **prompt:** a dark rain-soaked northern forest at night, huge black oak trees and ferns, an open muddy clearing in the foreground across the whole width, cold blue moonlight through the branches, mist between the trunks, no people anywhere, empty
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=15501`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### intro_bg_forum
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 15521)
+- **Pack path:** `art/intro/bg_forum.png`
+- **prompt:** the Forum of ancient Rome in bright morning light, a raised stone speaker's platform with bronze ship prows on its front at the centre, marble temples with tall columns behind it, a wide paved square in the foreground, no people anywhere, empty
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=15521`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### intro_bg_map_table
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 15544)
+- **Pack path:** `art/intro/bg_map_table.png`
+- **prompt:** close view of a marble table top lit by an oil lamp, an old parchment map of the Roman provinces spread across it with a large ragged blank gap in the middle where pieces are missing, a stylus and wax tablets at the edges, warm lamplight, no people, no writing
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=15544`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### intro_bg_wanted_wall
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 15531)
+- **Pack path:** `art/intro/bg_wanted_wall.png`
+- **prompt:** a weathered stone wall in the Roman Forum, one large blank sheet of parchment nailed to the middle of it, the parchment tall and filling most of the height, torn edges, completely blank with nothing on it, scraps of old torn paper around it, warm morning light, no people, no writing anywhere
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=15531`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### intro_carrier
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 15514)
+- **Pack path:** `art/intro/carrier_00..03.png (via intro_carrier_walk)`
+- **prompt:** a dark hooded figure in a ragged black cloak carrying a golden Roman eagle standard over his shoulder
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15514`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### intro_carrier_walk
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 15514)
+- **Pack path:** `art/intro/carrier_00..03.png`
+- **prompt:** walking to the right, steady steps, the eagle standard held on his shoulder, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_carrier/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15514`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
+### intro_crier
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 15591)
+- **Pack path:** `art/intro/crier_00..07.png and art/intro/crier_decree_00..07.png (via intro_crier_gesture and intro_crier_decree)`
+- **prompt:** a stout older Roman herald with grey curly hair, a striped rust tunic and an embroidered mantle, both hands empty, one arm raised as he proclaims
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15591`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
+
+### intro_crier_decree
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (56x56, seed 15606)
+- **Pack path:** `art/intro/crier_decree_00..07.png`
+- **prompt:** unrolling a scroll with both hands and reading it aloud, feet still
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=56`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_crier/run11/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15606`, `style=rd_advanced_animation__custom_action`, `target=[56, 56]`, `width=56`
+
+### intro_crier_face
+
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 15605)
+- **Pack path:** `art/portraits/intro_crier_00..07.png (via intro_crier_face_loop)`
+- **prompt:** a head-and-shoulders portrait, the face filling the frame, of a stout older Roman herald with grey curly hair, heavy jowls, a broad booming shout, a rust striped tunic and an embroidered mantle with a yellow band, the Roman Forum behind him
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `seed=15605`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+
+### intro_crier_face_loop
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (128x128, seed 15605)
+- **Pack path:** `art/portraits/intro_crier_00..07.png`
+- **prompt:** talking loudly, mouth opening and closing, eyebrows raised, static background, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=128`, `input_image_keep_alpha=false`, `input_image_path=build/art/intro_crier_face/run02/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15605`, `style=rd_advanced_animation__custom_action`, `target=[128, 128]`, `width=128`
+
+### intro_crier_gesture
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (56x56, seed 15561)
+- **Pack path:** `art/intro/crier_00..07.png`
+- **prompt:** proclaiming with empty hands, raising one arm then pointing to the crowd, feet still, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=56`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_crier/run11/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15561`, `style=rd_advanced_animation__custom_action`, `target=[56, 56]`, `width=56`
+
+### intro_crowd
+
+- **Engine:** Retro Diffusion rd_pro__default (240x56, seed 15524)
+- **Pack path:** `art/intro/crowd_00..07.png (via intro_crowd_loop)`
+- **prompt:** a crowd of ancient Roman citizens seen from behind and below, heads and shoulders packed together, men and women in tunics and togas of many colours, some raising their arms, solid magenta background above them
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=56`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15524`, `style=rd_pro__default`, `target=[240, 56]`, `width=240`
+
+### intro_crowd_loop
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (240x56, seed 15524)
+- **Pack path:** `art/intro/crowd_00..07.png`
+- **prompt:** the crowd stirring, heads turning and arms rising and falling, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=56`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_crowd/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15524`, `style=rd_advanced_animation__custom_action`, `target=[240, 56]`, `width=240`
+
+### intro_eagle_mark
+
+- **Engine:** Retro Diffusion rd_pro__default (32x32, seed 15548)
+- **Pack path:** `art/intro/eagle_mark_00..07.png (via intro_eagle_mark_loop)`
+- **prompt:** a small golden Roman eagle emblem with spread wings, drawn in gold leaf, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=32`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15548`, `style=rd_pro__default`, `target=[32, 32]`, `width=32`
+
+### intro_eagle_mark_loop
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (32x32, seed 15604)
+- **Pack path:** `art/intro/eagle_mark_00..07.png`
+- **prompt:** the golden eagle glinting, a bright shine sweeping across the gold, the eagle still, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=32`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_eagle_mark/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15604`, `style=rd_advanced_animation__custom_action`, `target=[32, 32]`, `width=32`
+
+### intro_general
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 15601)
+- **Pack path:** `art/intro/general_walk_00..03.png (via intro_general_walk)`
+- **prompt:** a Roman general in a long dark hooded cloak walking, the deep hood hiding his whole face in black shadow, a sword at his side
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15601`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
+
+### intro_general_kneel
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 15542)
+- **Pack path:** `art/intro/general_kneel_00..07.png (via intro_general_kneel_loop)`
+- **prompt:** a Roman general in a long dark hooded cloak kneeling on one knee with his head bowed, the hood drawn low so his face is in shadow
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15542`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### intro_general_kneel_loop
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15603)
+- **Pack path:** `art/intro/general_kneel_00..07.png`
+- **prompt:** kneeling on one knee with the head bowed, breathing slowly, cloak still, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_general_kneel/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15603`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
+
+### intro_general_walk
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15602)
+- **Pack path:** `art/intro/general_walk_00..03.png`
+- **prompt:** walking to the right, steady steps, cloak swaying, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_general/run02/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15602`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
+
+### intro_hourglass
+
+- **Engine:** Retro Diffusion rd_pro__default (48x80, seed 15549)
+- **Pack path:** `art/intro/hourglass_00..07.png (via intro_hourglass_loop)`
+- **prompt:** a tall bronze and glass hourglass with golden sand, the upper glass half empty, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=80`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15549`, `style=rd_pro__default`, `target=[48, 80]`, `width=48`
+
+### intro_hourglass_loop
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x80, seed 15549)
+- **Pack path:** `art/intro/hourglass_00..07.png`
+- **prompt:** golden sand running down through the hourglass, the glass and frame still, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=80`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hourglass/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15549`, `style=rd_advanced_animation__custom_action`, `target=[48, 80]`, `width=48`
+
+### intro_legionary
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 15502)
+- **Pack path:** `art/intro/legionary_00..07.png (via intro_legionary_loop)`
+- **prompt:** a Roman legionary at night braced behind his tall curved red shield, iron helmet, red cloak, a spear held upright, soaked with rain
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15502`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### intro_legionary_loop
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 15502)
+- **Pack path:** `art/intro/legionary_00..07.png`
+- **prompt:** breathes and shifts his weight behind the shield, rain dripping from the helmet, his feet still, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_legionary/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15502`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
+### intro_legionary_march
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 15611)
+- **Pack path:** `art/intro/legionary_walk_00..03.png (via intro_legionary_walk)`
+- **prompt:** a Roman legionary marching to the right, side view, a tall curved red shield on his arm, iron helmet, red cloak, a spear held upright
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15611`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
+
+### intro_legionary_walk
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15609)
+- **Pack path:** `art/intro/legionary_walk_00..03.png`
+- **prompt:** marching to the right, legs striding, shield and spear held steady, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_legionary_march/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15609`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
+
+### intro_map_piece_a
+
+- **Engine:** Retro Diffusion rd_pro__default (40x40, seed 15545)
+- **Pack path:** `art/intro/map_piece_a.png`
+- **prompt:** a torn scrap of old parchment map with coastlines and hills drawn in brown ink, ragged edges, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=40`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15545`, `style=rd_pro__default`, `target=[40, 40]`, `width=40`
+
+### intro_map_piece_b
+
+- **Engine:** Retro Diffusion rd_pro__default (40x40, seed 15546)
+- **Pack path:** `art/intro/map_piece_b.png`
+- **prompt:** a torn scrap of old parchment map with a river and mountains drawn in brown ink, ragged edges, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=40`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15546`, `style=rd_pro__default`, `target=[40, 40]`, `width=40`
+
+### intro_map_piece_c
+
+- **Engine:** Retro Diffusion rd_pro__default (40x40, seed 15547)
+- **Pack path:** `art/intro/map_piece_c.png`
+- **prompt:** a torn scrap of old parchment map with forests and a road drawn in brown ink, ragged edges, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=40`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15547`, `style=rd_pro__default`, `target=[40, 40]`, `width=40`
+
+### intro_plinth
+
+- **Engine:** Retro Diffusion rd_pro__default (48x24, seed 15592)
+- **Pack path:** `art/intro/plinth.png`
+- **prompt:** a wide squared stone speaker's platform, pale marble block with a moulded top and base, wider than a man, seen from the front, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=24`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15592`, `style=rd_pro__default`, `target=[48, 24]`, `width=48`
+
+### intro_trajan_seated
+
+- **Engine:** Retro Diffusion rd_pro__default (96x96, seed 15543)
+- **Pack path:** `art/intro/trajan_seated_00..07.png (via intro_trajan_seated_loop)`
+- **prompt:** the Roman Emperor Trajan seated on a gold and ivory throne facing the viewer, short grey hair, a golden laurel wreath, a purple toga over a gilded cuirass, one hand raised as he speaks, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15543`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
+
+### intro_trajan_seated_loop
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (32x32, seed 15543)
+- **Pack path:** `art/intro/trajan_seated_00..07.png`
+- **prompt:** speaking, the raised hand moving slowly, head nodding a little, throne still, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=32`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_trajan_seated/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15543`, `style=rd_advanced_animation__custom_action`, `target=[32, 32]`, `width=32`
+
+### intro_warrior
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 15512)
+- **Pack path:** `art/intro/warrior_00..03.png (via intro_warrior_run and intro_warrior_run_small)`
+- **prompt:** a wild Germanic tribal warrior running into battle, long hair and beard, bare chest under a fur cloak, a spear raised and a round wooden shield
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15512`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### intro_warrior_run
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 15512)
+- **Pack path:** `art/intro/warrior_00..03.png`
+- **prompt:** running to the right, legs striding, spear held high, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_warrior/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15512`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
+### intro_warrior_run_small
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (56x56, seed 15610)
+- **Pack path:** `art/intro/warrior_flee_00..03.png`
+- **prompt:** running to the right, legs striding, spear held high, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=56`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_warrior/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15610`, `style=rd_advanced_animation__custom_action`, `target=[56, 56]`, `width=56`
 
 ## Map tiles and terrain
 

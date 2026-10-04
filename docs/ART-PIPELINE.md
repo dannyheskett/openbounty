@@ -362,6 +362,26 @@ generated from.
   offset for every frame of a set so the loop does not jitter. Animate the
   scaled still at 96 with no padding; the padded 128 route has shrunk a
   figure to three quarters.
+- **The Introduction** (#154, `art/intro/`, the jobs `art/jobs/intro_*.json`)
+  — backgrounds, sprites and text, the way the 80s and 90s intros were built.
+  Every set is a 240x102 backdrop on the screen route with "no people" in
+  the prompt; the existing `backdrop_palace_welcome` and
+  `backdrop_palace_throne` have been reused. Figures have been made on the
+  figure route and animated with `custom_action`, alpha kept. The troop
+  style has refused any canvas under 64 (`invalid_style_dimensions`, no
+  charge), so a small figure has been generated at 64 and animated at its
+  final size: `custom_action` has redrawn the still at the output canvas
+  (32 to 256), a 64 still animated at 56 standing about 51 px tall. That is
+  how the crier (56), the general and the legion (48), the fleeing warriors
+  (56) and Trajan on his throne (32) have been made without scaling. Props
+  (the plinth, the map pieces, the eagle mark, the hourglass) have been
+  `rd_pro__default` cut-outs, magenta named and removed. The crier's face
+  has been the villain portrait route (128, cropped to 96). Only frame 00 of
+  the crowd loop has been used, at Dan's order: the engine draws it still, as
+  cropped columns at staggered heights. Rain and lightning have been drawn
+  by the engine, not painted. The theme has been synthesised by
+  `romeart.py introtheme`, and the thunder and crowd sounds have been CC0
+  recordings (`assets/glory-of-rome/audio/CREDITS.txt`).
 - **Recolouring** — when a set reads fine but its colours vanish against the
   grass, recolour the approved frames locally in HSV rather than
   regenerating: every opaque pixel except the pale highlights takes the new

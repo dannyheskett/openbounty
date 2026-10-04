@@ -14,6 +14,6 @@
   64,
   64
  ],
- "_pack_path": "art/intro/crier_00..07.png (via intro_crier_gesture)",
- "_note": "2026-10-03, Introduction (#154) scene 2, the crier reworked to Dan's reference (the HBO Rome newsreader in spirit): the figure route at 96, as the soldiers, magenta removed."
+ "_pack_path": "art/intro/crier_00..07.png and art/intro/crier_decree_00..07.png (via intro_crier_gesture and intro_crier_decree)",
+ "_note": "2026-10-03, Introduction (#154) scene 2, the crier reworked to Dan's reference (the HBO Rome newsreader in spirit): the figure route, magenta removed, hands empty (no tablet). run01-run04 (at 96) and run05-run07 (at 72) were too big for the scene, all rejected; 48, 52 and 56 canvases were refused (invalid_style_dimensions, no charge); run11, at 64, is the still under intro_crier_gesture and intro_crier_decree, which redraw it at 56."
 }
