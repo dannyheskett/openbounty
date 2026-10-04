@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-407 jobs. A job with a **Pack path** has produced that file in the pack; a
+415 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -97,6 +97,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/intro/aquilifer_00..05.png`
 - **prompt:** staggers back and falls to the ground, the golden eagle standard toppling down with him
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=6`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_aquilifer/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15513`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
+### intro_bg_aftermath
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 15620)
+- **Pack path:** `art/intro/bg_aftermath.png`
+- **prompt:** a dark rainy forest clearing at night after a lost battle, many fallen Roman legionaries lying still in the mud in the distance, dropped red shields, broken spears and a fallen standard among them, tall dark pines all around, the muddy ground filling the lower half, no one standing
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=15620`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
 
 ### intro_bg_battlefield
 
@@ -224,33 +231,89 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** the golden eagle glinting, a bright shine sweeping across the gold, the eagle still, smooth loop
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=32`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_eagle_mark/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15604`, `style=rd_advanced_animation__custom_action`, `target=[32, 32]`, `width=32`
 
-### intro_general
+### intro_hero_dux
 
-- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 15601)
-- **Pack path:** `art/intro/general_walk_00..03.png (via intro_general_walk)`
-- **prompt:** a Roman general in a long dark hooded cloak walking, the deep hood hiding his whole face in black shadow, a sword at his side
-- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15601`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 15630)
+- **Pack path:** `art/intro/hero_dux_walk_00..03.png and art/intro/hero_dux_kneel_00..07.png (via intro_hero_dux_walk and intro_hero_dux_kneel)`
+- **prompt:** a grizzled grey-bearded barbarian warlord standing, a thick fur cloak over chain mail, a hand axe at his belt, leather boots, facing right
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15630`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
 
-### intro_general_kneel
+### intro_hero_dux_kneel
 
-- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 15542)
-- **Pack path:** `art/intro/general_kneel_00..07.png (via intro_general_kneel_loop)`
-- **prompt:** a Roman general in a long dark hooded cloak kneeling on one knee with his head bowed, the hood drawn low so his face is in shadow
-- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15542`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15632)
+- **Pack path:** `art/intro/hero_dux_kneel_00..07.png`
+- **prompt:** kneeling on one knee with the head bowed, breathing slowly, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_dux/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15632`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
 
-### intro_general_kneel_loop
+### intro_hero_dux_walk
 
-- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15603)
-- **Pack path:** `art/intro/general_kneel_00..07.png`
-- **prompt:** kneeling on one knee with the head bowed, breathing slowly, cloak still, smooth loop
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_general_kneel/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15603`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15631)
+- **Pack path:** `art/intro/hero_dux_walk_00..03.png`
+- **prompt:** walking to the right, steady steps, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_dux/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15631`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
 
-### intro_general_walk
+### intro_hero_legatus
 
-- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15602)
-- **Pack path:** `art/intro/general_walk_00..03.png`
-- **prompt:** walking to the right, steady steps, cloak swaying, smooth loop
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_general/run02/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15602`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 15645)
+- **Pack path:** `art/intro/hero_legatus_walk_00..03.png and art/intro/hero_legatus_kneel_00..07.png (via intro_hero_legatus_walk and intro_hero_legatus_kneel)`
+- **prompt:** a Roman legate standing, a dark red cloak over a muscled bronze cuirass, a crested bronze helmet, leather pteruges and sandals, facing right
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15645`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
+
+### intro_hero_legatus_kneel
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15642)
+- **Pack path:** `art/intro/hero_legatus_kneel_00..07.png`
+- **prompt:** kneeling on one knee with the head bowed, breathing slowly, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_legatus/run02/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15642`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
+
+### intro_hero_legatus_walk
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15641)
+- **Pack path:** `art/intro/hero_legatus_walk_00..03.png`
+- **prompt:** walking to the right, steady steps, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_legatus/run02/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15641`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
+
+### intro_hero_praetorianus
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 15650)
+- **Pack path:** `art/intro/hero_praetorianus_walk_00..03.png and art/intro/hero_praetorianus_kneel_00..07.png (via intro_hero_praetorianus_walk and intro_hero_praetorianus_kneel)`
+- **prompt:** an older bald Roman praetorian officer standing, a white mantle with gold trim over a gilded cuirass, sandals, facing right
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15650`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
+
+### intro_hero_praetorianus_kneel
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15652)
+- **Pack path:** `art/intro/hero_praetorianus_kneel_00..07.png`
+- **prompt:** kneeling on one knee with the head bowed, breathing slowly, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_praetorianus/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15652`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
+
+### intro_hero_praetorianus_walk
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15651)
+- **Pack path:** `art/intro/hero_praetorianus_walk_00..03.png`
+- **prompt:** walking to the right, steady steps, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_praetorianus/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15651`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
+
+### intro_hero_sibylla
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 15660)
+- **Pack path:** `art/intro/hero_sibylla_walk_00..03.png and art/intro/hero_sibylla_kneel_00..07.png (via intro_hero_sibylla_walk and intro_hero_sibylla_kneel)`
+- **prompt:** a young Roman priestess standing, long white robes and a white veil, a laurel branch in her hand, facing right
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15660`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
+
+### intro_hero_sibylla_kneel
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15662)
+- **Pack path:** `art/intro/hero_sibylla_kneel_00..07.png`
+- **prompt:** kneeling on one knee with the head bowed, breathing slowly, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_sibylla/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15662`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
+
+### intro_hero_sibylla_walk
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15661)
+- **Pack path:** `art/intro/hero_sibylla_walk_00..03.png`
+- **prompt:** walking to the right, steady steps, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_sibylla/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15661`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
 
 ### intro_hourglass
 
@@ -265,20 +328,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/intro/hourglass_00..07.png`
 - **prompt:** golden sand running down through the hourglass, the glass and frame still, smooth loop
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=80`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hourglass/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15549`, `style=rd_advanced_animation__custom_action`, `target=[48, 80]`, `width=48`
-
-### intro_legionary
-
-- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 15502)
-- **Pack path:** `art/intro/legionary_00..07.png (via intro_legionary_loop)`
-- **prompt:** a Roman legionary at night braced behind his tall curved red shield, iron helmet, red cloak, a spear held upright, soaked with rain
-- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15502`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
-
-### intro_legionary_loop
-
-- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 15502)
-- **Pack path:** `art/intro/legionary_00..07.png`
-- **prompt:** breathes and shifts his weight behind the shield, rain dripping from the helmet, his feet still, smooth loop
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_legionary/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15502`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
 
 ### intro_legionary_march
 
@@ -342,6 +391,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/intro/warrior_00..03.png (via intro_warrior_run and intro_warrior_run_small)`
 - **prompt:** a wild Germanic tribal warrior running into battle, long hair and beard, bare chest under a fur cloak, a spear raised and a round wooden shield
 - **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15512`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### intro_warrior_cheer
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (56x56, seed 15621)
+- **Pack path:** `art/intro/warrior_cheer_00..07.png`
+- **prompt:** raising the spear high overhead in triumph and shouting, feet planted, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=56`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_warrior/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15621`, `style=rd_advanced_animation__custom_action`, `target=[56, 56]`, `width=56`
 
 ### intro_warrior_run
 

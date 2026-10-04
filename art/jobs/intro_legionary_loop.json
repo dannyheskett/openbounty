@@ -16,6 +16,6 @@
   96,
   96
  ],
- "_pack_path": "art/intro/legionary_00..07.png",
- "_note": "Introduction sprite loop (#154), 2026-10-03: the figure loop route (as headman_italia_loop): custom action on intro_legionary run01, eight frames at 96, alpha kept."
+ "_pack_path": "(retired; no longer in the pack)",
+ "_note": "Introduction sprite loop (#154), 2026-10-03: the figure loop route (as headman_italia_loop): custom action on intro_legionary run01, eight frames at 96, alpha kept. Retired 2026-10-04: its shot was cut with the battle; frames removed from the pack."
 }

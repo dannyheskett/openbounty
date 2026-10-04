@@ -1,0 +1,19 @@
+{
+ "id": "intro_hero_dux",
+ "prompt": "a grizzled grey-bearded barbarian warlord standing, a thick fur cloak over chain mail, a hand axe at his belt, leather boots, facing right",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 64,
+ "height": 64,
+ "seed": 15630,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [
+  64,
+  64
+ ],
+ "_pack_path": "art/intro/hero_dux_walk_00..03.png and art/intro/hero_dux_kneel_00..07.png (via intro_hero_dux_walk and intro_hero_dux_kneel)",
+ "_note": "2026-10-04, Introduction (#154) rework: the dux hero on foot, after the class portrait (art/classes/dux.png), in place of the hooded general; the figure route at 64, the troop style's smallest canvas. run01 is the still under the walk and kneel."
+}

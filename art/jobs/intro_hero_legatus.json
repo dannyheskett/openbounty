@@ -1,0 +1,19 @@
+{
+ "id": "intro_hero_legatus",
+ "prompt": "a Roman legate standing, a dark red cloak over a muscled bronze cuirass, a crested bronze helmet, leather pteruges and sandals, facing right",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 64,
+ "height": 64,
+ "seed": 15645,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [
+  64,
+  64
+ ],
+ "_pack_path": "art/intro/hero_legatus_walk_00..03.png and art/intro/hero_legatus_kneel_00..07.png (via intro_hero_legatus_walk and intro_hero_legatus_kneel)",
+ "_note": "2026-10-04, Introduction (#154) rework: the legatus hero on foot, after the class portrait (art/classes/legatus.png), in place of the hooded general; the figure route at 64, the troop style's smallest canvas. run01 came back with its magenta background left on and was rejected; run02 (seed 15645) is the still under the walk and kneel."
+}

@@ -14,6 +14,6 @@
   96,
   96
  ],
- "_pack_path": "art/intro/legionary_00..07.png (via intro_legionary_loop)",
- "_note": "Introduction sprite (#154), 2026-10-03: the sample scene's legionary; the figure route used for every figure standing on a 240x102 backdrop (headman, usher, augur): troop style at 96, magenta removed. Animated by intro_legionary_loop."
+ "_pack_path": "(retired; no longer in the pack)",
+ "_note": "Introduction sprite (#154), 2026-10-03: the sample scene's legionary; the figure route used for every figure standing on a 240x102 backdrop (headman, usher, augur): troop style at 96, magenta removed. Animated by intro_legionary_loop. Retired 2026-10-04: its shot (legionaries braced in the forest) was cut with the battle; frames removed from the pack."
 }

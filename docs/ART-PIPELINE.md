@@ -372,8 +372,12 @@ generated from.
   charge), so a small figure has been generated at 64 and animated at its
   final size: `custom_action` has redrawn the still at the output canvas
   (32 to 256), a 64 still animated at 56 standing about 51 px tall. That is
-  how the crier (56), the general and the legion (48), the fleeing warriors
-  (56) and Trajan on his throne (32) have been made without scaling. Props
+  how the crier (56), the four heroes and the legion (48), the fleeing and
+  cheering warriors (56) and Trajan on his throne (32) have been made
+  without scaling. The heroes on foot have been prompted from their class
+  portraits; a kneel animated straight from a standing still has come back
+  as the move down, not a held loop, so it has played once and held its
+  last frame. Props
   (the plinth, the map pieces, the eagle mark, the hourglass) have been
   `rd_pro__default` cut-outs, magenta named and removed. The crier's face
   has been the villain portrait route (128, cropped to 96). Only frame 00 of

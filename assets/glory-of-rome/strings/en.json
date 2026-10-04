@@ -988,9 +988,8 @@
 		}
 	},
 	"intro":	{
-		"eagle_1":	"The Rhine frontier. Night, in the dark forests beyond the edge of the Empire.",
-		"eagle_2":	"Three legions marched into the forest. Their general trusted a friend.",
-		"eagle_3":	"The friend was a traitor. Out of the trees came the tribes, from every side at once.",
+		"eagle_1":	"Germania, beyond the Rhine. Three legions marched into these forests, betrayed by a man they trusted.",
+		"eagle_2":	"None marched out. The tribes held the field, and the dead of Rome lay in the mud and the rain.",
 		"eagle_4":	"The eagle of the legion fell where the legion died...",
 		"eagle_5":	"...and it has never been found.",
 		"forum_1":	"CITIZENS OF ROME! Hear the news of the day!",
@@ -1004,17 +1003,17 @@
 		"province_africa":	"AFRICA",
 		"province_oriens":	"ORIENS",
 		"wanted_close":	"Each of them holds a castle. And each of them knows a piece of where the eagle lies!",
-		"palace_1":	"A general is recalled from the frontier, and summoned to the Palatium.",
-		"trajan_1":	"General. Rome has need of you, and so do I.",
+		"palace_1":	"Four are summoned to the Palatium: a warlord, a legate, a praetorian and a sibyl.",
+		"trajan_1":	"Rome has need of you, and so do I.",
 		"trajan_2":	"Bring the Aquila home. Without it the legions lose heart, and Rome falls with them.",
 		"trajan_3":	"Take my contracts at any town. Hunt the enemies of Rome, besiege their castles, and bring them to me in chains.",
 		"trajan_4":	"Every enemy you capture knows a piece of where the eagle lies. So do the eight sacred relics hidden in the provinces.",
 		"trajan_5":	"When the map is whole, go to that ground, search it, and raise the eagle.",
 		"trajan_6":	"The treasury pays your legions by the week. Pay them, or they will leave you.",
-		"trajan_7":	"Make haste, general. Every day the eagle is lost, Rome crumbles further into chaos.",
+		"trajan_7":	"Make haste. Every day the eagle is lost, Rome crumbles further into chaos.",
 		"trajan_8":	"Go. Rome is watching.",
 		"decree_1":	"BY DECREE OF THE EMPEROR! The enemies of Rome to be taken in chains! The eagle to come home!",
 		"decree_2":	"The legions to be paid! And make haste, for Rome is crumbling!",
-		"decree_3":	"Go, general! And bring the eagle home!"
+		"decree_3":	"Go, champions of Rome! And bring the eagle home!"
 	}
 }

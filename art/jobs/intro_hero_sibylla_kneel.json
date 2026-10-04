@@ -1,0 +1,21 @@
+{
+ "id": "intro_hero_sibylla_kneel",
+ "prompt": "kneeling on one knee with the head bowed, breathing slowly, smooth loop",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 48,
+ "height": 48,
+ "seed": 15662,
+ "frames_duration": 8,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/intro_hero_sibylla/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_pack_path": "art/intro/hero_sibylla_kneel_00..07.png",
+ "_note": "2026-10-04, Introduction (#154) rework: the hero kneeling before the throne at 48, animated straight from the standing still. run01 is installed. It came back as a move down to the kneel rather than a held loop, so the intro plays it once and holds the last frame."
+}

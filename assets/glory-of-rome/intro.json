@@ -20,200 +20,83 @@
      "say": "eagle_1"
     },
     {
-     "backdrop": "art/intro/bg_forest_night.png",
+     "backdrop": "art/intro/bg_aftermath.png",
      "weather": "rain",
      "say": "eagle_2",
-     "actors": [
-      {
-       "frames": [
-        "art/intro/legionary_00.png",
-        "art/intro/legionary_01.png",
-        "art/intro/legionary_02.png",
-        "art/intro/legionary_03.png",
-        "art/intro/legionary_04.png",
-        "art/intro/legionary_05.png",
-        "art/intro/legionary_06.png",
-        "art/intro/legionary_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        10,
-        6
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/legionary_00.png",
-        "art/intro/legionary_01.png",
-        "art/intro/legionary_02.png",
-        "art/intro/legionary_03.png",
-        "art/intro/legionary_04.png",
-        "art/intro/legionary_05.png",
-        "art/intro/legionary_06.png",
-        "art/intro/legionary_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        72,
-        6
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/legionary_00.png",
-        "art/intro/legionary_01.png",
-        "art/intro/legionary_02.png",
-        "art/intro/legionary_03.png",
-        "art/intro/legionary_04.png",
-        "art/intro/legionary_05.png",
-        "art/intro/legionary_06.png",
-        "art/intro/legionary_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        134,
-        6
-       ]
-      }
-     ]
-    },
-    {
-     "backdrop": "art/intro/bg_forest_night.png",
-     "weather": "rain",
-     "say": "eagle_3",
      "flashes": [
       0.8
-     ],
-     "actors": [
-      {
-       "frames": [
-        "art/intro/legionary_00.png",
-        "art/intro/legionary_01.png",
-        "art/intro/legionary_02.png",
-        "art/intro/legionary_03.png",
-        "art/intro/legionary_04.png",
-        "art/intro/legionary_05.png",
-        "art/intro/legionary_06.png",
-        "art/intro/legionary_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        10,
-        6
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/legionary_00.png",
-        "art/intro/legionary_01.png",
-        "art/intro/legionary_02.png",
-        "art/intro/legionary_03.png",
-        "art/intro/legionary_04.png",
-        "art/intro/legionary_05.png",
-        "art/intro/legionary_06.png",
-        "art/intro/legionary_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        72,
-        6
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/legionary_00.png",
-        "art/intro/legionary_01.png",
-        "art/intro/legionary_02.png",
-        "art/intro/legionary_03.png",
-        "art/intro/legionary_04.png",
-        "art/intro/legionary_05.png",
-        "art/intro/legionary_06.png",
-        "art/intro/legionary_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        134,
-        6
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/warrior_00.png",
-        "art/intro/warrior_01.png",
-        "art/intro/warrior_02.png",
-        "art/intro/warrior_03.png"
-       ],
-       "fps": 8,
-       "at": [
-        -96,
-        6
-       ],
-       "to": [
-        20,
-        6
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/warrior_00.png",
-        "art/intro/warrior_01.png",
-        "art/intro/warrior_02.png",
-        "art/intro/warrior_03.png"
-       ],
-       "fps": 8,
-       "at": [
-        240,
-        6
-       ],
-       "to": [
-        150,
-        6
-       ],
-       "mirror": true
-      },
-      {
-       "frames": [
-        "art/intro/warrior_00.png",
-        "art/intro/warrior_01.png",
-        "art/intro/warrior_02.png",
-        "art/intro/warrior_03.png"
-       ],
-       "fps": 8,
-       "at": [
-        -96,
-        8
-       ],
-       "to": [
-        60,
-        8
-       ],
-       "start": 1.2
-      },
-      {
-       "frames": [
-        "art/intro/warrior_00.png",
-        "art/intro/warrior_01.png",
-        "art/intro/warrior_02.png",
-        "art/intro/warrior_03.png"
-       ],
-       "fps": 8,
-       "at": [
-        240,
-        8
-       ],
-       "to": [
-        100,
-        8
-       ],
-       "mirror": true,
-       "start": 1.2
-      }
      ],
      "sounds": [
       {
        "file": "audio/intro_thunder.wav",
        "gain": 0.6,
        "at": 0.8
+      }
+     ],
+     "actors": [
+      {
+       "frames": [
+        "art/intro/warrior_cheer_03.png",
+        "art/intro/warrior_cheer_04.png",
+        "art/intro/warrior_cheer_05.png",
+        "art/intro/warrior_cheer_06.png",
+        "art/intro/warrior_cheer_07.png",
+        "art/intro/warrior_cheer_00.png",
+        "art/intro/warrior_cheer_01.png",
+        "art/intro/warrior_cheer_02.png"
+       ],
+       "fps": 6,
+       "at": [
+        24,
+        40
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/warrior_cheer_00.png",
+        "art/intro/warrior_cheer_01.png",
+        "art/intro/warrior_cheer_02.png",
+        "art/intro/warrior_cheer_03.png",
+        "art/intro/warrior_cheer_04.png",
+        "art/intro/warrior_cheer_05.png",
+        "art/intro/warrior_cheer_06.png",
+        "art/intro/warrior_cheer_07.png"
+       ],
+       "fps": 6,
+       "at": [
+        -4,
+        48
+       ],
+       "crop": [
+        0,
+        0,
+        56,
+        54
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/warrior_cheer_00.png",
+        "art/intro/warrior_cheer_01.png",
+        "art/intro/warrior_cheer_02.png",
+        "art/intro/warrior_cheer_03.png",
+        "art/intro/warrior_cheer_04.png",
+        "art/intro/warrior_cheer_05.png",
+        "art/intro/warrior_cheer_06.png",
+        "art/intro/warrior_cheer_07.png"
+       ],
+       "fps": 6,
+       "at": [
+        188,
+        48
+       ],
+       "mirror": true,
+       "crop": [
+        0,
+        0,
+        56,
+        54
+       ]
       }
      ]
     },
@@ -2032,18 +1915,69 @@
      "actors": [
       {
        "frames": [
-        "art/intro/general_walk_00.png",
-        "art/intro/general_walk_01.png",
-        "art/intro/general_walk_02.png",
-        "art/intro/general_walk_03.png"
+        "art/intro/hero_dux_walk_00.png",
+        "art/intro/hero_dux_walk_01.png",
+        "art/intro/hero_dux_walk_02.png",
+        "art/intro/hero_dux_walk_03.png"
        ],
        "fps": 6,
        "at": [
         -44,
-        54
+        53
        ],
        "to": [
         150,
+        53
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/hero_legatus_walk_00.png",
+        "art/intro/hero_legatus_walk_01.png",
+        "art/intro/hero_legatus_walk_02.png",
+        "art/intro/hero_legatus_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -74,
+        53
+       ],
+       "to": [
+        120,
+        53
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/hero_praetorianus_walk_00.png",
+        "art/intro/hero_praetorianus_walk_01.png",
+        "art/intro/hero_praetorianus_walk_02.png",
+        "art/intro/hero_praetorianus_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -104,
+        52
+       ],
+       "to": [
+        90,
+        52
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/hero_sibylla_walk_00.png",
+        "art/intro/hero_sibylla_walk_01.png",
+        "art/intro/hero_sibylla_walk_02.png",
+        "art/intro/hero_sibylla_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -134,
+        54
+       ],
+       "to": [
+        60,
         54
        ]
       }
@@ -2072,21 +2006,78 @@
        ]
       },
       {
+       "at": [
+        36,
+        53
+       ],
        "frames": [
-        "art/intro/general_kneel_00.png",
-        "art/intro/general_kneel_01.png",
-        "art/intro/general_kneel_02.png",
-        "art/intro/general_kneel_03.png",
-        "art/intro/general_kneel_04.png",
-        "art/intro/general_kneel_05.png",
-        "art/intro/general_kneel_06.png",
-        "art/intro/general_kneel_07.png"
+        "art/intro/hero_dux_kneel_00.png",
+        "art/intro/hero_dux_kneel_01.png",
+        "art/intro/hero_dux_kneel_02.png",
+        "art/intro/hero_dux_kneel_03.png",
+        "art/intro/hero_dux_kneel_04.png",
+        "art/intro/hero_dux_kneel_05.png",
+        "art/intro/hero_dux_kneel_06.png",
+        "art/intro/hero_dux_kneel_07.png"
        ],
        "fps": 4,
+       "loop": false
+      },
+      {
        "at": [
         68,
-        57
-       ]
+        53
+       ],
+       "frames": [
+        "art/intro/hero_legatus_kneel_00.png",
+        "art/intro/hero_legatus_kneel_01.png",
+        "art/intro/hero_legatus_kneel_02.png",
+        "art/intro/hero_legatus_kneel_03.png",
+        "art/intro/hero_legatus_kneel_04.png",
+        "art/intro/hero_legatus_kneel_05.png",
+        "art/intro/hero_legatus_kneel_06.png",
+        "art/intro/hero_legatus_kneel_07.png"
+       ],
+       "fps": 4,
+       "loop": false
+      },
+      {
+       "at": [
+        150,
+        52
+       ],
+       "frames": [
+        "art/intro/hero_praetorianus_kneel_00.png",
+        "art/intro/hero_praetorianus_kneel_01.png",
+        "art/intro/hero_praetorianus_kneel_02.png",
+        "art/intro/hero_praetorianus_kneel_03.png",
+        "art/intro/hero_praetorianus_kneel_04.png",
+        "art/intro/hero_praetorianus_kneel_05.png",
+        "art/intro/hero_praetorianus_kneel_06.png",
+        "art/intro/hero_praetorianus_kneel_07.png"
+       ],
+       "fps": 4,
+       "loop": false,
+       "mirror": true
+      },
+      {
+       "at": [
+        182,
+        54
+       ],
+       "frames": [
+        "art/intro/hero_sibylla_kneel_00.png",
+        "art/intro/hero_sibylla_kneel_01.png",
+        "art/intro/hero_sibylla_kneel_02.png",
+        "art/intro/hero_sibylla_kneel_03.png",
+        "art/intro/hero_sibylla_kneel_04.png",
+        "art/intro/hero_sibylla_kneel_05.png",
+        "art/intro/hero_sibylla_kneel_06.png",
+        "art/intro/hero_sibylla_kneel_07.png"
+       ],
+       "fps": 4,
+       "loop": false,
+       "mirror": true
       }
      ],
      "dissolve": 0.8
@@ -2114,21 +2105,42 @@
        ]
       },
       {
-       "frames": [
-        "art/intro/general_kneel_00.png",
-        "art/intro/general_kneel_01.png",
-        "art/intro/general_kneel_02.png",
-        "art/intro/general_kneel_03.png",
-        "art/intro/general_kneel_04.png",
-        "art/intro/general_kneel_05.png",
-        "art/intro/general_kneel_06.png",
-        "art/intro/general_kneel_07.png"
+       "at": [
+        36,
+        53
        ],
-       "fps": 4,
+       "frames": [
+        "art/intro/hero_dux_kneel_07.png"
+       ]
+      },
+      {
        "at": [
         68,
-        57
+        53
+       ],
+       "frames": [
+        "art/intro/hero_legatus_kneel_07.png"
        ]
+      },
+      {
+       "at": [
+        150,
+        52
+       ],
+       "frames": [
+        "art/intro/hero_praetorianus_kneel_07.png"
+       ],
+       "mirror": true
+      },
+      {
+       "at": [
+        182,
+        54
+       ],
+       "frames": [
+        "art/intro/hero_sibylla_kneel_07.png"
+       ],
+       "mirror": true
       }
      ]
     },
@@ -2155,21 +2167,42 @@
        ]
       },
       {
-       "frames": [
-        "art/intro/general_kneel_00.png",
-        "art/intro/general_kneel_01.png",
-        "art/intro/general_kneel_02.png",
-        "art/intro/general_kneel_03.png",
-        "art/intro/general_kneel_04.png",
-        "art/intro/general_kneel_05.png",
-        "art/intro/general_kneel_06.png",
-        "art/intro/general_kneel_07.png"
+       "at": [
+        36,
+        53
        ],
-       "fps": 4,
+       "frames": [
+        "art/intro/hero_dux_kneel_07.png"
+       ]
+      },
+      {
        "at": [
         68,
-        57
+        53
+       ],
+       "frames": [
+        "art/intro/hero_legatus_kneel_07.png"
        ]
+      },
+      {
+       "at": [
+        150,
+        52
+       ],
+       "frames": [
+        "art/intro/hero_praetorianus_kneel_07.png"
+       ],
+       "mirror": true
+      },
+      {
+       "at": [
+        182,
+        54
+       ],
+       "frames": [
+        "art/intro/hero_sibylla_kneel_07.png"
+       ],
+       "mirror": true
       }
      ]
     },
@@ -2307,21 +2340,42 @@
        ]
       },
       {
-       "frames": [
-        "art/intro/general_kneel_00.png",
-        "art/intro/general_kneel_01.png",
-        "art/intro/general_kneel_02.png",
-        "art/intro/general_kneel_03.png",
-        "art/intro/general_kneel_04.png",
-        "art/intro/general_kneel_05.png",
-        "art/intro/general_kneel_06.png",
-        "art/intro/general_kneel_07.png"
+       "at": [
+        36,
+        53
        ],
-       "fps": 4,
+       "frames": [
+        "art/intro/hero_dux_kneel_07.png"
+       ]
+      },
+      {
        "at": [
         68,
-        57
+        53
+       ],
+       "frames": [
+        "art/intro/hero_legatus_kneel_07.png"
        ]
+      },
+      {
+       "at": [
+        150,
+        52
+       ],
+       "frames": [
+        "art/intro/hero_praetorianus_kneel_07.png"
+       ],
+       "mirror": true
+      },
+      {
+       "at": [
+        182,
+        54
+       ],
+       "frames": [
+        "art/intro/hero_sibylla_kneel_07.png"
+       ],
+       "mirror": true
       }
      ],
      "dissolve": 0.8
@@ -2374,21 +2428,42 @@
        ]
       },
       {
-       "frames": [
-        "art/intro/general_kneel_00.png",
-        "art/intro/general_kneel_01.png",
-        "art/intro/general_kneel_02.png",
-        "art/intro/general_kneel_03.png",
-        "art/intro/general_kneel_04.png",
-        "art/intro/general_kneel_05.png",
-        "art/intro/general_kneel_06.png",
-        "art/intro/general_kneel_07.png"
+       "at": [
+        36,
+        53
        ],
-       "fps": 4,
+       "frames": [
+        "art/intro/hero_dux_kneel_07.png"
+       ]
+      },
+      {
        "at": [
         68,
-        57
+        53
+       ],
+       "frames": [
+        "art/intro/hero_legatus_kneel_07.png"
        ]
+      },
+      {
+       "at": [
+        150,
+        52
+       ],
+       "frames": [
+        "art/intro/hero_praetorianus_kneel_07.png"
+       ],
+       "mirror": true
+      },
+      {
+       "at": [
+        182,
+        54
+       ],
+       "frames": [
+        "art/intro/hero_sibylla_kneel_07.png"
+       ],
+       "mirror": true
       }
      ],
      "dissolve": 0.8
@@ -3137,70 +3212,121 @@
      "actors": [
       {
        "frames": [
-        "art/intro/general_walk_00.png",
-        "art/intro/general_walk_01.png",
-        "art/intro/general_walk_02.png",
-        "art/intro/general_walk_03.png"
+        "art/intro/legionary_walk_00.png",
+        "art/intro/legionary_walk_01.png",
+        "art/intro/legionary_walk_02.png",
+        "art/intro/legionary_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -120,
+        50
+       ],
+       "to": [
+        40,
+        50
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_walk_00.png",
+        "art/intro/legionary_walk_01.png",
+        "art/intro/legionary_walk_02.png",
+        "art/intro/legionary_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -150,
+        50
+       ],
+       "to": [
+        15,
+        50
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/legionary_walk_00.png",
+        "art/intro/legionary_walk_01.png",
+        "art/intro/legionary_walk_02.png",
+        "art/intro/legionary_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -180,
+        50
+       ],
+       "to": [
+        -10,
+        50
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/hero_dux_walk_00.png",
+        "art/intro/hero_dux_walk_01.png",
+        "art/intro/hero_dux_walk_02.png",
+        "art/intro/hero_dux_walk_03.png"
        ],
        "fps": 6,
        "at": [
         -20,
-        54
+        53
        ],
        "to": [
         140,
+        53
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/hero_legatus_walk_00.png",
+        "art/intro/hero_legatus_walk_01.png",
+        "art/intro/hero_legatus_walk_02.png",
+        "art/intro/hero_legatus_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -45,
+        53
+       ],
+       "to": [
+        115,
+        53
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/hero_praetorianus_walk_00.png",
+        "art/intro/hero_praetorianus_walk_01.png",
+        "art/intro/hero_praetorianus_walk_02.png",
+        "art/intro/hero_praetorianus_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -70,
+        52
+       ],
+       "to": [
+        90,
+        52
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/hero_sibylla_walk_00.png",
+        "art/intro/hero_sibylla_walk_01.png",
+        "art/intro/hero_sibylla_walk_02.png",
+        "art/intro/hero_sibylla_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -95,
         54
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/legionary_walk_00.png",
-        "art/intro/legionary_walk_01.png",
-        "art/intro/legionary_walk_02.png",
-        "art/intro/legionary_walk_03.png"
-       ],
-       "fps": 6,
-       "at": [
-        -50,
-        50
        ],
        "to": [
-        110,
-        50
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/legionary_walk_00.png",
-        "art/intro/legionary_walk_01.png",
-        "art/intro/legionary_walk_02.png",
-        "art/intro/legionary_walk_03.png"
-       ],
-       "fps": 6,
-       "at": [
-        -80,
-        50
-       ],
-       "to": [
-        80,
-        50
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/legionary_walk_00.png",
-        "art/intro/legionary_walk_01.png",
-        "art/intro/legionary_walk_02.png",
-        "art/intro/legionary_walk_03.png"
-       ],
-       "fps": 6,
-       "at": [
-        -110,
-        50
-       ],
-       "to": [
-        50,
-        50
+        65,
+        54
        ]
       }
      ]
