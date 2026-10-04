@@ -622,8 +622,9 @@ flagged (§38).
 - **REQ-162.** **STARTUP** (`src/startup.c`). Legacy: publisher splash, title
   splash, then the credits when the pack supplies any, each 2.5 s or any key.
   Modern: the publisher splash, then the title menu of `DESIGN-SPEC.md`
-  DSGN-0146 to DSGN-0148 (New Game, Load Saved Game, Introduction when the
-  pack has one (REQ-430u), Credits and, on desktop and web, Exit).
+  DSGN-0146 to DSGN-0148 (Introduction first when the pack has one
+  (REQ-430u), New Game, Load Saved Game, Credits and, on desktop and web,
+  Exit).
 - **REQ-163.** **CLASS SELECT**. Legacy: four classes on `A`/`B`/`C`/`D`, `L`
   for Load, `Esc` to quit. Modern: the class painting, Left/Right or a tap
   picking a figure and Continue confirming (REQ-532); `Esc` has returned to
@@ -2682,8 +2683,8 @@ every menu; this section has held the rules.
   the load picker and a return to the title have shown the finished screen.
   Without all three the title has been `splash_title`, still.
 - **REQ-430u.** **Introduction (modern).** A pack with an intro (REQ-538)
-  has had an Introduction row on the title menu between Load Saved Game and
-  Credits, labelled `ui.title_intro`; it has never played by itself.
+  has had an Introduction row first on the title menu, above New Game,
+  labelled `ui.title_intro`; it has never played by itself.
   Choosing it has played the script end to end (`src/intro.c run_intro`) as
   a film: each beat's backdrop through its moving frame window and its
   actors' loops at a whole multiple, a black caption band below with the
@@ -2691,7 +2692,8 @@ every menu; this section has held the rules.
   picture, dissolves between beats and each scene faded up from black and
   down to it (DSGN-0161). Every frame has been a pure function of the time
   into the intro. Any key or tap has ended it, as at the end of its last
-  beat, and returned to the title menu, nothing pressed carrying over; there
+  beat, and gone on to the class picker as New Game does, nothing pressed
+  carrying over; there
   has been no key for the next scene, the theme being one track timed to the
   whole intro. The intro's textures have loaded on entry and been freed on
   exit.

@@ -199,14 +199,14 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 ### intro_crowd
 
 - **Engine:** Retro Diffusion rd_pro__default (240x56, seed 15524)
-- **Pack path:** `art/intro/crowd_00..07.png (via intro_crowd_loop)`
+- **Pack path:** `art/intro/crowd_00.png (via intro_crowd_loop)`
 - **prompt:** a crowd of ancient Roman citizens seen from behind and below, heads and shoulders packed together, men and women in tunics and togas of many colours, some raising their arms, solid magenta background above them
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=56`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15524`, `style=rd_pro__default`, `target=[240, 56]`, `width=240`
 
 ### intro_crowd_loop
 
 - **Engine:** Retro Diffusion rd_advanced_animation__custom_action (240x56, seed 15524)
-- **Pack path:** `art/intro/crowd_00..07.png`
+- **Pack path:** `art/intro/crowd_00.png`
 - **prompt:** the crowd stirring, heads turning and arms rising and falling, smooth loop
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=56`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_crowd/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15524`, `style=rd_advanced_animation__custom_action`, `target=[240, 56]`, `width=240`
 

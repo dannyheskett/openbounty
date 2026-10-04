@@ -456,10 +456,10 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
 }
 
 // ---------------------------------------------------------------------------
-// Title menu (modern), on the title art: New Game, Load Saved Game,
-// Credits, Exit. Sets out->action to STARTUP_NEW (go to class
-// select) or STARTUP_BACK (go to the save picker); Credits shows the credits
-// and comes back. Returns false on Exit, Escape or a closed window.
+// Title menu (modern), on the title art: Introduction, New Game, Load Saved
+// Game, Credits, Exit. Sets out->action to STARTUP_NEW (go to class select,
+// also once the Introduction ends) or STARTUP_BACK (go to the save picker);
+// Credits shows the credits and comes back. Returns false on Exit, Escape or a closed window.
 // ---------------------------------------------------------------------------
 
 static bool run_credits(RenderTexture2D *rt, const Resources *res,
@@ -492,8 +492,8 @@ static bool class_confirm_row(void *ctx, int i, char *label, char *right, int ca
     return true;
 }
 
-// The title menu's rows, built for the pack: Introduction only when it has
-// one (REQ-430u). No Exit on a phone: iOS has no notion of quitting an app
+// The title menu's rows, built for the pack: Introduction first, only when it
+// has one (REQ-430u). No Exit on a phone: iOS has no notion of quitting an app
 // and Apple rejects a control that claims otherwise, and on Android the
 // system handles it. Everywhere else the row stays exactly where it was.
 enum { ROW_NEW, ROW_LOAD, ROW_INTRO, ROW_CREDITS, ROW_EXIT, ROW_MAX };
@@ -502,9 +502,9 @@ enum { ROW_NEW, ROW_LOAD, ROW_INTRO, ROW_CREDITS, ROW_EXIT, ROW_MAX };
 static int title_menu_rows(const Resources *res, int ids[ROW_MAX], const char *labels[ROW_MAX]) {
     const ResUI *ui = &res->ui;
     int n = 0;
+    if (intro_available(res)) { ids[n] = ROW_INTRO; labels[n++] = ui->title_intro; }
     ids[n] = ROW_NEW;  labels[n++] = ui->title_new_adventure;
     ids[n] = ROW_LOAD; labels[n++] = ui->title_load_adventure;
-    if (intro_available(res)) { ids[n] = ROW_INTRO; labels[n++] = ui->title_intro; }
     ids[n] = ROW_CREDITS; labels[n++] = ui->title_credits;
 #if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID)
     ids[n] = ROW_EXIT; labels[n++] = ui->menu_exit;
@@ -577,9 +577,10 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
             case ROW_NEW:  out->action = STARTUP_NEW;  return true;
             case ROW_LOAD: out->action = STARTUP_BACK; return true;
             case ROW_INTRO:
+                // Played or skipped, the intro leads on to the class picker.
                 if (!run_intro(rt, res)) { out->action = STARTUP_QUIT; return false; }
-                screen_open();
-                continue;
+                out->action = STARTUP_NEW;
+                return true;
             case ROW_CREDITS:
                 if (!run_credits(rt, res, sprites)) { out->action = STARTUP_QUIT; return false; }
                 screen_open();

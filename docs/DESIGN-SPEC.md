@@ -1563,9 +1563,9 @@ Source: `src/startup.c` `draw_title_sequence`, `draw_title_backdrop`,
 **DSGN-0148. Title menu.** The title menu has been its own page
 (`page_title_menu`): no title and no description, as wide as its widest label
 + 2 × `UK_INSET` + 4 × `GW`, centred:
-- New Game (`ui.title_new_adventure`), Load Saved Game
-  (`ui.title_load_adventure`), Introduction (`ui.title_intro`, only when the
-  pack has one, DSGN-0161), Credits (`ui.title_credits`) and, on desktop
+- Introduction (`ui.title_intro`, only when the pack has one, DSGN-0161;
+  it leads on to the class picker), New Game (`ui.title_new_adventure`),
+  Load Saved Game (`ui.title_load_adventure`), Credits (`ui.title_credits`) and, on desktop
   and web, Exit, the row Escape has pressed.
 - It has had no outside: a tap off it has done nothing.
 - Escape (Android Back) has quit.

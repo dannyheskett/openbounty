@@ -377,7 +377,7 @@ generated from.
   (the plinth, the map pieces, the eagle mark, the hourglass) have been
   `rd_pro__default` cut-outs, magenta named and removed. The crier's face
   has been the villain portrait route (128, cropped to 96). Only frame 00 of
-  the crowd loop has been used, at Dan's order: the engine draws it still, as
+  the crowd loop has been installed, at Dan's order: the engine draws it still, as
   cropped columns at staggered heights. Rain and lightning have been drawn
   by the engine, not painted. The theme has been synthesised by
   `romeart.py introtheme`, and the thunder and crowd sounds have been CC0
