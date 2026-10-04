@@ -431,6 +431,11 @@ void audio_intro_sound(const char *path, float gain) {
     audio_backend_sound_play(s_intro_sounds[i].id);
 }
 
+void audio_intro_levels(float *music, float *sfx) {
+    if (music) *music = MUSIC_HEADROOM;
+    if (sfx)   *sfx   = SFX_HEADROOM;
+}
+
 void audio_intro_end(void) {
     for (int i = 0; i < s_intro_sound_count; i++) audio_backend_sound_free(s_intro_sounds[i].id);
     s_intro_sound_count = 0;

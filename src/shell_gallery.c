@@ -39,6 +39,7 @@
 #include "shell_actions.h"
 #include "intro.h"
 #include "encode_mp4.h"
+#include "intro_mix.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1105,6 +1106,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
 // review; prints the cue sheet, each scene's start and length, which is the
 // composer's brief. The video is silent: the theme is laid under it apart.
 #define INTRO_MOVIE_FPS 15
+#define INTRO_MOVIE_RATE 44100   // the sound track's sample rate
 int gallery_intro_movie(const Resources *res, RenderTexture2D *rt, const char *out_mp4) {
     if (!intro_available(res)) {
         fprintf(stdout, "[intro-movie] this pack has no Introduction\n");
@@ -1141,8 +1143,14 @@ int gallery_intro_movie(const Resources *res, RenderTexture2D *rt, const char *o
     fclose(mf);
     intro_release();
 
+    // The sound: the theme and the beats' sounds as the player mixes them.
+    size_t snd_frames = 0;
+    short *pcm = intro_mix_pcm(res, INTRO_MOVIE_RATE, &snd_frames);
+    EncodeAudio snd = { pcm, snd_frames, INTRO_MOVIE_RATE, 1 };
     char err[256] = "";
-    bool ok = mp4_encode_dir(dir, out_mp4, NULL, NULL, err, sizeof err);
+    bool sound = pcm != NULL;
+    bool ok = mp4_encode_dir_av(dir, out_mp4, sound ? &snd : NULL, NULL, NULL, err, sizeof err);
+    free(pcm);
     // The frames were only the encoder's input.
     for (int i = 0; i <= frames; i++) {
         char path[1300];
@@ -1152,7 +1160,7 @@ int gallery_intro_movie(const Resources *res, RenderTexture2D *rt, const char *o
     remove(mpath);
     RMDIR(dir);
     if (!ok) { fprintf(stdout, "[intro-movie] encode failed: %s\n", err); return 1; }
-    fprintf(stdout, "[intro-movie] wrote %s (silent; add the theme with: "
-            "ffmpeg -i %s -i <intro.ogg> -c:v copy -shortest <out>)\n", out_mp4, out_mp4);
+    fprintf(stdout, "[intro-movie] wrote %s (%s)\n", out_mp4,
+            sound ? "with its sound" : "silent: the intro has no sound");
     return 0;
 }

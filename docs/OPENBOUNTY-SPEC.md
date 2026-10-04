@@ -186,7 +186,8 @@ flagged (§38).
 - **REQ-030.** `third_party/` has vendored: cJSON (`cjson/`, JSON parse),
   miniz (`miniz/`, ZIP read/write for `.openbounty` packs), greatest
   (`greatest/`, single-header test framework), minih264 + minimp4
-  (`--movie` MP4 encoder/muxer), stb (`stb/`: `stb_image`, `stb_truetype` and
+  (`--movie` MP4 encoder/muxer), vo-aacenc (`vo-aacenc/`, the AAC encoder
+  of `--intro-movie`'s sound track, Apache 2.0), stb (`stb/`: `stb_image`, `stb_truetype` and
   `stb_vorbis`, the iOS backend's image, font and music decoders), Liberation
   Sans (`fonts/`, the pack picker's face, compiled in as `src/font_sans.inc`)
   and `emsdk/`, the place for a local Emscripten checkout (CI installs its
@@ -279,7 +280,7 @@ flagged (§38).
   `prompt`, `select`, `textsel`, `text`, `input`, `touch`, `uitouch`, `startup`,
   `end_cartoon`, `pack_select`, `assets`, `audio`, `screenshot`, `sprites`,
   `tile_cache`, `tilevar`, `palette`, `bfont`, `layout`, `present`,
-  `safe_area`, `recorder`, `encode_dialog`, `encode_mp4*`; the raylib side of
+  `safe_area`, `recorder`, `encode_dialog`, `encode_mp4*`, `intro_mix`; the raylib side of
   the platform seams (`gfx_raylib`, `frame_host`, `input_host`,
   `audio_raylib`, `font_raylib`); and `plat_android` / `plat_ios`. The
   subdirectories have held the modern draw layer and screens (`src/modern/`),
@@ -3014,8 +3015,8 @@ every menu; this section has held the rules.
   (the winnability oracle, `AUTOPLAY-SPECS.md`) with its modifiers
   `--autoplay-hero=<class>`, `--autoplay-level=<easy|normal|hard|impossible>`
   and `--autoplay-speed=<slow|normal|fast>`, `--intro-movie <out.mp4>` (the
-  Introduction rendered offline at 15 frames a second to a silent video,
-  with its cue sheet printed: each scene's start and length, REQ-430u),
+  Introduction rendered offline at 15 frames a second, with its sound,
+  and its cue sheet printed: each scene's start and length, REQ-430u, REQ-490),
   `--validate-pack [LO [HI]]` (the
   pack-author winnability report), `--headless` (modifier for the agent
   modes), `--verbose` (agent diagnostics), `--extract`, `--out-dir <dir>`
@@ -3063,7 +3064,15 @@ every menu; this section has held the rules.
   `/tmp/openbounty-movie-<pid>`; at shutdown an "Encoding…" dialog has run the muxer and the temp
   frames have been deleted, so the file exists only after a clean shutdown.
   With no path argument, output has gone to
-  `<user-data>/movie-<timestamp>.mp4`.
+  `<user-data>/movie-<timestamp>.mp4`. Gameplay recordings have been
+  silent. `--intro-movie` has carried the Introduction's sound on a second
+  track (`src/intro_mix.c`): the theme from the top and each beat's sounds
+  at their cues, mixed at full master volume with the player's own levels
+  and closing fade (`audio_intro_levels`, `intro_sound_gain`), a sound cued
+  again while it plays starting over as in the game; mono 44.1 kHz,
+  encoded AAC-LC at 128 kb/s by vo-aacenc (`src/encode_mp4_aac.c`), its
+  first 1600 samples (the encoder's and decoder's delay) dropped so the
+  sound lines up with the first frame.
 - **REQ-491.** There has been no scripted-input harness: `src/frame_host.c`
   and `src/input_host.c` have been the window and input seams (REQ-442), and
   the gameplay tests have driven the engine directly. The engine's JSON state

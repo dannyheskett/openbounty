@@ -30,8 +30,9 @@ the build on any machine, Xcode or not.
 
 The Makefile's `IOS_SKIP` has removed the raylib seam implementations and the
 desktop-only subsystems: the movie recorder and its MP4 encoder
-(`src/recorder.c`, `src/encode_mp4*.c`, `src/encode_dialog.c`), screenshots
-and the gallery (`src/screenshot.c`, `src/shell_gallery.c`), and the pack
+(`src/recorder.c`, `src/encode_mp4*.c`, `src/encode_dialog.c`), screenshots,
+the gallery and the intro's movie mix (`src/screenshot.c`,
+`src/shell_gallery.c`, `src/intro_mix.c`), and the pack
 picker (`src/pack_select.c`) -- the app has shipped exactly one pack. Their
 headers have compiled to inline no-ops under `PLATFORM_IOS`, so call sites
 have needed no guards. The demo agent and autoplay have been in the build.

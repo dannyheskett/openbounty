@@ -6,6 +6,8 @@
 #include "cJSON.h"
 #include "fixtures.h"
 #include "intro.h"
+#include "intro_mix.h"
+#include "audio.h"
 #include "pack.h"
 #include "resources.h"
 
@@ -257,6 +259,63 @@ TEST intro_layout_fits_the_screen(void) {
     PASS();
 }
 
+
+// --intro-movie's mix: a 10 s intro at 100 Hz, one scene fading out over
+// its last 2 s, a two-beat timeline with one sound cued twice.
+static void mix_fixture(ResIntro *in, ResIntroScene *sc, ResIntroBeat *bt, ResIntroSound *snd) {
+    memset(in, 0, sizeof *in);
+    memset(sc, 0, sizeof *sc);
+    memset(bt, 0, 2 * sizeof *bt);
+    memset(snd, 0, 2 * sizeof *snd);
+    sc->start = 0; sc->dur = 10; sc->fade_out = 2; sc->beat_count = 2;
+    bt[0].start = 0; bt[0].dur = 5;
+    bt[1].start = 5; bt[1].dur = 5;
+    strcpy(snd[0].path, "audio/boom.wav"); snd[0].at = 1;   snd[0].gain = 0.5;
+    strcpy(snd[1].path, "audio/boom.wav"); snd[1].at = 0.5; snd[1].gain = 0.5;
+    bt[0].sounds = &snd[0]; bt[0].sound_count = 1;    // at 1.0 s
+    bt[1].sounds = &snd[1]; bt[1].sound_count = 1;    // at 5.5 s
+    in->scenes = sc; in->scene_count = 1;
+    in->beats = bt; in->beat_count = 2;
+    in->total = 10;
+}
+
+TEST the_movie_mix_follows_the_players_levels_and_fade(void) {
+    ResIntro in; ResIntroScene sc; ResIntroBeat bt[2]; ResIntroSound snd[2];
+    mix_fixture(&in, &sc, bt, snd);
+    float music = 0, sfx = 0;
+    audio_intro_levels(&music, &sfx);
+    static float ones[1000], out[1000];
+    for (int i = 0; i < 1000; i++) ones[i] = 1;
+    IntroClip theme = { ones, 1000 };
+    intro_mix_render(&in, 1.0f, 100, &theme, NULL, NULL, 0, out, 1000);
+    ASSERT_IN_RANGE(music, out[100], 1e-6);              // full until the fade
+    ASSERT_IN_RANGE(music * 0.5f, out[900], 1e-6);       // halfway through it
+    ASSERT_IN_RANGE(0.0f, out[999], music * 0.01f);      // gone at the end
+    intro_mix_render(&in, 0.5f, 100, &theme, NULL, NULL, 0, out, 1000);
+    ASSERT_IN_RANGE(music * 0.5f, out[100], 1e-6);       // master scales it
+    PASS();
+}
+
+TEST the_movie_mix_starts_each_sound_at_its_cue_and_restarts_it(void) {
+    ResIntro in; ResIntroScene sc; ResIntroBeat bt[2]; ResIntroSound snd[2];
+    mix_fixture(&in, &sc, bt, snd);
+    float sfx = 0;
+    audio_intro_levels(NULL, &sfx);
+    static float boom[600], out[1000];
+    for (int i = 0; i < 600; i++) boom[i] = (float)(i + 1);   // its position, so a restart shows
+    IntroClip clip = { boom, 600 };
+    const char *paths[1] = { "audio/boom.wav" };
+    intro_mix_render(&in, 1.0f, 100, NULL, paths, &clip, 1, out, 1000);
+    ASSERT_EQ_FMT(0.0f, out[99], "%f");                         // nothing before the cue
+    ASSERT_IN_RANGE(1 * sfx * 0.5f, out[100], 1e-4);            // its first sample at 1.0 s
+    ASSERT_IN_RANGE(450 * sfx * 0.5f, out[549], 1e-3);          // still playing at 5.49 s
+    ASSERT_IN_RANGE(1 * sfx * 0.5f, out[550], 1e-4);            // and from the top at 5.5 s
+    const char *other[1] = { "audio/other.wav" };
+    intro_mix_render(&in, 1.0f, 100, NULL, other, &clip, 1, out, 1000);
+    ASSERT_EQ_FMT(0.0f, out[100], "%f");                        // no clip, no sound
+    PASS();
+}
+
 SUITE(unit_intro_suite) {
     RUN_TEST(intro_layout_fits_the_screen);
     RUN_TEST(kings_bounty_has_no_intro);
@@ -264,6 +323,8 @@ SUITE(unit_intro_suite) {
     RUN_TEST(staged_actors_weather_and_stills_load);
     RUN_TEST(sounds_load);
     RUN_TEST(a_malformed_sound_refuses_the_load);
+    RUN_TEST(the_movie_mix_follows_the_players_levels_and_fade);
+    RUN_TEST(the_movie_mix_starts_each_sound_at_its_cue_and_restarts_it);
     RUN_TEST(an_actor_outside_its_beat_refuses_the_load);
     RUN_TEST(unknown_weather_refuses_the_load);
     RUN_TEST(an_unknown_caption_key_refuses_the_load);

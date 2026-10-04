@@ -111,7 +111,7 @@ shell has reached the platform only through five seams (`src/gfx.h`,
 ├── art/                      # Rome art sources: generation jobs, map sources,
 │                             #   terrain primitives, references
 ├── tests/                    # unit/, e2e/, regression/, autoplay/, library/
-├── third_party/              # cJSON, miniz, greatest, minih264, minimp4, stb,
+├── third_party/              # cJSON, miniz, greatest, minih264, minimp4, vo-aacenc, stb,
 │                             #   Liberation Sans; raylib-install*/ (built)
 ├── tools/                    # C pack extractor; Rome art and map tools (Python)
 ├── scripts/                  # raylib builds, store and release scripts

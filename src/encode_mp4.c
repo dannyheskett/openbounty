@@ -25,6 +25,8 @@
 // pull declarations.
 #include "minih264e.h"
 #include "minimp4.h"
+#include "voAAC.h"
+#include "cmnMemory.h"
 
 // The video is the frames' own size, padded to whole 16 px macroblocks:
 // the game's 320x200 to 320x208, the Introduction's 800x504 to 800x512
@@ -163,9 +165,114 @@ static int mp4_write_cb(int64_t off, const void *buf, size_t sz, void *tok) {
 
 // ---------- main entry ------------------------------------------------------
 
+
+// ---------- the sound track (AAC-LC, vo-aacenc) -----------------------------
+
+#define AAC_FRAME    1024   // samples per channel in one AAC frame
+#define AAC_BITRATE  128000
+// What the encoder and an AAC decoder add before the first sample: the
+// samples dropped from the front so the sound lines up with frame 0.
+#define AAC_DELAY    1600   // measured: the encoder's look-ahead and the decoder's 1024
+
+static const unsigned AAC_RATES[] = { 96000, 88200, 64000, 48000, 44100, 32000,
+                                      24000, 22050, 16000, 12000, 11025, 8000 };
+
+// Encode `a` and put it on a new track of `mux`, one AAC frame a sample.
+static bool encode_aac_track(MP4E_mux_t *mux, const EncodeAudio *a,
+                             char *err_buf, size_t err_cap) {
+    int ri = -1;
+    for (int i = 0; i < (int)(sizeof AAC_RATES / sizeof AAC_RATES[0]); i++)
+        if ((int)AAC_RATES[i] == a->rate) ri = i;
+    if (ri < 0 || a->channels < 1 || a->channels > 2 || !a->pcm) {
+        snprintf(err_buf, err_cap, "sound track: unsupported %d Hz x %d", a->rate, a->channels);
+        return false;
+    }
+
+    VO_AUDIO_CODECAPI api = { 0 };
+    VO_MEM_OPERATOR mem = { 0 };
+    VO_CODEC_INIT_USERDATA ud = { 0 };
+    VO_HANDLE h = 0;
+    voGetAACEncAPI(&api);
+    mem.Alloc = cmnMemAlloc; mem.Copy = cmnMemCopy; mem.Free = cmnMemFree;
+    mem.Set = cmnMemSet;     mem.Check = cmnMemCheck;
+    ud.memflag = VO_IMF_USERMEMOPERATOR;
+    ud.memData = &mem;
+    if (api.Init(&h, VO_AUDIO_CodingAAC, &ud) != VO_ERR_NONE) {
+        snprintf(err_buf, err_cap, "sound track: encoder init failed");
+        return false;
+    }
+    AACENC_PARAM p = { 0 };
+    p.sampleRate = a->rate;
+    p.bitRate    = AAC_BITRATE * a->channels;
+    p.nChannels  = (short)a->channels;
+    p.adtsUsed   = 0;   // raw frames: the MP4 carries the config
+    if (api.SetParam(h, VO_PID_AAC_ENCPARAM, &p) != VO_ERR_NONE) {
+        snprintf(err_buf, err_cap, "sound track: encoder rejected %d Hz x %d", a->rate, a->channels);
+        api.Uninit(h);
+        return false;
+    }
+
+    MP4E_track_t tr = { 0 };
+    tr.object_type_indication = MP4_OBJECT_TYPE_AUDIO_ISO_IEC_14496_3;
+    memcpy(tr.language, "und", 4);
+    tr.track_media_kind = e_audio;
+    tr.time_scale       = (unsigned)a->rate;
+    tr.default_duration = AAC_FRAME;
+    tr.u.a.channelcount = (unsigned)a->channels;
+    int track = MP4E_add_track(mux, &tr);
+    // AudioSpecificConfig: AAC-LC (2), the rate's index, the channels.
+    unsigned char dsi[2] = { (unsigned char)((2 << 3) | (ri >> 1)),
+                             (unsigned char)(((ri & 1) << 7) | (a->channels << 3)) };
+    if (track < 0 || MP4E_set_dsi(mux, track, dsi, 2) != MP4E_STATUS_OK) {
+        snprintf(err_buf, err_cap, "sound track: cannot add the track");
+        api.Uninit(h);
+        return false;
+    }
+
+    // Frame by frame from AAC_DELAY on, padded with silence at the end so
+    // the encoder gives back every sample it was given.
+    const int ch = a->channels;
+    short in[AAC_FRAME * 2];
+    unsigned char out[6144 * 2];
+    size_t pos = a->frames > AAC_DELAY ? AAC_DELAY : a->frames;
+    size_t end = a->frames + 2 * AAC_FRAME;
+    bool ok = true;
+    while (ok && pos < end) {
+        for (int i = 0; i < AAC_FRAME; i++)
+            for (int c = 0; c < ch; c++)
+                in[i * ch + c] = pos + i < a->frames ? a->pcm[(pos + i) * ch + c] : 0;
+        pos += AAC_FRAME;
+        VO_CODECBUFFER ib = { 0 }, ob = { 0 };
+        VO_AUDIO_OUTPUTINFO oi = { 0 };
+        ib.Buffer = (VO_PBYTE)in;
+        ib.Length = (VO_U32)(AAC_FRAME * ch * sizeof in[0]);
+        api.SetInputData(h, &ib);
+        ob.Buffer = out;
+        ob.Length = sizeof out;
+        if (api.GetOutputData(h, &ob, &oi) != VO_ERR_NONE) {
+            snprintf(err_buf, err_cap, "sound track: encode failed");
+            ok = false;
+        } else if (ob.Length > 0 &&
+                   MP4E_put_sample(mux, track, out, (int)ob.Length, AAC_FRAME,
+                                   MP4E_SAMPLE_RANDOM_ACCESS) != MP4E_STATUS_OK) {
+            snprintf(err_buf, err_cap, "sound track: cannot write a frame");
+            ok = false;
+        }
+    }
+    api.Uninit(h);
+    return ok;
+}
+
 bool mp4_encode_dir(const char *src_dir, const char *out_path,
                     encode_progress_fn cb, void *user,
                     char *err_buf, size_t err_cap) {
+    return mp4_encode_dir_av(src_dir, out_path, NULL, cb, user, err_buf, err_cap);
+}
+
+bool mp4_encode_dir_av(const char *src_dir, const char *out_path,
+                       const EncodeAudio *audio,
+                       encode_progress_fn cb, void *user,
+                       char *err_buf, size_t err_cap) {
     if (!err_buf || err_cap == 0) {
         static char dummy[1]; err_buf = dummy; err_cap = 1;
     }
@@ -334,6 +441,7 @@ bool mp4_encode_dir(const char *src_dir, const char *out_path,
     if (ok) {
         prog.status = "Muxing";
         if (cb) cb(&prog, user);
+        if (audio) ok = encode_aac_track(mux, audio, err_buf, err_cap);
     }
 
     mp4_h26x_write_close(&mp4wr);

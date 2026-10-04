@@ -24,6 +24,10 @@ bool run_intro(RenderTexture2D *rt, const Resources *res);
 // input and no audio. Loads the intro's textures on first use; free them
 // with intro_release.
 void intro_gallery_draw(RenderTexture2D *rt, const Resources *res, double t);
+// The theme's and the sounds' gain `t` seconds in, 0..1: 1 until the last
+// scene's fade out, then down to 0 at the end. The player and the
+// --intro-movie mix both follow it.
+double intro_sound_gain(const ResIntro *in, double t);
 void intro_release(void);
 
 // The film's layout on a screen: the picture at the largest whole multiple

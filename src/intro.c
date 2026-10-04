@@ -298,6 +298,12 @@ void intro_gallery_draw(RenderTexture2D *rt, const Resources *res, double t) {
     present_end();
 }
 
+double intro_sound_gain(const ResIntro *in, double t) {
+    if (!in || in->scene_count <= 0) return 1;
+    const ResIntroScene *last = &in->scenes[in->scene_count - 1];
+    return last->fade_out > 0 ? clamp01((in->total - t) / last->fade_out) : 1;
+}
+
 bool run_intro(RenderTexture2D *rt, const Resources *res) {
     if (!rt || !intro_available(res)) return true;
     input_host_flush(0.25);   // the key or tap that chose the row
@@ -313,7 +319,6 @@ bool run_intro(RenderTexture2D *rt, const Resources *res) {
     intro_load_all(res);
     audio_intro_begin(res);
     const ResIntro *in = &res->intro;
-    const ResIntroScene *last = &in->scenes[in->scene_count - 1];
     double t0 = frame_host_time();
     double heard = -1;   // sounds up to here have been started
     bool closed = false;
@@ -330,8 +335,7 @@ bool run_intro(RenderTexture2D *rt, const Resources *res) {
         }
         heard = t;
         // The theme fades with the last scene.
-        double out = last->fade_out > 0 ? clamp01((in->total - t) / last->fade_out) : 1;
-        audio_intro_gain((float)out);
+        audio_intro_gain((float)intro_sound_gain(in, t));
         audio_tick();
         present_refit(rt);
         present_begin(rt);

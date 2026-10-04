@@ -22,4 +22,20 @@ bool mp4_encode_dir(const char *src_dir, const char *out_path,
                     encode_progress_fn cb, void *user,
                     char *err_buf, size_t err_cap);
 
+// A sound track to go with the frames: signed 16-bit samples, interleaved
+// when there is more than one channel, starting with the first frame.
+typedef struct {
+    const short *pcm;
+    size_t       frames;     // samples per channel
+    int          rate;       // 8000..48000
+    int          channels;   // 1 or 2
+} EncodeAudio;
+
+// As mp4_encode_dir, with `audio` (NULL: silent) encoded as AAC-LC
+// (vo-aacenc) on a second track.
+bool mp4_encode_dir_av(const char *src_dir, const char *out_path,
+                       const EncodeAudio *audio,
+                       encode_progress_fn cb, void *user,
+                       char *err_buf, size_t err_cap);
+
 #endif

@@ -77,5 +77,8 @@ void audio_intro_end(void);
 // the pack, played at gain 0..1 (times the master volume and the closing
 // fade), whatever the Sounds option. Freed, and so stopped, by audio_intro_end.
 void audio_intro_sound(const char *path, float gain);
+// The intro's levels before the master volume: the theme's and a sound's
+// (times its gain). The --intro-movie mix uses the same.
+void audio_intro_levels(float *music, float *sfx);
 
 #endif
