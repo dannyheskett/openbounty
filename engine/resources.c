@@ -2608,6 +2608,15 @@ static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
             act->end    = json_num(a, "end", -1);   // -1: to the beat's end (set below)
             act->fade_in  = json_num(a, "fade_in", 0);
             act->fade_out = json_num(a, "fade_out", 0);
+            cJSON *jc = cJSON_GetObjectItem(a, "crop");
+            if (cJSON_GetArraySize(jc) == 4) {
+                act->crop_x = cJSON_GetArrayItem(jc, 0)->valueint;
+                act->crop_y = cJSON_GetArrayItem(jc, 1)->valueint;
+                act->crop_w = cJSON_GetArrayItem(jc, 2)->valueint;
+                act->crop_h = cJSON_GetArrayItem(jc, 3)->valueint;
+                if (act->crop_w <= 0 || act->crop_h <= 0 || act->crop_x < 0 || act->crop_y < 0)
+                    intro_error(res, beat_no, "an actor's crop must be [x, y, w, h], w and h positive");
+            }
         }
     }
 

@@ -488,6 +488,125 @@
      ]
     }
    ]
+  },
+  {
+   "id": "wanted",
+   "fade_in": 1.0,
+   "fade_out": 1.0,
+   "beats": [
+    {
+     "for_each": "villain",
+     "count": 4,
+     "backdrop": "art/intro/bg_wanted_wall.png",
+     "dissolve": 0.4,
+     "actors": [
+      {
+       "villain": "*",
+       "at": [
+        91,
+        12
+       ],
+       "crop": [
+        19,
+        6,
+        58,
+        78
+       ]
+      }
+     ],
+     "say": "wanted_slow",
+     "face": "intro_crier"
+    },
+    {
+     "for_each": "villain",
+     "from": 4,
+     "backdrop": "art/intro/bg_wanted_wall.png",
+     "actors": [
+      {
+       "villain": "*",
+       "at": [
+        91,
+        12
+       ],
+       "crop": [
+        19,
+        6,
+        58,
+        78
+       ]
+      }
+     ],
+     "say": "wanted_fast",
+     "face": "intro_crier",
+     "duration": 3.2
+    },
+    {
+     "backdrop": "art/scenes/treasure_italia.png",
+     "card": "province_italia",
+     "duration": 2.5,
+     "dissolve": 0.8
+    },
+    {
+     "backdrop": "art/scenes/treasure_galliae.png",
+     "card": "province_galliae",
+     "duration": 2.5,
+     "dissolve": 0.8
+    },
+    {
+     "backdrop": "art/scenes/treasure_africa.png",
+     "card": "province_africa",
+     "duration": 2.5,
+     "dissolve": 0.8
+    },
+    {
+     "backdrop": "art/scenes/treasure_oriens.png",
+     "card": "province_oriens",
+     "duration": 2.5,
+     "dissolve": 0.8
+    },
+    {
+     "backdrop": "art/intro/bg_forum.png",
+     "say": "wanted_close",
+     "face": "intro_crier",
+     "dissolve": 0.8,
+     "actors": [
+      {
+       "frames": [
+        "art/intro/crier_00.png",
+        "art/intro/crier_01.png",
+        "art/intro/crier_02.png",
+        "art/intro/crier_03.png",
+        "art/intro/crier_04.png",
+        "art/intro/crier_05.png",
+        "art/intro/crier_06.png",
+        "art/intro/crier_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        72,
+        6
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png",
+        "art/intro/crowd_01.png",
+        "art/intro/crowd_02.png",
+        "art/intro/crowd_03.png",
+        "art/intro/crowd_04.png",
+        "art/intro/crowd_05.png",
+        "art/intro/crowd_06.png",
+        "art/intro/crowd_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        0,
+        46
+       ]
+      }
+     ]
+    }
+   ]
   }
  ]
 }

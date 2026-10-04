@@ -205,7 +205,8 @@ edited apart from the gameplay data:
     the move from `at` to `to` runs across them) and `loop` (default true;
     false plays the frames once and holds the last, for a single action),
     and `fade_in` / `fade_out` (seconds the sprite fades up after its
-    `start` and away before its `end`);
+    `start` and away before its `end`), and `crop` (`[x, y, w, h]`, the part
+    of each frame shown, for a portrait's head and shoulders);
   - `weather`: `"rain"`, streaks drawn over the picture, and `flashes`: the
     seconds into the beat of each lightning flash;
   - `still`: a picture drawn whole on the screen at the largest whole

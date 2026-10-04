@@ -174,9 +174,19 @@ static void draw_picture(const ResIntro *in, const ResIntroBeat *b, double t,
         double fa = 1;
         if (act->fade_in > 0)  fa = fmin(fa, clamp01((tb - act->start) / act->fade_in));
         if (act->fade_out > 0) fa = fmin(fa, clamp01((act->end - tb) / act->fade_out));
-        blit_tinted(intro_tex(act->frames[f]),
-                    l->pic_x + (p.x - pan.x) * l->scale, l->pic_y + (p.y - pan.y) * l->scale,
-                    l->scale, act->mirror, (unsigned char)(a * fa));
+        Texture2D t = intro_tex(act->frames[f]);
+        int dx = l->pic_x + (p.x - pan.x) * l->scale, dy = l->pic_y + (p.y - pan.y) * l->scale;
+        if (act->crop_w > 0 && t.id) {
+            // Only part of the frame (a portrait's head and shoulders on a notice).
+            float cw = (float)act->crop_w;
+            gfx_texture_draw(t, (Rectangle){ (float)act->crop_x, (float)act->crop_y,
+                                             act->mirror ? -cw : cw, (float)act->crop_h },
+                             (Rectangle){ (float)dx, (float)dy, (float)(act->crop_w * l->scale),
+                                          (float)(act->crop_h * l->scale) },
+                             (Color){ 255, 255, 255, (unsigned char)(a * fa) });
+        } else {
+            blit_tinted(t, dx, dy, l->scale, act->mirror, (unsigned char)(a * fa));
+        }
     }
     if (b->rain) draw_rain(in, tb, l, a);
     for (int i = 0; i < b->flash_count; i++) {

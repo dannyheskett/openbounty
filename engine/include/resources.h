@@ -485,6 +485,7 @@ typedef struct {
                                     // the move runs across them
     bool   loop;                    // false: the frames play once and hold the last
     double fade_in, fade_out;       // seconds it fades up after start / away before end
+    int    crop_x, crop_y, crop_w, crop_h;   // the part of each frame shown (w 0 = all)
 } ResIntroActor;
 
 typedef struct {

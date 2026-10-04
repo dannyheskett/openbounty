@@ -996,6 +996,13 @@
 		"forum_1":	"CITIZENS OF ROME! Hear the news of the day!",
 		"forum_2":	"A legion lost in the northern forests! Its eagle taken, the Aquila, the soul of the legions! Rome is shamed, and leaderless without it!",
 		"forum_3":	"Yes, yes, citizen, I know. It gets worse.",
-		"forum_4":	"The enemies of Rome have risen, every one of them at once! Rebels, kings and traitors, holding castles from Italia to the East!"
+		"forum_4":	"The enemies of Rome have risen, every one of them at once! Rebels, kings and traitors, holding castles from Italia to the East!",
+		"wanted_slow":	"WANTED! %NAME%, %ALIAS%! %REWARD% gold to whoever brings them in, in chains!",
+		"wanted_fast":	"WANTED! %NAME%, %ALIAS%! %REWARD% gold!",
+		"province_italia":	"ITALIA",
+		"province_galliae":	"GALLIAE",
+		"province_africa":	"AFRICA",
+		"province_oriens":	"ORIENS",
+		"wanted_close":	"Each of them holds a castle. And each of them knows a piece of where the eagle lies!"
 	}
 }
