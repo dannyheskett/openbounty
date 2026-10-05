@@ -1514,6 +1514,12 @@
 					"x":	25,
 					"y":	23
 				}, {
+					"id":	"chest_thrace_road",
+					"x":	3,
+					"y":	2,
+					"fixed":	true,
+					"artifact":	"shield"
+				}, {
 					"id":	"chest_18",
 					"x":	36,
 					"y":	43
@@ -1596,6 +1602,18 @@
 					"id":	"sign_oriens_5",
 					"title":	"Armenia",
 					"body":	"Kings of Armenia take their crowns from Roma or from Parthia, whichever army is nearer."
+				}, {
+					"x":	13,
+					"y":	4,
+					"id":	"sign_oriens_6",
+					"title":	"Across the Strait",
+					"body":	"Thrace lies across the water. Its shore is rock but for one beach, and a war band holds the road beyond it."
+				}, {
+					"x":	1,
+					"y":	2,
+					"id":	"sign_oriens_7",
+					"title":	"The Thracian Road",
+					"body":	"A war band holds this road. What it guards lies at the end."
 				}],
 			"dwellings":	[{
 					"id":	"apamea",
@@ -1699,6 +1717,27 @@
 						}, {
 							"troop":	"ogres",
 							"count":	6
+						}]
+				}, {
+					"x":	8,
+					"y":	1,
+					"id":	"guardian_thrace",
+					"static":	true,
+					"army":	[{
+							"troop":	"giants",
+							"count":	8
+						}, {
+							"troop":	"trolls",
+							"count":	10
+						}, {
+							"troop":	"vampires",
+							"count":	8
+						}, {
+							"troop":	"knights",
+							"count":	10
+						}, {
+							"troop":	"archmages",
+							"count":	8
 						}]
 				}, {
 					"x":	4,

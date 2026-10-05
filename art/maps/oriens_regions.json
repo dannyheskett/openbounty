@@ -1,5 +1,5 @@
 {
- "_note": "Where tools/mapbuild.py place scatters Oriens' chests and wandering armies. Boxes are inclusive tile ranges; only open grass and sand inside them is used. The two static guardians are placed by \"fixed\".",
+ "_note": "Where tools/mapbuild.py place scatters Oriens' chests and wandering armies. Boxes are inclusive tile ranges; only open grass and sand inside them is used. The three static guardians are placed by \"fixed\".",
  "seed": 2029,
  "spacing": 1,
  "fixed": {
@@ -10,6 +10,10 @@
   "guardian_armenia": [
    43,
    8
+  ],
+  "guardian_thrace": [
+   8,
+   1
   ]
  },
  "regions": [
