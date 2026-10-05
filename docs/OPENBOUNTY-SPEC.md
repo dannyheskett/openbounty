@@ -3033,8 +3033,9 @@ every menu; this section has held the rules.
   `src/shell_earlyexit.c`): `--version`/`-v`, `--help`/`-h`, `--fullscreen`,
   `--pack <name|path>`, `--lang <code>`, `--save-dir <dir>`, `--seed N`
   (catalog world `0`–`255`, REQ-166), `--movie [<path>]`, `--debug` (the
-  Debug page, §31), `--gallery <dir>` (every modern screen to PNG, with the
-  tap check), `--window WxH` (the window at a device's size) and `--touch`
+  Debug page, §31), `--gallery <dir>` (every screen to PNG, with the tap check:
+  modern's rows and buttons, legacy's letter keys and the prompt that asks for
+  its answer bar), `--window WxH` (the window at a device's size) and `--touch`
   (a touch device), `--demo` (the human-like agent, `DEMO-SPEC.md`),
   `--autoplay`
   (the winnability oracle, `AUTOPLAY-SPECS.md`) with its modifiers
