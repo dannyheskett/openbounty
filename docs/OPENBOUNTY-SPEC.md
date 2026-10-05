@@ -1648,7 +1648,9 @@ flagged (§38).
   the attack/recruit flow. Foe motion has not consumed the hero's day budget
   and has stopped at impassable terrain. A static guardian has never moved;
   a foe has never stepped onto another foe, onto desert, a bridge, a town or
-  any other interactive tile, or into the approach of a castle gate; and a
+  any other interactive tile, onto a zone event's tile (a landmark such as
+  Galliae's Temple of Ocean, which its leaving would repaint as plain
+  ground), or into the approach of a castle gate; and a
   flying hero's tile has been skipped outside oracle mode. A hostile foe that lands on the hero
   has opened the same Fight/Evade decision as stepping onto it, and declining
   has bounced back the same way (REQ-246): the hero returns to the tile,

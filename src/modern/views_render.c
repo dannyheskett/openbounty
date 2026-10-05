@@ -793,31 +793,42 @@ static bool exit_row(void *ctx, int i, char *label, char *right, int cap) {
     return true;
 }
 
+// One tab: its name, gold and underlined when its list is shown, grey when
+// not; a tap shows its list (row 15 + list of TOUCH_LIST_SPELLS).
+static void spells_tab(const char *name, int x, int y, int w, int h, bool shown, int list) {
+    int tw = bfont_text_width(name);
+    uk_line(name, x + (w - tw) / 2, y + (h - BFONT_GLYPH_H) / 2, w - 2 * UK_INSET,
+            shown ? PAL_CLR(YELLOW) : PAL_CLR(DGREY));
+    if (shown) gfx_rect(x + UK_INSET, y + h - 3, w - 2 * UK_INSET, 2, PAL_CLR(YELLOW));
+    ui_tile_row(x, y, w, h, TOUCH_LIST_SPELLS, VIEWS_SPELLS_TAB_ROW + list);
+}
+
 void modern_spells_draw(const Game *g, bool combat, int cur, const char *title, const char *right,
                         const char *exit_label) {
-    // The two columns under their headings, what the spell under the cursor
-    // does -- or why it cannot be cast here -- under them, and the exit on
-    // the foot. Columns longer than their space scroll.
+    // Two tabs, the combat spells and the adventure spells, over the one list
+    // shown -- the one cast here when the page opens -- what the spell under
+    // the cursor does, or why it cannot be cast here, under it, and the exit
+    // on the foot. A list longer than its space scrolls.
     const ResUI *ui = &g->res->ui;
     const ResBanners *bn = &g->res->banners;
     const int lh = uk_line_h();
     const ML_Rect r = page_full_body(title, right);
+    int list = views_spells_list(cur);
     int half = (r.w - UK_BAND) / 2;
-    int hy = r.y + UK_INSET;
-    uk_line(ui->sv_combat_col, r.x + UK_INSET, hy, half - 2 * UK_INSET, PAL_CLR(YELLOW));
-    uk_line(ui->sv_adventure_col, r.x + half + UK_BAND + UK_INSET, hy, half - 2 * UK_INSET, PAL_CLR(YELLOW));
-    int row_y = hy + lh + UK_INSET / 2;
+    int tab_h = lh + UK_INSET;
+    spells_tab(ui->sv_combat_col, r.x, r.y, half, tab_h, list == 0, 0);
+    lattice_band_v(r.x + half, r.y, UK_BAND, tab_h);
+    spells_tab(ui->sv_adventure_col, r.x + half + UK_BAND, r.y, r.w - half - UK_BAND, tab_h, list == 1, 1);
+    lattice_band_h(r.x, r.y + tab_h, r.w, UK_BAND);
+    int row_y = r.y + tab_h + UK_BAND;
     int exit_y = r.y + r.h - ml_list_height(1);
     const int desc_lines = 2;
     int desc_h = UK_BAND + 2 * UK_INSET + desc_lines * lh;
     int rows_h = exit_y - UK_BAND - desc_h - row_y;
     SpellsCtx c = { g, combat };
-    ml_list_draw_ex(r.x, row_y, half, rows_h, 7, cur < 7 ? cur : -1,
-                    spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), 0);
-    lattice_band_v(r.x + half, r.y, UK_BAND, row_y + rows_h - r.y);
-    ml_list_draw_ex(r.x + half + UK_BAND, row_y, r.w - half - UK_BAND, rows_h, 7,
-                    cur >= 7 && cur < 14 ? cur - 7 : -1,
-                    spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), 7);
+    int base = list * 7;
+    ml_list_draw_ex(r.x, row_y, r.w, rows_h, 7, cur >= base && cur < base + 7 ? cur - base : -1,
+                    spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), base);
     int fy = row_y + rows_h;
     lattice_band_h(r.x, fy, r.w, UK_BAND);
     // What the spell does: the pack's one-line brief, else its description,
