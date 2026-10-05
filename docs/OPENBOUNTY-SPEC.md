@@ -2505,8 +2505,10 @@ every menu; this section has held the rules.
   not a fixed size: the scale and the map's growth have followed REQ-528. The
   hero's cell has been centred across the map on the row that holds the
   map's middle, the rows standing flush with the columns' tiles; every cell
-  the map shows has been drawn, part cells at its edges and foot included,
-  and the camera has never clamped (`map_view`, `src/map_render.c`).
+  the map shows has been drawn, part cells at its edges and foot included;
+  and the camera has stopped at the world's edge, the hero walking off
+  centre toward it, so the map has never shown past the world, a map smaller
+  than the area centred in it (`map_view`, `src/map_render.c`).
 - **REQ-430b.** **Code-drawn chrome.** A modern pack without
   `sprites.ui.chrome_overworld` has had the gold lattice (`src/lattice.c`): a
   cross-hatch pattern built once as a texture at `ui_scale` and tiled from the

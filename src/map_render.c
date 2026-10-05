@@ -26,9 +26,20 @@
 // Modern: the hero's cell is centred across the pane and on the row that
 // holds the pane's middle, its rows flush with the columns' tiles at the
 // pane's top; every cell the pane shows is drawn, a part of one to the last
-// pixel, on every side; and the camera never clamps -- past the world's edge
-// the pane is dark, and the hero stays on the centre tile.
+// pixel, on every side. Near the world's edge the camera stops, in pixels,
+// with the map's edge on the pane's, and the hero walks off centre toward it;
+// a map smaller than the pane along an axis sits centred in it.
 typedef struct { int cam_x, cam_y, ox, oy, x0, x1, y0, y1; } MapView;
+
+// The pane's start along one axis, in world pixels: `want` (the centred
+// camera's) clamped so the pane stays inside a world of `world` pixels, or the
+// world centred in a pane of `pane` pixels that is larger than it.
+static int clamp_axis(int want, int world, int pane) {
+    if (world < pane) return (world - pane) / 2;
+    if (want < 0) return 0;
+    if (want > world - pane) return world - pane;
+    return want;
+}
 
 static MapView map_view(const Game *g, const Map *m) {
     MapView v;
@@ -45,15 +56,21 @@ static MapView map_view(const Game *g, const Map *m) {
         v.y0 = 0; v.y1 = CL_MAP_TILES_H - 1;
         return v;
     }
-    int hx = CL_MAP_X + (CL_MAP_W - CL_TILE_W) / 2;           // the hero's cell
+    int hx = CL_MAP_X + (CL_MAP_W - CL_TILE_W) / 2;           // the hero's cell, centred
     int hr = (CL_MAP_H / 2) / CL_TILE_H;                      // its row
     int hy = CL_MAP_Y + hr * CL_TILE_H;
+    int left = clamp_axis(g->position.x * CL_TILE_W - (hx - CL_MAP_X),
+                          m->width * CL_TILE_W, CL_MAP_W);
+    int top  = clamp_axis(g->position.y * CL_TILE_H - (hy - CL_MAP_Y),
+                          m->height * CL_TILE_H, CL_MAP_H);
+    hx = CL_MAP_X + g->position.x * CL_TILE_W - left;          // where the camera puts it
+    hy = CL_MAP_Y + g->position.y * CL_TILE_H - top;
     v.ox = hx; v.oy = hy;
     v.cam_x = g->position.x;
     v.cam_y = g->position.y;
     v.x0 = -((hx - CL_MAP_X + CL_TILE_W - 1) / CL_TILE_W);
     v.x1 = (CL_MAP_X + CL_MAP_W - (hx + CL_TILE_W) + CL_TILE_W - 1) / CL_TILE_W;
-    v.y0 = -hr;
+    v.y0 = -((hy - CL_MAP_Y + CL_TILE_H - 1) / CL_TILE_H);
     v.y1 = (CL_MAP_Y + CL_MAP_H - (hy + CL_TILE_H) + CL_TILE_H - 1) / CL_TILE_H;
     return v;
 }
@@ -106,6 +123,15 @@ void map_render_cell_ground(const Map *m, int mx, int my, Rectangle dst) {
     if (ground.id)
         gfx_texture_draw(ground, (Rectangle){ 0, 0, (float)ground.width, (float)ground.height },
                          dst, WHITE);
+}
+
+// Whether a fog strip leaves the edge toward (x, y) bare. Modern: past the
+// world's edge counts as seen, so the map's own edge never fades as if it
+// bordered unexplored land. Legacy keeps the original's strips there.
+static bool edge_seen(const Fog *f, const Map *m, int x, int y) {
+    if (CL_IS_MODERN && (x < 0 || y < 0 || x >= m->width || y >= m->height))
+        return true;
+    return FogSeen(f, x, y);
 }
 
 // A wandering foe draws the generic wandering-army tile, the same as every
@@ -246,7 +272,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             for (int d = 0; d < 4; d++) {
                 int nx = mx + NDX[d];
                 int ny = my + NDY[d];
-                if (FogSeen(f, nx, ny)) continue;
+                if (edge_seen(f, m, nx, ny)) continue;
                 for (int k = 0; k < 3; k++) {
                     unsigned char alpha = (unsigned char)(128 >> k);
                     Color fog_strip = { 0, 0, 0, alpha };
