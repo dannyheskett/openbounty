@@ -799,7 +799,14 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         g->boat.has_boat = keep_boat;
     }
     reset(&G); views_set(VIEW_SPELLS); views_spells_set_mode(true); shot(&G, "25_spells");
-    if (CL_IS_MODERN) tap_row("25_spells", TOUCH_LIST_SPELLS, 14);
+    if (CL_IS_MODERN) {
+        tap_row("25_spells", TOUCH_LIST_SPELLS, 14);
+        tap_row("25_spells", TOUCH_LIST_SPELLS, VIEWS_SPELLS_TAB_ROW);
+        // The other tab on the map: the combat list, greyed.
+        reset(&G); views_set(VIEW_SPELLS); views_spells_set_mode(true);
+        views_spells_set_cursor(0);
+        shot(&G, "25b_spells_other_tab");
+    }
     reset(&G);
     {
         GateDestination d[6];

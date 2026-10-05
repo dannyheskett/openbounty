@@ -1428,23 +1428,28 @@ Source: `src/modern/views_render.c` `draw_worldmap`,
 **DSGN-0138. The spells.** The spells page has been one full page on the map
 and in a fight (`modern_spells_draw`), with the hero's name at the strip's
 right:
-- Two columns of seven spells under their headings
-  (`spells_view.combat_col`, `spells_view.adventure_col`), each with the held
-  count at the right, as `held/limit` where each spell has its own limit
-  (`magic.max_per_spell`, OPENBOUNTY-SPEC REQ-321); a spell has been greyed where it could not be cast (the
-  other column, or none held).
+- Two tabs across the top, the combat spells and the adventure spells
+  (`spells_view.combat_col`, `spells_view.adventure_col`), the shown one in
+  gold and underlined, the other grey; under them one list of that tab's
+  seven spells across the page's width, each with the held count at the
+  right, as `held/limit` where each spell has its own limit
+  (`magic.max_per_spell`, OPENBOUNTY-SPEC REQ-321). The page has opened on
+  the list cast here: the combat spells in a fight, the adventure spells on
+  the map. A spell has been greyed where it could not be cast (the other
+  tab's, or none held).
 - Under them two lines saying what the spell under the cursor does, or why it
   cannot be cast here (`banners.gmr_spell_on_map`, `gmr_spell_in_fight`,
   `gmr_no_spell_held`).
 - The exit on the foot as row 14: Close on the map, Back in a fight.
 - The cursor has started on the first spell that could be cast. Up and Down
-  (keypad 8 and 2) have moved within a column and through the exit at either
-  end; Left and Right (keypad 4 and 6) have changed column; Enter, keypad
+  (keypad 8 and 2) have moved within the list and through the exit at either
+  end; Left and Right (keypad 4 and 6), or a tap on a tab, have shown the
+  combat or the adventure list, keeping the row; Enter, keypad
   Enter, Space or a tap has cast a spell that could be cast, or taken the
   exit; Escape has closed the page.
-Source: `src/modern/views_render.c` `modern_spells_draw`, `draw_spells`;
-`src/views.c` `views_spells_input`, `views_spells_first`,
-`views_spell_castable`.
+Source: `src/modern/views_render.c` `modern_spells_draw`, `spells_tab`,
+`draw_spells`; `src/views.c` `views_spells_input`, `views_spells_list`,
+`views_spells_first`, `views_spell_castable`.
 
 **DSGN-0139. The gate picker.** The gate picker has been a menu page with a
 body of its own (DSGN-0072), titled with the gate spell, with the hero's name

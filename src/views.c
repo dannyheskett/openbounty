@@ -87,18 +87,34 @@ int views_spells_first(const Game *g, bool combat) {
     return base;
 }
 
+// The list shown on the spells page: the cursor's, or on the exit the last
+// one shown.
+static int s_spells_list;
+
+int views_spells_list(int cursor) {
+    if (cursor >= 0 && cursor < 14) s_spells_list = cursor / 7;
+    return s_spells_list;
+}
+
 SpellsEvent views_spells_input(const Game *g, bool combat, int *cursor, int *spell) {
     // The one spells page's keys and taps, on the map and in a fight. The
-    // two columns run down 0..6 and 7..13, the exit is 14: Up and Down move
-    // in a column and pass through the exit at either end; Left and Right
-    // change column; Enter, or a tap, casts a spell that can be cast here.
-    static int s_col;                   // the column the exit was reached from
+    // two lists are 0..6 (combat) and 7..13 (adventure), one shown at a time
+    // under its tab; the exit is 14. Up and Down move in the list and pass
+    // through the exit at either end; Left, Right or a tapped tab show a
+    // list; Enter, or a tap, casts a spell that can be cast here.
     int c = *cursor;
     if (c < 0 || c > 14) c = views_spells_first(g, combat);
-    if (c < 14) s_col = c / 7;
+    int s_col = views_spells_list(c);
     if (spell) *spell = -1;
     int tapped = touch_tapped_row(TOUCH_LIST_SPELLS);
     if (tapped == 14 || input_key_pressed(KEY_ESCAPE)) { *cursor = c; return SPELLS_BACK; }
+    if (tapped == VIEWS_SPELLS_TAB_ROW || tapped == VIEWS_SPELLS_TAB_ROW + 1) {
+        int to = tapped - VIEWS_SPELLS_TAB_ROW;
+        if (to != s_col) c = to * 7 + (c < 14 ? c % 7 : 0);
+        s_spells_list = to;
+        *cursor = c;
+        return SPELLS_MOVED;
+    }
     if (tapped >= 0 && tapped < 14) {
         *cursor = tapped;
         if (!views_spell_castable(g, combat, tapped)) return SPELLS_MOVED;
@@ -112,11 +128,13 @@ SpellsEvent views_spells_input(const Game *g, bool combat, int *cursor, int *spe
     } else if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2)) {
         c = c == 14 ? s_col * 7 : (c % 7 == 6 ? 14 : c + 1);
         ev = SPELLS_MOVED;
-    } else if ((input_key_pressed(KEY_LEFT) || input_key_pressed(KEY_KP_4)) && c != 14) {
-        c = c % 7;
-        ev = SPELLS_MOVED;
-    } else if ((input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) && c != 14) {
-        c = 7 + c % 7;
+    } else if (input_key_pressed(KEY_LEFT) || input_key_pressed(KEY_KP_4) ||
+               input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) {
+        // Left shows the combat list, Right the adventure list, on the same
+        // row; from the exit, the exit stays.
+        int to = (input_key_pressed(KEY_LEFT) || input_key_pressed(KEY_KP_4)) ? 0 : 1;
+        if (c != 14) c = to * 7 + c % 7;
+        s_spells_list = to;
         ev = SPELLS_MOVED;
     } else if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) || input_key_pressed(KEY_SPACE)) {
         *cursor = c;

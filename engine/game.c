@@ -3479,6 +3479,16 @@ static bool foe_can_stand(const Map *map, int x, int y) {
     return true;
 }
 
+// A zone event's tile (a vista such as Galliae's Temple of Ocean) is a
+// landmark, not open grass: a foe standing there would hide it, and its
+// leaving would repaint the cell as plain ground (MapClearInteractive).
+static bool foe_on_event_tile(const Game *g, const char *zone, int x, int y) {
+    const ResZone *z = (g && g->res) ? resources_zone_by_id(g->res, zone) : NULL;
+    for (int k = 0; z && k < z->event_count; k++)
+        if (z->events[k].x == x && z->events[k].y == y) return true;
+    return false;
+}
+
 // Authoritative occupancy: does any LIVE foe other than `except_idx`, in `zone`,
 // sit at (x,y)? Stamp-independent -- the map's INTERACT_FOE overlay can momentarily
 // disagree with real foe positions, so the anti-stacking gate consults g->foes[]
@@ -3585,6 +3595,8 @@ int GameFoesFollow(Game *g, Map *map) {
                 // step on and trigger combat, which let a foe on adjacent
                 // grass reach a hero standing anywhere at all.
                 if (!is_center && !foe_can_stand(map, nx, ny))
+                    continue;
+                if (!is_center && foe_on_event_tile(g, f->zone, nx, ny))
                     continue;
                 // Anti-stacking, stamp-independent: never target a tile another
                 // live foe already holds (two foes may never share a spot). The

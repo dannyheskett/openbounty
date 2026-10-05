@@ -240,12 +240,17 @@ int  views_spells_chosen(void);
 bool views_spells_update(void);
 
 // ---- The spells page (modern): one list of spells, on the map and in a fight --
-// Two columns -- the combat spells, then the adventure spells -- each with the
-// charges held; the column that is not cast here is greyed and says why; the
-// exit on the foot. views_spells_input is its one input: the cursor is 0..13
-// (column * 7 + row) or 14, the exit.
+// Two tabs -- the combat spells, the adventure spells -- over one list, each
+// spell with the charges held; it opens on the list cast here, and the other
+// list is greyed and says why; the exit on the foot. views_spells_input is
+// its one input: the cursor is 0..13 (list * 7 + row) or 14, the exit; touch
+// rows VIEWS_SPELLS_TAB_ROW + list are the tabs.
 typedef enum { SPELLS_NONE = 0, SPELLS_MOVED, SPELLS_CAST, SPELLS_BACK } SpellsEvent;
+#define VIEWS_SPELLS_TAB_ROW 15
 SpellsEvent views_spells_input(const struct Game *g, bool combat, int *cursor, int *spell);
+// The list shown (0 combat, 1 adventure) for `cursor`: its own, or on the
+// exit the last one shown.
+int  views_spells_list(int cursor);
 // Spell `idx` can be cast here: its column is this one's and a charge is held.
 bool views_spell_castable(const struct Game *g, bool combat, int idx);
 // Where the page opens its cursor: the first spell castable here, else the
