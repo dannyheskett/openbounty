@@ -48,7 +48,7 @@ bool pump_week_end_dialog(const Game *g) {
         const TroopDef *t = troop_by_index(pending_astrology_troop_idx);
         const char *creature = t->name;
         const ResBanners *bn = &g->res->banners;
-        char header[64], body[320], wbuf[16];
+        char header[64], body[448], wbuf[16];
         snprintf(wbuf, sizeof wbuf, "%d", pending_week_id);
         ResTemplateVar hvars[] = { { "WEEK", wbuf } };
         resources_format_template(header, sizeof header,
@@ -56,6 +56,15 @@ bool pump_week_end_dialog(const Game *g) {
         ResTemplateVar bvars[] = { { "TROOP", creature } };
         resources_format_template(body, sizeof body,
                                   bn->astrology_body, bvars, 1);
+        // Where learned spells renew, the week's one is named under it (#157).
+        const SpellDef *rs = spell_by_index(pending_renewed_spell_idx);
+        if (rs && bn->week_spell_renewed[0]) {
+            char line[160];
+            ResTemplateVar svars[] = { { "SPELL", rs->name } };
+            resources_format_template(line, sizeof line, bn->week_spell_renewed, svars, 1);
+            size_t used = strlen(body);
+            snprintf(body + used, sizeof body - used, "\n\n%s", line);
+        }
         if (CL_IS_MODERN) player_io_note_face((Game *)g, header, body, REQ_FACE_TROOP, t->index);
         else              player_io_note((Game *)g, header, body);
         pending_week_phase = WK_PHASE_BUDGET;

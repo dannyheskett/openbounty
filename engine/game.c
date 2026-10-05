@@ -77,6 +77,7 @@ static void game_free_tables(Game *g) {
     free(g->towns);
     free(g->castles);
     free(g->spells.counts);
+    free(g->spells.learned);
     free(g->artifacts.found);
     free(g->contract.cycle);
     free(g->contract.villains_caught);
@@ -118,6 +119,7 @@ bool GameAlloc(Game *g) {
     g->castles = table_alloc(g->castle_count, sizeof *g->castles, &ok);
     g->spells.count   = spells_count();
     g->spells.counts  = table_alloc(g->spells.count, sizeof *g->spells.counts, &ok);
+    g->spells.learned = table_alloc(g->spells.count, sizeof *g->spells.learned, &ok);
     g->artifacts.count = artifacts_count();
     g->artifacts.found = table_alloc(g->artifacts.count, sizeof *g->artifacts.found, &ok);
     g->contract.cycle_count = cyc;
@@ -197,6 +199,7 @@ bool GameCopy(Game *dst, const Game *src) {
     memcpy(dst, src, sizeof *dst);
     dst->towns = keep.towns;               dst->castles = keep.castles;
     dst->spells.counts = keep.spells.counts;
+    dst->spells.learned = keep.spells.learned;
     dst->artifacts.found = keep.artifacts.found;
     dst->contract.cycle = keep.contract.cycle;
     dst->contract.villains_caught = keep.contract.villains_caught;
@@ -216,6 +219,7 @@ bool GameCopy(Game *dst, const Game *src) {
     COPY_TABLE(dst->towns, src->towns, keep.town_count, src->town_count);
     COPY_TABLE(dst->castles, src->castles, keep.castle_count, src->castle_count);
     COPY_TABLE(dst->spells.counts, src->spells.counts, keep.spells.count, src->spells.count);
+    COPY_TABLE(dst->spells.learned, src->spells.learned, keep.spells.count, src->spells.count);
     COPY_TABLE(dst->artifacts.found, src->artifacts.found, keep.artifacts.count, src->artifacts.count);
     COPY_TABLE(dst->contract.cycle, src->contract.cycle, keep.contract.cycle_count, src->contract.cycle_count);
     COPY_TABLE(dst->contract.villains_caught, src->contract.villains_caught,
@@ -310,6 +314,7 @@ uint32_t GameFingerprint(const Game *g, uint32_t h) {
     h = FNV_TABLE(h, g->towns, g->town_count);
     h = FNV_TABLE(h, g->castles, g->castle_count);
     h = FNV_TABLE(h, g->spells.counts, g->spells.count);
+    h = FNV_TABLE(h, g->spells.learned, g->spells.count);
     h = FNV_TABLE(h, g->artifacts.found, g->artifacts.count);
     h = FNV_TABLE(h, g->contract.cycle, g->contract.cycle_count);
     h = FNV_TABLE(h, g->contract.villains_caught, g->contract.villain_count);
@@ -459,6 +464,7 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     g->stats.days_left = g->res ? g->res->time.days_per_difficulty[di] : 900;
     g->stats.steps_left_today = g->res ? g->res->time.day_steps : 40;
     g->stats.last_commission = 0;
+    g->stats.last_renewed_spell = -1;
     g->stats.last_week_on_hand = g->stats.last_week_army = g->stats.last_week_boat = 0;
 
     // Step 4: Starting position (home continent, home_spawn). Look for
@@ -1490,6 +1496,10 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         // ghosts -> peasants when creature == peasants.
         GameApplyAstrology(g, astrology);
 
+        // Where the pack renews magic, one learned spell is filled (#157).
+        g->stats.last_renewed_spell = GamePickRenewedSpell(g, week_id);
+        GameRenewSpell(g, g->stats.last_renewed_spell);
+
         // A castle the hero left without a garrison falls back to the
         // monsters (OPENKB-SPEC section 16.11): a fresh monster garrison at the
         // castle's difficulty, and it must be besieged again. The original
@@ -1832,6 +1842,13 @@ int GameKnownSpells(const Game *g) {
     return total;
 }
 
+int GameSpellRoom(const Game *g, int spell_idx) {
+    if (!g || spell_idx < 0 || spell_idx >= g->spells.count) return 0;
+    bool per_spell = g->res && g->res->economy.spell_limit_per_spell;
+    int room = g->stats.max_spells - (per_spell ? g->spells.counts[spell_idx] : GameKnownSpells(g));
+    return room > 0 ? room : 0;
+}
+
 int GameBoatCost(const Game *g) {
     if (GameHasPower(g, ARTIFACT_POWER_CHEAPER_BOATS))
         return g->res->economy.boat_cost_cheap;
@@ -1958,9 +1975,10 @@ SpellBuyResult GameBuySpell(Game *g, const char *town_id) {
     if (!sp) return SPELL_BUY_NO_SPELL;
     if (g->res && g->res->economy.rites_per_zone && !GameTownHasRites(g, town_id))
         return SPELL_BUY_NO_RITES;
-    if (GameKnownSpells(g) >= g->stats.max_spells) return SPELL_BUY_AT_CAP;
+    if (GameSpellRoom(g, sp->index) <= 0) return SPELL_BUY_AT_CAP;
     if (g->stats.gold <= sp->cost) return SPELL_BUY_NO_GOLD;  // KB: <= fails
     g->spells.counts[sp->index]++;
+    g->spells.learned[sp->index] = true;   // a temple teaches it (#157)
     g->stats.gold -= sp->cost;
     return SPELL_BUY_OK;
 }
@@ -2455,6 +2473,12 @@ ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
         }
         int spell_type = (int)(chest_rand(g, x, y, 4) % (unsigned)sc);
         int spell_num  = (int)(chest_rand(g, x, y, 5) % (unsigned)(zi + 1)) + 1;
+        // Charges, not learning: only a temple teaches a spell (#157). Where
+        // each spell is capped, the chest gives no more than there is room for.
+        if (g->res && g->res->economy.spell_limit_per_spell) {
+            int room = GameSpellRoom(g, spell_type);
+            if (spell_num > room) spell_num = room;
+        }
         g->spells.counts[spell_type] += spell_num;
         const SpellDef *sp = spell_by_index(spell_type);
         char cbuf[16];
@@ -2882,6 +2906,26 @@ int GamePickAstrologyCreature(const Game *g, int week_id) {
     int idx = 1 + (int)(h % (unsigned)(tc > 1 ? tc - 1 : 1));
     if (idx >= tc) idx = 0;
     return idx;
+}
+
+int GamePickRenewedSpell(const Game *g, int week_id) {
+    if (!g || !g->res || !g->res->economy.spell_weekly_renewal) return -1;
+    int n = 0;
+    for (int i = 0; i < g->spells.count; i++) n += g->spells.learned[i];
+    if (n == 0) return -1;
+    // The astrology's seed and week, on a draw of its own.
+    unsigned h = ((unsigned)g->seed ^ (unsigned)week_id) ^ 0x5bd1e995u;
+    h = h * 1664525u + 1013904223u;
+    h = h * 1664525u + 1013904223u;
+    int k = (int)((h >> 8) % (unsigned)n);
+    for (int i = 0; i < g->spells.count; i++)
+        if (g->spells.learned[i] && k-- == 0) return i;
+    return -1;
+}
+
+void GameRenewSpell(Game *g, int idx) {
+    if (!g || idx < 0 || idx >= g->spells.count) return;
+    if (g->spells.counts[idx] < g->stats.max_spells) g->spells.counts[idx] = g->stats.max_spells;
 }
 
 const char *GameApplyAstrology(Game *g, int troop_idx) {

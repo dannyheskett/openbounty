@@ -79,6 +79,7 @@ SUITE_EXTERN(e2e_game_flow_suite);
 SUITE_EXTERN(e2e_chest_suite);
 SUITE_EXTERN(e2e_contract_suite);
 SUITE_EXTERN(e2e_economy_suite);
+SUITE_EXTERN(e2e_magic_rules_suite);
 SUITE_EXTERN(e2e_score_suite);
 SUITE_EXTERN(e2e_combat_input_suite);
 SUITE_EXTERN(e2e_save_suite);
@@ -156,6 +157,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(e2e_chest_suite);
     RUN_SUITE(e2e_contract_suite);
     RUN_SUITE(e2e_economy_suite);
+    RUN_SUITE(e2e_magic_rules_suite);
     RUN_SUITE(e2e_score_suite);
     RUN_SUITE(e2e_combat_input_suite);
     RUN_SUITE(e2e_save_suite);

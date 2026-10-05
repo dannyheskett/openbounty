@@ -302,6 +302,15 @@ SaveResult SaveGameRead(const char *path,
             if (cJSON_IsNumber(c)) g->spells.counts[i] = c->valueint;
         }
     }
+    cJSON *jlearned = cJSON_GetObjectItem(root, "spells_learned");
+    if (cJSON_IsArray(jlearned)) {
+        cJSON *it;
+        cJSON_ArrayForEach(it, jlearned) {
+            if (!cJSON_IsString(it)) continue;
+            int i = spell_index_by_id(it->valuestring);
+            if (i >= 0 && i < g->spells.count) g->spells.learned[i] = true;
+        }
+    }
 
     // Contract.
     cJSON *jct = cJSON_GetObjectItem(root, "contract");

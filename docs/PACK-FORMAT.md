@@ -73,7 +73,7 @@ other absent block has parsed as empty or as its defaults.
 | `spawn`       | object   | Per-continent monster-spawn tables: `tier_chance_curve` (one threshold list per continent tier), `tier_troop_pool` (one troop list per dwelling kind, any length), the calm start `calm_radius` / `calm_max_slot` / `calm_max_stacks` (hostile foes within the radius of the zone's `hero_spawn` roll no pool slot above the max and no more stacks than the cap; radius 0 or absent disables it, REQ-283), and an optional `kind_chance_curve` (per kind, a curve set of its own or `null` to keep the tier curve; `glory-of-rome` uses it for its six-troop plains kind). |
 | `contract`    | object   | Contract cycle parameters. |
 | `audiences`   | object   | Modern home-castle audience pages (Promotion, Blessing, Tribute). |
-| `magic`       | object   | `rites_per_zone`: each zone's temple has taught spells only once that zone's rites are known (OPENBOUNTY-SPEC REQ-314a). |
+| `magic`       | object   | `rites_per_zone`: each zone's temple has taught spells only once that zone's rites are known (OPENBOUNTY-SPEC REQ-314a). `max_per_spell`: `max_spells` has capped each spell's charges, not all of them together, and no discard has been offered (REQ-321, REQ-540). `weekly_renewal`: each week end one spell learned at a temple has been filled to the limit (REQ-540). |
 | `foes`        | object   | `evade_needs_free_square`: Evade has been offered only with a free square beside the hero, the hero's own parked boat counting as one (REQ-430o). |
 | `portraits`   | array    | The people of the modern place screens: each an `id` and an `anim` list of frames, named by a town's `headman` / `informant` / `townhead`, a zone's `boatmaster` / `pontifex` / `siegemaster` and a castle's `special` block. |
 | `credits`     | object   | Credits-screen lines. |
@@ -456,6 +456,16 @@ A few keys have been optional, each read by modern screens only:
   cast here, on the spells page.
 - `ui.title_intro` and the `intro` group: the Introduction's title-menu row
   and its captions (§2.4), required of a pack that names an `intro`.
+
+Three more have been optional in every mode, each for a pack rule that King's
+Bounty does not set:
+
+- `banners.week_troops_left` (`%TROOPS%`): the stacks that left unpaid
+  (`economy.unpaid_troops_leave`).
+- `banners.week_spell_renewed` (`%SPELL%`): the week's renewed spell, under
+  the week's creature (`magic.weekly_renewal`).
+- `banners.spell_combat_only` (`%SPELL%`): a combat spell chosen on the map
+  (`magic.max_per_spell`); absent, `spell_unavailable`.
 
 A class's description on the class picker has been
 `banners.class_desc_<the class's id>`.

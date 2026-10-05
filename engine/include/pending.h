@@ -108,6 +108,7 @@ extern WeekPhase pending_week_phase;
 extern int       pending_week_id;
 extern int       pending_week_paid;
 extern int       pending_astrology_troop_idx;
+extern int       pending_renewed_spell_idx;    // the week's renewed spell, -1 none (#157)
 
 // Reset every pending-flow global to its empty/cleared state. These are process
 // globals (historically file-statics in main.c), so they LEAK across in-process

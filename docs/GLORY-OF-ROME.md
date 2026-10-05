@@ -285,6 +285,21 @@ The Sibylline Fragment has been pinned too since 2026-09-27, in the mountain cov
 Fourteen, seven combat and seven adventure, keeping every engine effect and
 cost unchanged. Mythic Rome has covered all fourteen without a single fudge.
 
+Magic has had three rules of its own (`magic` in `game.json`, OPENBOUNTY-SPEC
+REQ-321, REQ-540):
+
+- **A limit for each spell** (`max_per_spell`): the spell capacity has been
+  the most charges the hero can carry of each spell, so a temple has refused
+  a sale only when that spell is full.
+- **Weekly renewal** (`weekly_renewal`): a spell bought at a temple has been
+  learned, and each week end one learned spell, drawn like the week's
+  creature, has been filled to the limit, named under the creature ("The
+  Augurs renew your %SPELL% spells."). A chest's spells have been charges
+  only, never learned.
+- **No discarding:** with a limit for each spell a discard has freed
+  nothing, so a combat spell chosen on the map has only said it is cast in
+  battle.
+
 **Combat (7)**
 
 | Engine effect | Name | Note |

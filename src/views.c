@@ -911,15 +911,19 @@ static void town_do_spell(Game *g) {
     // State mutation lives in GameBuySpell (engine) so autoplay can buy too;
     // this keeps the dialogs. Behavior unchanged (same gates, same order).
     SpellBuyResult r = GameBuySpell(g, town.record_key);
+    const SpellDef *sp = views_town_spell(g);
+    const char *spname = sp ? sp->name : "";
     switch (r) {
     case SPELL_BUY_NO_SPELL:
         resources_format_template(buf, sizeof buf,
                                   bn->town_spell_unavailable, NULL, 0);
         break;
-    case SPELL_BUY_AT_CAP:
+    case SPELL_BUY_AT_CAP: {
+        ResTemplateVar vars[] = { { "SPELL", spname } };
         resources_format_template(buf, sizeof buf, bn->town_spell_at_cap,
-                                  NULL, 0);
+                                  vars, 1);
         break;
+    }
     case SPELL_BUY_NO_GOLD:
         resources_format_template(buf, sizeof buf, bn->town_no_gold, NULL, 0);
         break;
@@ -927,17 +931,18 @@ static void town_do_spell(Game *g) {
         views_town_rites_text(g, buf, sizeof buf);
         break;
     case SPELL_BUY_OK: {
-        // Spells remaining after this buy = max_spells - known(now). Equals the
-        // old "max_spells - known_before - 1" since known_before went up by one.
-        int left = g->stats.max_spells - GameKnownSpells(g);
+        // The room left after this buy (GameSpellRoom): of this spell where
+        // each is capped, else of all spells together.
+        int left = sp ? GameSpellRoom(g, sp->index) : 0;
         char lbuf[16];
         snprintf(lbuf, sizeof lbuf, "%d", left);
         ResTemplateVar vars[] = {
-            { "LEFT", lbuf },
-            { "S",    (left == 1 ? "" : "s") },
+            { "LEFT",  lbuf },
+            { "S",     (left == 1 ? "" : "s") },
+            { "SPELL", spname },
         };
         resources_format_template(buf, sizeof buf, bn->town_spell_can_learn,
-                                  vars, 2);
+                                  vars, 3);
         break;
     }
     }
