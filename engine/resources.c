@@ -2608,8 +2608,6 @@ static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
             act->end    = json_num(a, "end", -1);   // -1: to the beat's end (set below)
             act->fade_in  = json_num(a, "fade_in", 0);
             act->fade_out = json_num(a, "fade_out", 0);
-            const char *lab = json_str(a, "label", NULL);
-            if (lab) act->label = intro_text(res, jstr, lab, &iv, beat_no);
             cJSON *jc = cJSON_GetObjectItem(a, "crop");
             if (cJSON_GetArraySize(jc) == 4) {
                 act->crop_x = cJSON_GetArrayItem(jc, 0)->valueint;
@@ -2639,7 +2637,6 @@ static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
         cJSON *f;
         cJSON_ArrayForEach(f, jfl) if (cJSON_IsNumber(f)) b->flashes[b->flash_count++] = f->valuedouble;
     }
-    copy_str(b->still, sizeof b->still, json_str(jb, "still", ""));
     cJSON *jsn = cJSON_GetObjectItem(jb, "sounds");
     if (jsn && !cJSON_IsArray(jsn)) intro_error(res, beat_no, "sounds must be a list");
     int nsn = cJSON_IsArray(jsn) ? cJSON_GetArraySize(jsn) : 0;
@@ -2783,10 +2780,7 @@ static void parse_intro(Resources *res, const cJSON *jpath, const cJSON *strings
 static void intro_free(ResIntro *in) {
     for (int i = 0; in->beats && i < in->beat_count; i++) {
         ResIntroBeat *b = &in->beats[i];
-        for (int a = 0; b->actors && a < b->actor_count; a++) {
-            free(b->actors[a].frames);
-            free(b->actors[a].label);
-        }
+        for (int a = 0; b->actors && a < b->actor_count; a++) free(b->actors[a].frames);
         free(b->actors);
         free(b->face);
         free(b->caption);
@@ -3858,7 +3852,6 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
     for (int i = 0; i < res->intro.beat_count; i++) {
         const ResIntroBeat *b = &res->intro.beats[i];
         art_add(out, cap, &n, b->backdrop);
-        art_add(out, cap, &n, b->still);
         for (int a = 0; a < b->actor_count; a++)
             for (int f = 0; f < b->actors[a].frame_count; f++)
                 art_add(out, cap, &n, b->actors[a].frames[f]);

@@ -1102,9 +1102,9 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
 }
 
 // --intro-movie <out.mp4>: the Introduction rendered offline at a fixed frame
-// rate (no input, no audio) and encoded with the recorder's encoder, for
-// review; prints the cue sheet, each scene's start and length, which is the
-// composer's brief. The video is silent: the theme is laid under it apart.
+// rate (no input) and encoded with the recorder's encoder, its sound mixed
+// as the player plays it (intro_mix_pcm), for review; prints the cue sheet,
+// each scene's start and length, which is the composer's brief.
 #define INTRO_MOVIE_FPS 15
 #define INTRO_MOVIE_RATE 44100   // the sound track's sample rate
 int gallery_intro_movie(const Resources *res, RenderTexture2D *rt, const char *out_mp4) {

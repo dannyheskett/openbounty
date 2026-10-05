@@ -366,17 +366,19 @@ generated from.
   — backgrounds, sprites and text, the way the 80s and 90s intros were built.
   Every set is a 240x102 backdrop on the screen route with "no people" in
   the prompt, except the Curia, whose senators are painted on their benches;
-  the existing `backdrop_palace_welcome` and
-  `backdrop_palace_throne` have been reused. Figures have been made on the
+  the existing `backdrop_palace_welcome` and the four province vistas
+  (`scenes/treasure_*`, under the province cards) have been reused. Trajan has sat on
+  a curule stool, not a throne: the audience hall's dais (`bg_hall`) and the
+  close shot's (`bg_throne_close`) have been painted bare and empty. Figures have been made on the
   figure route and animated with `custom_action`, alpha kept. The troop
   style has refused any canvas under 64 (`invalid_style_dimensions`, no
   charge), so a small figure has been generated at 64 and animated at its
   final size: `custom_action` has redrawn the still at the output canvas
   (32 to 256), a 64 still animated at 56 standing about 51 px tall. That is
-  how the crier (56), the four heroes and the legion (48) and Trajan on his
-  throne (32) have been made without scaling; the close shot of the throne
-  has animated the same Trajan still at 96, and the Curia has reused his
-  Audience figure (`emperor_traianus_figure`). The tribesman has appeared
+  how the crier (56), the four heroes, the legion and Trajan on his stool
+  (48) have been made without scaling; both palace shots have used the same
+  48 px Trajan, so he is to scale with the dais, and the Curia has his
+  Audience figure (`emperor_traianus_figure`) animated again at 64. The tribesman has appeared
   only where he attacks the eagle bearer. The heroes on foot have been prompted from their class
   portraits; a kneel animated straight from a standing still has come back
   as the move down, not a held loop, so it has played once and held its

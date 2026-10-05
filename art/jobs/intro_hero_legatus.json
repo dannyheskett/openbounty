@@ -15,5 +15,5 @@
   64
  ],
  "_pack_path": "art/intro/hero_legatus_walk_00..03.png and art/intro/hero_legatus_kneel_00..07.png (via intro_hero_legatus_walk and intro_hero_legatus_kneel)",
- "_note": "2026-10-04, Introduction (#154) rework: the legatus hero on foot, after the class portrait (art/classes/legatus.png), in place of the hooded general; the figure route at 64, the troop style's smallest canvas. run01 came back with its magenta background left on and was rejected; run02 (seed 15645) is the still under the walk and kneel."
+ "_note": "2026-10-04, Introduction (#154): the Legatus on foot, after the class portrait (art/classes/legatus.png); the figure route at 64, the troop style's smallest canvas. run02 (seed 15645) is the still under the walk and kneel."
 }

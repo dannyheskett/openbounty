@@ -486,7 +486,6 @@ typedef struct {
     bool   loop;                    // false: the frames play once and hold the last
     double fade_in, fade_out;       // seconds it fades up after start / away before end
     int    crop_x, crop_y, crop_w, crop_h;   // the part of each frame shown (w 0 = all)
-    char  *label;                   // heap, a name set under the sprite; NULL = none
 } ResIntroActor;
 
 typedef struct {
@@ -511,7 +510,6 @@ typedef struct {
     bool   rain;                    // "weather": "rain", streaks drawn over the picture
     int    flash_count;
     double *flashes;                // heap, seconds into the beat of each lightning flash
-    char   still[RES_PATH_LEN];     // a picture drawn whole on the screen instead ("" = none)
     int    sound_count;
     ResIntroSound *sounds;          // heap, sound effects started as the timeline passes them
 } ResIntroBeat;

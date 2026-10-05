@@ -153,28 +153,15 @@ TEST a_well_formed_intro_loads_and_reloads(void) {
     PASS();
 }
 
-// Actor timing, one-shot actions, weather and a full-screen still parse.
-TEST staged_actors_weather_and_stills_load(void) {
+// Actor timing, one-shot actions and weather parse.
+TEST staged_actors_and_weather_load(void) {
     int beats = 0;
     bool ok = load_with_intro(WRAP(
         "{\"backdrop\": \"art/a.png\", \"weather\": \"rain\", \"flashes\": [0.5, 1.5], \"duration\": 3,"
         " \"actors\": [{\"frames\": [\"art/s0.png\", \"art/s1.png\"], \"start\": 1, \"end\": 2.5,"
-        "               \"loop\": false, \"at\": [0, 10], \"to\": [100, 10]}]},"
-        " {\"still\": \"art/title.png\", \"duration\": 2}"), true, &beats);
+        "               \"loop\": false, \"at\": [0, 10], \"to\": [100, 10]}]}"), true, &beats);
     ASSERT(ok);
-    ASSERT_EQ(2, beats);
-    PASS();
-}
-
-// An actor's label is a key in the strings' intro group, like a caption.
-TEST actor_labels_load_and_a_missing_one_refuses(void) {
-    int beats = 0;
-    ASSERT(load_with_intro(WRAP(
-        "{\"duration\": 2, \"actors\": [{\"frames\": [\"art/s.png\"], \"label\": \"hello\"}]}"),
-        true, &beats));
-    ASSERT_FALSE(load_with_intro(WRAP(
-        "{\"duration\": 2, \"actors\": [{\"frames\": [\"art/s.png\"], \"label\": \"nope\"}]}"),
-        true, &beats));
+    ASSERT_EQ(1, beats);
     PASS();
 }
 
@@ -332,8 +319,7 @@ SUITE(unit_intro_suite) {
     RUN_TEST(intro_layout_fits_the_screen);
     RUN_TEST(kings_bounty_has_no_intro);
     RUN_TEST(a_well_formed_intro_loads_and_reloads);
-    RUN_TEST(staged_actors_weather_and_stills_load);
-    RUN_TEST(actor_labels_load_and_a_missing_one_refuses);
+    RUN_TEST(staged_actors_and_weather_load);
     RUN_TEST(sounds_load);
     RUN_TEST(a_malformed_sound_refuses_the_load);
     RUN_TEST(the_movie_mix_follows_the_players_levels_and_fade);

@@ -17,5 +17,5 @@
   48
  ],
  "_pack_path": "art/intro/hero_legatus_kneel_00..07.png",
- "_note": "2026-10-04, Introduction (#154) rework: the hero kneeling before the throne at 48, animated straight from the standing still. run01 is installed. It came back as a move down to the kneel rather than a held loop, so the intro plays it once and holds the last frame."
+ "_note": "2026-10-04, Introduction (#154) scene 4: the Legatus kneeling before Trajan at 48, animated from the standing still as the move down to the kneel; the intro plays it once and holds the last frame. run01 is installed."
 }

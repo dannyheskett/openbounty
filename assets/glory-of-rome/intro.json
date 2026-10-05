@@ -1681,19 +1681,19 @@
      "actors": [
       {
        "frames": [
-        "art/intro/trajan_close_00.png",
-        "art/intro/trajan_close_01.png",
-        "art/intro/trajan_close_02.png",
-        "art/intro/trajan_close_03.png",
-        "art/intro/trajan_close_04.png",
-        "art/intro/trajan_close_05.png",
-        "art/intro/trajan_close_06.png",
-        "art/intro/trajan_close_07.png"
+        "art/intro/trajan_seated_00.png",
+        "art/intro/trajan_seated_01.png",
+        "art/intro/trajan_seated_02.png",
+        "art/intro/trajan_seated_03.png",
+        "art/intro/trajan_seated_04.png",
+        "art/intro/trajan_seated_05.png",
+        "art/intro/trajan_seated_06.png",
+        "art/intro/trajan_seated_07.png"
        ],
        "fps": 4,
        "at": [
-        35,
-        -4
+        97,
+        36
        ]
       }
      ],
@@ -1706,19 +1706,19 @@
      "actors": [
       {
        "frames": [
-        "art/intro/trajan_close_00.png",
-        "art/intro/trajan_close_01.png",
-        "art/intro/trajan_close_02.png",
-        "art/intro/trajan_close_03.png",
-        "art/intro/trajan_close_04.png",
-        "art/intro/trajan_close_05.png",
-        "art/intro/trajan_close_06.png",
-        "art/intro/trajan_close_07.png"
+        "art/intro/trajan_seated_00.png",
+        "art/intro/trajan_seated_01.png",
+        "art/intro/trajan_seated_02.png",
+        "art/intro/trajan_seated_03.png",
+        "art/intro/trajan_seated_04.png",
+        "art/intro/trajan_seated_05.png",
+        "art/intro/trajan_seated_06.png",
+        "art/intro/trajan_seated_07.png"
        ],
        "fps": 4,
        "at": [
-        35,
-        -4
+        97,
+        36
        ]
       }
      ]
@@ -1730,19 +1730,19 @@
      "actors": [
       {
        "frames": [
-        "art/intro/trajan_close_00.png",
-        "art/intro/trajan_close_01.png",
-        "art/intro/trajan_close_02.png",
-        "art/intro/trajan_close_03.png",
-        "art/intro/trajan_close_04.png",
-        "art/intro/trajan_close_05.png",
-        "art/intro/trajan_close_06.png",
-        "art/intro/trajan_close_07.png"
+        "art/intro/trajan_seated_00.png",
+        "art/intro/trajan_seated_01.png",
+        "art/intro/trajan_seated_02.png",
+        "art/intro/trajan_seated_03.png",
+        "art/intro/trajan_seated_04.png",
+        "art/intro/trajan_seated_05.png",
+        "art/intro/trajan_seated_06.png",
+        "art/intro/trajan_seated_07.png"
        ],
        "fps": 4,
        "at": [
-        35,
-        -4
+        97,
+        36
        ]
       }
      ]
@@ -1759,7 +1759,7 @@
      "face": "emperor_traianus"
     },
     {
-     "backdrop": "art/ui/backdrop_palace_throne.png",
+     "backdrop": "art/intro/bg_hall.png",
      "say": "trajan_6",
      "face": "emperor_traianus",
      "dissolve": 0.8,
@@ -1777,8 +1777,8 @@
        ],
        "fps": 4,
        "at": [
-        103,
-        49
+        95,
+        33
        ]
       },
       {
@@ -1858,7 +1858,7 @@
      ]
     },
     {
-     "backdrop": "art/ui/backdrop_palace_throne.png",
+     "backdrop": "art/intro/bg_hall.png",
      "say": "trajan_7",
      "face": "emperor_traianus",
      "actors": [
@@ -1875,8 +1875,8 @@
        ],
        "fps": 4,
        "at": [
-        103,
-        49
+        95,
+        33
        ]
       },
       {
@@ -2307,11 +2307,11 @@
        "fps": 6,
        "at": [
         -48,
-        43
+        52
        ],
        "to": [
         132,
-        43
+        52
        ],
        "end": 5.333333333333333
       },
@@ -2327,27 +2327,26 @@
        "fps": 6,
        "at": [
         132,
-        43
+        52
        ],
        "start": 5.333333333333333,
-       "loop": false,
-       "label": "label_legatus"
+       "loop": false
       },
       {
        "frames": [
-        "art/ui/emperor_traianus_figure_00.png",
-        "art/ui/emperor_traianus_figure_01.png",
-        "art/ui/emperor_traianus_figure_02.png",
-        "art/ui/emperor_traianus_figure_03.png",
-        "art/ui/emperor_traianus_figure_04.png",
-        "art/ui/emperor_traianus_figure_05.png",
-        "art/ui/emperor_traianus_figure_06.png",
-        "art/ui/emperor_traianus_figure_07.png"
+        "art/intro/trajan_figure_00.png",
+        "art/intro/trajan_figure_01.png",
+        "art/intro/trajan_figure_02.png",
+        "art/intro/trajan_figure_03.png",
+        "art/intro/trajan_figure_04.png",
+        "art/intro/trajan_figure_05.png",
+        "art/intro/trajan_figure_06.png",
+        "art/intro/trajan_figure_07.png"
        ],
        "fps": 4,
        "at": [
-        160,
-        12
+        184,
+        40
        ],
        "mirror": true
       }
@@ -2377,9 +2376,8 @@
        ],
        "at": [
         132,
-        43
-       ],
-       "label": "label_legatus"
+        52
+       ]
       },
       {
        "frames": [
@@ -2391,11 +2389,11 @@
        "fps": 6,
        "at": [
         -48,
-        35
+        46
        ],
        "to": [
         88,
-        35
+        46
        ],
        "end": 4.0
       },
@@ -2411,27 +2409,26 @@
        "fps": 6,
        "at": [
         88,
-        35
+        46
        ],
        "start": 4.0,
-       "loop": false,
-       "label": "label_praetorianus"
+       "loop": false
       },
       {
        "frames": [
-        "art/ui/emperor_traianus_figure_00.png",
-        "art/ui/emperor_traianus_figure_01.png",
-        "art/ui/emperor_traianus_figure_02.png",
-        "art/ui/emperor_traianus_figure_03.png",
-        "art/ui/emperor_traianus_figure_04.png",
-        "art/ui/emperor_traianus_figure_05.png",
-        "art/ui/emperor_traianus_figure_06.png",
-        "art/ui/emperor_traianus_figure_07.png"
+        "art/intro/trajan_figure_00.png",
+        "art/intro/trajan_figure_01.png",
+        "art/intro/trajan_figure_02.png",
+        "art/intro/trajan_figure_03.png",
+        "art/intro/trajan_figure_04.png",
+        "art/intro/trajan_figure_05.png",
+        "art/intro/trajan_figure_06.png",
+        "art/intro/trajan_figure_07.png"
        ],
        "fps": 4,
        "at": [
-        160,
-        12
+        184,
+        40
        ],
        "mirror": true
       }
@@ -2455,9 +2452,8 @@
        ],
        "at": [
         132,
-        43
-       ],
-       "label": "label_legatus"
+        52
+       ]
       },
       {
        "frames": [
@@ -2465,9 +2461,8 @@
        ],
        "at": [
         88,
-        35
-       ],
-       "label": "label_praetorianus"
+        46
+       ]
       },
       {
        "frames": [
@@ -2479,11 +2474,11 @@
        "fps": 6,
        "at": [
         -48,
-        43
+        52
        ],
        "to": [
         44,
-        43
+        52
        ],
        "end": 2.6666666666666665
       },
@@ -2499,27 +2494,26 @@
        "fps": 6,
        "at": [
         44,
-        43
+        52
        ],
        "start": 2.6666666666666665,
-       "loop": false,
-       "label": "label_sibylla"
+       "loop": false
       },
       {
        "frames": [
-        "art/ui/emperor_traianus_figure_00.png",
-        "art/ui/emperor_traianus_figure_01.png",
-        "art/ui/emperor_traianus_figure_02.png",
-        "art/ui/emperor_traianus_figure_03.png",
-        "art/ui/emperor_traianus_figure_04.png",
-        "art/ui/emperor_traianus_figure_05.png",
-        "art/ui/emperor_traianus_figure_06.png",
-        "art/ui/emperor_traianus_figure_07.png"
+        "art/intro/trajan_figure_00.png",
+        "art/intro/trajan_figure_01.png",
+        "art/intro/trajan_figure_02.png",
+        "art/intro/trajan_figure_03.png",
+        "art/intro/trajan_figure_04.png",
+        "art/intro/trajan_figure_05.png",
+        "art/intro/trajan_figure_06.png",
+        "art/intro/trajan_figure_07.png"
        ],
        "fps": 4,
        "at": [
-        160,
-        12
+        184,
+        40
        ],
        "mirror": true
       }
@@ -2543,9 +2537,8 @@
        ],
        "at": [
         132,
-        43
-       ],
-       "label": "label_legatus"
+        52
+       ]
       },
       {
        "frames": [
@@ -2553,9 +2546,8 @@
        ],
        "at": [
         88,
-        35
-       ],
-       "label": "label_praetorianus"
+        46
+       ]
       },
       {
        "frames": [
@@ -2563,9 +2555,8 @@
        ],
        "at": [
         44,
-        43
-       ],
-       "label": "label_sibylla"
+        52
+       ]
       },
       {
        "frames": [
@@ -2577,11 +2568,11 @@
        "fps": 6,
        "at": [
         -48,
-        35
+        46
        ],
        "to": [
         0,
-        35
+        46
        ],
        "end": 1.3333333333333333
       },
@@ -2597,27 +2588,26 @@
        "fps": 6,
        "at": [
         0,
-        35
+        46
        ],
        "start": 1.3333333333333333,
-       "loop": false,
-       "label": "label_dux"
+       "loop": false
       },
       {
        "frames": [
-        "art/ui/emperor_traianus_figure_00.png",
-        "art/ui/emperor_traianus_figure_01.png",
-        "art/ui/emperor_traianus_figure_02.png",
-        "art/ui/emperor_traianus_figure_03.png",
-        "art/ui/emperor_traianus_figure_04.png",
-        "art/ui/emperor_traianus_figure_05.png",
-        "art/ui/emperor_traianus_figure_06.png",
-        "art/ui/emperor_traianus_figure_07.png"
+        "art/intro/trajan_figure_00.png",
+        "art/intro/trajan_figure_01.png",
+        "art/intro/trajan_figure_02.png",
+        "art/intro/trajan_figure_03.png",
+        "art/intro/trajan_figure_04.png",
+        "art/intro/trajan_figure_05.png",
+        "art/intro/trajan_figure_06.png",
+        "art/intro/trajan_figure_07.png"
        ],
        "fps": 4,
        "at": [
-        160,
-        12
+        184,
+        40
        ],
        "mirror": true
       }
@@ -2764,6 +2754,17 @@
        "gain": 0.6
       }
      ]
+    }
+   ]
+  },
+  {
+   "id": "title",
+   "fade_in": 1.5,
+   "fade_out": 2.5,
+   "beats": [
+    {
+     "card": "title",
+     "duration": 7.0
     }
    ]
   }

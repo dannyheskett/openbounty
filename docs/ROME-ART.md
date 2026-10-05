@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-418 jobs. A job with a **Pack path** has produced that file in the pack; a
+419 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -139,6 +139,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/intro/bg_forum.png`
 - **prompt:** the Forum of ancient Rome in bright morning light, a raised stone speaker's platform with bronze ship prows on its front at the centre, marble temples with tall columns behind it, a wide paved square in the foreground, no people anywhere, empty
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=15521`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### intro_bg_hall
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 15791)
+- **Pack path:** `art/intro/bg_hall.png`
+- **prompt:** the audience hall of an imperial Roman palace, a low raised marble dais under a coffered gilded ceiling, the dais bare and empty, tall porphyry columns either side, gilded eagles and laurel wreaths on the walls, lamps burning on bronze stands, solemn and magnificent, no people anywhere, no throne, no chair
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=15791`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
 
 ### intro_bg_map_table
 
@@ -399,26 +406,26 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a wide squared stone speaker's platform, pale marble block with a moulded top and base, wider than a man, seen from the front, solid magenta background
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=24`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15592`, `style=rd_pro__default`, `target=[48, 24]`, `width=48`
 
-### intro_trajan_close_loop
+### intro_trajan_figure
 
-- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 15761)
-- **Pack path:** `art/intro/trajan_close_00..07.png`
-- **prompt:** speaking, the raised hand moving slowly, head nodding a little, throne still, smooth loop
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_trajan_seated/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15761`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (64x64, seed 15800)
+- **Pack path:** `art/intro/trajan_figure_00..07.png`
+- **prompt:** breathes slowly and lifts his chin a little and lowers it, his body, sceptre, toga and feet all completely still, smooth loop
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `frames_duration=8`, `height=64`, `input_image_keep_alpha=true`, `input_image_path=assets/glory-of-rome/art/ui/emperor_traianus_figure_00.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15800`, `style=rd_advanced_animation__custom_action`, `target=[64, 64]`, `width=64`
 
 ### intro_trajan_seated
 
-- **Engine:** Retro Diffusion rd_pro__default (96x96, seed 15543)
+- **Engine:** Retro Diffusion rd_pro__default (96x96, seed 15790)
 - **Pack path:** `art/intro/trajan_seated_00..07.png (via intro_trajan_seated_loop)`
-- **prompt:** the Roman Emperor Trajan seated on a gold and ivory throne facing the viewer, short grey hair, a golden laurel wreath, a purple toga over a gilded cuirass, one hand raised as he speaks, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15543`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
+- **prompt:** the Roman Emperor Trajan seated on a sella curulis, a plain backless folding ivory stool with curved crossed legs, facing the viewer, short grey hair, a golden laurel wreath, a purple toga over a gilded cuirass, one hand raised as he speaks, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15790`, `style=rd_pro__default`, `target=[96, 96]`, `width=96`
 
 ### intro_trajan_seated_loop
 
-- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (32x32, seed 15543)
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15543)
 - **Pack path:** `art/intro/trajan_seated_00..07.png`
-- **prompt:** speaking, the raised hand moving slowly, head nodding a little, throne still, smooth loop
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=32`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_trajan_seated/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15543`, `style=rd_advanced_animation__custom_action`, `target=[32, 32]`, `width=32`
+- **prompt:** speaking, the raised hand moving slowly, head nodding a little, stool still, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_trajan_seated/run02/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15543`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
 
 ### intro_warrior
 

@@ -90,7 +90,6 @@ static void intro_load_all(const Resources *res) {
     for (int i = 0; i < res->intro.beat_count; i++) {
         const ResIntroBeat *b = &res->intro.beats[i];
         intro_tex(b->backdrop);
-        intro_tex(b->still);
         for (int a = 0; a < b->actor_count; a++)
             for (int f = 0; f < b->actors[a].frame_count; f++) intro_tex(b->actors[a].frames[f]);
         for (int f = 0; f < b->face_count; f++) intro_tex(b->face[f]);
@@ -187,15 +186,6 @@ static void draw_picture(const ResIntro *in, const ResIntroBeat *b, double t,
         } else {
             blit_tinted(t, dx, dy, l->scale, act->mirror, (unsigned char)(a * fa));
         }
-        if (act->label && t.id) {
-            // Its name under its feet, centred on the frame and shadowed.
-            int fw = (act->crop_w > 0 ? act->crop_w : t.width) * l->scale;
-            int fh = (act->crop_w > 0 ? act->crop_h : t.height) * l->scale;
-            int lx = dx + (fw - bfont_text_width(act->label)) / 2, ly = dy + fh;
-            unsigned char la = (unsigned char)(a * fa);
-            bfont_draw(act->label, lx + 1, ly + 1, (Color){ 0, 0, 0, la });
-            bfont_draw(act->label, lx, ly, (Color){ 255, 255, 255, la });
-        }
     }
     if (b->rain) draw_rain(in, tb, l, a);
     for (int i = 0; i < b->flash_count; i++) {
@@ -254,19 +244,8 @@ static void intro_draw(const Resources *res, double t) {
     int z = present_get_zoom();
     if (z < 1) z = 1;
 
-    if (b->still[0]) {
-        // A picture shown whole (the title), at the largest whole multiple.
-        Texture2D st = intro_tex(b->still);
-        if (st.id) {
-            int k = ui_fit_scale(st.width, st.height, CL_SCREEN_W, CL_SCREEN_H);
-            double a = b->dissolve > 0 ? clamp01((t - b->start) / b->dissolve) : 1;
-            blit_tinted(st, (CL_SCREEN_W - st.width * k) / 2, (CL_SCREEN_H - st.height * k) / 2,
-                        k, false, (unsigned char)(255 * a));
-        }
-    } else {
-
     gfx_clip_begin(l.pic_x * z, l.pic_y * z, l.pic_w * z, l.pic_h * z);
-    if (b->dissolve > 0 && t - b->start < b->dissolve && b > in->beats && !b[-1].still[0]) {
+    if (b->dissolve > 0 && t - b->start < b->dissolve && b > in->beats) {
         const ResIntroBeat *prev = b - 1;
         draw_picture(in, prev, prev->start + prev->dur - 1e-6, &l, 255);   // its last frame
         draw_picture(in, b, t, &l, (unsigned char)(255 * clamp01((t - b->start) / b->dissolve)));
@@ -275,7 +254,6 @@ static void intro_draw(const Resources *res, double t) {
     }
     gfx_clip_end();
     if (b->card) draw_card(b->card, &l);
-    }
 
     if (b->caption) {
         int typed = (int)((t - b->start) * in->type_cps);
