@@ -193,17 +193,19 @@ Source: `src/lattice.c` `cell_colour`, `build`, `tile`, `lattice_ground`.
 scissored (the scissor multiplied by the zoom), so no tile has spilled out.
 Source: `src/map_render.c` `map_render_draw`.
 
-**DSGN-0017. Whole and part tiles.** The hero's cell has been centred across
-the map, at `hx` = `CL_MAP_X` + (`CL_MAP_W` − `TW`) / 2, on row
-`hr` = (`CL_MAP_H` / 2) / `TH` counted from the map's top, so the rows have
-stood flush with the columns' tiles. Every cell the area has shown has been
+**DSGN-0017. Whole and part tiles.** Away from the world's edge the hero's
+cell has been centred across the map, at `hx` = `CL_MAP_X` + (`CL_MAP_W` −
+`TW`) / 2, on row `hr` = (`CL_MAP_H` / 2) / `TH` counted from the map's top,
+so the rows have stood flush with the columns' tiles. Every cell the area has shown has been
 drawn: part tiles at the left and right edges and a part row at the foot.
 Every cell has been drawn at `TW` × `TH`.
 Source: `src/map_render.c` `map_view`, `map_render_draw`.
 
-**DSGN-0018. Camera.** The camera has never clamped: the hero has always
-stood on that centre cell, and cells past the world's edge have not been
-drawn (dark).
+**DSGN-0018. Camera.** The camera has stopped at the world's edge, in
+pixels: where the centred camera would show past the map, the map's edge has
+stood on the map area's edge and the hero has walked off centre toward it, so
+the area has never shown past the world. Along an axis where the whole map is
+smaller than the area, the map has been centred in it, the rest dark.
 Source: `src/map_render.c` `map_view`, `map_render_hero_cell`.
 
 **DSGN-0019. Map contents.** Each seen cell has drawn its ground under any
@@ -212,7 +214,9 @@ declared variants, chosen per cell from the game's seed); then the idle
 boat, then the hero (the boat when sailing, the lead troop mirrored west when
 flying, rocking between frames 0 and 1 when still), then fog-edge strips:
 three strips black at alpha 128, 64 and 32, `TW` / 24 px wide on west and east
-edges and `TH` / 17 px on north and south. `map_render_cell` has been the one
+edges and `TH` / 17 px on north and south, on a seen cell's edges that face an
+unseen cell; past the world's edge has counted as seen, so the map's own edge
+has never faded. `map_render_cell` has been the one
 way a map cell has been drawn: the map, the gate's preview and the puzzle.
 Source: `src/map_render.c` `map_render_draw`, `map_render_cell`;
 `src/tilevar.c` `tilevar_art`, `tilevar_seed`; `src/shell_frame.c`

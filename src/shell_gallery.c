@@ -429,6 +429,19 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); shot(&G, "01c_map_time_stop");
         g->stats.time_stop = keep;
     }
+    if (CL_IS_MODERN) {
+        // The world's corner: the camera stops there, so the map fills the
+        // pane with no dark band past the edge and no fade along it (#161).
+        int kx = g->position.x, ky = g->position.y;
+        TravelMode km = g->travel_mode;
+        g->position.x = 0; g->position.y = 0;
+        const Tile *t = MapGetTile(m, 0, 0);
+        if (t && t->terrain == TERRAIN_WATER) g->travel_mode = TRAVEL_BOAT;
+        FogRevealRect(f, m, 0, 0, 12, 8);
+        reset(&G); shot(&G, "01d_map_edge");
+        g->position.x = kx; g->position.y = ky;
+        g->travel_mode = km;
+    }
     reset(&G);
     {
         // A save: the message src/main.c sends after the slot is written.
