@@ -252,6 +252,14 @@ int gallery_puzzle_sweep(Game *g, Map *m, Fog *f, const Resources *res, const Sp
 // nothing of the step before it still registered. Checked on the regions the
 // last captured frame registered (touch_last_*). A failure is printed and makes
 // the gallery exit non-zero.
+//
+// Each mode is checked against what it registers. Modern draws its answers as
+// rows and buttons. Legacy draws the DOS screens: a town's rows are its letter
+// keys, and a question is answered on the window-pixel answer bar (or digit
+// pad) that the prompt's update asks for by its kind (src/prompt.c
+// prompt_update), so legacy checks the prompt's kind; a result closes on any
+// key or tap from its update, so legacy checks that nothing drawn under it
+// still takes the tap.
 
 static int s_tap_fails;
 
@@ -304,18 +312,54 @@ static void tap_gone(const char *shot_name, int list, int row) {
     }
 }
 
-// A Yes/No step in place of `parent`'s rows.
+// The open prompt is of `kind` (prompt_kind_str): legacy's answer to it is the
+// bar or pad prompt_update asks for that kind.
+static void tap_prompt_kind(const char *shot_name, const char *kind) {
+    char what[96];
+    s_tap_checks++;
+    if (strcmp(prompt_kind_str(), kind) != 0) {
+        snprintf(what, sizeof what, "the open prompt is \"%s\", not \"%s\"", prompt_kind_str(), kind);
+        tap_fail(shot_name, what);
+    }
+}
+
+// A Yes/No step in place of `parent`'s rows. Legacy: a yes/no prompt, answered
+// on its bar; the rows under it stay registered but never read a tap, because
+// an open prompt takes the frame (src/main.c prompt_dispatch_tick).
 static void tap_yes_no(const char *shot_name, int parent) {
+    if (!CL_IS_MODERN) { tap_prompt_kind(shot_name, "yes_no"); return; }
     tap_row(shot_name, TOUCH_LIST_PROMPT, 0);
     tap_row(shot_name, TOUCH_LIST_PROMPT, 1);
     if (parent) tap_gone(shot_name, parent, 0);
 }
 
-// A result with one Continue in place of `parent`'s rows.
+// A result with one Continue in place of `parent`'s rows. Legacy: no question
+// is open and no letter key of the screen under it is registered, so a tap
+// reaches the update's any-key dismissal.
 static void tap_continue(const char *shot_name, int parent) {
+    if (!CL_IS_MODERN) {
+        tap_prompt_kind(shot_name, "none");
+        for (int k = KEY_A; k <= KEY_E; k++) {
+            char what[96];
+            s_tap_checks++;
+            if (touch_last_key_rect(k, NULL, NULL, NULL, NULL)) {
+                snprintf(what, sizeof what, "the key %d button is still tappable", k);
+                tap_fail(shot_name, what);
+            }
+        }
+        return;
+    }
     tap_row(shot_name, TOUCH_LIST_PROMPT, 0);
     tap_gone(shot_name, TOUCH_LIST_PROMPT, 1);
     if (parent) tap_gone(shot_name, parent, 0);
+}
+
+// A how-many step. Modern: its Yes/No rows, and the stepper's Up and Down when
+// `stepper`. Legacy: a number entry, answered on the digit pad.
+static void tap_number(const char *shot_name, bool stepper) {
+    if (!CL_IS_MODERN) { tap_prompt_kind(shot_name, "text"); return; }
+    tap_yes_no(shot_name, 0);
+    if (stepper) { tap_key(shot_name, KEY_UP); tap_key(shot_name, KEY_DOWN); }
 }
 
 static const ResTown *first_town_in(const Resources *r, const char *zone) {
@@ -849,8 +893,13 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             reset(&G); views_set(VIEW_TOWN); views_gallery_town(g, T[i].row, 0, NULL, false);
             shot(&G, T[i].name);
             if (strcmp(T[i].name, "30b_town_services") == 0 || strcmp(T[i].name, "35_town_siege") == 0) {
-                tap_row(T[i].name, TOUCH_LIST_TOWN, 0);
-                tap_row(T[i].name, TOUCH_LIST_TOWN, 1);
+                if (CL_IS_MODERN) {
+                    tap_row(T[i].name, TOUCH_LIST_TOWN, 0);
+                    tap_row(T[i].name, TOUCH_LIST_TOWN, 1);
+                } else {                              // legacy rows answer to their letters
+                    tap_key(T[i].name, KEY_A);
+                    tap_key(T[i].name, KEY_B);
+                }
                 tap_gone(T[i].name, TOUCH_LIST_PROMPT, 0);
             }
         }
@@ -896,11 +945,14 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     if (home) {
         cpy(g->position.home_castle, sizeof g->position.home_castle, home->id);
         modern_castle_open(g, true, home->id);
+        // The castle's steps are modern_castle_gallery's: legacy draws its own
+        // castle menu for every one of them, so their tap checks are modern's.
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_MENU, 0, 0, 0); shot(&G, "40_home_castle");
         if (CL_IS_MODERN) tap_row("40_home_castle", TOUCH_LIST_CASTLE, 2);
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 0, 0); shot(&G, "41_castle_recruit");
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 4, 0, 0); shot(&G, "42_castle_recruit_greyed");
-        reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 18, 30); shot(&G, "43_castle_how_many"); tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("43_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("43_castle_how_many", KEY_UP); tap_key("43_castle_how_many", KEY_DOWN);
+        reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 18, 30); shot(&G, "43_castle_how_many");
+        if (CL_IS_MODERN) { tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("43_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("43_castle_how_many", KEY_UP); tap_key("43_castle_how_many", KEY_DOWN); }
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0); shot(&G, "44_castle_audience");
         // Tribute asks first: the question over the Audience scene.
         {
@@ -919,13 +971,13 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             GameAudienceOutcome o = GameAudienceWithKing(g, &needed);
             modern_castle_gallery_audience((int)o + 1, needed, 0);
         }
-        shot(&G, "44b_castle_audience_answer"); tap_continue("44b_castle_audience_answer", TOUCH_LIST_CASTLE);
+        shot(&G, "44b_castle_audience_answer"); if (CL_IS_MODERN) tap_continue("44b_castle_audience_answer", TOUCH_LIST_CASTLE);
         modern_castle_gallery_audience(0, 0, 0);
         {
             GameAudienceGain gain = { 0 };
             gain.leadership = 25; gain.spell_power = 1; gain.max_spells = 1;
             reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 2, 0, 0);
-            modern_castle_gallery_answer(MC_AUD_TRIBUTE, 1, gain); shot(&G, "44c_castle_tribute_answer"); tap_continue("44c_castle_tribute_answer", TOUCH_LIST_CASTLE);
+            modern_castle_gallery_answer(MC_AUD_TRIBUTE, 1, gain); shot(&G, "44c_castle_tribute_answer"); if (CL_IS_MODERN) tap_continue("44c_castle_tribute_answer", TOUCH_LIST_CASTLE);
             GameAudienceGain none = { 0 };
             modern_castle_gallery_answer(MC_AUD_PROMOTION, 0, none);
         }
@@ -934,7 +986,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             g->character.cls.rank_index = 1;
             reset(&G); views_set(VIEW_HOME_CASTLE);
             modern_castle_gallery_audience(GAME_AUDIENCE_PROMOTED + 1, 0, 1);
-            modern_castle_gallery(MC_PROMOTION, 0, 0, 0); shot(&G, "45_castle_promotion"); tap_row("45_castle_promotion", TOUCH_LIST_PROMPT, 0);
+            modern_castle_gallery(MC_PROMOTION, 0, 0, 0); shot(&G, "45_castle_promotion"); if (CL_IS_MODERN) tap_row("45_castle_promotion", TOUCH_LIST_PROMPT, 0);
             g->character.cls.rank_index = keep;
         }
         g->position.home_castle[0] = '\0';
@@ -952,7 +1004,8 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_MENU, 0, 0, 0); shot(&G, "46_own_castle");
         reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_GARRISON, 0, 0, 0); shot(&G, "47_own_castle_garrison");
         reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_WITHDRAW, 0, 0, 0); shot(&G, "48_own_castle_withdraw");
-        reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_WITHDRAW, 0, 30, 30); shot(&G, "49_own_castle_how_many"); tap_row("49_own_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("49_own_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("49_own_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("49_own_castle_how_many", KEY_UP); tap_key("49_own_castle_how_many", KEY_DOWN);
+        reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_WITHDRAW, 0, 30, 30); shot(&G, "49_own_castle_how_many");
+        if (CL_IS_MODERN) { tap_row("49_own_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("49_own_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("49_own_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("49_own_castle_how_many", KEY_UP); tap_key("49_own_castle_how_many", KEY_DOWN); }
         g->position.own_castle[0] = '\0';
     }
 
@@ -993,9 +1046,9 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         g->player_io.count = 0;
         pending_flow = FLOW_RECRUIT;
         prompt_text_input_open(t->name, "", 4, 24); prompt_set_req_kind(PIO_ASK_NUMBER_IN_PLACE);
-        shot(&G, "62_dwelling"); tap_yes_no("62_dwelling", 0);
+        shot(&G, "62_dwelling"); tap_number("62_dwelling", false);
         prompt_gallery_step_open(true);
-        shot(&G, "63_dwelling_how_many"); tap_yes_no("63_dwelling_how_many", 0); tap_key("63_dwelling_how_many", KEY_UP); tap_key("63_dwelling_how_many", KEY_DOWN);
+        shot(&G, "63_dwelling_how_many"); tap_number("63_dwelling_how_many", true);
         reset(&G); views_set(VIEW_DWELLING);
         loc_deal_begin(g); g->stats.gold -= 600; loc_deal_done(g, 20, t->id); g->stats.gold += 600;
         shot(&G, "64_dwelling_result"); tap_continue("64_dwelling_result", 0);
