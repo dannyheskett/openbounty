@@ -25,10 +25,13 @@
 // pull declarations.
 #include "minih264e.h"
 #include "minimp4.h"
+#include "voAAC.h"
+#include "cmnMemory.h"
 
-#define VID_W      320
-#define VID_H      208       // padded from 200 to next multiple of 16
-#define SRC_H      200       // actual content height
+// The video is the frames' own size, padded to whole 16 px macroblocks:
+// the game's 320x200 to 320x208, the Introduction's 800x504 to 800x512
+// (--intro-movie). Every frame has the first frame's size.
+#define MB_PAD(n)  (((n) + 15) & ~15)
 #define TIMESCALE  90000
 
 // ---------- manifest parsing ------------------------------------------------
@@ -102,39 +105,39 @@ static bool read_manifest(const char *dir, Manifest *out,
     return true;
 }
 
-// ---------- color conversion (RGBA -> I420), padded to VID_H ----------------
+// ---------- color conversion (RGBA -> I420), padded to the macroblocks -----
 //
-// BT.601 limited range. Source is 320x200 RGBA from raylib. Y plane is
-// 320x208, U/V planes are 160x104. The bottom 8 rows of Y and bottom 4
-// rows of U/V are filled with limited-range black.
+// BT.601 limited range. Source is sw x sh RGBA from raylib (sw, sh even); the
+// planes are vw x vh and vw/2 x vh/2, the padding rows and columns filled
+// with limited-range black (Y 16, chroma 128).
 
-static void rgba_to_i420_padded(const unsigned char *rgba,
+static void rgba_to_i420_padded(const unsigned char *rgba, int sw, int sh,
+                                int vw, int vh,
                                 unsigned char *y,
                                 unsigned char *u,
                                 unsigned char *v) {
-    const int W = VID_W;
+    memset(y, 16, (size_t)vw * vh);
+    memset(u, 128, (size_t)(vw / 2) * (vh / 2));
+    memset(v, 128, (size_t)(vw / 2) * (vh / 2));
     // Y plane.
-    for (int j = 0; j < SRC_H; j++) {
-        const unsigned char *row = rgba + (size_t)j * W * 4;
-        unsigned char *yrow = y + (size_t)j * W;
-        for (int i = 0; i < W; i++) {
+    for (int j = 0; j < sh; j++) {
+        const unsigned char *row = rgba + (size_t)j * sw * 4;
+        unsigned char *yrow = y + (size_t)j * vw;
+        for (int i = 0; i < sw; i++) {
             int r = row[4*i + 0], g = row[4*i + 1], b = row[4*i + 2];
             int yv = 16 + ((66*r + 129*g + 25*b + 128) >> 8);
             if (yv < 0) yv = 0; else if (yv > 255) yv = 255;
             yrow[i] = (unsigned char)yv;
         }
     }
-    // Y padding rows (limited-range black = 16).
-    memset(y + (size_t)SRC_H * W, 16, (size_t)(VID_H - SRC_H) * W);
-
-    // U/V planes (subsampled 2x2). Source rows 0..199 -> uv rows 0..99.
-    for (int j = 0; j < SRC_H; j += 2) {
-        const unsigned char *row0 = rgba + (size_t)j * W * 4;
-        const unsigned char *row1 = (j + 1 < SRC_H)
-            ? rgba + (size_t)(j + 1) * W * 4 : row0;
-        unsigned char *urow = u + (size_t)(j/2) * (W/2);
-        unsigned char *vrow = v + (size_t)(j/2) * (W/2);
-        for (int i = 0; i < W; i += 2) {
+    // U/V planes (subsampled 2x2).
+    for (int j = 0; j < sh; j += 2) {
+        const unsigned char *row0 = rgba + (size_t)j * sw * 4;
+        const unsigned char *row1 = (j + 1 < sh)
+            ? rgba + (size_t)(j + 1) * sw * 4 : row0;
+        unsigned char *urow = u + (size_t)(j/2) * (vw/2);
+        unsigned char *vrow = v + (size_t)(j/2) * (vw/2);
+        for (int i = 0; i < sw; i += 2) {
             int r0 = row0[4*i + 0],     g0 = row0[4*i + 1],     b0 = row0[4*i + 2];
             int r1 = row0[4*(i+1) + 0], g1 = row0[4*(i+1) + 1], b1 = row0[4*(i+1) + 2];
             int r2 = row1[4*i + 0],     g2 = row1[4*i + 1],     b2 = row1[4*i + 2];
@@ -150,10 +153,6 @@ static void rgba_to_i420_padded(const unsigned char *rgba,
             vrow[i/2] = (unsigned char)vv;
         }
     }
-    // U/V padding rows (centered chroma = 128).
-    int uv_pad_rows = (VID_H - SRC_H) / 2;   // 4
-    memset(u + (size_t)(SRC_H/2) * (W/2), 128, (size_t)uv_pad_rows * (W/2));
-    memset(v + (size_t)(SRC_H/2) * (W/2), 128, (size_t)uv_pad_rows * (W/2));
 }
 
 // ---------- minimp4 write callback ------------------------------------------
@@ -166,9 +165,114 @@ static int mp4_write_cb(int64_t off, const void *buf, size_t sz, void *tok) {
 
 // ---------- main entry ------------------------------------------------------
 
+
+// ---------- the sound track (AAC-LC, vo-aacenc) -----------------------------
+
+#define AAC_FRAME    1024   // samples per channel in one AAC frame
+#define AAC_BITRATE  128000
+// What the encoder and an AAC decoder add before the first sample: the
+// samples dropped from the front so the sound lines up with frame 0.
+#define AAC_DELAY    1600   // measured: the encoder's look-ahead and the decoder's 1024
+
+static const unsigned AAC_RATES[] = { 96000, 88200, 64000, 48000, 44100, 32000,
+                                      24000, 22050, 16000, 12000, 11025, 8000 };
+
+// Encode `a` and put it on a new track of `mux`, one AAC frame a sample.
+static bool encode_aac_track(MP4E_mux_t *mux, const EncodeAudio *a,
+                             char *err_buf, size_t err_cap) {
+    int ri = -1;
+    for (int i = 0; i < (int)(sizeof AAC_RATES / sizeof AAC_RATES[0]); i++)
+        if ((int)AAC_RATES[i] == a->rate) ri = i;
+    if (ri < 0 || a->channels < 1 || a->channels > 2 || !a->pcm) {
+        snprintf(err_buf, err_cap, "sound track: unsupported %d Hz x %d", a->rate, a->channels);
+        return false;
+    }
+
+    VO_AUDIO_CODECAPI api = { 0 };
+    VO_MEM_OPERATOR mem = { 0 };
+    VO_CODEC_INIT_USERDATA ud = { 0 };
+    VO_HANDLE h = 0;
+    voGetAACEncAPI(&api);
+    mem.Alloc = cmnMemAlloc; mem.Copy = cmnMemCopy; mem.Free = cmnMemFree;
+    mem.Set = cmnMemSet;     mem.Check = cmnMemCheck;
+    ud.memflag = VO_IMF_USERMEMOPERATOR;
+    ud.memData = &mem;
+    if (api.Init(&h, VO_AUDIO_CodingAAC, &ud) != VO_ERR_NONE) {
+        snprintf(err_buf, err_cap, "sound track: encoder init failed");
+        return false;
+    }
+    AACENC_PARAM p = { 0 };
+    p.sampleRate = a->rate;
+    p.bitRate    = AAC_BITRATE * a->channels;
+    p.nChannels  = (short)a->channels;
+    p.adtsUsed   = 0;   // raw frames: the MP4 carries the config
+    if (api.SetParam(h, VO_PID_AAC_ENCPARAM, &p) != VO_ERR_NONE) {
+        snprintf(err_buf, err_cap, "sound track: encoder rejected %d Hz x %d", a->rate, a->channels);
+        api.Uninit(h);
+        return false;
+    }
+
+    MP4E_track_t tr = { 0 };
+    tr.object_type_indication = MP4_OBJECT_TYPE_AUDIO_ISO_IEC_14496_3;
+    memcpy(tr.language, "und", 4);
+    tr.track_media_kind = e_audio;
+    tr.time_scale       = (unsigned)a->rate;
+    tr.default_duration = AAC_FRAME;
+    tr.u.a.channelcount = (unsigned)a->channels;
+    int track = MP4E_add_track(mux, &tr);
+    // AudioSpecificConfig: AAC-LC (2), the rate's index, the channels.
+    unsigned char dsi[2] = { (unsigned char)((2 << 3) | (ri >> 1)),
+                             (unsigned char)(((ri & 1) << 7) | (a->channels << 3)) };
+    if (track < 0 || MP4E_set_dsi(mux, track, dsi, 2) != MP4E_STATUS_OK) {
+        snprintf(err_buf, err_cap, "sound track: cannot add the track");
+        api.Uninit(h);
+        return false;
+    }
+
+    // Frame by frame from AAC_DELAY on, padded with silence at the end so
+    // the encoder gives back every sample it was given.
+    const int ch = a->channels;
+    short in[AAC_FRAME * 2];
+    unsigned char out[6144 * 2];
+    size_t pos = a->frames > AAC_DELAY ? AAC_DELAY : a->frames;
+    size_t end = a->frames + 2 * AAC_FRAME;
+    bool ok = true;
+    while (ok && pos < end) {
+        for (int i = 0; i < AAC_FRAME; i++)
+            for (int c = 0; c < ch; c++)
+                in[i * ch + c] = pos + i < a->frames ? a->pcm[(pos + i) * ch + c] : 0;
+        pos += AAC_FRAME;
+        VO_CODECBUFFER ib = { 0 }, ob = { 0 };
+        VO_AUDIO_OUTPUTINFO oi = { 0 };
+        ib.Buffer = (VO_PBYTE)in;
+        ib.Length = (VO_U32)(AAC_FRAME * ch * sizeof in[0]);
+        api.SetInputData(h, &ib);
+        ob.Buffer = out;
+        ob.Length = sizeof out;
+        if (api.GetOutputData(h, &ob, &oi) != VO_ERR_NONE) {
+            snprintf(err_buf, err_cap, "sound track: encode failed");
+            ok = false;
+        } else if (ob.Length > 0 &&
+                   MP4E_put_sample(mux, track, out, (int)ob.Length, AAC_FRAME,
+                                   MP4E_SAMPLE_RANDOM_ACCESS) != MP4E_STATUS_OK) {
+            snprintf(err_buf, err_cap, "sound track: cannot write a frame");
+            ok = false;
+        }
+    }
+    api.Uninit(h);
+    return ok;
+}
+
 bool mp4_encode_dir(const char *src_dir, const char *out_path,
                     encode_progress_fn cb, void *user,
                     char *err_buf, size_t err_cap) {
+    return mp4_encode_dir_av(src_dir, out_path, NULL, cb, user, err_buf, err_cap);
+}
+
+bool mp4_encode_dir_av(const char *src_dir, const char *out_path,
+                       const EncodeAudio *audio,
+                       encode_progress_fn cb, void *user,
+                       char *err_buf, size_t err_cap) {
     if (!err_buf || err_cap == 0) {
         static char dummy[1]; err_buf = dummy; err_cap = 1;
     }
@@ -186,6 +290,23 @@ bool mp4_encode_dir(const char *src_dir, const char *out_path,
     Manifest mf = { 0 };
     if (!read_manifest(dir, &mf, err_buf, err_cap)) return false;
     prog.total = mf.count;
+
+    // The video's size: the first frame's, padded to the macroblocks.
+    int SRC_W = 0, SRC_H = 0;
+    {
+        char first[768];
+        snprintf(first, sizeof first, "%s/%s", dir, mf.items[0].png_name);
+        Image im = LoadImage(first);
+        SRC_W = im.width;
+        SRC_H = im.height;
+        UnloadImage(im);
+    }
+    if (SRC_W <= 0 || SRC_H <= 0 || (SRC_W & 1) || (SRC_H & 1)) {
+        snprintf(err_buf, err_cap, "first frame unreadable or of odd size (%dx%d)", SRC_W, SRC_H);
+        manifest_free(&mf);
+        return false;
+    }
+    const int VID_W = MB_PAD(SRC_W), VID_H = MB_PAD(SRC_H);
 
     // ---- minih264 init ----
     H264E_create_param_t cp = { 0 };
@@ -271,13 +392,13 @@ bool mp4_encode_dir(const char *src_dir, const char *out_path,
         if (im.format != PIXELFORMAT_UNCOMPRESSED_R8G8B8A8) {
             ImageFormat(&im, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
         }
-        if (im.width != VID_W || im.height != SRC_H) {
+        if (im.width != SRC_W || im.height != SRC_H) {
             UnloadImage(im);
             snprintf(err_buf, err_cap, "frame %s wrong size %dx%d",
                      e->png_name, im.width, im.height);
             ok = false; break;
         }
-        rgba_to_i420_padded((const unsigned char *)im.data,
+        rgba_to_i420_padded((const unsigned char *)im.data, SRC_W, SRC_H, VID_W, VID_H,
                             yuv.yuv[0], yuv.yuv[1], yuv.yuv[2]);
         UnloadImage(im);
 
@@ -320,6 +441,7 @@ bool mp4_encode_dir(const char *src_dir, const char *out_path,
     if (ok) {
         prog.status = "Muxing";
         if (cb) cb(&prog, user);
+        if (audio) ok = encode_aac_track(mux, audio, err_buf, err_cap);
     }
 
     mp4_h26x_write_close(&mp4wr);

@@ -35,6 +35,8 @@
     classpicker [pack]                the class-select carousel frames
 
     loopreview <run-dir> [--scale N]  review page for an animation run
+    introtheme <out.ogg> [--length S] [--level L]
+                                      the Introduction's theme, synthesised
 
   Paid (network):
     rdgen cost|run|reprocess <job>    Retro Diffusion generation
@@ -1911,6 +1913,8 @@ batches. The reference groups by what the art IS, not by engine.
 
     def group_of(name, d):
         p = d.get("_pack_path", "")
+        if name.startswith("intro_"):
+            return "Introduction"
         for frag, g in (("art/troops/", "Troops"), ("art/portraits/", "Portraits and faces"),
                         ("art/villains/", "Villains"), ("art/classes/", "Hero classes"),
                         ("art/tiles/", "Map tiles and terrain"), ("art/scenes/", "Scenes"),
@@ -3570,6 +3574,139 @@ gif clears between frames: {'yes' if gif_ok else 'NO'}</pre>
 
 
 # ==========================================================================
+# introtheme.py -- the Introduction's theme, synthesised
+# ==========================================================================
+
+def _introtheme(argv):
+    """The Introduction's theme: an original piece, synthesised here, so it
+    carries no licence or credit.
+
+    python3 tools/romeart.py introtheme <out.ogg> [--length S] [--level L]
+
+A lyre (Karplus-Strong plucked string) plays slow broken chords over a soft
+E/B drone for the whole piece. One guest a minute fades in over 8 s and out
+over 10 s: the aulos at 1:00, frame drum and finger cymbals at 2:00, pan
+pipes at 3:00; the lyre is alone again from 4:00 to the fade. Greek Dorian
+mode (E F G A B C D), 66 bpm. --length is the intro's running time (252.3 s);
+--level scales the whole mix (0.25: background, Dan 2026-10-04).
+The random source is seeded, so the same arguments give the same file.
+Needs oggenc.
+    """
+    import argparse, subprocess, tempfile, wave
+    import numpy as np
+    ap = argparse.ArgumentParser(prog="romeart introtheme")
+    ap.add_argument("out")
+    ap.add_argument("--length", type=float, default=252.3)
+    ap.add_argument("--level", type=float, default=0.25)
+    a = ap.parse_args(argv[1:])
+
+    SR = 44100
+    rng = np.random.default_rng(154)
+    hz = lambda n: 440.0 * 2 ** (n / 12)
+    NOTE = {'E3': -17, 'F3': -16, 'G3': -14, 'A3': -12, 'B3': -10, 'C4': -9, 'D4': -7,
+            'E4': -5, 'F4': -4, 'G4': -2, 'A4': 0, 'B4': 2, 'C5': 3, 'D5': 5, 'E5': 7,
+            'F5': 8, 'G5': 10, 'A5': 12}
+    LENGTH = a.length
+    beat = 60 / 66; bar = 4 * beat
+    n_total = int((LENGTH + 4) * SR)
+
+    def pluck(f, dur, amp):
+        n = int(dur * SR); N = int(SR / f)
+        buf = rng.uniform(-1, 1, N)
+        buf = 0.5 * (buf + np.roll(buf, 1))            # a soft excitation: gut strings
+        out = np.zeros(n); out[:N] = buf; out[N] = 0.996 * buf[0]; i = N + 1
+        while i < n:
+            k = min(N, n - i)
+            out[i:i + k] = 0.996 * 0.5 * (out[i - N:i - N + k] + out[i - N - 1:i - N - 1 + k]); i += k
+        r = int(0.05 * SR); out[-r:] *= np.linspace(1, 0, r)
+        return amp * out
+
+    def wind(f, dur, amp, vib=0.004, harm=(1, .35, .12), air=0.6, attack=0.08):
+        n = int(dur * SR); t = np.arange(n) / SR
+        v = 1 + vib * np.sin(2 * np.pi * 5.2 * t) * np.clip(t / 0.4, 0, 1)
+        ph = 2 * np.pi * np.cumsum(f * v) / SR
+        tone = sum(h * np.sin((k + 1) * ph) for k, h in enumerate(harm))
+        br = rng.normal(0, 1, n)
+        for _ in range(4):                             # breath: low-passed, following the tone
+            br = np.convolve(br, np.ones(12) / 12, 'same')
+        br *= air * np.abs(np.sin(ph / 2))
+        at = int(attack * SR); r = int(0.25 * SR); env = np.ones(n)
+        env[:at] = np.linspace(0, 1, at); env[-r:] = np.linspace(1, 0, r)
+        return amp * (tone + br) * env
+    aulos = lambda f, d: wind(f, d, 0.10)                                            # reedy
+    pipes = lambda f, d: wind(f, d, 0.09, vib=0.002, harm=(1, .08, .03), air=1.4, attack=0.03)  # pure, airy
+
+    def drum(amp):
+        n = int(0.6 * SR); t = np.arange(n) / SR
+        body = np.sin(2 * np.pi * (70 + 40 * np.exp(-t * 30)) * t) * np.exp(-t * 8)
+        skin = np.convolve(rng.normal(0, 1, n) * np.exp(-t * 40), np.ones(8) / 8, 'same') * 0.3
+        return amp * (body + skin)
+
+    def cymbal(amp):                                   # finger cymbals: an inharmonic ring
+        n = int(1.6 * SR); t = np.arange(n) / SR
+        return amp * sum(np.sin(2 * np.pi * f * t) * np.exp(-t * d)
+                         for f, d in ((2730, 2.5), (3920, 3.2), (5410, 4.5), (6890, 6))) / 4
+
+    def place(trk, sig, at):
+        i = int(at * SR); j = min(len(trk), i + len(sig))
+        if i < len(trk): trk[i:j] += sig[:j - i]
+
+    def window(t0, t1, fin=8.0, fout=10.0):            # a guest's fade in and out
+        t = np.arange(n_total) / SR
+        return np.clip((t - t0) / fin, 0, 1) * np.clip((t1 - t) / fout, 0, 1)
+
+    lyre, aul, perc, pan = (np.zeros(n_total) for _ in range(4))
+    chords = [['E3', 'B3', 'E4', 'G4'], ['D4', 'A3', 'D4', 'F4'], ['C4', 'G3', 'C4', 'E4'], ['B3', 'E3', 'B3', 'D4'],
+              ['A3', 'E4', 'A4', 'C5'], ['G3', 'D4', 'G4', 'B4'], ['F3', 'C4', 'F4', 'A4'], ['E3', 'B3', 'E4', 'B4']]
+    for b in range(int(LENGTH / bar) + 1):
+        ch = chords[b % 8]
+        for k, nm in enumerate(ch + ch[1:3][::-1]):    # six plucks a bar
+            place(lyre, pluck(hz(NOTE[nm]), 3.0, 0.42 if k == 0 else 0.32), b * bar + k * bar / 6)
+        place(perc, drum(0.55), b * bar); place(perc, drum(0.33), b * bar + 2.5 * beat)
+        if b % 2: place(perc, cymbal(0.16), b * bar + beat)
+    phr_aulos = [[('B4', 2), ('A4', 1), ('G4', 1), ('A4', 3), (None, 1), ('G4', 1), ('F4', 1), ('E4', 2), ('F4', 2), ('E4', 4)],
+                 [('E4', 1), ('G4', 1), ('A4', 2), ('B4', 2), ('C5', 2), ('B4', 1), ('A4', 1), ('G4', 2), ('A4', 4), (None, 4)],
+                 [('D5', 2), ('C5', 1), ('B4', 1), ('A4', 2), ('B4', 2), ('G4', 2), ('F4', 2), ('E4', 4), (None, 4)],
+                 [('E4', 2), ('F4', 1), ('G4', 1), ('A4', 2), ('G4', 1), ('F4', 1), ('E4', 8)]]
+    phr_pipes = [[('E5', 3), ('D5', 1), ('B4', 4), ('C5', 2), ('B4', 1), ('A4', 1), ('B4', 4)],
+                 [('G5', 2), ('F5', 2), ('E5', 4), ('D5', 2), ('C5', 1), ('D5', 1), ('E5', 4)],
+                 [('A5', 3), ('G5', 1), ('E5', 4), ('F5', 2), ('E5', 1), ('D5', 1), ('E5', 4)],
+                 [('B4', 2), ('C5', 2), ('D5', 2), ('C5', 1), ('B4', 1), ('E5', 8)]]
+
+    def melody(trk, phrases, voice, t0, t1):
+        t = t0
+        while t < t1:
+            for ph in phrases:
+                tt = t
+                for nm, nb in ph:
+                    if nm: place(trk, voice(hz(NOTE[nm]), nb * beat * 0.98), tt)
+                    tt += nb * beat
+                t += 4 * bar
+                if t >= t1: break
+    melody(aul, phr_aulos, aulos, 16 * bar, 125)      # heard only inside its window
+    melody(pan, phr_pipes, pipes, 48 * bar, 245)
+    t = np.arange(n_total) / SR
+    drone = 0.05 * (np.sin(2 * np.pi * hz(-29) * t) + 0.6 * np.sin(2 * np.pi * hz(-22) * t)) \
+        * (0.7 + 0.3 * np.sin(2 * np.pi * t / 17))
+    mix = (lyre + drone + aul * window(60, 120) + perc * window(120, 180) + pan * window(180, 240))[:int(LENGTH * SR)]
+    nir = int(2.2 * SR)                                 # reverb: a decaying noise tail, by FFT
+    ir = rng.normal(0, 1, nir) * np.exp(-np.arange(nir) / SR * 3.1); ir[0] = 0
+    F = 1 << (len(mix) + nir - 1).bit_length()
+    wet = np.fft.irfft(np.fft.rfft(mix, F) * np.fft.rfft(ir, F), F)[:len(mix)]
+    mix = 0.72 * mix + 0.28 * wet / np.max(np.abs(wet)) * np.max(np.abs(mix))
+    fi, fo = int(3 * SR), int(8 * SR)
+    mix[:fi] *= np.linspace(0, 1, fi); mix[-fo:] *= np.linspace(1, 0, fo)
+    mix = mix / np.max(np.abs(mix)) * 0.6 * a.level    # 0.6 peak is the approved balance; level scales it
+    with tempfile.TemporaryDirectory() as tmp:
+        wav = os.path.join(tmp, "theme.wav")
+        with wave.open(wav, "wb") as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+            w.writeframes((mix * 32767).astype(np.int16).tobytes())
+        subprocess.run(["oggenc", "-Q", "-q", "4", wav, "-o", a.out], check=True)
+    print(f"{a.out}  {LENGTH:.0f} s, peak {0.6 * a.level:.2f}")
+
+
+# ==========================================================================
 # PAID (NETWORK) -- every call that leaves this machine
 # ==========================================================================
 #
@@ -4490,6 +4627,7 @@ COMMANDS = {
     "splashtitle": lambda a: _splashtitle(["romeart"] + a),
     "classpicker": lambda a: _classpicker(["romeart"] + a),
     "loopreview": lambda a: _loopreview(["romeart"] + a),
+    "introtheme": lambda a: _introtheme(["romeart"] + a),
     # paid (network): see the last section
     "rdgen": lambda a: _rdgen(["romeart"] + a),
     "pltileset": lambda a: _pltileset(["romeart"] + a),

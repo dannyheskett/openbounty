@@ -10,6 +10,9 @@ RAYLIB_MAC   := third_party/raylib-install-mac
 # No -l flag, both libraries compile into src/encode_mp4.c.
 MINIH264_INC := third_party/minih264
 MINIMP4_INC  := third_party/minimp4
+# vo-aacenc (AAC-LC, the --intro-movie sound track), compiled as the one unit
+# src/encode_mp4_aac.c from these include directories.
+AAC_INC      := -Ithird_party/vo-aacenc/aacenc/inc -Ithird_party/vo-aacenc/aacenc/basic_op -Ithird_party/vo-aacenc/common/include
 
 # Version: a single integer (1, 2, 3, ...). The release workflow passes
 # OPENBOUNTY_VERSION explicitly from the dispatched release-N tag. For
@@ -33,7 +36,7 @@ CFLAGS_release := -O2 -DNDEBUG
 # Extra flags injected into every object group (engine lib, autoplay, shell).
 # Used for temporary build-time switches like -DOB_TRACE_PRES. Empty by default.
 OB_EXTRA_CFLAGS ?=
-CFLAGS  := -std=c99 -Wall -Wextra $(CFLAGS_$(BUILD)) $(OB_EXTRA_CFLAGS) -I$(RAYLIB)/include -I$(MINIH264_INC) -I$(MINIMP4_INC) -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz
+CFLAGS  := -std=c99 -Wall -Wextra $(CFLAGS_$(BUILD)) $(OB_EXTRA_CFLAGS) -I$(RAYLIB)/include -I$(MINIH264_INC) -I$(MINIMP4_INC) $(AAC_INC) -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz
 # Debug link: normal dynamic linking against the system libraries.
 LDFLAGS_debug   := -L$(RAYLIB)/lib -lraylib -lm -lpthread -ldl -lrt -lX11
 # Release link: libgcc static so the binary runs on glibc systems without a
@@ -63,13 +66,14 @@ DEMO_OBJ     := $(patsubst %.c,$(DEMO_OBJ_DIR)/%.o,$(DEMO_SRC))
 AUTOPLAY_SRC := autoplay/autoplay.c autoplay/planner.c autoplay/goals.c autoplay/prereq.c autoplay/baltree.c autoplay/search.c autoplay/primitives.c autoplay/exec_move.c autoplay/exec_fight.c autoplay/exec_recruit.c autoplay/exec_loc.c autoplay/recording.c autoplay/worldsnap.c autoplay/plan.c autoplay/exec_replay.c autoplay/exec_ledger.c autoplay/diag.c
 AUTOPLAY_OBJ_DIR := build/$(BUILD)/objs/autoplay
 AUTOPLAY_OBJ     := $(patsubst %.c,$(AUTOPLAY_OBJ_DIR)/%.o,$(AUTOPLAY_SRC))
-SHELL_SRC  := src/main.c src/plat_android.c src/plat_ios.c src/safe_area.c src/gfx_raylib.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/audio_raylib.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_dialog.c src/bfont.c src/text.c src/font_raylib.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/modern/page.c src/modern/rail.c src/input.c src/input_host.c src/touch.c src/uitouch.c src/frame_host.c src/prompt.c src/startup.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
+SHELL_SRC  := src/main.c src/plat_android.c src/plat_ios.c src/safe_area.c src/gfx_raylib.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/audio_raylib.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_mp4_aac.c src/intro_mix.c src/encode_dialog.c src/bfont.c src/text.c src/font_raylib.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/modern/page.c src/modern/rail.c src/input.c src/input_host.c src/touch.c src/uitouch.c src/frame_host.c src/prompt.c src/startup.c src/intro.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
 # plat_android.c is NOT here: its non-Android branch is two no-ops, and
 # main.c calls them on every platform.
 IOS_SKIP := src/gfx_raylib.c src/frame_host.c src/input_host.c \
             src/audio_raylib.c src/font_raylib.c \
             src/recorder.c src/encode_mp4.c src/encode_mp4_h264.c \
-            src/encode_mp4_mux.c src/encode_dialog.c src/screenshot.c \
+            src/encode_mp4_mux.c src/encode_mp4_aac.c src/intro_mix.c \
+            src/encode_dialog.c src/screenshot.c \
             src/shell_gallery.c src/pack_select.c
 IOS_CHECK_SRC := $(filter-out $(IOS_SKIP),$(SHELL_SRC))
 # The iOS backends' plain-C half. Checked with the shell files below, so a
@@ -186,7 +190,7 @@ run-release: release
 # ---------------------------------------------------------------------------
 # Windows cross-compile (x64 + x86, static, single-binary with embedded assets)
 # ---------------------------------------------------------------------------
-WIN_CFLAGS_COMMON := -std=c99 -Wall -Wextra -O2 -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz -I$(MINIH264_INC) -I$(MINIMP4_INC) -DWIN32 -D_WIN32
+WIN_CFLAGS_COMMON := -std=c99 -Wall -Wextra -O2 -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz -I$(MINIH264_INC) -I$(MINIMP4_INC) $(AAC_INC) -DWIN32 -D_WIN32
 # -mwindows hides the console; keep it for a GUI app.
 # -static links libgcc/libstdc++/winpthread statically so no DLLs are needed.
 # --stack=8MB matches the Linux default. Several main.c locals are big
@@ -240,7 +244,7 @@ $(OUT_WIN32_DEBUG): $(SRC) build/version.h Makefile
 MAC_CC      := clang
 MAC_ARCHES  := -arch arm64 -arch x86_64
 MAC_CFLAGS  := -std=c99 -Wall -Wextra -O2 $(MAC_ARCHES) \
-               -I$(RAYLIB_MAC)/include -I$(MINIH264_INC) -I$(MINIMP4_INC) \
+               -I$(RAYLIB_MAC)/include -I$(MINIH264_INC) -I$(MINIMP4_INC) $(AAC_INC) \
                -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild -Ithird_party/cjson -Ithird_party/miniz
 # -Itools is required for src/main.c's #include "extract.h".
 # (Linux/Windows CFLAGS already have it; mac was missing.)
@@ -283,7 +287,7 @@ RAYLIB_WEB := third_party/raylib-install-web
 EMCC       := emcc
 
 WEB_CFLAGS := -std=c99 -Wall -Wextra -O2 -DPLATFORM_WEB \
-              -I$(RAYLIB_WEB)/include -I$(MINIH264_INC) -I$(MINIMP4_INC) \
+              -I$(RAYLIB_WEB)/include -I$(MINIH264_INC) -I$(MINIMP4_INC) $(AAC_INC) \
               -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
               -Ithird_party/cjson -Ithird_party/miniz
 
@@ -422,7 +426,7 @@ ANDROID_JAR    := $(ANDROID_SDK_ROOT)/platforms/android-$(ANDROID_PLATFORM_VER)/
 ANDROID_SRC     := $(SRC)
 ANDROID_CFLAGS  := -std=c99 -Wall -Wextra -O2 -DPLATFORM_ANDROID -fPIC \
                    -I$(RAYLIB_ANDROID)/include -I$(NATIVE_APP_GLUE) \
-                   -I$(MINIH264_INC) -I$(MINIMP4_INC) \
+                   -I$(MINIH264_INC) -I$(MINIMP4_INC) $(AAC_INC) \
                    -Isrc -Iengine/include -Idemo -Iautoplay -Itools -Ibuild \
                    -Ithird_party/cjson -Ithird_party/miniz
 # raylib wraps fopen at link time (-Wl,--wrap=fopen) so file access routes

@@ -1,0 +1,19 @@
+{
+ "id": "intro_legionary_march",
+ "prompt": "a Roman legionary marching to the right, side view, a tall curved red shield on his arm, iron helmet, red cloak, a spear held upright",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 64,
+ "height": 64,
+ "seed": 15611,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [
+  64,
+  64
+ ],
+ "_pack_path": "art/intro/legionary_walk_00..03.png (via intro_legionary_walk)",
+ "_note": "2026-10-04, Introduction (#154) scene 5: the marching legionary; the figure route at 64, the troop style's smallest canvas. run01 is the still under intro_legionary_walk."
+}

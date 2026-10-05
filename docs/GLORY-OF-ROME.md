@@ -12,7 +12,7 @@ The player has been a Roman general holding an imperial commission. The
 Emperor has charged him with hunting down the enemies of Rome, one bounty at a
 time, and with recovering a thing more important than any of them: the **lost
 Aquila**, the golden eagle standard of a legion destroyed on the frontier,
-buried where it fell and never recovered.
+carried off from the field where it fell and never recovered.
 
 The setting has been **mythic Rome**, not documentary Rome. Jupiter's
 lightning has been real, the dead have walked, and the Sibyl's prophecies have

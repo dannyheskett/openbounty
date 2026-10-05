@@ -19,6 +19,9 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
 // piece lifted, one PNG each (#108).
 int gallery_puzzle_sweep(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
                          RenderTexture2D *rt, const char *dir);
+// --intro-movie <out.mp4>: the Introduction rendered offline to a video
+// with its sound, with its cue sheet printed (#154).
+int gallery_intro_movie(const Resources *res, RenderTexture2D *rt, const char *out_mp4);
 
 #else
 
@@ -29,6 +32,11 @@ static inline int gallery_run(Game *g, Map *m, Fog *f, const Resources *res,
                               const Sprites *s, RenderTexture2D *rt,
                               const char *dir) {
     (void)g; (void)m; (void)f; (void)res; (void)s; (void)rt; (void)dir;
+    return 2;
+}
+static inline int gallery_intro_movie(const Resources *res, RenderTexture2D *rt,
+                                      const char *out_mp4) {
+    (void)res; (void)rt; (void)out_mp4;
     return 2;
 }
 static inline int gallery_puzzle_sweep(Game *g, Map *m, Fog *f, const Resources *res,

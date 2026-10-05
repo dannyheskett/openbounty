@@ -1,0 +1,21 @@
+{
+ "id": "intro_crier_face_loop",
+ "prompt": "talking loudly, mouth opening and closing, eyebrows raised, static background, smooth loop",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 128,
+ "height": 128,
+ "seed": 15605,
+ "frames_duration": 8,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/intro_crier_face/run02/01_raw.png",
+ "input_image_keep_alpha": false,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  128,
+  128
+ ],
+ "_pack_path": "art/portraits/intro_crier_00..07.png",
+ "_note": "2026-10-04, Introduction (#154) scenes 2 and 5: the villain/town-portrait loop route: eight frames at 128 on intro_crier_face run02, each frame centre-cropped to 96 with romeart.py crop. run02 is installed."
+}

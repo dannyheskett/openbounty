@@ -1,0 +1,1 @@
+Vendored from https://github.com/mstorsjo/vo-aacenc at a277487e051e92e99a532294eed3c673f4d879f2 (v0.1.3+, 2017-06-28): aacenc/src/*.c (no asm), aacenc/inc, aacenc/basic_op, aacenc/patent_disclaimer.txt, common/include, common/cmnMemory.c, COPYING, NOTICE, README. Unmodified.

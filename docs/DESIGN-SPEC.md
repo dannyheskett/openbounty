@@ -1563,8 +1563,9 @@ Source: `src/startup.c` `draw_title_sequence`, `draw_title_backdrop`,
 **DSGN-0148. Title menu.** The title menu has been its own page
 (`page_title_menu`): no title and no description, as wide as its widest label
 + 2 × `UK_INSET` + 4 × `GW`, centred:
-- New Game (`ui.title_new_adventure`), Load Saved Game
-  (`ui.title_load_adventure`), Credits (`ui.title_credits`) and, on desktop
+- Introduction (`ui.title_intro`, only when the pack has one, DSGN-0161;
+  it leads on to the class picker), New Game (`ui.title_new_adventure`),
+  Load Saved Game (`ui.title_load_adventure`), Credits (`ui.title_credits`) and, on desktop
   and web, Exit, the row Escape has pressed.
 - It has had no outside: a tap off it has done nothing.
 - Escape (Android Back) has quit.
@@ -1573,7 +1574,7 @@ Source: `src/startup.c` `draw_title_sequence`, `draw_title_backdrop`,
   (`OPENBOUNTY_VERSION`), on every platform, so a player on a phone can name
   the build they report (#127).
 Source: `src/modern/page.c` `page_title_menu`; `src/startup.c`
-`draw_title_menu`, `title_menu_labels`, `run_title_menu`.
+`draw_title_menu`, `title_menu_rows`, `run_title_menu`.
 
 **DSGN-0149. Load.** Load has been the in-game Load page (`gm_load_page`)
 titled `ui.title_load_adventure`: the five slots, empty ones greyed, then
@@ -1586,6 +1587,25 @@ Source: `src/startup.c` `load_page_build`, `load_page_cursor`,
 size (`page_sheet_small`) over the title art, titled `ui.title_credits` with
 Close, `WHITE` text, names indented 2 × `GW`; any key or tap has closed them.
 Source: `src/startup.c` `draw_credits`, `run_credits`.
+
+**DSGN-0161. Introduction.** The Introduction (OPENBOUNTY-SPEC REQ-430u) has
+been a film on black, with no frame, lattice or page (`page_bare`):
+- The picture: the script's frame (240 × 102 art pixels in Glory of Rome)
+  at the largest whole multiple that leaves room below for a caption band of
+  three lines + 2 × `UK_INSET`; picture and band centred together. On the
+  800 × 504 reference screen, 3× (720 × 306).
+- The band: black, the speaker's face loop at the left at the largest whole
+  multiple of its 96 px frame the room below the picture allows (no larger
+  than the picture's), `UK_INSET` in; hidden when it does not fit. The
+  caption has been typed on beside it in `uk_ink`, wrapped once over the
+  whole line so no word moves as it types; the face has talked at
+  `UK_FACE_FPS` while the line types and rested on its first frame after.
+- Cards: centred in the picture in `uk_ink`, a black shadow one pixel down
+  and right.
+- Pans and moves have been rounded to whole art pixels, as the title eagle
+  is; a dissolve has faded the beat in over the previous one's last frame; a
+  scene's fades have darkened the whole screen, eased.
+Source: `src/intro.c` `intro_layout`, `intro_draw`, `run_intro`.
 
 **DSGN-0151. Choosing a class.** Class select has been the class painting
 (DSGN-0108) with a caption (DSGN-0075) on the screen's foot, Back in its strip

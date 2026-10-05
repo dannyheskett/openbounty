@@ -186,7 +186,8 @@ flagged (§38).
 - **REQ-030.** `third_party/` has vendored: cJSON (`cjson/`, JSON parse),
   miniz (`miniz/`, ZIP read/write for `.openbounty` packs), greatest
   (`greatest/`, single-header test framework), minih264 + minimp4
-  (`--movie` MP4 encoder/muxer), stb (`stb/`: `stb_image`, `stb_truetype` and
+  (`--movie` MP4 encoder/muxer), vo-aacenc (`vo-aacenc/`, the AAC encoder
+  of `--intro-movie`'s sound track, Apache 2.0), stb (`stb/`: `stb_image`, `stb_truetype` and
   `stb_vorbis`, the iOS backend's image, font and music decoders), Liberation
   Sans (`fonts/`, the pack picker's face, compiled in as `src/font_sans.inc`)
   and `emsdk/`, the place for a local Emscripten checkout (CI installs its
@@ -279,7 +280,7 @@ flagged (§38).
   `prompt`, `select`, `textsel`, `text`, `input`, `touch`, `uitouch`, `startup`,
   `end_cartoon`, `pack_select`, `assets`, `audio`, `screenshot`, `sprites`,
   `tile_cache`, `tilevar`, `palette`, `bfont`, `layout`, `present`,
-  `safe_area`, `recorder`, `encode_dialog`, `encode_mp4*`; the raylib side of
+  `safe_area`, `recorder`, `encode_dialog`, `encode_mp4*`, `intro_mix`; the raylib side of
   the platform seams (`gfx_raylib`, `frame_host`, `input_host`,
   `audio_raylib`, `font_raylib`); and `plat_android` / `plat_ios`. The
   subdirectories have held the modern draw layer and screens (`src/modern/`),
@@ -622,8 +623,9 @@ flagged (§38).
 - **REQ-162.** **STARTUP** (`src/startup.c`). Legacy: publisher splash, title
   splash, then the credits when the pack supplies any, each 2.5 s or any key.
   Modern: the publisher splash, then the title menu of `DESIGN-SPEC.md`
-  DSGN-0146 to DSGN-0148 (New Game, Load Saved Game, Credits and, on desktop
-  and web, Exit).
+  DSGN-0146 to DSGN-0148 (Introduction first when the pack has one
+  (REQ-430u), New Game, Load Saved Game, Credits and, on desktop and web,
+  Exit).
 - **REQ-163.** **CLASS SELECT**. Legacy: four classes on `A`/`B`/`C`/`D`, `L`
   for Load, `Esc` to quit. Modern: the class painting, Left/Right or a tap
   picking a figure and Continue confirming (REQ-532); `Esc` has returned to
@@ -2429,6 +2431,20 @@ golden-digest regression tests have pinned the formulas.
   engine has substituted a documented default. The engine has carried no text
   of its own: a pack missing any required string key has been refused at load,
   with every missing key printed.
+- **REQ-538.** A pack's Introduction (#154) has been a script file named by
+  `game.json:intro` (PACK-FORMAT §2.4), resolved at load by
+  `engine/resources.c parse_intro` into `Resources.intro`: a flat list of
+  beats laid end to end on one timeline, each with its backdrop, pan, actors
+  (portrait and villain ids resolved to frame lists), caption and card text
+  (keys in the strings' `intro` group, `%TOKEN%`s filled) and speaker's face.
+  A `for_each: "villain"` beat has become one beat per villain in catalog
+  order, so the wanted notices have followed the villain catalog. A missing
+  caption or card key or `ui.title_intro` has counted as a missing string; an unknown
+  id, an actor with no source or two, a beat with no length or a frame
+  outside 1..256 has counted in `intro_errors`; either has refused the load.
+  The intro's art has been listed in `resources_art_manifest`.
+  `resources_intro_beat_at` has answered which beat plays at a time. A pack
+  without `intro` has had none (`resources_has_intro` false).
 
 ### 28.2 Asset loading
 
@@ -2667,6 +2683,21 @@ every menu; this section has held the rules.
   skipped to the end; the sequence has played once per run, and the credits,
   the load picker and a return to the title have shown the finished screen.
   Without all three the title has been `splash_title`, still.
+- **REQ-430u.** **Introduction (modern).** A pack with an intro (REQ-538)
+  has had an Introduction row first on the title menu, above New Game,
+  labelled `ui.title_intro`; it has never played by itself.
+  Choosing it has played the script end to end (`src/intro.c run_intro`) as
+  a film: each beat's backdrop through its moving frame window and its
+  actors' loops at a whole multiple, a black caption band below with the
+  speaker's face loop beside the caption typed on, cards centred in the
+  picture, dissolves between beats and each scene faded up from black and
+  down to it (DSGN-0161). Every frame has been a pure function of the time
+  into the intro. Any key or tap has ended it, as at the end of its last
+  beat, and gone on to the class picker as New Game does, nothing pressed
+  carrying over; there
+  has been no key for the next scene, the theme being one track timed to the
+  whole intro. The intro's textures have loaded on entry and been freed on
+  exit.
 - **REQ-430q.** **Blessing and Tribute (modern home castle).** With
   `game.json` `audiences`, `GameSeekBlessing` has granted once, when every
   artifact is found (enemies left or not), leadership +
@@ -2795,6 +2826,20 @@ every menu; this section has held the rules.
   (`ios/audio_ios.mm`) there. Track and SFX paths have come from
   `game.json:audio`. Volume, ducking, and the sound on/off option have been
   handled shell-side; the engine has only emitted tune/sfx events.
+- **REQ-539.** The Introduction's theme (`game.json:audio.tracks.intro`) has
+  loaded when the intro begins and been freed when it ends
+  (`audio_intro_begin` / `audio_intro_end`), since iOS decodes a whole track
+  into memory. The intro has opened the device itself, the title running
+  before the game's own `audio_init`. The theme has played from the top
+  whatever the Music option, which has not yet been chosen at the title, at
+  the master volume, and faded with the last scene. A pack without one, or a
+  device answering more than 1.5 s late, has left the intro silent rather
+  than out of step. Ending it has restored the track that played before.
+  The intro's sound effects (a beat's `sounds`, PACK-FORMAT §2.4) have started
+  as the timeline passed them (`audio_intro_sound`), at their gain times
+  the master volume and the closing fade, whatever the Sounds option; each
+  .wav has loaded the first time it was asked for and been freed, and so
+  stopped, when the intro ended.
 
 ---
 
@@ -2969,7 +3014,10 @@ every menu; this section has held the rules.
   `--autoplay`
   (the winnability oracle, `AUTOPLAY-SPECS.md`) with its modifiers
   `--autoplay-hero=<class>`, `--autoplay-level=<easy|normal|hard|impossible>`
-  and `--autoplay-speed=<slow|normal|fast>`, `--validate-pack [LO [HI]]` (the
+  and `--autoplay-speed=<slow|normal|fast>`, `--intro-movie <out.mp4>` (the
+  Introduction rendered offline at 15 frames a second, with its sound,
+  and its cue sheet printed: each scene's start and length, REQ-430u, REQ-490),
+  `--validate-pack [LO [HI]]` (the
   pack-author winnability report), `--headless` (modifier for the agent
   modes), `--verbose` (agent diagnostics), `--extract`, `--out-dir <dir>`
   (modifier for `--extract`), `--pack-dir <src> <dst>`. Normal play has taken
@@ -3016,7 +3064,15 @@ every menu; this section has held the rules.
   `/tmp/openbounty-movie-<pid>`; at shutdown an "Encoding…" dialog has run the muxer and the temp
   frames have been deleted, so the file exists only after a clean shutdown.
   With no path argument, output has gone to
-  `<user-data>/movie-<timestamp>.mp4`.
+  `<user-data>/movie-<timestamp>.mp4`. Gameplay recordings have been
+  silent. `--intro-movie` has carried the Introduction's sound on a second
+  track (`src/intro_mix.c`): the theme from the top and each beat's sounds
+  at their cues, mixed at full master volume with the player's own levels
+  and closing fade (`audio_intro_levels`, `intro_sound_gain`), a sound cued
+  again while it plays starting over as in the game; mono 44.1 kHz,
+  encoded AAC-LC at 128 kb/s by vo-aacenc (`src/encode_mp4_aac.c`), its
+  first 1600 samples (the encoder's and decoder's delay) dropped so the
+  sound lines up with the first frame.
 - **REQ-491.** There has been no scripted-input harness: `src/frame_host.c`
   and `src/input_host.c` have been the window and input seams (REQ-442), and
   the gameplay tests have driven the engine directly. The engine's JSON state
