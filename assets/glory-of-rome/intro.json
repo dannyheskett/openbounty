@@ -4,10 +4,10 @@
   240,
   102
  ],
- "type_cps": 28,
- "read_cps": 14,
+ "type_cps": 30,
+ "read_cps": 18,
  "min_hold": 2.0,
- "_note": "The Introduction (#154): background art, animated sprites and text. Five scenes: the eagle falls, the Forum, wanted, the Emperor's charge, the decree.",
+ "_note": "The Introduction (#154): background art, animated sprites and text. Five scenes: the eagle falls; the herald in the Forum; the wanted, province by province; the Emperor's charge; the decree, the Curia and the march out.",
  "scenes": [
   {
    "id": "eagle",
@@ -17,12 +17,20 @@
     {
      "backdrop": "art/intro/bg_forest_night.png",
      "weather": "rain",
-     "say": "eagle_1"
+     "say": "eagle_1",
+     "sounds": [
+      {
+       "file": "audio/intro_rain.wav",
+       "at": 0,
+       "gain": 0.35
+      }
+     ]
     },
     {
      "backdrop": "art/intro/bg_aftermath.png",
      "weather": "rain",
      "say": "eagle_2",
+     "duration": 11.0,
      "flashes": [
       0.8
      ],
@@ -32,79 +40,13 @@
        "gain": 0.6,
        "at": 0.8
       }
-     ],
-     "actors": [
-      {
-       "frames": [
-        "art/intro/warrior_cheer_03.png",
-        "art/intro/warrior_cheer_04.png",
-        "art/intro/warrior_cheer_05.png",
-        "art/intro/warrior_cheer_06.png",
-        "art/intro/warrior_cheer_07.png",
-        "art/intro/warrior_cheer_00.png",
-        "art/intro/warrior_cheer_01.png",
-        "art/intro/warrior_cheer_02.png"
-       ],
-       "fps": 6,
-       "at": [
-        24,
-        40
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/warrior_cheer_00.png",
-        "art/intro/warrior_cheer_01.png",
-        "art/intro/warrior_cheer_02.png",
-        "art/intro/warrior_cheer_03.png",
-        "art/intro/warrior_cheer_04.png",
-        "art/intro/warrior_cheer_05.png",
-        "art/intro/warrior_cheer_06.png",
-        "art/intro/warrior_cheer_07.png"
-       ],
-       "fps": 6,
-       "at": [
-        -4,
-        48
-       ],
-       "crop": [
-        0,
-        0,
-        56,
-        54
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/warrior_cheer_00.png",
-        "art/intro/warrior_cheer_01.png",
-        "art/intro/warrior_cheer_02.png",
-        "art/intro/warrior_cheer_03.png",
-        "art/intro/warrior_cheer_04.png",
-        "art/intro/warrior_cheer_05.png",
-        "art/intro/warrior_cheer_06.png",
-        "art/intro/warrior_cheer_07.png"
-       ],
-       "fps": 6,
-       "at": [
-        188,
-        48
-       ],
-       "mirror": true,
-       "crop": [
-        0,
-        0,
-        56,
-        54
-       ]
-      }
      ]
     },
     {
      "backdrop": "art/intro/bg_forest_floor.png",
      "weather": "rain",
      "say": "eagle_4",
-     "duration": 6.3,
+     "duration": 4.0,
      "flashes": [
       1.6
      ],
@@ -156,6 +98,11 @@
       }
      ],
      "sounds": [
+      {
+       "file": "audio/intro_sword.wav",
+       "at": 1.3,
+       "gain": 0.7
+      },
       {
        "file": "audio/intro_thunder.wav",
        "gain": 0.6,
@@ -212,349 +159,343 @@
    ]
   },
   {
-   "id": "title",
-   "fade_in": 1.0,
-   "fade_out": 1.5,
-   "beats": [
-    {
-     "still": "art/ui/splash_title.png",
-     "duration": 6.0
-    }
-   ]
-  },
-  {
    "id": "forum",
    "fade_in": 1.5,
    "fade_out": 1.0,
    "beats": [
     {
      "backdrop": "art/intro/bg_forum.png",
-     "say": "forum_1",
+     "say": "herald_1",
      "face": "intro_crier",
-     "actors": [
-      {
-       "frames": [
-        "art/intro/plinth.png"
-       ],
-       "at": [
-        96,
-        69
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crier_00.png",
-        "art/intro/crier_01.png",
-        "art/intro/crier_02.png",
-        "art/intro/crier_03.png",
-        "art/intro/crier_04.png",
-        "art/intro/crier_05.png",
-        "art/intro/crier_06.png",
-        "art/intro/crier_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        93,
-        15
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        0,
-        57
-       ],
-       "crop": [
-        0,
-        0,
-        20,
-        45
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        20,
-        60
-       ],
-       "crop": [
-        20,
-        0,
-        18,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        38,
-        58
-       ],
-       "crop": [
-        38,
-        0,
-        8,
-        44
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        46,
-        61
-       ],
-       "crop": [
-        46,
-        0,
-        12,
-        41
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        58,
-        56
-       ],
-       "crop": [
-        58,
-        0,
-        11,
-        46
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        69,
-        59
-       ],
-       "crop": [
-        69,
-        0,
-        8,
-        43
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        77,
-        61
-       ],
-       "crop": [
-        77,
-        0,
-        11,
-        41
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        88,
-        57
-       ],
-       "crop": [
-        88,
-        0,
-        12,
-        45
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        100,
-        60
-       ],
-       "crop": [
-        100,
-        0,
-        12,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        112,
-        58
-       ],
-       "crop": [
-        112,
-        0,
-        12,
-        44
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        124,
-        62
-       ],
-       "crop": [
-        124,
-        0,
-        8,
-        40
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        132,
-        59
-       ],
-       "crop": [
-        132,
-        0,
-        15,
-        43
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        147,
-        56
-       ],
-       "crop": [
-        147,
-        0,
-        13,
-        46
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        160,
-        60
-       ],
-       "crop": [
-        160,
-        0,
-        15,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        175,
-        58
-       ],
-       "crop": [
-        175,
-        0,
-        15,
-        44
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        190,
-        61
-       ],
-       "crop": [
-        190,
-        0,
-        19,
-        41
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        209,
-        57
-       ],
-       "crop": [
-        209,
-        0,
-        11,
-        45
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        220,
-        60
-       ],
-       "crop": [
-        220,
-        0,
-        13,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        233,
-        59
-       ],
-       "crop": [
-        233,
-        0,
-        7,
-        43
-       ]
-      }
-     ],
      "sounds": [
       {
-       "file": "audio/intro_crowd.wav",
+       "file": "audio/intro_horn.wav",
        "at": 0,
+       "gain": 0.5
+      },
+      {
+       "file": "audio/intro_crowd.wav",
+       "at": 0.5,
        "gain": 0.1
       }
+     ],
+     "actors": [
+      {
+       "frames": [
+        "art/intro/plinth.png"
+       ],
+       "at": [
+        96,
+        69
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crier_00.png",
+        "art/intro/crier_01.png",
+        "art/intro/crier_02.png",
+        "art/intro/crier_03.png",
+        "art/intro/crier_04.png",
+        "art/intro/crier_05.png",
+        "art/intro/crier_06.png",
+        "art/intro/crier_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        93,
+        15
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        0,
+        57
+       ],
+       "crop": [
+        0,
+        0,
+        20,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        20,
+        60
+       ],
+       "crop": [
+        20,
+        0,
+        18,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        38,
+        58
+       ],
+       "crop": [
+        38,
+        0,
+        8,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        46,
+        61
+       ],
+       "crop": [
+        46,
+        0,
+        12,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        58,
+        56
+       ],
+       "crop": [
+        58,
+        0,
+        11,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        69,
+        59
+       ],
+       "crop": [
+        69,
+        0,
+        8,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        77,
+        61
+       ],
+       "crop": [
+        77,
+        0,
+        11,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        88,
+        57
+       ],
+       "crop": [
+        88,
+        0,
+        12,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        100,
+        60
+       ],
+       "crop": [
+        100,
+        0,
+        12,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        112,
+        58
+       ],
+       "crop": [
+        112,
+        0,
+        12,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        124,
+        62
+       ],
+       "crop": [
+        124,
+        0,
+        8,
+        40
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        132,
+        59
+       ],
+       "crop": [
+        132,
+        0,
+        15,
+        43
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        147,
+        56
+       ],
+       "crop": [
+        147,
+        0,
+        13,
+        46
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        160,
+        60
+       ],
+       "crop": [
+        160,
+        0,
+        15,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        175,
+        58
+       ],
+       "crop": [
+        175,
+        0,
+        15,
+        44
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        190,
+        61
+       ],
+       "crop": [
+        190,
+        0,
+        19,
+        41
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        209,
+        57
+       ],
+       "crop": [
+        209,
+        0,
+        11,
+        45
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        220,
+        60
+       ],
+       "crop": [
+        220,
+        0,
+        13,
+        42
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/crowd_00.png"
+       ],
+       "at": [
+        233,
+        59
+       ],
+       "crop": [
+        233,
+        0,
+        7,
+        43
+       ]
+      }
      ]
     },
     {
      "backdrop": "art/intro/bg_forum.png",
-     "say": "forum_2",
+     "say": "herald_2",
      "face": "intro_crier",
      "actors": [
       {
@@ -872,325 +813,7 @@
     },
     {
      "backdrop": "art/intro/bg_forum.png",
-     "say": "forum_3",
-     "face": "intro_crier",
-     "actors": [
-      {
-       "frames": [
-        "art/intro/plinth.png"
-       ],
-       "at": [
-        96,
-        69
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crier_00.png",
-        "art/intro/crier_01.png",
-        "art/intro/crier_02.png",
-        "art/intro/crier_03.png",
-        "art/intro/crier_04.png",
-        "art/intro/crier_05.png",
-        "art/intro/crier_06.png",
-        "art/intro/crier_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        93,
-        15
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        0,
-        57
-       ],
-       "crop": [
-        0,
-        0,
-        20,
-        45
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        20,
-        60
-       ],
-       "crop": [
-        20,
-        0,
-        18,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        38,
-        58
-       ],
-       "crop": [
-        38,
-        0,
-        8,
-        44
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        46,
-        61
-       ],
-       "crop": [
-        46,
-        0,
-        12,
-        41
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        58,
-        56
-       ],
-       "crop": [
-        58,
-        0,
-        11,
-        46
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        69,
-        59
-       ],
-       "crop": [
-        69,
-        0,
-        8,
-        43
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        77,
-        61
-       ],
-       "crop": [
-        77,
-        0,
-        11,
-        41
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        88,
-        57
-       ],
-       "crop": [
-        88,
-        0,
-        12,
-        45
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        100,
-        60
-       ],
-       "crop": [
-        100,
-        0,
-        12,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        112,
-        58
-       ],
-       "crop": [
-        112,
-        0,
-        12,
-        44
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        124,
-        62
-       ],
-       "crop": [
-        124,
-        0,
-        8,
-        40
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        132,
-        59
-       ],
-       "crop": [
-        132,
-        0,
-        15,
-        43
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        147,
-        56
-       ],
-       "crop": [
-        147,
-        0,
-        13,
-        46
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        160,
-        60
-       ],
-       "crop": [
-        160,
-        0,
-        15,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        175,
-        58
-       ],
-       "crop": [
-        175,
-        0,
-        15,
-        44
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        190,
-        61
-       ],
-       "crop": [
-        190,
-        0,
-        19,
-        41
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        209,
-        57
-       ],
-       "crop": [
-        209,
-        0,
-        11,
-        45
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        220,
-        60
-       ],
-       "crop": [
-        220,
-        0,
-        13,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        233,
-        59
-       ],
-       "crop": [
-        233,
-        0,
-        7,
-        43
-       ]
-      }
-     ]
-    },
-    {
-     "backdrop": "art/intro/bg_forum.png",
-     "say": "forum_4",
+     "say": "herald_3",
      "face": "intro_crier",
      "actors": [
       {
@@ -1514,7 +1137,45 @@
    "fade_out": 1.0,
    "beats": [
     {
+     "backdrop": "art/scenes/treasure_italia.png",
+     "card": "province_italia",
+     "duration": 2.0,
+     "dissolve": 0.8
+    },
+    {
      "for_each": "villain",
+     "from": 0,
+     "count": 6,
+     "backdrop": "art/intro/bg_wanted_wall.png",
+     "dissolve": 0.4,
+     "actors": [
+      {
+       "villain": "*",
+       "at": [
+        91,
+        12
+       ],
+       "crop": [
+        19,
+        6,
+        58,
+        78
+       ]
+      }
+     ],
+     "say": "wanted",
+     "face": "intro_crier",
+     "duration": 2.6
+    },
+    {
+     "backdrop": "art/scenes/treasure_galliae.png",
+     "card": "province_galliae",
+     "duration": 2.0,
+     "dissolve": 0.8
+    },
+    {
+     "for_each": "villain",
+     "from": 6,
      "count": 4,
      "backdrop": "art/intro/bg_wanted_wall.png",
      "dissolve": 0.4,
@@ -1533,13 +1194,22 @@
        ]
       }
      ],
-     "say": "wanted_slow",
-     "face": "intro_crier"
+     "say": "wanted",
+     "face": "intro_crier",
+     "duration": 2.6
+    },
+    {
+     "backdrop": "art/scenes/treasure_africa.png",
+     "card": "province_africa",
+     "duration": 2.0,
+     "dissolve": 0.8
     },
     {
      "for_each": "villain",
-     "from": 4,
+     "from": 10,
+     "count": 4,
      "backdrop": "art/intro/bg_wanted_wall.png",
+     "dissolve": 0.4,
      "actors": [
       {
        "villain": "*",
@@ -1555,38 +1225,53 @@
        ]
       }
      ],
-     "say": "wanted_fast",
+     "say": "wanted",
      "face": "intro_crier",
-     "duration": 3.2
-    },
-    {
-     "backdrop": "art/scenes/treasure_italia.png",
-     "card": "province_italia",
-     "duration": 2.5,
-     "dissolve": 0.8
-    },
-    {
-     "backdrop": "art/scenes/treasure_galliae.png",
-     "card": "province_galliae",
-     "duration": 2.5,
-     "dissolve": 0.8
-    },
-    {
-     "backdrop": "art/scenes/treasure_africa.png",
-     "card": "province_africa",
-     "duration": 2.5,
-     "dissolve": 0.8
+     "duration": 2.6
     },
     {
      "backdrop": "art/scenes/treasure_oriens.png",
      "card": "province_oriens",
-     "duration": 2.5,
+     "duration": 2.0,
      "dissolve": 0.8
     },
     {
-     "backdrop": "art/intro/bg_forum.png",
-     "say": "wanted_close",
+     "for_each": "villain",
+     "from": 14,
+     "count": 3,
+     "backdrop": "art/intro/bg_wanted_wall.png",
+     "dissolve": 0.4,
+     "actors": [
+      {
+       "villain": "*",
+       "at": [
+        91,
+        12
+       ],
+       "crop": [
+        19,
+        6,
+        58,
+        78
+       ]
+      }
+     ],
+     "say": "wanted",
      "face": "intro_crier",
+     "duration": 2.6
+    },
+    {
+     "backdrop": "art/intro/bg_forum.png",
+     "say": "herald_4",
+     "face": "intro_crier",
+     "dissolve": 0.8,
+     "sounds": [
+      {
+       "file": "audio/intro_cheer.wav",
+       "at": 3.0,
+       "gain": 0.4
+      }
+     ],
      "actors": [
       {
        "frames": [
@@ -1899,8 +1584,7 @@
         43
        ]
       }
-     ],
-     "dissolve": 0.8
+     ]
     }
    ]
   },
@@ -1911,7 +1595,7 @@
    "beats": [
     {
      "backdrop": "art/ui/backdrop_palace_welcome.png",
-     "say": "palace_1",
+     "say": "palace",
      "actors": [
       {
        "frames": [
@@ -1981,12 +1665,104 @@
         54
        ]
       }
+     ],
+     "sounds": [
+      {
+       "file": "audio/intro_steps.wav",
+       "at": 0,
+       "gain": 0.4
+      }
      ]
     },
     {
-     "backdrop": "art/ui/backdrop_palace_throne.png",
+     "backdrop": "art/intro/bg_throne_close.png",
      "say": "trajan_1",
      "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/trajan_close_00.png",
+        "art/intro/trajan_close_01.png",
+        "art/intro/trajan_close_02.png",
+        "art/intro/trajan_close_03.png",
+        "art/intro/trajan_close_04.png",
+        "art/intro/trajan_close_05.png",
+        "art/intro/trajan_close_06.png",
+        "art/intro/trajan_close_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        35,
+        -4
+       ]
+      }
+     ],
+     "dissolve": 0.8
+    },
+    {
+     "backdrop": "art/intro/bg_throne_close.png",
+     "say": "trajan_2",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/trajan_close_00.png",
+        "art/intro/trajan_close_01.png",
+        "art/intro/trajan_close_02.png",
+        "art/intro/trajan_close_03.png",
+        "art/intro/trajan_close_04.png",
+        "art/intro/trajan_close_05.png",
+        "art/intro/trajan_close_06.png",
+        "art/intro/trajan_close_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        35,
+        -4
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_throne_close.png",
+     "say": "trajan_3",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/trajan_close_00.png",
+        "art/intro/trajan_close_01.png",
+        "art/intro/trajan_close_02.png",
+        "art/intro/trajan_close_03.png",
+        "art/intro/trajan_close_04.png",
+        "art/intro/trajan_close_05.png",
+        "art/intro/trajan_close_06.png",
+        "art/intro/trajan_close_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        35,
+        -4
+       ]
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_map_table.png",
+     "say": "trajan_4",
+     "face": "emperor_traianus",
+     "dissolve": 0.8
+    },
+    {
+     "backdrop": "art/intro/bg_map_table.png",
+     "say": "trajan_5",
+     "face": "emperor_traianus"
+    },
+    {
+     "backdrop": "art/ui/backdrop_palace_throne.png",
+     "say": "trajan_6",
+     "face": "emperor_traianus",
+     "dissolve": 0.8,
      "actors": [
       {
        "frames": [
@@ -2006,10 +1782,6 @@
        ]
       },
       {
-       "at": [
-        36,
-        53
-       ],
        "frames": [
         "art/intro/hero_dux_kneel_00.png",
         "art/intro/hero_dux_kneel_01.png",
@@ -2020,14 +1792,14 @@
         "art/intro/hero_dux_kneel_06.png",
         "art/intro/hero_dux_kneel_07.png"
        ],
+       "at": [
+        24,
+        53
+       ],
        "fps": 4,
        "loop": false
       },
       {
-       "at": [
-        68,
-        53
-       ],
        "frames": [
         "art/intro/hero_legatus_kneel_00.png",
         "art/intro/hero_legatus_kneel_01.png",
@@ -2038,14 +1810,14 @@
         "art/intro/hero_legatus_kneel_06.png",
         "art/intro/hero_legatus_kneel_07.png"
        ],
+       "at": [
+        57,
+        53
+       ],
        "fps": 4,
        "loop": false
       },
       {
-       "at": [
-        150,
-        52
-       ],
        "frames": [
         "art/intro/hero_praetorianus_kneel_00.png",
         "art/intro/hero_praetorianus_kneel_01.png",
@@ -2056,15 +1828,15 @@
         "art/intro/hero_praetorianus_kneel_06.png",
         "art/intro/hero_praetorianus_kneel_07.png"
        ],
+       "at": [
+        132,
+        52
+       ],
+       "mirror": true,
        "fps": 4,
-       "loop": false,
-       "mirror": true
+       "loop": false
       },
       {
-       "at": [
-        182,
-        54
-       ],
        "frames": [
         "art/intro/hero_sibylla_kneel_00.png",
         "art/intro/hero_sibylla_kneel_01.png",
@@ -2075,314 +1847,81 @@
         "art/intro/hero_sibylla_kneel_06.png",
         "art/intro/hero_sibylla_kneel_07.png"
        ],
-       "fps": 4,
-       "loop": false,
-       "mirror": true
-      }
-     ],
-     "dissolve": 0.8
-    },
-    {
-     "backdrop": "art/ui/backdrop_palace_throne.png",
-     "say": "trajan_2",
-     "face": "emperor_traianus",
-     "actors": [
-      {
-       "frames": [
-        "art/intro/trajan_seated_00.png",
-        "art/intro/trajan_seated_01.png",
-        "art/intro/trajan_seated_02.png",
-        "art/intro/trajan_seated_03.png",
-        "art/intro/trajan_seated_04.png",
-        "art/intro/trajan_seated_05.png",
-        "art/intro/trajan_seated_06.png",
-        "art/intro/trajan_seated_07.png"
-       ],
-       "fps": 4,
        "at": [
-        103,
-        49
-       ]
-      },
-      {
-       "at": [
-        36,
-        53
-       ],
-       "frames": [
-        "art/intro/hero_dux_kneel_07.png"
-       ]
-      },
-      {
-       "at": [
-        68,
-        53
-       ],
-       "frames": [
-        "art/intro/hero_legatus_kneel_07.png"
-       ]
-      },
-      {
-       "at": [
-        150,
-        52
-       ],
-       "frames": [
-        "art/intro/hero_praetorianus_kneel_07.png"
-       ],
-       "mirror": true
-      },
-      {
-       "at": [
-        182,
+        168,
         54
        ],
-       "frames": [
-        "art/intro/hero_sibylla_kneel_07.png"
-       ],
-       "mirror": true
+       "mirror": true,
+       "fps": 4,
+       "loop": false
       }
      ]
     },
     {
      "backdrop": "art/ui/backdrop_palace_throne.png",
-     "say": "trajan_3",
-     "face": "emperor_traianus",
-     "actors": [
-      {
-       "frames": [
-        "art/intro/trajan_seated_00.png",
-        "art/intro/trajan_seated_01.png",
-        "art/intro/trajan_seated_02.png",
-        "art/intro/trajan_seated_03.png",
-        "art/intro/trajan_seated_04.png",
-        "art/intro/trajan_seated_05.png",
-        "art/intro/trajan_seated_06.png",
-        "art/intro/trajan_seated_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        103,
-        49
-       ]
-      },
-      {
-       "at": [
-        36,
-        53
-       ],
-       "frames": [
-        "art/intro/hero_dux_kneel_07.png"
-       ]
-      },
-      {
-       "at": [
-        68,
-        53
-       ],
-       "frames": [
-        "art/intro/hero_legatus_kneel_07.png"
-       ]
-      },
-      {
-       "at": [
-        150,
-        52
-       ],
-       "frames": [
-        "art/intro/hero_praetorianus_kneel_07.png"
-       ],
-       "mirror": true
-      },
-      {
-       "at": [
-        182,
-        54
-       ],
-       "frames": [
-        "art/intro/hero_sibylla_kneel_07.png"
-       ],
-       "mirror": true
-      }
-     ]
-    },
-    {
-     "backdrop": "art/intro/bg_map_table.png",
-     "say": "trajan_4",
-     "face": "emperor_traianus",
-     "dissolve": 0.8,
-     "actors": [
-      {
-       "frames": [
-        "art/intro/map_piece_a.png"
-       ],
-       "at": [
-        76,
-        38
-       ],
-       "start": 0.6,
-       "fade_in": 0.6
-      },
-      {
-       "frames": [
-        "art/intro/map_piece_b.png"
-       ],
-       "at": [
-        102,
-        40
-       ],
-       "start": 2.1,
-       "fade_in": 0.6
-      },
-      {
-       "frames": [
-        "art/intro/map_piece_c.png"
-       ],
-       "at": [
-        88,
-        48
-       ],
-       "start": 3.6,
-       "fade_in": 0.6
-      },
-      {
-       "frames": [
-        "art/intro/eagle_mark_00.png",
-        "art/intro/eagle_mark_01.png",
-        "art/intro/eagle_mark_02.png",
-        "art/intro/eagle_mark_03.png",
-        "art/intro/eagle_mark_04.png",
-        "art/intro/eagle_mark_05.png",
-        "art/intro/eagle_mark_06.png",
-        "art/intro/eagle_mark_07.png"
-       ],
-       "fps": 8,
-       "at": [
-        100,
-        46
-       ],
-       "start": 5.4,
-       "fade_in": 0.6
-      }
-     ]
-    },
-    {
-     "backdrop": "art/intro/bg_map_table.png",
-     "say": "trajan_5",
-     "face": "emperor_traianus",
-     "actors": [
-      {
-       "frames": [
-        "art/intro/map_piece_a.png"
-       ],
-       "at": [
-        76,
-        38
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/map_piece_b.png"
-       ],
-       "at": [
-        102,
-        40
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/map_piece_c.png"
-       ],
-       "at": [
-        88,
-        48
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/eagle_mark_00.png",
-        "art/intro/eagle_mark_01.png",
-        "art/intro/eagle_mark_02.png",
-        "art/intro/eagle_mark_03.png",
-        "art/intro/eagle_mark_04.png",
-        "art/intro/eagle_mark_05.png",
-        "art/intro/eagle_mark_06.png",
-        "art/intro/eagle_mark_07.png"
-       ],
-       "fps": 8,
-       "at": [
-        100,
-        46
-       ]
-      }
-     ]
-    },
-    {
-     "backdrop": "art/ui/backdrop_palace_throne.png",
-     "say": "trajan_6",
-     "face": "emperor_traianus",
-     "actors": [
-      {
-       "frames": [
-        "art/intro/trajan_seated_00.png",
-        "art/intro/trajan_seated_01.png",
-        "art/intro/trajan_seated_02.png",
-        "art/intro/trajan_seated_03.png",
-        "art/intro/trajan_seated_04.png",
-        "art/intro/trajan_seated_05.png",
-        "art/intro/trajan_seated_06.png",
-        "art/intro/trajan_seated_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        103,
-        49
-       ]
-      },
-      {
-       "at": [
-        36,
-        53
-       ],
-       "frames": [
-        "art/intro/hero_dux_kneel_07.png"
-       ]
-      },
-      {
-       "at": [
-        68,
-        53
-       ],
-       "frames": [
-        "art/intro/hero_legatus_kneel_07.png"
-       ]
-      },
-      {
-       "at": [
-        150,
-        52
-       ],
-       "frames": [
-        "art/intro/hero_praetorianus_kneel_07.png"
-       ],
-       "mirror": true
-      },
-      {
-       "at": [
-        182,
-        54
-       ],
-       "frames": [
-        "art/intro/hero_sibylla_kneel_07.png"
-       ],
-       "mirror": true
-      }
-     ],
-     "dissolve": 0.8
-    },
-    {
-     "backdrop": "art/intro/bg_map_table.png",
      "say": "trajan_7",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/trajan_seated_00.png",
+        "art/intro/trajan_seated_01.png",
+        "art/intro/trajan_seated_02.png",
+        "art/intro/trajan_seated_03.png",
+        "art/intro/trajan_seated_04.png",
+        "art/intro/trajan_seated_05.png",
+        "art/intro/trajan_seated_06.png",
+        "art/intro/trajan_seated_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        103,
+        49
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/hero_dux_kneel_07.png"
+       ],
+       "at": [
+        24,
+        53
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/hero_legatus_kneel_07.png"
+       ],
+       "at": [
+        57,
+        53
+       ]
+      },
+      {
+       "frames": [
+        "art/intro/hero_praetorianus_kneel_07.png"
+       ],
+       "at": [
+        132,
+        52
+       ],
+       "mirror": true
+      },
+      {
+       "frames": [
+        "art/intro/hero_sibylla_kneel_07.png"
+       ],
+       "at": [
+        168,
+        54
+       ],
+       "mirror": true
+      }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_map_table.png",
+     "say": "trajan_8",
      "face": "emperor_traianus",
      "dissolve": 0.8,
      "actors": [
@@ -2404,69 +1943,6 @@
        ]
       }
      ]
-    },
-    {
-     "backdrop": "art/ui/backdrop_palace_throne.png",
-     "say": "trajan_8",
-     "face": "emperor_traianus",
-     "actors": [
-      {
-       "frames": [
-        "art/intro/trajan_seated_00.png",
-        "art/intro/trajan_seated_01.png",
-        "art/intro/trajan_seated_02.png",
-        "art/intro/trajan_seated_03.png",
-        "art/intro/trajan_seated_04.png",
-        "art/intro/trajan_seated_05.png",
-        "art/intro/trajan_seated_06.png",
-        "art/intro/trajan_seated_07.png"
-       ],
-       "fps": 4,
-       "at": [
-        103,
-        49
-       ]
-      },
-      {
-       "at": [
-        36,
-        53
-       ],
-       "frames": [
-        "art/intro/hero_dux_kneel_07.png"
-       ]
-      },
-      {
-       "at": [
-        68,
-        53
-       ],
-       "frames": [
-        "art/intro/hero_legatus_kneel_07.png"
-       ]
-      },
-      {
-       "at": [
-        150,
-        52
-       ],
-       "frames": [
-        "art/intro/hero_praetorianus_kneel_07.png"
-       ],
-       "mirror": true
-      },
-      {
-       "at": [
-        182,
-        54
-       ],
-       "frames": [
-        "art/intro/hero_sibylla_kneel_07.png"
-       ],
-       "mirror": true
-      }
-     ],
-     "dissolve": 0.8
     }
    ]
   },
@@ -2477,8 +1953,30 @@
    "beats": [
     {
      "backdrop": "art/intro/bg_forum.png",
-     "say": "decree_1",
+     "say": "decree",
      "face": "intro_crier",
+     "sounds": [
+      {
+       "file": "audio/intro_horn.wav",
+       "at": 0,
+       "gain": 0.5
+      },
+      {
+       "file": "audio/intro_scroll.wav",
+       "at": 0.8,
+       "gain": 0.5
+      },
+      {
+       "file": "audio/intro_crowd.wav",
+       "at": 0.5,
+       "gain": 0.1
+      },
+      {
+       "file": "audio/intro_cheer.wav",
+       "at": 5.0,
+       "gain": 0.4
+      }
+     ],
      "actors": [
       {
        "frames": [
@@ -2792,420 +2290,349 @@
         43
        ]
       }
+     ]
+    },
+    {
+     "backdrop": "art/intro/bg_curia.png",
+     "say": "present_legatus",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/hero_legatus_walk_00.png",
+        "art/intro/hero_legatus_walk_01.png",
+        "art/intro/hero_legatus_walk_02.png",
+        "art/intro/hero_legatus_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -48,
+        43
+       ],
+       "to": [
+        132,
+        43
+       ],
+       "end": 5.333333333333333
+      },
+      {
+       "frames": [
+        "art/intro/hero_legatus_turn_00.png",
+        "art/intro/hero_legatus_turn_01.png",
+        "art/intro/hero_legatus_turn_02.png",
+        "art/intro/hero_legatus_turn_03.png",
+        "art/intro/hero_legatus_turn_04.png",
+        "art/intro/hero_legatus_turn_05.png"
+       ],
+       "fps": 6,
+       "at": [
+        132,
+        43
+       ],
+       "start": 5.333333333333333,
+       "loop": false,
+       "label": "label_legatus"
+      },
+      {
+       "frames": [
+        "art/ui/emperor_traianus_figure_00.png",
+        "art/ui/emperor_traianus_figure_01.png",
+        "art/ui/emperor_traianus_figure_02.png",
+        "art/ui/emperor_traianus_figure_03.png",
+        "art/ui/emperor_traianus_figure_04.png",
+        "art/ui/emperor_traianus_figure_05.png",
+        "art/ui/emperor_traianus_figure_06.png",
+        "art/ui/emperor_traianus_figure_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        160,
+        12
+       ],
+       "mirror": true
+      }
      ],
      "sounds": [
       {
        "file": "audio/intro_crowd.wav",
        "at": 0,
-       "gain": 0.1
+       "gain": 0.06
+      },
+      {
+       "file": "audio/intro_applause.wav",
+       "at": 6.33,
+       "gain": 0.35
+      }
+     ],
+     "dissolve": 0.8
+    },
+    {
+     "backdrop": "art/intro/bg_curia.png",
+     "say": "present_praetorianus",
+     "face": "emperor_traianus",
+     "actors": [
+      {
+       "frames": [
+        "art/intro/hero_legatus_turn_05.png"
+       ],
+       "at": [
+        132,
+        43
+       ],
+       "label": "label_legatus"
+      },
+      {
+       "frames": [
+        "art/intro/hero_praetorianus_walk_00.png",
+        "art/intro/hero_praetorianus_walk_01.png",
+        "art/intro/hero_praetorianus_walk_02.png",
+        "art/intro/hero_praetorianus_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -48,
+        35
+       ],
+       "to": [
+        88,
+        35
+       ],
+       "end": 4.0
+      },
+      {
+       "frames": [
+        "art/intro/hero_praetorianus_turn_00.png",
+        "art/intro/hero_praetorianus_turn_01.png",
+        "art/intro/hero_praetorianus_turn_02.png",
+        "art/intro/hero_praetorianus_turn_03.png",
+        "art/intro/hero_praetorianus_turn_04.png",
+        "art/intro/hero_praetorianus_turn_05.png"
+       ],
+       "fps": 6,
+       "at": [
+        88,
+        35
+       ],
+       "start": 4.0,
+       "loop": false,
+       "label": "label_praetorianus"
+      },
+      {
+       "frames": [
+        "art/ui/emperor_traianus_figure_00.png",
+        "art/ui/emperor_traianus_figure_01.png",
+        "art/ui/emperor_traianus_figure_02.png",
+        "art/ui/emperor_traianus_figure_03.png",
+        "art/ui/emperor_traianus_figure_04.png",
+        "art/ui/emperor_traianus_figure_05.png",
+        "art/ui/emperor_traianus_figure_06.png",
+        "art/ui/emperor_traianus_figure_07.png"
+       ],
+       "fps": 4,
+       "at": [
+        160,
+        12
+       ],
+       "mirror": true
+      }
+     ],
+     "sounds": [
+      {
+       "file": "audio/intro_applause.wav",
+       "at": 5.0,
+       "gain": 0.35
       }
      ]
     },
     {
-     "backdrop": "art/intro/bg_forum.png",
-     "say": "decree_2",
-     "face": "intro_crier",
+     "backdrop": "art/intro/bg_curia.png",
+     "say": "present_sibylla",
+     "face": "emperor_traianus",
      "actors": [
       {
        "frames": [
-        "art/intro/plinth.png"
-       ],
-       "at": [
-        96,
-        69
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crier_decree_07.png"
-       ],
-       "at": [
-        93,
-        15
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        0,
-        57
-       ],
-       "crop": [
-        0,
-        0,
-        20,
-        45
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        20,
-        60
-       ],
-       "crop": [
-        20,
-        0,
-        18,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        38,
-        58
-       ],
-       "crop": [
-        38,
-        0,
-        8,
-        44
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        46,
-        61
-       ],
-       "crop": [
-        46,
-        0,
-        12,
-        41
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        58,
-        56
-       ],
-       "crop": [
-        58,
-        0,
-        11,
-        46
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        69,
-        59
-       ],
-       "crop": [
-        69,
-        0,
-        8,
-        43
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        77,
-        61
-       ],
-       "crop": [
-        77,
-        0,
-        11,
-        41
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        88,
-        57
-       ],
-       "crop": [
-        88,
-        0,
-        12,
-        45
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        100,
-        60
-       ],
-       "crop": [
-        100,
-        0,
-        12,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        112,
-        58
-       ],
-       "crop": [
-        112,
-        0,
-        12,
-        44
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        124,
-        62
-       ],
-       "crop": [
-        124,
-        0,
-        8,
-        40
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
+        "art/intro/hero_legatus_turn_05.png"
        ],
        "at": [
         132,
-        59
-       ],
-       "crop": [
-        132,
-        0,
-        15,
         43
-       ]
+       ],
+       "label": "label_legatus"
       },
       {
        "frames": [
-        "art/intro/crowd_00.png"
+        "art/intro/hero_praetorianus_turn_05.png"
        ],
        "at": [
-        147,
-        56
+        88,
+        35
        ],
-       "crop": [
-        147,
-        0,
-        13,
-        46
-       ]
+       "label": "label_praetorianus"
       },
       {
        "frames": [
-        "art/intro/crowd_00.png"
+        "art/intro/hero_sibylla_walk_00.png",
+        "art/intro/hero_sibylla_walk_01.png",
+        "art/intro/hero_sibylla_walk_02.png",
+        "art/intro/hero_sibylla_walk_03.png"
        ],
+       "fps": 6,
+       "at": [
+        -48,
+        43
+       ],
+       "to": [
+        44,
+        43
+       ],
+       "end": 2.6666666666666665
+      },
+      {
+       "frames": [
+        "art/intro/hero_sibylla_turn_00.png",
+        "art/intro/hero_sibylla_turn_01.png",
+        "art/intro/hero_sibylla_turn_02.png",
+        "art/intro/hero_sibylla_turn_03.png",
+        "art/intro/hero_sibylla_turn_04.png",
+        "art/intro/hero_sibylla_turn_05.png"
+       ],
+       "fps": 6,
+       "at": [
+        44,
+        43
+       ],
+       "start": 2.6666666666666665,
+       "loop": false,
+       "label": "label_sibylla"
+      },
+      {
+       "frames": [
+        "art/ui/emperor_traianus_figure_00.png",
+        "art/ui/emperor_traianus_figure_01.png",
+        "art/ui/emperor_traianus_figure_02.png",
+        "art/ui/emperor_traianus_figure_03.png",
+        "art/ui/emperor_traianus_figure_04.png",
+        "art/ui/emperor_traianus_figure_05.png",
+        "art/ui/emperor_traianus_figure_06.png",
+        "art/ui/emperor_traianus_figure_07.png"
+       ],
+       "fps": 4,
        "at": [
         160,
-        60
+        12
        ],
-       "crop": [
-        160,
-        0,
-        15,
-        42
-       ]
-      },
+       "mirror": true
+      }
+     ],
+     "sounds": [
       {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        175,
-        58
-       ],
-       "crop": [
-        175,
-        0,
-        15,
-        44
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        190,
-        61
-       ],
-       "crop": [
-        190,
-        0,
-        19,
-        41
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        209,
-        57
-       ],
-       "crop": [
-        209,
-        0,
-        11,
-        45
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        220,
-        60
-       ],
-       "crop": [
-        220,
-        0,
-        13,
-        42
-       ]
-      },
-      {
-       "frames": [
-        "art/intro/crowd_00.png"
-       ],
-       "at": [
-        233,
-        59
-       ],
-       "crop": [
-        233,
-        0,
-        7,
-        43
-       ]
+       "file": "audio/intro_applause.wav",
+       "at": 3.67,
+       "gain": 0.35
       }
      ]
     },
     {
-     "backdrop": "art/intro/bg_battlefield.png",
-     "duration": 7.0,
-     "dissolve": 0.8,
+     "backdrop": "art/intro/bg_curia.png",
+     "say": "present_dux",
+     "face": "emperor_traianus",
      "actors": [
       {
        "frames": [
-        "art/intro/legionary_walk_00.png",
-        "art/intro/legionary_walk_01.png",
-        "art/intro/legionary_walk_02.png",
-        "art/intro/legionary_walk_03.png"
+        "art/intro/hero_legatus_turn_05.png"
        ],
-       "fps": 6,
        "at": [
-        -60,
-        54
+        132,
+        43
        ],
-       "to": [
-        40,
-        54
-       ]
+       "label": "label_legatus"
       },
       {
        "frames": [
-        "art/intro/legionary_walk_00.png",
-        "art/intro/legionary_walk_01.png",
-        "art/intro/legionary_walk_02.png",
-        "art/intro/legionary_walk_03.png"
+        "art/intro/hero_praetorianus_turn_05.png"
        ],
-       "fps": 6,
        "at": [
-        -30,
-        52
+        88,
+        35
        ],
-       "to": [
-        70,
-        52
-       ]
+       "label": "label_praetorianus"
       },
       {
        "frames": [
-        "art/intro/legionary_walk_00.png",
-        "art/intro/legionary_walk_01.png",
-        "art/intro/legionary_walk_02.png",
-        "art/intro/legionary_walk_03.png"
+        "art/intro/hero_sibylla_turn_05.png"
+       ],
+       "at": [
+        44,
+        43
+       ],
+       "label": "label_sibylla"
+      },
+      {
+       "frames": [
+        "art/intro/hero_dux_walk_00.png",
+        "art/intro/hero_dux_walk_01.png",
+        "art/intro/hero_dux_walk_02.png",
+        "art/intro/hero_dux_walk_03.png"
+       ],
+       "fps": 6,
+       "at": [
+        -48,
+        35
+       ],
+       "to": [
+        0,
+        35
+       ],
+       "end": 1.3333333333333333
+      },
+      {
+       "frames": [
+        "art/intro/hero_dux_turn_00.png",
+        "art/intro/hero_dux_turn_01.png",
+        "art/intro/hero_dux_turn_02.png",
+        "art/intro/hero_dux_turn_03.png",
+        "art/intro/hero_dux_turn_04.png",
+        "art/intro/hero_dux_turn_05.png"
        ],
        "fps": 6,
        "at": [
         0,
-        54
+        35
        ],
-       "to": [
-        100,
-        54
-       ]
+       "start": 1.3333333333333333,
+       "loop": false,
+       "label": "label_dux"
       },
       {
        "frames": [
-        "art/intro/warrior_flee_00.png",
-        "art/intro/warrior_flee_01.png",
-        "art/intro/warrior_flee_02.png",
-        "art/intro/warrior_flee_03.png"
+        "art/ui/emperor_traianus_figure_00.png",
+        "art/ui/emperor_traianus_figure_01.png",
+        "art/ui/emperor_traianus_figure_02.png",
+        "art/ui/emperor_traianus_figure_03.png",
+        "art/ui/emperor_traianus_figure_04.png",
+        "art/ui/emperor_traianus_figure_05.png",
+        "art/ui/emperor_traianus_figure_06.png",
+        "art/ui/emperor_traianus_figure_07.png"
        ],
-       "fps": 8,
+       "fps": 4,
        "at": [
-        120,
-        46
+        160,
+        12
        ],
-       "to": [
-        260,
-        46
-       ]
-      },
+       "mirror": true
+      }
+     ],
+     "sounds": [
       {
-       "frames": [
-        "art/intro/warrior_flee_00.png",
-        "art/intro/warrior_flee_01.png",
-        "art/intro/warrior_flee_02.png",
-        "art/intro/warrior_flee_03.png"
-       ],
-       "fps": 8,
-       "at": [
-        165,
-        48
-       ],
-       "to": [
-        290,
-        48
-       ]
+       "file": "audio/intro_applause.wav",
+       "at": 2.33,
+       "gain": 0.35
       }
      ]
     },
     {
      "backdrop": "art/intro/bg_city_gate.png",
-     "say": "decree_3",
+     "say": "farewell",
      "face": "intro_crier",
      "duration": 8.0,
      "dissolve": 0.8,
@@ -3328,6 +2755,13 @@
         65,
         54
        ]
+      }
+     ],
+     "sounds": [
+      {
+       "file": "audio/intro_march.wav",
+       "at": 0,
+       "gain": 0.6
       }
      ]
     }

@@ -365,27 +365,31 @@ generated from.
 - **The Introduction** (#154, `art/intro/`, the jobs `art/jobs/intro_*.json`)
   — backgrounds, sprites and text, the way the 80s and 90s intros were built.
   Every set is a 240x102 backdrop on the screen route with "no people" in
-  the prompt; the existing `backdrop_palace_welcome` and
+  the prompt, except the Curia, whose senators are painted on their benches;
+  the existing `backdrop_palace_welcome` and
   `backdrop_palace_throne` have been reused. Figures have been made on the
   figure route and animated with `custom_action`, alpha kept. The troop
   style has refused any canvas under 64 (`invalid_style_dimensions`, no
   charge), so a small figure has been generated at 64 and animated at its
   final size: `custom_action` has redrawn the still at the output canvas
   (32 to 256), a 64 still animated at 56 standing about 51 px tall. That is
-  how the crier (56), the four heroes and the legion (48), the fleeing and
-  cheering warriors (56) and Trajan on his throne (32) have been made
-  without scaling. The heroes on foot have been prompted from their class
+  how the crier (56), the four heroes and the legion (48) and Trajan on his
+  throne (32) have been made without scaling; the close shot of the throne
+  has animated the same Trajan still at 96, and the Curia has reused his
+  Audience figure (`emperor_traianus_figure`). The tribesman has appeared
+  only where he attacks the eagle bearer. The heroes on foot have been prompted from their class
   portraits; a kneel animated straight from a standing still has come back
   as the move down, not a held loop, so it has played once and held its
-  last frame. Props
-  (the plinth, the map pieces, the eagle mark, the hourglass) have been
+  last frame. Their turn to face the camera has been animated from the last
+  frame of the walk, so the walk runs straight into it. Props
+  (the plinth, the hourglass) have been
   `rd_pro__default` cut-outs, magenta named and removed. The crier's face
   has been the villain portrait route (128, cropped to 96). Only frame 00 of
   the crowd loop has been installed, at Dan's order: the engine draws it still, as
   cropped columns at staggered heights. Rain and lightning have been drawn
   by the engine, not painted. The theme has been synthesised by
-  `romeart.py introtheme`, and the thunder and crowd sounds have been CC0
-  recordings (`assets/glory-of-rome/audio/CREDITS.txt`).
+  `romeart.py introtheme`, and every sound effect has been a CC0
+  recording from Freesound, trimmed and made mono WAV (`assets/glory-of-rome/audio/CREDITS.txt`).
 - **Recolouring** — when a set reads fine but its colours vanish against the
   grass, recolour the approved frames locally in HSV rather than
   regenerating: every opaque pixel except the pale highlights takes the new

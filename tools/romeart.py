@@ -3587,8 +3587,8 @@ A lyre (Karplus-Strong plucked string) plays slow broken chords over a soft
 E/B drone for the whole piece. One guest a minute fades in over 8 s and out
 over 10 s: the aulos at 1:00, frame drum and finger cymbals at 2:00, pan
 pipes at 3:00; the lyre is alone again from 4:00 to the fade. Greek Dorian
-mode (E F G A B C D), 66 bpm. --length is the intro's running time (281.1 s,
-2026-10-04); --level scales the whole mix (0.25: background, Dan 2026-10-04).
+mode (E F G A B C D), 66 bpm. --length is the intro's running time (243.7 s);
+--level scales the whole mix (0.25: background, Dan 2026-10-04).
 The random source is seeded, so the same arguments give the same file.
 Needs oggenc.
     """
@@ -3596,7 +3596,7 @@ Needs oggenc.
     import numpy as np
     ap = argparse.ArgumentParser(prog="romeart introtheme")
     ap.add_argument("out")
-    ap.add_argument("--length", type=float, default=281.1)
+    ap.add_argument("--length", type=float, default=243.7)
     ap.add_argument("--level", type=float, default=0.25)
     a = ap.parse_args(argv[1:])
 

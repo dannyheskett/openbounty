@@ -176,7 +176,7 @@ edited apart from the gameplay data:
       { "backdrop": "art/ui/backdrop_town_italia.png", "say": "forum_1", "face": "informant_market",
         "actors": [ { "portrait": "palace_usher", "at": [130, 6] } ] },
       { "for_each": "villain", "count": 4, "backdrop": "%ZONE_SCENE%",
-        "actors": [ { "villain": "*", "at": [72, 3] } ], "say": "wanted_slow", "face": "informant_market" }
+        "actors": [ { "villain": "*", "at": [72, 3] } ], "say": "wanted", "face": "informant_market" }
     ]}
   ]
 }
@@ -206,7 +206,9 @@ edited apart from the gameplay data:
     false plays the frames once and holds the last, for a single action),
     and `fade_in` / `fade_out` (seconds the sprite fades up after its
     `start` and away before its `end`), and `crop` (`[x, y, w, h]`, the part
-    of each frame shown, for a portrait's head and shoulders);
+    of each frame shown, for a portrait's head and shoulders), and `label`
+    (a key in the strings' `intro` group, a name set under the sprite's
+    frame, white on a shadow);
   - `weather`: `"rain"`, streaks drawn over the picture, and `flashes`: the
     seconds into the beat of each lightning flash;
   - `sounds`: sound effects, each a `file` (a .wav in the pack: iOS decodes
@@ -214,7 +216,7 @@ edited apart from the gameplay data:
     (0..1, default 1). Each has started as the timeline passed it, played to
     its end across later beats, and stopped when the intro ended;
   - `still`: a picture drawn whole on the screen at the largest whole
-    multiple, instead of the frame (the title);
+    multiple, instead of the frame (a title card);
   - `say`: a key in the strings' `intro` group, the caption typed on under
     the picture, and `face`: a `portraits` id, the speaker's loop beside it;
   - `card`: a key in the same group, text set in the middle of the picture;
@@ -232,7 +234,7 @@ beat and faded with the last scene. Sound effects have been cued per beat
 (`sounds`); like the theme, they have ignored the Sounds option.
 
 The loader has resolved the script at load, and refused the pack when a
-caption key was missing from `intro`, when `ui.title_intro` was missing, or
+caption, card or label key was missing from `intro`, when `ui.title_intro` was missing, or
 when a beat named an unknown portrait or villain, gave an actor no source or
 two or a time on screen outside the beat, had neither `duration` nor
 `say`, named a weather other than rain, gave a sound no file, a start

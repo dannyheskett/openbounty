@@ -2608,6 +2608,8 @@ static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
             act->end    = json_num(a, "end", -1);   // -1: to the beat's end (set below)
             act->fade_in  = json_num(a, "fade_in", 0);
             act->fade_out = json_num(a, "fade_out", 0);
+            const char *lab = json_str(a, "label", NULL);
+            if (lab) act->label = intro_text(res, jstr, lab, &iv, beat_no);
             cJSON *jc = cJSON_GetObjectItem(a, "crop");
             if (cJSON_GetArraySize(jc) == 4) {
                 act->crop_x = cJSON_GetArrayItem(jc, 0)->valueint;
@@ -2781,7 +2783,10 @@ static void parse_intro(Resources *res, const cJSON *jpath, const cJSON *strings
 static void intro_free(ResIntro *in) {
     for (int i = 0; in->beats && i < in->beat_count; i++) {
         ResIntroBeat *b = &in->beats[i];
-        for (int a = 0; b->actors && a < b->actor_count; a++) free(b->actors[a].frames);
+        for (int a = 0; b->actors && a < b->actor_count; a++) {
+            free(b->actors[a].frames);
+            free(b->actors[a].label);
+        }
         free(b->actors);
         free(b->face);
         free(b->caption);

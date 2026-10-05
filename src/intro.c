@@ -187,6 +187,15 @@ static void draw_picture(const ResIntro *in, const ResIntroBeat *b, double t,
         } else {
             blit_tinted(t, dx, dy, l->scale, act->mirror, (unsigned char)(a * fa));
         }
+        if (act->label && t.id) {
+            // Its name under its feet, centred on the frame and shadowed.
+            int fw = (act->crop_w > 0 ? act->crop_w : t.width) * l->scale;
+            int fh = (act->crop_w > 0 ? act->crop_h : t.height) * l->scale;
+            int lx = dx + (fw - bfont_text_width(act->label)) / 2, ly = dy + fh;
+            unsigned char la = (unsigned char)(a * fa);
+            bfont_draw(act->label, lx + 1, ly + 1, (Color){ 0, 0, 0, la });
+            bfont_draw(act->label, lx, ly, (Color){ 255, 255, 255, la });
+        }
     }
     if (b->rain) draw_rain(in, tb, l, a);
     for (int i = 0; i < b->flash_count; i++) {

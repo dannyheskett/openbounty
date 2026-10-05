@@ -166,6 +166,18 @@ TEST staged_actors_weather_and_stills_load(void) {
     PASS();
 }
 
+// An actor's label is a key in the strings' intro group, like a caption.
+TEST actor_labels_load_and_a_missing_one_refuses(void) {
+    int beats = 0;
+    ASSERT(load_with_intro(WRAP(
+        "{\"duration\": 2, \"actors\": [{\"frames\": [\"art/s.png\"], \"label\": \"hello\"}]}"),
+        true, &beats));
+    ASSERT_FALSE(load_with_intro(WRAP(
+        "{\"duration\": 2, \"actors\": [{\"frames\": [\"art/s.png\"], \"label\": \"nope\"}]}"),
+        true, &beats));
+    PASS();
+}
+
 // Sound effects: a file, started some seconds into the beat, at a gain.
 TEST sounds_load(void) {
     int beats = 0;
@@ -321,6 +333,7 @@ SUITE(unit_intro_suite) {
     RUN_TEST(kings_bounty_has_no_intro);
     RUN_TEST(a_well_formed_intro_loads_and_reloads);
     RUN_TEST(staged_actors_weather_and_stills_load);
+    RUN_TEST(actor_labels_load_and_a_missing_one_refuses);
     RUN_TEST(sounds_load);
     RUN_TEST(a_malformed_sound_refuses_the_load);
     RUN_TEST(the_movie_mix_follows_the_players_levels_and_fade);

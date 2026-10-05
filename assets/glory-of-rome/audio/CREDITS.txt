@@ -5,3 +5,19 @@ intro_thunder.wav "Thunderclap" by Fission9, https://freesound.org/people/Fissio
                   CC0 1.0 (public domain). Trimmed to the crack and first rumble, mono.
 intro_crowd.wav   "Crowd talking / murmur" by trezz77, https://freesound.org/people/trezz77/sounds/546676/
                   CC0 1.0 (public domain). 36 s taken from 0:05, faded in and out, mono.
+intro_rain.wav    "Rain at night medium.wav" by jgxxx, https://freesound.org/people/jgxxx/sounds/704395/
+                  CC0 1.0 (public domain). 34 s taken from 0:05, faded in and out, mono.
+intro_sword.wav   "Sword clash 1.wav" by spycrah, https://freesound.org/people/spycrah/sounds/471095/
+                  CC0 1.0 (public domain). The clash, 1.9 s from 0:00.9, mono.
+intro_horn.wav    "war horn.wav" by adharca, https://freesound.org/people/adharca/sounds/539956/
+                  CC0 1.0 (public domain). Whole, faded out, mono.
+intro_cheer.wav   "small crowd cheering" by HowardV, https://freesound.org/people/HowardV/sounds/264377/
+                  CC0 1.0 (public domain). The first 6 s, faded out, mono.
+intro_steps.wav   "male-foot-walk-marble-stereo.aif" by ragamuffin, https://freesound.org/people/ragamuffin/sounds/118985/
+                  CC0 1.0 (public domain). Whole, faded out, mono.
+intro_scroll.wav  "Parchment - Unroll" by Vrymaa, https://freesound.org/people/Vrymaa/sounds/753282/
+                  CC0 1.0 (public domain). 3 s from 0:00.5, faded out, mono.
+intro_applause.wav"Applause (Theatre Audience - Indoors)" by christos71, https://freesound.org/people/christos71/sounds/807725/
+                  CC0 1.0 (public domain). 4 s from 0:02, faded in and out, mono.
+intro_march.wav   "R11-19-Army Marching Steadily.wav" by craigsmith, https://freesound.org/people/craigsmith/sounds/480434/
+                  CC0 1.0 (public domain). 10 s from 0:00.6, faded in and out, mono.

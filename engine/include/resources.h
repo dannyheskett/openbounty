@@ -486,6 +486,7 @@ typedef struct {
     bool   loop;                    // false: the frames play once and hold the last
     double fade_in, fade_out;       // seconds it fades up after start / away before end
     int    crop_x, crop_y, crop_w, crop_h;   // the part of each frame shown (w 0 = all)
+    char  *label;                   // heap, a name set under the sprite; NULL = none
 } ResIntroActor;
 
 typedef struct {

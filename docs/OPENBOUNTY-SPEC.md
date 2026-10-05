@@ -2436,10 +2436,11 @@ golden-digest regression tests have pinned the formulas.
   `engine/resources.c parse_intro` into `Resources.intro`: a flat list of
   beats laid end to end on one timeline, each with its backdrop, pan, actors
   (portrait and villain ids resolved to frame lists), caption and card text
-  (keys in the strings' `intro` group, `%TOKEN%`s filled) and speaker's face.
+  (keys in the strings' `intro` group, `%TOKEN%`s filled), actors' labels (keys
+  in the same group, a name set under the sprite) and speaker's face.
   A `for_each: "villain"` beat has become one beat per villain in catalog
   order, so the wanted notices have followed the villain catalog. A missing
-  caption key or `ui.title_intro` has counted as a missing string; an unknown
+  caption, card or label key or `ui.title_intro` has counted as a missing string; an unknown
   id, an actor with no source or two, a beat with no length or a frame
   outside 1..256 has counted in `intro_errors`; either has refused the load.
   The intro's art has been listed in `resources_art_manifest`.
