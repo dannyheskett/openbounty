@@ -86,10 +86,11 @@ def zone_objects(pack, zone_id):
     for z in pack.get("zones", []):
         if z.get("id") != zone_id:
             continue
-        for kind in ("chests", "signs", "dwellings", "armies"):
-            for o in z.get(kind, []):
+        for key, kind in (("chests", "chest"), ("signs", "sign"),
+                          ("dwellings", "dwelling"), ("wandering_armies", "army")):
+            for o in z.get(key, []):
                 if "x" in o and "y" in o:
-                    out.append((o["x"], o["y"], kind[:-1]))
+                    out.append((o["x"], o["y"], kind))
     return out
 
 

@@ -277,6 +277,9 @@ The Senatus Consultum has not been salted: the chest at the end of Sardinia's
 guarded trail has pinned it (`"artifact"` on a zone chest, PACK-FORMAT), so
 the three guardians on that road have always kept an artifact, not a purse.
 The Sibylline Fragment has been pinned too since 2026-09-27, in the mountain cove (#66), so Italia's salt has scattered no artifact of its own.
+The Scutum of Aeneas has been pinned at the end of the Thracian road in
+Oriens, behind `guardian_thrace` (#66), so Oriens' salt has scattered only the
+Corona Triumphalis.
 
 ---
 
@@ -651,6 +654,19 @@ has held the bridge at Zeugma (Mesopotamia and Ctesiphon beyond the
 Euphrates), and `guardian_armenia` the one pass in the mountain ring round
 Armenia (Artaxata inside it, behind a Pontic coast of mountain). Neither
 region has had a coast a boat can land on.
+
+**The Thracian road** (#66: sailing had had little purpose in Oriens). Thrace,
+in the map's north-west corner across the strait from Nicomedia, has been
+reachable only by boat: a coast of rock all round with one beach at (1,3), the
+only Thracian cell a boat can land on. From the beach a one-cell road has wound
+north, east along the map's top edge, down, and back west, its segments kept
+apart by single walls of rock so that it cannot be cut across.
+`guardian_thrace` (Gigantes, Antaei, Striges, Praetoriani and Furiae, the
+strongest guardian in the province) has held its turn at (8,1), and the chest
+at its end, (3,2), has pinned the Scutum of Aeneas. A sign at the foot of the
+road and another by Nicomedia have said that a war band holds it. `check` has
+shown the chest unreachable on foot and with the guardian standing, reachable
+by boat once it is beaten, with every town and castle reached as before.
 
 ### 10.6.2 The checker
 
