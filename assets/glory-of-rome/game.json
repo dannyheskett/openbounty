@@ -41,7 +41,9 @@
 		}
 	},
 	"magic":	{
-		"rites_per_zone":	true
+		"rites_per_zone":	true,
+		"max_per_spell":	true,
+		"weekly_renewal":	true
 	},
 	"foes":	{
 		"evade_needs_free_square":	true

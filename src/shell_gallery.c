@@ -536,6 +536,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     pending_week_phase = WK_PHASE_ASTROLOGY;
     pending_week_id = 3;
     pending_astrology_troop_idx = 6;
+    pending_renewed_spell_idx = 8;   // shown where the pack renews spells (#157)
     pump_week_end_dialog(g); shell_pump_note(g);
     shot(&G, "09a_week_end_astrology");
     reset(&G);

@@ -771,13 +771,16 @@ void modern_worldmap_gallery(int cursor) { s_wm_open = true; s_wm_cursor = curso
 
 typedef struct { const Game *g; bool combat; } SpellsCtx;
 
-// A spell's row: its name, the charges held at the right; it can be chosen
-// where it can be cast.
+// A spell's row: its name, the charges held at the right (against the limit
+// where each spell has its own); it can be chosen where it can be cast.
 static bool spell_row(void *ctx, int i, char *label, char *right, int cap) {
     const SpellsCtx *c = (const SpellsCtx *)ctx;
     const SpellDef *sp = spell_by_index(i);
     snprintf(label, (size_t)cap, "%s", sp ? sp->name : "");
-    snprintf(right, 48, "%d", c->g->spells.counts[i]);
+    if (c->g->res && c->g->res->economy.spell_limit_per_spell)
+        snprintf(right, 48, "%d/%d", c->g->spells.counts[i], c->g->stats.max_spells);
+    else
+        snprintf(right, 48, "%d", c->g->spells.counts[i]);
     return views_spell_castable(c->g, c->combat, i);
 }
 

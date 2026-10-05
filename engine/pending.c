@@ -43,6 +43,7 @@ WeekPhase pending_week_phase = WK_PHASE_NONE;
 int       pending_week_id    = 0;
 int       pending_week_paid  = 0;
 int       pending_astrology_troop_idx = 0;
+int       pending_renewed_spell_idx = -1;
 
 void pending_reset(void) {
     pending_flow = FLOW_NONE;
@@ -73,4 +74,5 @@ void pending_reset(void) {
     pending_week_id = 0;
     pending_week_paid = 0;
     pending_astrology_troop_idx = 0;
+    pending_renewed_spell_idx = -1;
 }

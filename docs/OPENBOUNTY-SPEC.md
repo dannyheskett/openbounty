@@ -537,8 +537,10 @@ flagged (§38).
 - **REQ-146.** `ArmyStack` has held `id[32]` (troop id; empty = empty slot)
   and `count`. `Unit` (used inside garrisons and foe rows) has held `id[24]`
   and `count`.
-- **REQ-147.** `Spellbook` has held `count` and `counts` (heap), parallel to
-  the spell catalog. `GameKnownSpells` has summed them.
+- **REQ-147.** `Spellbook` has held `count`, `counts` and `learned` (heap),
+  parallel to the spell catalog. `GameKnownSpells` has summed the counts;
+  `GameSpellRoom` has answered how many more of one spell the hero can hold
+  (REQ-321).
 - **REQ-148.** `Contract` has held `active_id[24]` (current contract, empty =
   none), `cycle` (heap, `cycle_count` entries; length from
   `res->contract.cycle_length`), `last_contract` (last slot issued),
@@ -1824,12 +1826,29 @@ flagged (§38).
 ### 19.2 Counts, storage, buying
 
 - **REQ-321.** `Game.spells.counts` has held one count per spell.
-  `GameKnownSpells` has summed them; `max_spells` has capped purchases;
-  casting has decremented, buying incremented. Spells have been bought at the
+  `GameKnownSpells` has summed them; `max_spells` has capped purchases
+  through `GameSpellRoom`: every charge held counts against it, or, with
+  `game.json` `magic.max_per_spell` true (`glory-of-rome`), only that
+  spell's own, so the hero can hold `max_spells` of each spell. Under that
+  key a chest's new spell has given no more charges than there is room for.
+  Casting has decremented, buying incremented. Spells have been bought at the
   town menu (§16) for the spell's `cost`. Buying has not required
   `knows_magic` (OpenKB-faithful) except under rites per zone (REQ-314a);
   casting has. The gold check has been strict: a purchase fails when `gold <=
   cost`.
+- **REQ-540.** **Learned spells and their weekly renewal (#157).** A spell
+  bought at a temple has been learned (`Spellbook.learned`); a chest's
+  charges have not taught it. With `game.json` `magic.weekly_renewal` true
+  (`glory-of-rome`), each week end has renewed one learned spell
+  (`GamePickRenewedSpell`): the `(h >> 8) mod n`-th of the `n` learned
+  spells, `h` being `(seed XOR week_id XOR 0x5bd1e995)` taken through the
+  astrology's step (REQ-370) twice, so a reload renews the same one, and
+  none when nothing is learned. `GameRenewSpell` has filled it to
+  `max_spells`, keeping charges already above. The save has carried the
+  learned spells as `spells_learned` (spell ids) only under the key, so
+  King's Bounty saves have not changed. With `magic.max_per_spell` a combat
+  spell chosen on the map has only been noted (`spell_combat_only`): a
+  discard would free nothing, so none has been offered.
 
 ### 19.3 Adventure spell effects
 
@@ -2034,8 +2053,9 @@ flagged (§38).
   covered (`min(upkeep, gold)`), or, under REQ-264a, the stacks paid and
   the rest gone; (6) if `boat.has_boat`, `gold -=
   GameBoatCost` and `last_week_boat` = that fare, repossessing the boat on
-  shortfall with `last_week_boat = 0`; (7) `gold = max(0, gold)`; (8) astrology effects (§24), with empty player castles
-  retaken (REQ-302) after the dwellings and before castle and foe growth.
+  shortfall with `last_week_boat = 0`; (7) `gold = max(0, gold)`; (8) astrology effects (§24), with the
+  week's learned spell renewed (REQ-540) after the dwellings, then empty
+  player castles retaken (REQ-302) before castle and foe growth.
 
 ---
 
@@ -2063,7 +2083,8 @@ flagged (§38).
 
 - **REQ-372.** After processing, a two-phase dialog sequence has been queued
   (`src/shell_weekend.c`): **Phase 1 (Astrology)** has shown the new week's
-  creature; **Phase 2 (Budget)** has shown what the week did, from the
+  creature, and under REQ-540 the renewed spell beneath it
+  (`week_spell_renewed`); **Phase 2 (Budget)** has shown what the week did, from the
   figures REQ-361 records: On Hand (`last_week_on_hand`), Payment
   (`last_commission`), Boat (`last_week_boat`), Army (`last_week_army`) and
   Balance (`gold`), so On Hand + Payment - Boat - Army = Balance. Each troop

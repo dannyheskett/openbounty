@@ -1254,7 +1254,8 @@ Source: `src/modern/overlay.c` `draw_message`; `src/main.c` `main`.
 
 **DSGN-0126. A note with a face.** A note carrying a picture (a capture, the
 week's creature) has been the message box with the picture at its left
-(DSGN-0062).
+(DSGN-0062). Where learned spells renew (OPENBOUNTY-SPEC REQ-540), the
+week's creature note has named the renewed spell under it.
 Source: `src/modern/overlay.c` `draw_message`, `note_face`.
 
 **DSGN-0127. A note as a scene.** A note drawn as a scene (temporary death,
@@ -1429,7 +1430,8 @@ and in a fight (`modern_spells_draw`), with the hero's name at the strip's
 right:
 - Two columns of seven spells under their headings
   (`spells_view.combat_col`, `spells_view.adventure_col`), each with the held
-  count at the right; a spell has been greyed where it could not be cast (the
+  count at the right, as `held/limit` where each spell has its own limit
+  (`magic.max_per_spell`, OPENBOUNTY-SPEC REQ-321); a spell has been greyed where it could not be cast (the
   other column, or none held).
 - Under them two lines saying what the spell under the cursor does, or why it
   cannot be cast here (`banners.gmr_spell_on_map`, `gmr_spell_in_fight`,

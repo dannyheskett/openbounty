@@ -239,6 +239,16 @@ void dispatch_adventure_spell(Game *g, int spell_idx) {
             player_io_note(g, NULL, g->res->banners.spell_not_known);
             return;
         }
+        if (g->res->economy.spell_limit_per_spell) {
+            // Each spell has its own limit, so a discard frees nothing (#157).
+            char msg[192];
+            const char *tpl = g->res->banners.spell_combat_only[0]
+                            ? g->res->banners.spell_combat_only : g->res->banners.spell_unavailable;
+            ResTemplateVar vars[] = { { "SPELL", sp->name } };
+            resources_format_template(msg, sizeof msg, tpl, vars, 1);
+            player_io_note(g, sp->name, msg);
+            return;
+        }
         char body[256];
         snprintf(body, sizeof body,
                  "%s cannot be cast in the field.\n\n"

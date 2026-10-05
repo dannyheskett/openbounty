@@ -126,6 +126,14 @@ typedef struct {
     // teaches that zone's rites, and its towns sell spells only to a hero who
     // has them. Off by default, so a pack that does not ask keeps one magic.
     bool rites_per_zone;
+    // game.json "magic.max_per_spell": max_spells caps the charges of each
+    // spell, not of all spells together (GameSpellRoom), and a combat spell
+    // chosen on the map is not offered for discard. Off by default (#157).
+    bool spell_limit_per_spell;
+    // game.json "magic.weekly_renewal": each week end one spell the hero has
+    // learned at a temple is filled to the limit (GamePickRenewedSpell). Off
+    // by default (#157).
+    bool spell_weekly_renewal;
     // game.json "foes.evade_needs_free_square": a hostile foe can be evaded
     // only while a square around the hero is free (GameFoeCanEvade). Off by
     // default, so a pack that does not ask keeps the free decline.
@@ -876,6 +884,7 @@ typedef struct {
     char budget_army[RES_BANNER_LEN];
     char budget_balance[RES_BANNER_LEN];
     char week_troops_left[RES_BANNER_LEN];   // %TROOPS%; optional (#141)
+    char week_spell_renewed[RES_BANNER_LEN]; // %SPELL%; optional (#157)
 
     // Status bar (chrome.c). Substitutions: %DAYS%, %STEPS%.
     char status_days_left[RES_BANNER_LEN];
@@ -912,6 +921,7 @@ typedef struct {
     char no_troops_to_garrison[RES_BANNER_LEN];
     char castle_garrison_empty[RES_BANNER_LEN];
     char spell_unavailable[RES_BANNER_LEN];
+    char spell_combat_only[RES_BANNER_LEN];  // %SPELL%; optional (#157)
     char spell_not_known[RES_BANNER_LEN];
     char spell_unknown[RES_BANNER_LEN];
     char combat_victory_named[RES_BANNER_LEN];   // %NAME% %TARGET% %GOLD%

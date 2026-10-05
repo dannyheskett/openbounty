@@ -1767,6 +1767,12 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
         const char *s = cJSON_IsObject(obj) ? json_str(obj, "week_troops_left", NULL) : NULL;
         copy_str(b->week_troops_left, sizeof(b->week_troops_left), s ? s : "");
     }
+    {   // Optional: a pack whose learned spells renew each week (#157).
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "week_spell_renewed", NULL) : NULL;
+        copy_str(b->week_spell_renewed, sizeof(b->week_spell_renewed), s ? s : "");
+        s = cJSON_IsObject(obj) ? json_str(obj, "spell_combat_only", NULL) : NULL;
+        copy_str(b->spell_combat_only, sizeof(b->spell_combat_only), s ? s : "");
+    }
     SET_BANNER(status_days_left,               "status_days_left");
     SET_BANNER(status_time_stop,               "status_time_stop");
     SET_BANNER(status_days_left_modern,        "status_days_left_modern");
@@ -2869,6 +2875,10 @@ bool resources_load(Resources *res, const char *manifest_path) {
         cJSON *jmg = cJSON_GetObjectItem(root, "magic");
         cJSON *jrp = cJSON_IsObject(jmg) ? cJSON_GetObjectItem(jmg, "rites_per_zone") : NULL;
         res->economy.rites_per_zone = cJSON_IsTrue(jrp);
+        res->economy.spell_limit_per_spell =
+            cJSON_IsObject(jmg) && cJSON_IsTrue(cJSON_GetObjectItem(jmg, "max_per_spell"));
+        res->economy.spell_weekly_renewal =
+            cJSON_IsObject(jmg) && cJSON_IsTrue(cJSON_GetObjectItem(jmg, "weekly_renewal"));
         cJSON *jfo = cJSON_GetObjectItem(root, "foes");
         cJSON *jev = cJSON_IsObject(jfo) ? cJSON_GetObjectItem(jfo, "evade_needs_free_square") : NULL;
         res->economy.evade_needs_free_square = cJSON_IsTrue(jev);

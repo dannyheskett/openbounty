@@ -238,6 +238,7 @@ typedef struct {
     bool             won;                 // set when the scepter is recovered (search on its tile)
     int              last_commission;     // amount paid at the most recent week-end (for UI)
     int              last_astrology_troop; // troop idx broadcast at last week-end (for UI)
+    int              last_renewed_spell;   // spell idx renewed at last week-end, -1 none (for UI)
     // What the most recent week-end actually did, for the budget screen:
     // gold before the commission, upkeep and boat fare really taken.
     int              last_week_on_hand;
@@ -292,6 +293,7 @@ typedef struct {
 typedef struct {
     int              count;           // spells_count()
     int             *counts;          // heap, per-spell counts parallel to SPELLS[]
+    bool            *learned;         // heap, parallel: bought at a temple (#157)
 } Spellbook;
 
 typedef struct {
@@ -662,6 +664,15 @@ const char *GameApplyAstrology(Game *g, int troop_idx);
 // troop 0 (peasants)  `if (week_id % 4 == 0) creature = 0`.
 int GamePickAstrologyCreature(const Game *g, int week_id);
 
+// The spell renewed in week `week_id` where the pack renews (magic.
+// weekly_renewal): one of the spells learned at a temple, deterministic from
+// g->seed and week_id on a draw of its own. -1 when renewal is off or no
+// spell is learned.
+int GamePickRenewedSpell(const Game *g, int week_id);
+
+// Fill spell `idx` to max_spells; charges already above it are kept.
+void GameRenewSpell(Game *g, int idx);
+
 // Switch the hero to a new zone: reload the map, reset fog for that zone,
 // move the hero to the target zone's hero_spawn. Returns true on success.
 // Tile mutations persist across zone switches (per zone).
@@ -780,6 +791,11 @@ bool GameTryFireEvent(Game *g, Map *map, Fog *fog, int x, int y);
 // Total number of spell charges the hero is carrying (sum of counts[]).
 int  GameKnownSpells(const Game *g);
 
+// How many more charges of spell `spell_idx` the hero can hold: max_spells
+// less that spell's charges where the pack caps each spell
+// (magic.max_per_spell), else less every charge held. Never below 0.
+int  GameSpellRoom(const Game *g, int spell_idx);
+
 // Boat rental cost -- 100 with the Anchor of Admirability, 500 otherwise.
 int  GameBoatCost(const Game *g);
 
@@ -820,7 +836,7 @@ SiegeBuyResult GameBuySiege(Game *g);
 typedef enum {
     SPELL_BUY_OK = 0,       // purchased; gold deducted, spells.counts[idx]++
     SPELL_BUY_NO_SPELL,     // no spell for sale at this town (or unknown town)
-    SPELL_BUY_AT_CAP,       // already know max_spells distinct spells
+    SPELL_BUY_AT_CAP,       // no room for it (GameSpellRoom)
     SPELL_BUY_NO_GOLD,      // gold <= cost
     SPELL_BUY_NO_RITES,     // economy.rites_per_zone: the town's zone rites not learned
 } SpellBuyResult;

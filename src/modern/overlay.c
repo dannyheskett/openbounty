@@ -374,14 +374,16 @@ static void compose_service(const Game *g, TownList list, UkDoc *d) {
             const char *lore = resources_spell_lore(res, sp->id);
             if (!lore || !lore[0]) lore = sp->description;
             if (lore && lore[0]) { uk_doc_gap(d); uk_doc_add(d, lore, PAL_CLR(WHITE)); }
-            int left = g->stats.max_spells - GameKnownSpells(g);
+            int left = GameSpellRoom(g, sp->index);
             if (left <= 0) {
-                resources_format_template(buf, sizeof buf, bn->town_spell_at_cap, NULL, 0);
+                ResTemplateVar vars[] = { { "SPELL", sp->name } };
+                resources_format_template(buf, sizeof buf, bn->town_spell_at_cap, vars, 1);
             } else {
                 char lbuf[16];
                 snprintf(lbuf, sizeof lbuf, "%d", left);
-                ResTemplateVar vars[] = { { "LEFT", lbuf }, { "S", left == 1 ? "" : "s" } };
-                resources_format_template(buf, sizeof buf, bn->town_spell_can_learn, vars, 2);
+                ResTemplateVar vars[] = { { "LEFT", lbuf }, { "S", left == 1 ? "" : "s" },
+                                          { "SPELL", sp->name } };
+                resources_format_template(buf, sizeof buf, bn->town_spell_can_learn, vars, 3);
             }
             uk_doc_gap(d);
             uk_doc_add(d, buf, PAL_CLR(WHITE));
