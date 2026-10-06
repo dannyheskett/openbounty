@@ -1149,11 +1149,9 @@ flagged (§38).
   the `.dat` files by the map author**, not generated at runtime. **A `.dat`
   has held the fully rendered map; nothing about its appearance has been
   computed at game time.** This has been a ratified decision, not an
-  accident of implementation: `furnish_map` (`engine/game.c`) has been
-  retained as a permanent **no-op** mirroring OpenKB's `spawn_game` call
-  sequence, where a real furnishing pass (`rogue.c`, `OPENKB-SPEC.md` §12.5)
-  has rewritten base terrain bytes into edge bytes at load. OpenBounty has not done
-  that. The consequences have been intended: a `.dat` has been self-contained and
+  accident of implementation: OpenKB's `spawn_game` has run a furnishing pass
+  (`rogue.c`, `OPENKB-SPEC.md` §12.5) that rewrites base terrain bytes into
+  edge bytes at load, and OpenBounty has had none. The consequences have been intended: a `.dat` has been self-contained and
   rendered identically in the game, in an editor, and in any third-party tool,
   with no shared algorithm to keep in agreement; load has done no per-tile
   work; and a pack author's saved file has been exactly what a player sees. A `.dat`
@@ -2036,8 +2034,8 @@ flagged (§38).
   has sat three to five points below `chance_max_spells` in every tier, so
   the **max_spells** outcome has had that window (REQ-525). A chest with a
   declared `gold` has rolled nothing (REQ-230d).
-- **REQ-352.** `GamePeekChest` has been a read-only equivalent (no mutation)
-  used by the autoplay planner (§36) to pre-plan chest choices.
+- **REQ-352.** A chest's outcome has had one source, `GameRollChest`; there
+  has been no read-only preview of it.
 
 ### 22.2 Outcomes
 
@@ -3203,8 +3201,7 @@ every menu; this section has held the rules.
   surface for an autoplay planner: `GameRngSnapshot` / `GameRngRestore`
   (`engine/game.c`) have snapshotted and restored the process-global world RNG
   so the planner's plan-time engine replays have not perturbed the live
-  game's RNG sequence; `GamePeekChest` (§22.1) has returned what a chest
-  *would* yield without mutating state; and combat's stable per-encounter RNG
+  game's RNG sequence, and combat's stable per-encounter RNG
   seeding (§25.13) has made a fight's outcome a pure function of (seed,
   encounter identity, mode) so a predicted result has matched the live one. These have existed so an automated
   player can plan ahead deterministically.

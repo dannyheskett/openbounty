@@ -566,7 +566,7 @@ rather than accidental wherever it has appeared.
 
 The `.dat` file has contained the **fully rendered map**, edge variants and
 all (REQ-229). Nothing about a map's appearance has been computed at game
-time, and `furnish_map` in the engine has stayed a no-op. The variants have
+time. The variants have
 been baked into the `.dat` when the map has been authored.
 
 ### 10.6.1a Authoring: a source and a builder

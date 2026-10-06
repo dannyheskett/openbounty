@@ -320,7 +320,7 @@ mover, recruiter, and their measurement layer.
   universe and initialized run state, `planner_candidates` has run one cycle
   head (logistics, mover pricing, ordering, the promotion tiers),
   `planner_step` has performed ONE atomic attempt, `planner_refresh_done` has re-read
-  the done predicates, `planner_done` has been the goal test, and `planner_report`
+  the done predicates, and `planner_report`
   has printed the truthful end-of-line causes. The search (AP-200) has driven these
   one decision at a time; there has been no full-game planner loop.
 - **AP-057.** `planner_candidates` has ordered the open objectives
