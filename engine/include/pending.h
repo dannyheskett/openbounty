@@ -5,7 +5,9 @@
 
 // Prompt-flow scratch state shared across modules: the same fields are
 // written by the step module and read by the prompt resolver, so they live
-// in one shared translation unit rather than in either caller.
+// in one shared translation unit rather than in either caller. They are
+// process globals, outside the Game: GameCopy and the save do not carry them,
+// and pending_reset clears them (a new game, a load, a world restore).
 //
 // The enum tags which prompt flow is pending; the pending_* fields carry
 // the parameters that the resolver needs after the user answers. Setting
