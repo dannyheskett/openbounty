@@ -54,7 +54,7 @@ other absent block has parsed as empty or as its defaults.
 | `time`        | object ✱ | Day/week/difficulty constants. |
 | `economy`     | object ✱ | Costs, chest tables, scoring. |
 | `tuning`      | object   | `instant_army_multiplier` (per rank), `search_cost_days`, and the temp-death army (`temp_death`: `{"troop": id, "count": n}`; defaults: the cheapest-recruit-cost troop, 20). |
-| `combat`      | object ✱ | Morale chart, number-name labels; `morale_as_army_view` (bool, default false): a unit's combat morale follows the army view's rule (REQ-271) instead of the behaviour ported from King's Bounty (REQ-385). Glory of Rome sets it; the King's Bounty pack omits it. `field_obstacle_chance` (int percent, 0–100, default 10): the chance that each cell of an open-field battle's middle three columns holds an obstacle; the default is King's Bounty's one in ten. Glory of Rome sets 20. |
+| `combat`      | object ✱ | Morale chart, number-name labels; `morale_as_army_view` (bool, default false): a unit's combat morale follows the army view's rule (REQ-271) instead of the behaviour ported from King's Bounty (REQ-385). Glory of Rome sets it; the King's Bounty pack omits it. `field_obstacle_chance` (int percent, 0–100, default 10): the chance that each cell of an open-field battle's middle three columns holds an obstacle; the default is King's Bounty's one in ten. Glory of Rome sets 12. |
 | `controls`    | object   | Settings-menu rows. |
 | `colors`      | object   | Difficulty-bar colors, minimap palette. |
 | `audio`       | object   | Music track list (`tracks.openworld`, `tracks.combat`, and `tracks.intro`, the Introduction's theme), SFX paths. |

@@ -2142,7 +2142,7 @@ golden-digest regression tests have pinned the formulas.
   the field each cell of columns 1–3 has held an obstacle (code 1..3, drawn
   at random) at the pack's `combat.field_obstacle_chance` percent: absent,
   King's Bounty's one in ten, drawn exactly as the original draws it, so
-  its random stream is unchanged; Glory of Rome sets 20. The
+  its random stream is unchanged; Glory of Rome sets 12. The
   obstacle map (`omap`) has used codes 1..3 for field obstacles and 5..10 for
   castle walls (0 = open); the unit map (`umap`) has held packed unit ids
   (1-based; 0 = empty). Both maps have been sized `[H+1][W+1]` for off-by-one
