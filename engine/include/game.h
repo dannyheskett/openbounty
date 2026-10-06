@@ -414,6 +414,9 @@ bool GameReserveConsumed(Game *g, int need);
 bool GameReserveBridges(Game *g, int need);
 bool GameReserveEventsDone(Game *g, int need);
 bool GameReserveDwellings(Game *g, int need);
+// The zone army a foe was spawned from (zones[].wandering_armies, matched by
+// zone and placement id), or NULL for a salted or friendly foe.
+const ResZoneArmy *GameFoeArmy(const Game *g, const FoeState *f);
 
 // ----- Lifecycle ------------------------------------------------------------
 

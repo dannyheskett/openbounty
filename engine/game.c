@@ -951,6 +951,26 @@ static void add_foe(Game *g, int continent, const char *zone, int x, int y,
     }
 }
 
+const ResZoneArmy *GameFoeArmy(const Game *g, const FoeState *f) {
+    if (!g || !g->res || !f || f->friendly) return NULL;
+    for (int zi = 0; zi < g->res->zone_count; zi++) {
+        const ResZone *z = &g->res->zones[zi];
+        if (strcmp(z->id, f->zone) != 0) continue;
+        for (int i = 0; i < z->army_count; i++) {
+            const ResZoneArmy *a = &z->armies[i];
+            char fallback[32];
+            const char *aid = a->id;
+            if (!aid[0]) {
+                snprintf(fallback, sizeof(fallback), "static_foe_%d", i);
+                aid = fallback;
+            }
+            if (strcmp(aid, f->placement_id) == 0) return a;
+        }
+        return NULL;
+    }
+    return NULL;
+}
+
 // True when a chest of the zone pins this artifact ("artifact": id).
 static bool chest_pins_artifact(const ResZone *z, const char *artifact_id) {
     if (!z || !artifact_id || !artifact_id[0]) return false;

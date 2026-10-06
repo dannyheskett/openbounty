@@ -2447,7 +2447,11 @@ golden-digest regression tests have pinned the formulas.
   REQ-186); a raw-seed game writes `seed_from_catalog: false` and the `seed`
   itself. Writing the index rather than the expanded seed has made the
   round-trip exact: cJSON numbers are doubles, so a full-width seed would not
-  survive above 2^53. A save-format change has bumped `SAVE_VERSION` and
+  survive above 2^53. A key with a load-time fallback has been optional, so
+  a save without it has still loaded: `position.facing` has been derived from
+  `facing_left`, and a foe's `static`, `requires_troop`, `scene_index` and
+  `scene_title` have been taken from the zone army it was spawned from
+  (`GameFoeArmy`). Any other save-format change has bumped `SAVE_VERSION` and
   updated or replaced the golden fixture (`tests/fixtures/save_v1.dat`) and
   the round-trip regression test. A save written by another pack has been
   refused (`SAVE_ERR_PACK`).
