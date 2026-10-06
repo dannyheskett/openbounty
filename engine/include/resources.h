@@ -602,6 +602,18 @@ typedef struct {
     char worldmap_boat[RES_BANNER_LEN];
     char worldmap_boat_elsewhere[RES_BANNER_LEN];
     char worldmap_no_boat[RES_BANNER_LEN];
+    // Goto (#70), modern, optional: the world map's Goto page and its rows,
+    // the game menu's row, and the rail's label when the pack has no icon.
+    char goto_title[RES_BANNER_LEN];
+    char goto_to[RES_BANNER_LEN];        // %X%, %Y%: the cursor's tile
+    char goto_today[RES_BANNER_LEN];
+    char goto_days[RES_BANNER_LEN];      // %DAYS%, %S%
+    char goto_no_route[RES_BANNER_LEN];
+    char goto_go[RES_BANNER_LEN];
+    char goto_cancel[RES_BANNER_LEN];
+    char gm_goto[RES_BANNER_LEN];
+    char gmd_goto[RES_BANNER_LEN];
+    char rail_goto[RES_BANNER_LEN];
     char spell_bridge_prompt_modern[RES_BANNER_LEN];
     char save_done_title[RES_BANNER_LEN];
     char save_done[RES_BANNER_LEN];
@@ -1677,7 +1689,7 @@ typedef struct {
         char rail_menu[RES_PATH_LEN];
         char rail_map[RES_PATH_LEN];
         char rail_army[RES_PATH_LEN];
-        char rail_search[RES_PATH_LEN];
+        char rail_goto[RES_PATH_LEN];      // optional: the Goto tile (#70)
         char rail_cast[RES_PATH_LEN];
         // The combat command panel's tiles; Cast reuses the rail's lituus.
         char combat_shoot[RES_PATH_LEN];

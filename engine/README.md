@@ -51,6 +51,7 @@ engine/
 ├── step.c                # `GameStep`, one-tile movement
 ├── combat.c              # Combat state, AI, headless turn loop, damage
 ├── combat_log.c          # Combat log line append (pure data)
+├── goto.c                # Goto's route to a picked tile (player knowledge, boat, flight)
 ├── flows.c               # Encounter / week-end / endgame
 ├── flow_resolve.c        # Apply-cores: the state half of each prompt flow
 ├── player_io.c           # The player-IO request queue

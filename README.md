@@ -743,6 +743,7 @@ row or a tap (`docs/DESIGN-SPEC.md`).
 | `L` | Land (dismount) |
 | `D` | Dismiss army |
 | `N` | New continent (sail) |
+| `G` | Goto (modern): pick a seen tile on the world map, and travel there |
 
 ### Meta
 

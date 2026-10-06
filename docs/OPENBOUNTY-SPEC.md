@@ -1440,9 +1440,30 @@ flagged (§38).
   (legacy) or the game menu (modern), `P` view puzzle, `Q` save-and-quit,
   `Ctrl+Q` fast quit, `S` search, `U` cast spell, `V` view character, `W` end
   week, `Numpad 5` (and, in modern mode, the number-row `5`) rest one day,
+  `G` Goto (modern only, REQ-541),
   `Esc` close overlay (and, in modern mode with nothing open, the game
   menu). Cheats have been reached only through the Debug page, with
   `--debug` (§31).
+- **REQ-541.** **Goto (#70, modern only).** `G`, the Goto tile on the left
+  rail or the game menu's World page has opened the world map with a tile
+  cursor on the hero (`modern_worldmap_goto_open`,
+  `src/modern/views_render.c`): the arrows and the keypad have moved it a
+  tile, a tap on the map has put it there, and the side column has said the
+  cursor's tile and how long the route takes, or that there is none. Enter
+  or Go has given the order; Escape or Cancel has left. The route has been
+  `GamePlanGoto` (`engine/goto.c`): the cheapest in the current province
+  over tiles the player has seen, a step costing 1 and a desert step the rest
+  of a day; no object on the way (the target may be one); on foot it has
+  walked, the boat parked in this province has been the only way onto the
+  water, land beyond it a landing; in flight it has flown straight. A tile
+  unseen, the hero's own or with no route has refused the order, the
+  cursor's ring flashing red. An order has been walked by
+  `src/shell_goto.c`, one ordinary `GameStep` every 0.15 s, so foes, days,
+  fog and recordings have seen plain steps; the walk has ended with the
+  route, or as soon as a step failed or moved the hero off it, anything
+  waited on the player (a message, a question, a screen, a flow, the week's
+  end), the province changed, or the player pressed a key or tapped. A walk
+  has never been saved, and King's Bounty has had none of it.
 
 ### 12.2 Gamepad mapping
 
@@ -2925,9 +2946,9 @@ every menu; this section has held the rules.
   the 2x floor.
 
 - **REQ-533.** **The two columns have been one tile wide and always there.**
-  The left column has held Menu, Map, Army, Search and Puzzle
-  (`src/modern/rail.c`), the right column Contract, Siege, Magic, Gold and
-  Days (`src/hud.c`); each tile has fired the action its key fires
+  The left column has held Menu, Map, Goto, Army and Puzzle
+  (`src/modern/rail.c`), the right column Contract, Magic, Siege, Gold and
+  Days (`src/hud.c`), the three that open the character sheet together; each tile has fired the action its key fires
   (`shell_dispatch_action`). On the map both have shown at every size and on
   every device, both have run the full height of the map, and neither has
   shown a key or registered a tap while a page is open. A battle has replaced

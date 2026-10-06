@@ -4719,8 +4719,8 @@
 		"rail":	{
 			"menu":	"art/ui/rail_menu.png",
 			"map":	"art/ui/rail_map.png",
+			"goto":	"art/ui/rail_goto.png",
 			"army":	"art/ui/rail_army.png",
-			"search":	"art/ui/rail_search.png",
 			"cast":	"art/ui/rail_cast.png"
 		},
 		"combat_panel":	{

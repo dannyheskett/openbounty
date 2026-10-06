@@ -776,7 +776,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         if (CL_IS_MODERN) { tap_row("10_menu_top", TOUCH_LIST_MENU, 3); tap_row("10_menu_top", TOUCH_LIST_MENU, 4); }
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p2, 4); shot(&G, "11_menu_hero");
         if (CL_IS_MODERN) tap_row("11_menu_hero", TOUCH_LIST_MENU, 5);
-        reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p3, 6); shot(&G, "12_menu_world_greyed");
+        reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p3, 7); shot(&G, "12_menu_world_greyed");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 0); shot(&G, "13_menu_game");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p5, 0); shot(&G, "14_menu_save_slots");
         // Exit is a root row, so its question is asked on the root page.
@@ -850,6 +850,19 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         if (!views_render_worldmap_whole()) views_render_worldmap_toggle_hero_only();
         reset(&G); views_set(VIEW_WORLDMAP); modern_worldmap_gallery(0); shot(&G, "24_worldmap");
         reset(&G); views_set(VIEW_WORLDMAP); modern_worldmap_gallery(1); shot(&G, "24b_worldmap_place");
+        views_render_worldmap_toggle_hero_only();
+        // Goto (#70): the cursor on a seen tile near the hero, then refused
+        // on unexplored ground with the red ring. Go and Cancel are its rows.
+        if (CL_IS_MODERN) {
+            reset(&G); views_set(VIEW_WORLDMAP);
+            modern_worldmap_goto_gallery(g->position.x + 3, g->position.y + 1, false);
+            shot(&G, "24c_worldmap_goto");
+            tap_row("24c_worldmap_goto", TOUCH_LIST_MENU, 0);
+            tap_row("24c_worldmap_goto", TOUCH_LIST_MENU, 1);
+            reset(&G); views_set(VIEW_WORLDMAP);
+            modern_worldmap_goto_gallery(0, 0, true);
+            shot(&G, "24d_worldmap_goto_refused");
+        }
         modern_worldmap_gallery(0);
         views_render_worldmap_toggle_hero_only();
         g->world.orbs_found[zi] = keep_orb;
