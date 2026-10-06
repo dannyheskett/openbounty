@@ -1301,8 +1301,10 @@ static void parse_combat(Resources *res, cJSON *obj) {
     res->number_name_count = 0;
     res->morale_as_army_view = false;
     res->field_obstacle_chance = 10;
+    res->guardian_full_band = false;
     if (!cJSON_IsObject(obj)) return;
     res->morale_as_army_view = cJSON_IsTrue(cJSON_GetObjectItem(obj, "morale_as_army_view"));
+    res->guardian_full_band = cJSON_IsTrue(cJSON_GetObjectItem(obj, "guardian_full_band"));
     cJSON *foc = cJSON_GetObjectItem(obj, "field_obstacle_chance");
     if (cJSON_IsNumber(foc) && foc->valueint >= 0 && foc->valueint <= 100)
         res->field_obstacle_chance = foc->valueint;

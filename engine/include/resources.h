@@ -1528,6 +1528,10 @@ typedef struct {
     // open-field battle's middle columns holds an obstacle. Absent = 10, King's
     // Bounty's one in ten, drawn exactly as the original draws it.
     int field_obstacle_chance;
+    // combat.guardian_full_band: a fixed guardian (a zone army with "static")
+    // fields all five of its stacks on the open field. Absent or false = the
+    // first three, as King's Bounty fields every open-field band.
+    bool guardian_full_band;
 
     // Fuzzy-number labels for intelligence / enemy-sight text
     // .

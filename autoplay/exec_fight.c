@@ -435,41 +435,6 @@ int autoplay_combat_policy(Combat *c, void *ctx) {
 
 // ---- fight resolution (live) ---------------------------------------------------
 
-// Build the CombatTarget from the live pending flow, exactly as the shell does.
-static bool build_pending_target(Game *g, CombatMode *out_mode,
-                                 CombatTarget *out_tgt) {
-    memset(out_tgt, 0, sizeof *out_tgt);
-    if (pending_flow == FLOW_SIEGE_MONSTER ||
-        pending_flow == FLOW_SIEGE_VILLAIN) {
-        *out_mode = COMBAT_MODE_CASTLE;
-        CastleRecord *cr = GameFindCastle(g, pending_castle_id);
-        const ResCastle *rc = resources_castle_by_id(g->res, pending_castle_id);
-        const VillainDef *v = (cr && cr->villain_id[0])
-                                  ? villain_by_id(cr->villain_id) : NULL;
-        out_tgt->name = v && v->name[0] ? v->name
-                       : (rc && rc->name[0] ? rc->name : pending_castle_id);
-        out_tgt->seed_key = pending_castle_id;
-        if (cr) {
-            out_tgt->garrison = cr->garrison;
-            out_tgt->garrison_slots = GAME_ARMY_SLOTS;
-        }
-        return true;
-    }
-    if (pending_flow == FLOW_ATTACK_FOE) {
-        *out_mode = COMBAT_MODE_FOE;
-        FoeState *foe = pending_foe_id[0] ? GameFindFoe(g, pending_foe_id)
-                                          : NULL;
-        out_tgt->name = "Hostile band";
-        out_tgt->seed_key = pending_foe_id;
-        if (foe) {
-            out_tgt->garrison = foe->garrison;
-            out_tgt->garrison_slots = GAME_ARMY_SLOTS;
-        }
-        return true;
-    }
-    return false;
-}
-
 // The temp-death transition is engine-owned (GameTempDeath -- the same call
 // src/shell_tempdeath.c wraps), so headless and visible defeats produce the
 // identical world. The planner only enters fights the simulation wins, so a
@@ -498,7 +463,7 @@ bool exec_fight(ExecCtx *ctx, bool want_fight, CombatResult *out_result) {
 
     CombatMode mode;
     CombatTarget tgt;
-    if (!build_pending_target(g, &mode, &tgt)) return false;
+    if (!CombatTargetForPendingFlow(g, &mode, &tgt)) return false;
 
     // Record the YES answer with the PRE-combat fingerprint (replay checks it
     // before re-running the combat), then run combat and patch the outcome onto
@@ -620,6 +585,8 @@ bool predict_combat_cached(const ExecCtx *ctx, CombatMode mode,
     tgt.seed_key = seed_key;
     tgt.garrison = gar;
     tgt.garrison_slots = GAME_ARMY_SLOTS;
+    if (mode == COMBAT_MODE_FOE && seed_key)
+        tgt.full_band = CombatFoeFieldsFullBand(g, GameFindFoeConst(g, seed_key));
 
     CombatTurnRecord rec = { 0 };
     CombatResult r = combat_run_headless_rec(&s_sim_game, mode, &tgt, COMBAT_MAX_ROUNDS,

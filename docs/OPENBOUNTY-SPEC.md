@@ -2135,8 +2135,11 @@ golden-digest regression tests have pinned the formulas.
   pack's tile in modern) holding at most one unit. Each side has had up to 5
   slots (`COMBAT_SLOTS = 5`); player = side 0 (`COMBAT_SIDE_PLAYER`), AI =
   side 1. A wandering foe has fielded only its first three troops, unless it
-  is a static guardian in modern mode, which has fielded all five
-  (`full_band`). Two modes: **field** (`COMBAT_MODE_FOE`, open field, scattered
+  is a static guardian in a pack that sets `combat.guardian_full_band`, which
+  has fielded all five (`full_band`). The engine has built every fight's
+  target in one place (`CombatTargetForFoe`, `CombatTargetForCastle`,
+  `CombatTargetForPendingFlow`), so the game, autoplay, the demo and
+  `--validate-pack` have fielded the same band. Two modes: **field** (`COMBAT_MODE_FOE`, open field, scattered
   obstacles) and **castle** (`COMBAT_MODE_CASTLE`, siege layout with walls).
   The player has started one troop per row (slot i → column 0, row i). In
   the field each cell of columns 1–3 has held an obstacle (code 1..3, drawn

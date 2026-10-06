@@ -80,20 +80,9 @@ void shell_set_combat_ground(ShellCtx *ctx) {
 
 static CombatResult run_castle_combat(ShellCtx *ctx, const char *castle_id) {
     shell_set_combat_ground(ctx);
-    Game            *g  = ctx->game;
-    const Resources *r_ = ctx->res;
-    CastleRecord *cr = GameFindCastle(g, castle_id);
-    const ResCastle *rc = resources_castle_by_id(r_, castle_id);
-    const VillainDef *v = (cr && cr->villain_id[0])
-                        ? villain_by_id(cr->villain_id) : NULL;
-    CombatTarget tgt = { 0 };
-    tgt.name = v && v->name[0] ? v->name
-             : (rc && rc->name[0] ? rc->name : castle_id);
-    tgt.seed_key = castle_id;            // stable identity for RNG seed
-    if (cr) {
-        tgt.garrison = cr->garrison;
-        tgt.garrison_slots = GAME_ARMY_SLOTS;
-    }
+    Game *g = ctx->game;
+    CombatTarget tgt;
+    CombatTargetForCastle(g, castle_id, &tgt);
     return RunCombat(g, ctx->map, ctx->fog, ctx->sprites, ctx->render_target,
                      COMBAT_MODE_CASTLE, &tgt);
 }
@@ -179,14 +168,8 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
                                             : PLAYER_IO_COMBAT_LOST;
     } else if (r == PROMPT_RESULT_YES && flow == FLOW_ATTACK_FOE &&
                pending_foe_id[0]) {
-        FoeState *foe = GameFindFoe(g, pending_foe_id);
-        CombatTarget tgt = { 0 };
-        tgt.name = "Hostile band";
-        tgt.seed_key = pending_foe_id;      // stable identity for RNG seed
-        if (foe) { tgt.garrison = foe->garrison;
-                   tgt.garrison_slots = GAME_ARMY_SLOTS;
-                   // A modern pack's fixed guardian fields all five.
-                   tgt.full_band = CL_IS_MODERN && foe->is_static; }
+        CombatTarget tgt;
+        CombatTargetForFoe(g, pending_foe_id, &tgt);
         shell_set_combat_ground(ctx);
         CombatResult cr = RunCombat(g, ctx->map, ctx->fog, ctx->sprites, ctx->render_target,
                                     COMBAT_MODE_FOE, &tgt);
