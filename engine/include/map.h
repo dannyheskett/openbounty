@@ -122,8 +122,11 @@ struct Game;
 bool MapLoadZoneWithPlacements(Map *map, const Resources *res,
                                const char *zone_id, const struct Game *game);
 
+// The tile at (x, y), or NULL outside the map.
 const Tile *MapGetTile(const Map *map, int x, int y);
 bool MapInBounds(const Map *map, int x, int y);
+// Whether the tile's terrain can be walked (TerrainWalkable); objects on it
+// are not considered.
 bool MapWalkable(const Map *map, int x, int y);
 
 // Remove the interactive overlay on a tile (artifact pickup, consumed chest,

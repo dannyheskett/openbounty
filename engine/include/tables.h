@@ -81,6 +81,10 @@ typedef struct {
     int  tier_counts[4];
 } TroopDef;
 
+// The catalog lookups, the same five shapes for troops, spells, classes,
+// villains and artifacts: by id, by index (the entry's position, which its
+// `index` must equal), and the count. NULL for an unknown id or an index out
+// of range, and before resources_load has published a catalog.
 const TroopDef *troop_by_id(const char *id);
 const TroopDef *troop_by_index(int idx);
 int             troops_count(void);
