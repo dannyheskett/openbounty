@@ -171,11 +171,11 @@ static void copy_file(const char *from, const char *to) {
 }
 
 TEST catalog_has_no_troop_limit(void) {
-    const char *dir = "/tmp/ob_manytroops_pack";
+    const char *dir = "build/ob_manytroops_pack";
     char cmd[512];
     snprintf(cmd, sizeof cmd, "rm -rf %s && mkdir -p %s/strings", dir, dir);
     ASSERT_EQ(0, system(cmd));
-    copy_file("tests/fixtures/animpack/strings/en.json", "/tmp/ob_manytroops_pack/strings/en.json");
+    copy_file("tests/fixtures/animpack/strings/en.json", "build/ob_manytroops_pack/strings/en.json");
     // Rewrite troops[] with 40 extra entries after the fixture's own.
     FILE *f = fopen("tests/fixtures/animpack/game.json", "rb");
     ASSERT(f);
@@ -189,7 +189,7 @@ TEST catalog_has_no_troop_limit(void) {
     ASSERT(at);
     char *open = strchr(at, '[');
     ASSERT(open);
-    FILE *o = fopen("/tmp/ob_manytroops_pack/game.json", "wb");
+    FILE *o = fopen("build/ob_manytroops_pack/game.json", "wb");
     ASSERT(o);
     fwrite(txt, 1, (size_t)(open - txt) + 1, o);
     for (int i = 0; i < 40; i++)

@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define SAVE_PATH "/tmp/openbounty_flow.dat"
+#define SAVE_PATH "build/openbounty_flow.dat"
 
 // Helper: simulate a single step in (dx,dy) by checking walkability
 // and updating Game.position. Mirrors the engine's step path but ignores

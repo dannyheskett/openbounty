@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define INTRO_DIR "/tmp/ob_intro_pack"
+#define INTRO_DIR "build/ob_intro_pack"
 
 TEST kings_bounty_has_no_intro(void) {
     Resources *r = fx_load_resources();
