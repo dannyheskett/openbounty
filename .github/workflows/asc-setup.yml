@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install the JWT dependency
-        run: python3 -m pip install --quiet cryptography
+        run: python3 -m pip install --quiet cryptography==50.0.2
       - name: Gate on the API-key secrets
         id: gate
         env:

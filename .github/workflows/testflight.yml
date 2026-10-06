@@ -73,7 +73,7 @@ jobs:
           ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
-          python3 -m pip install --quiet --break-system-packages cryptography
+          python3 -m pip install --quiet --break-system-packages cryptography==50.0.2
           n=$(python3 scripts/asc_next_build.py)
           echo "build=$n" >> "$GITHUB_OUTPUT"
           echo "next build number: $n"

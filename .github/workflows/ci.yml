@@ -11,6 +11,9 @@ name: ci
 on:
   pull_request:
     branches: [main, staging]
+  # What lands on staging is checked as merged, not only as proposed.
+  push:
+    branches: [staging]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -49,6 +52,18 @@ jobs:
         run: python3 scripts/store_listing.py --check
       - name: Check the docs' links
         run: python3 scripts/check_doc_links.py
+      - name: Check the Glory of Rome maps
+        run: |
+          set -e
+          python3 - <<'PY' > /tmp/zones.txt
+          import json
+          for z in json.load(open("assets/glory-of-rome/game.json"))["zones"]:
+              print(z["id"], z["map"])
+          PY
+          while read -r zone map; do
+            python3 tools/mapbuild.py check assets/glory-of-rome "$zone" "assets/glory-of-rome/$map"
+            python3 tools/mapcheck.py assets/glory-of-rome "assets/glory-of-rome/$map"
+          done < /tmp/zones.txt
 
   windows:
     runs-on: ubuntu-22.04
@@ -87,7 +102,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Set up Emscripten
-        uses: emscripten-core/setup-emsdk@v16
+        uses: emscripten-core/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984  # v16
+        with:
+          version: 6.0.11
       # The Linux toolchain is required even though nothing native ships from this job.
       # In openbounty the web target transitively builds the NATIVE binary first: the pack
       # embedded in openbounty.data is zipped by ./build/debug/openbounty --pack-dir. The
@@ -291,7 +308,8 @@ jobs:
           sleep 20
           xcrun simctl io "$UDID" screenshot ios-shot-late.png
           sips -r 270 ios-shot-late.png >/dev/null
-          xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || echo "gone by now"
+          alive=1
+          xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || { echo "gone by now"; alive=0; }
           echo "--- crash reports (host + simulator) ---"
           find ~/Library/Logs/DiagnosticReports ~/Library/Logs/CoreSimulator \
                -name '*GloryOfRome*' -newermt '-10 minutes' 2>/dev/null | head -5
@@ -303,7 +321,10 @@ jobs:
           xcrun simctl spawn "$UDID" log show --style compact --last 5m \
             --predicate 'eventMessage CONTAINS "gloryofrome" OR eventMessage CONTAINS "GloryOfRome"' \
             2>/dev/null | grep -iE "exit|terminat|crash|kill|jetsam|watchdog" | head -20 || true
+          # The app has to be running 30 s after launch.
+          [ "$alive" = 1 ]
       - name: Upload the Simulator screenshot and console
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: ios-sim-screenshot
