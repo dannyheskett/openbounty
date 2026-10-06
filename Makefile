@@ -50,7 +50,7 @@ LDFLAGS_release := -L$(RAYLIB)/lib -lraylib -lm -lpthread -ldl -lrt \
                    -static-libgcc -Wl,-Bsymbolic
 LDFLAGS := $(LDFLAGS_$(BUILD))
 
-ENGINE_SRC := engine/game.c engine/map.c engine/fog.c engine/pack.c engine/tile.c engine/savegame.c engine/state_serialize.c engine/savepath.c engine/tables.c engine/adventure.c engine/resources.c engine/resources_strings.c engine/resources_intro.c engine/resources_art.c engine/pending.c engine/player_io.c engine/flows.c engine/flow_resolve.c engine/step.c engine/spells_adventure.c engine/fatal.c engine/assets_bytes.c engine/combat.c engine/combat_log.c engine/goto.c
+ENGINE_SRC := engine/game.c engine/game_storage.c engine/game_world.c engine/game_army.c engine/game_foes.c engine/map.c engine/fog.c engine/pack.c engine/tile.c engine/savegame.c engine/state_serialize.c engine/savepath.c engine/tables.c engine/adventure.c engine/resources.c engine/resources_strings.c engine/resources_intro.c engine/resources_art.c engine/pending.c engine/player_io.c engine/flows.c engine/flow_resolve.c engine/step.c engine/spells_adventure.c engine/fatal.c engine/assets_bytes.c engine/combat.c engine/combat_log.c engine/goto.c
 
 # Demo mode (demo/), the human-like player agent. Engine-only: includes nothing
 # from src/, and src/ may not include demo/.
@@ -939,7 +939,10 @@ $(ENGLIB_OBJ_DIR):
 ALL_OBJS := $(SHELL_OBJ) $(TOOL_OBJ) $(ENGLIB_OBJ)
 -include $(ALL_OBJS:.o=.d)
 
+# Rebuilt whole: `ar rcs` only adds and replaces members, so an object whose
+# source has gone (a renamed or split file) would otherwise stay in the archive.
 $(OUT_ENGLIB): $(ENGLIB_OBJ) | build
+	@rm -f $@
 	ar rcs $@ $(ENGLIB_OBJ)
 
 # Single test command. greatest runs the entire suite: unit tests,

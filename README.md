@@ -912,8 +912,10 @@ determinism.
 
 ## 13. Where to look first
 
-- **Adding a game-state feature**: `engine/game.c` (mechanics + RNG
-  salting), `engine/include/game.h` (struct fields), and possibly the
+- **Adding a game-state feature**: `engine/game.c` and its siblings
+  (`game_world.c` the new game and the salting, `game_army.c` the army,
+  `game_foes.c` the foes, `game_storage.c` the tables),
+  `engine/include/game.h` (struct fields), and possibly the
   relevant flow handler in `src/shell_*.c`. State changes have belonged in
   the engine; UI flow has belonged in the shell.
 - **Fixing a dialog text bug**: the text has lived in the pack's

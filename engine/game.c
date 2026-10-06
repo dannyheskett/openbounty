@@ -4,19 +4,12 @@
 #include "savegame.h"
 #include "fatal.h"
 #include "ui_host.h"   // recorder_capture, audio_play_tune + AudioTuneId
+#include "game_internal.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
-
-// Forward declarations for helpers defined later in this file but
-// used by GameInit's eager-populate sweep.
-static DwellingState *enforce_dwelling(Game *g, const char *zone, int x, int y,
-                                       const char *dwelling_kind);
-static DwellingState *enforce_dwelling_pinned(Game *g, const char *zone,
-                                              int x, int y,
-                                              const char *troop_id);
 
 // Seeded random helper for deterministic scepter placement.
 // Uses uint64_t so the LCG behaves identically on 32-bit and 64-bit
@@ -24,7 +17,7 @@ static DwellingState *enforce_dwelling_pinned(Game *g, const char *zone,
 // shift).
 static uint64_t game_rng_state = 0;
 
-static void game_rng_seed(uint64_t seed) {
+void game_rng_seed(uint64_t seed) {
     game_rng_state = seed ^ 0x5DEECE66DULL;  // Linear congruential generator seed
 }
 
@@ -46,7 +39,7 @@ uint64_t GameSeedFromIndex(unsigned char index) {
     return z ^ (z >> 31);
 }
 
-static int game_rng_next(int min, int max) {
+int game_rng_next(int min, int max) {
     if (min > max) return min;
     if (min == max) return min;
     game_rng_state = game_rng_state * 25214903917ULL + 11ULL;
@@ -62,281 +55,7 @@ static int game_rng_next(int min, int max) {
 uint64_t GameRngSnapshot(void) { return game_rng_state; }
 void     GameRngRestore(uint64_t s) { game_rng_state = s; }
 
-// ----- Storage --------------------------------------------------------------
-
-// A zeroed heap table of n entries, or NULL for none. *ok goes false when an
-// allocation fails.
-static void *table_alloc(int n, size_t elem, bool *ok) {
-    if (n <= 0) return NULL;
-    void *p = calloc((size_t)n, elem);
-    if (!p) *ok = false;
-    return p;
-}
-
-static void game_free_tables(Game *g) {
-    free(g->towns);
-    free(g->castles);
-    free(g->spells.counts);
-    free(g->spells.learned);
-    free(g->artifacts.found);
-    free(g->contract.cycle);
-    free(g->contract.villains_caught);
-    free(g->contract.villains_prefought);
-    free(g->world.zones_discovered);
-    free(g->world.zone_rites);
-    free(g->world.orbs_found);
-    for (int i = 0; g->world.continent_fog && i < g->world.zone_count; i++)
-        FogFree(&g->world.continent_fog[i]);
-    free(g->world.continent_fog);
-    free(g->consumed);
-    free(g->bridges);
-    free(g->events_done);
-    free(g->dwellings);
-    free(g->placements);
-    free(g->foes);
-    free(g->player_io.slot);
-}
-
-void GameFree(Game *g) {
-    if (!g) return;
-    const Resources *res = g->res;
-    game_free_tables(g);
-    memset(g, 0, sizeof *g);
-    g->res = res;
-}
-
-bool GameAlloc(Game *g) {
-    if (!g) return false;
-    GameFree(g);
-    const Resources *r = g->res;
-    int nz = r ? r->zone_count : 0;
-    int cyc = r ? r->contract.cycle_length : 5;
-    if (cyc < 1) cyc = 1;
-    bool ok = true;
-    g->town_count   = r ? r->town_count : 0;
-    g->castle_count = r ? r->castle_count : 0;
-    g->towns   = table_alloc(g->town_count, sizeof *g->towns, &ok);
-    g->castles = table_alloc(g->castle_count, sizeof *g->castles, &ok);
-    g->spells.count   = spells_count();
-    g->spells.counts  = table_alloc(g->spells.count, sizeof *g->spells.counts, &ok);
-    g->spells.learned = table_alloc(g->spells.count, sizeof *g->spells.learned, &ok);
-    g->artifacts.count = artifacts_count();
-    g->artifacts.found = table_alloc(g->artifacts.count, sizeof *g->artifacts.found, &ok);
-    g->contract.cycle_count = cyc;
-    g->contract.cycle = table_alloc(cyc, sizeof *g->contract.cycle, &ok);
-    g->contract.villain_count = villains_count();
-    g->contract.villains_caught =
-        table_alloc(g->contract.villain_count, sizeof *g->contract.villains_caught, &ok);
-    g->contract.villains_prefought =
-        table_alloc(g->contract.villain_count, sizeof *g->contract.villains_prefought, &ok);
-    g->world.zone_count       = nz;
-    g->world.zones_discovered = table_alloc(nz, sizeof *g->world.zones_discovered, &ok);
-    g->world.zone_rites       = table_alloc(nz, sizeof *g->world.zone_rites, &ok);
-    g->world.orbs_found       = table_alloc(nz, sizeof *g->world.orbs_found, &ok);
-    g->world.continent_fog    = table_alloc(nz, sizeof *g->world.continent_fog, &ok);
-    if (!ok) GameFree(g);
-    return ok;
-}
-
-// Grow `*arr` (entries of `elem` bytes, `*cap` allocated) to hold `need`,
-// doubling. New entries are zeroed.
-static bool list_reserve(void **arr, int *cap, int need, size_t elem) {
-    if (need <= *cap) return true;
-    int ncap = *cap > 0 ? *cap : 16;
-    while (ncap < need) ncap *= 2;
-    void *p = realloc(*arr, (size_t)ncap * elem);
-    if (!p) return false;
-    memset((char *)p + (size_t)*cap * elem, 0, (size_t)(ncap - *cap) * elem);
-    *arr = p;
-    *cap = ncap;
-    return true;
-}
-
-#define GAME_LIST_RESERVE(g, list, cap, need) \
-    list_reserve((void **)&(g)->list, &(g)->cap, (need), sizeof *(g)->list)
-
-bool GameReserveFoes(Game *g, int need)       { return g && GAME_LIST_RESERVE(g, foes, foe_cap, need); }
-bool GameReservePlacements(Game *g, int need) { return g && GAME_LIST_RESERVE(g, placements, placement_cap, need); }
-bool GameReserveConsumed(Game *g, int need)   { return g && GAME_LIST_RESERVE(g, consumed, consumed_cap, need); }
-bool GameReserveBridges(Game *g, int need)    { return g && GAME_LIST_RESERVE(g, bridges, bridge_cap, need); }
-bool GameReserveEventsDone(Game *g, int need) { return g && GAME_LIST_RESERVE(g, events_done, events_done_cap, need); }
-bool GameReserveDwellings(Game *g, int need)  { return g && GAME_LIST_RESERVE(g, dwellings, dwelling_cap, need); }
-
-// Copy a table of n entries into a fresh allocation (NULL for none).
-static void *table_dup(const void *src, int n, size_t elem, bool *ok) {
-    if (!src || n <= 0) return NULL;
-    void *p = malloc((size_t)n * elem);
-    if (!p) { *ok = false; return NULL; }
-    memcpy(p, src, (size_t)n * elem);
-    return p;
-}
-
-// Copy `n` entries into dst's table, reusing it when it already holds n.
-#define COPY_TABLE(dfield, sfield, dn, sn) do {                                 \
-        if ((dn) != (sn) || !(dfield)) {                                          \
-            free(dfield);                                                         \
-            (dfield) = table_dup((sfield), (sn), sizeof *(sfield), &ok);          \
-        } else if ((sn) > 0) {                                                    \
-            memcpy((dfield), (sfield), (size_t)(sn) * sizeof *(sfield));          \
-        }                                                                         \
-    } while (0)
-
-// Copy a growable list's live entries, growing dst's allocation as needed.
-#define COPY_LIST(list, count, cap) do {                                          \
-        if (src->count > 0) {                                                     \
-            if (!GAME_LIST_RESERVE(dst, list, cap, src->count)) ok = false;       \
-            else memcpy(dst->list, src->list, (size_t)src->count * sizeof *src->list); \
-        }                                                                         \
-    } while (0)
-
-bool GameCopy(Game *dst, const Game *src) {
-    if (!dst || !src || dst == src) return dst != NULL;
-    bool ok = true;
-    // Keep dst's tables, then take every value field from src. The only
-    // whole-Game byte copy: every table pointer is put back right below.
-    Game keep;
-    memcpy(&keep, dst, sizeof keep);
-    memcpy(dst, src, sizeof *dst);
-    dst->towns = keep.towns;               dst->castles = keep.castles;
-    dst->spells.counts = keep.spells.counts;
-    dst->spells.learned = keep.spells.learned;
-    dst->artifacts.found = keep.artifacts.found;
-    dst->contract.cycle = keep.contract.cycle;
-    dst->contract.villains_caught = keep.contract.villains_caught;
-    dst->contract.villains_prefought = keep.contract.villains_prefought;
-    dst->world.zones_discovered = keep.world.zones_discovered;
-    dst->world.zone_rites = keep.world.zone_rites;
-    dst->world.orbs_found = keep.world.orbs_found;
-    dst->world.continent_fog = keep.world.continent_fog;
-    dst->consumed = keep.consumed;         dst->consumed_cap = keep.consumed_cap;
-    dst->bridges = keep.bridges;           dst->bridge_cap = keep.bridge_cap;
-    dst->events_done = keep.events_done;   dst->events_done_cap = keep.events_done_cap;
-    dst->dwellings = keep.dwellings;       dst->dwelling_cap = keep.dwelling_cap;
-    dst->placements = keep.placements;     dst->placement_cap = keep.placement_cap;
-    dst->foes = keep.foes;                 dst->foe_cap = keep.foe_cap;
-    dst->player_io = keep.player_io;
-
-    COPY_TABLE(dst->towns, src->towns, keep.town_count, src->town_count);
-    COPY_TABLE(dst->castles, src->castles, keep.castle_count, src->castle_count);
-    COPY_TABLE(dst->spells.counts, src->spells.counts, keep.spells.count, src->spells.count);
-    COPY_TABLE(dst->spells.learned, src->spells.learned, keep.spells.count, src->spells.count);
-    COPY_TABLE(dst->artifacts.found, src->artifacts.found, keep.artifacts.count, src->artifacts.count);
-    COPY_TABLE(dst->contract.cycle, src->contract.cycle, keep.contract.cycle_count, src->contract.cycle_count);
-    COPY_TABLE(dst->contract.villains_caught, src->contract.villains_caught,
-               keep.contract.villain_count, src->contract.villain_count);
-    COPY_TABLE(dst->contract.villains_prefought, src->contract.villains_prefought,
-               keep.contract.villain_count, src->contract.villain_count);
-    COPY_TABLE(dst->world.zones_discovered, src->world.zones_discovered,
-               keep.world.zone_count, src->world.zone_count);
-    COPY_TABLE(dst->world.zone_rites, src->world.zone_rites,
-               keep.world.zone_count, src->world.zone_count);
-    COPY_TABLE(dst->world.orbs_found, src->world.orbs_found,
-               keep.world.zone_count, src->world.zone_count);
-    // The continent fogs: a table of Fog, each with its own grid.
-    if (keep.world.zone_count != src->world.zone_count || !dst->world.continent_fog) {
-        for (int i = 0; dst->world.continent_fog && i < keep.world.zone_count; i++)
-            FogFree(&dst->world.continent_fog[i]);
-        free(dst->world.continent_fog);
-        dst->world.continent_fog = table_alloc(src->world.zone_count,
-                                               sizeof *dst->world.continent_fog, &ok);
-        if (!dst->world.continent_fog) dst->world.zone_count = 0;
-    }
-    for (int i = 0; ok && dst->world.continent_fog && src->world.continent_fog &&
-                    i < src->world.zone_count; i++)
-        if (!FogCopy(&dst->world.continent_fog[i], &src->world.continent_fog[i])) ok = false;
-    COPY_LIST(consumed, consumed_count, consumed_cap);
-    COPY_LIST(bridges, bridge_count, bridge_cap);
-    COPY_LIST(events_done, events_done_count, events_done_cap);
-    COPY_LIST(dwellings, dwelling_count, dwelling_cap);
-    COPY_LIST(placements, placement_count, placement_cap);
-    COPY_LIST(foes, foe_count, foe_cap);
-    // The request queue, oldest first from slot 0.
-    {
-        PlayerIoQueue *dq = &dst->player_io;
-        const PlayerIoQueue *sq = &src->player_io;
-        dq->head = 0;
-        dq->count = 0;
-        if (sq->count > 0) {
-            if (dq->cap < sq->count) {
-                PlayerRequest *ns = realloc(dq->slot, (size_t)sq->cap * sizeof *ns);
-                if (!ns) ok = false;
-                else { dq->slot = ns; dq->cap = sq->cap; }
-            }
-            if (ok) {
-                for (int i = 0; i < sq->count; i++)
-                    dq->slot[i] = sq->slot[(sq->head + i) % sq->cap];
-                dq->count = sq->count;
-            }
-        }
-    }
-    if (!ok) GameFree(dst);
-    return ok;
-}
-
-static uint32_t fnv_bytes(uint32_t h, const void *data, size_t n) {
-    const unsigned char *p = (const unsigned char *)data;
-    for (size_t i = 0; i < n; i++) { h ^= p[i]; h *= 16777619u; }
-    return h;
-}
-
-#define FNV_TABLE(h, ptr, n) \
-    ((ptr) && (n) > 0 ? fnv_bytes((h), (ptr), (size_t)(n) * sizeof *(ptr)) : (h))
-
-uint32_t GameFingerprint(const Game *g, uint32_t h) {
-    if (!g) return h;
-    // The value fields: a zeroed image with the scalars copied in, so padding
-    // and the table pointers never reach the hash.
-    Game flat;
-    memset(&flat, 0, sizeof flat);
-    flat.version = g->version;           flat.seed = g->seed;
-    flat.seed_from_catalog = g->seed_from_catalog;
-    flat.seed_index = g->seed_index;     flat.oracle_mode = g->oracle_mode;
-    flat.character = g->character;       flat.stats = g->stats;
-    flat.position = g->position;         flat.travel_mode = g->travel_mode;
-    flat.anim_frame = g->anim_frame;     flat.anim_moving = g->anim_moving;
-    flat.hud_visible = g->hud_visible;
-    memcpy(flat.army, g->army, sizeof flat.army);
-    flat.contract.cycle_count = g->contract.cycle_count;
-    memcpy(flat.contract.active_id, g->contract.active_id, sizeof flat.contract.active_id);
-    flat.contract.last_contract = g->contract.last_contract;
-    flat.contract.max_contract = g->contract.max_contract;
-    flat.boat = g->boat;                 flat.scepter = g->scepter;
-    flat.consumed_count = g->consumed_count;
-    flat.bridge_count = g->bridge_count;
-    flat.dwelling_count = g->dwelling_count;
-    flat.placement_count = g->placement_count;
-    flat.foe_count = g->foe_count;
-    flat.player_io.count = g->player_io.count;
-    h = fnv_bytes(h, &flat, sizeof flat);
-    for (int i = 0; i < g->player_io.count; i++)
-        h = fnv_bytes(h, &g->player_io.slot[(g->player_io.head + i) % g->player_io.cap],
-                      sizeof *g->player_io.slot);
-    h = FNV_TABLE(h, g->towns, g->town_count);
-    h = FNV_TABLE(h, g->castles, g->castle_count);
-    h = FNV_TABLE(h, g->spells.counts, g->spells.count);
-    h = FNV_TABLE(h, g->spells.learned, g->spells.count);
-    h = FNV_TABLE(h, g->artifacts.found, g->artifacts.count);
-    h = FNV_TABLE(h, g->contract.cycle, g->contract.cycle_count);
-    h = FNV_TABLE(h, g->contract.villains_caught, g->contract.villain_count);
-    h = FNV_TABLE(h, g->contract.villains_prefought, g->contract.villain_count);
-    h = FNV_TABLE(h, g->world.zones_discovered, g->world.zone_count);
-    h = FNV_TABLE(h, g->world.zone_rites, g->world.zone_count);
-    h = FNV_TABLE(h, g->world.orbs_found, g->world.zone_count);
-    for (int i = 0; g->world.continent_fog && i < g->world.zone_count; i++) {
-        const Fog *f = &g->world.continent_fog[i];
-        h = fnv_bytes(h, &f->width, sizeof f->width);
-        h = fnv_bytes(h, &f->height, sizeof f->height);
-        h = FNV_TABLE(h, f->seen, f->width * f->height);
-    }
-    h = FNV_TABLE(h, g->consumed, g->consumed_count);
-    h = FNV_TABLE(h, g->bridges, g->bridge_count);
-    h = FNV_TABLE(h, g->dwellings, g->dwelling_count);
-    h = FNV_TABLE(h, g->placements, g->placement_count);
-    h = FNV_TABLE(h, g->foes, g->foe_count);
-    return h;
-}
-
-static void copy_id(char *dst, size_t dst_sz, const char *src) {
+void game_copy_id(char *dst, size_t dst_sz, const char *src) {
     if (!src) { dst[0] = '\0'; return; }
     size_t i = 0;
     while (i + 1 < dst_sz && src[i]) { dst[i] = src[i]; i++; }
@@ -347,310 +66,11 @@ void GameAddPlacement(Game *g, const char *zone, int x, int y, int kind, const c
     if (!g || !zone) return;
     if (!GameReservePlacements(g, g->placement_count + 1)) return;
     SaltedPlacement *p = &g->placements[g->placement_count++];
-    copy_id(p->zone, sizeof(p->zone), zone);
+    game_copy_id(p->zone, sizeof(p->zone), zone);
     p->x = x;
     p->y = y;
     p->kind = kind;
-    copy_id(p->id, sizeof(p->id), id);
-}
-
-// spawn_game implementation.
-void GameInit(Game *g, const char *name, int pclass, int difficulty, const unsigned char *land) {
-    GameInitSeeded(g, name, pclass, difficulty, land, -1);
-}
-
-void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
-                    const unsigned char *land, int seed_index) {
-    int i;
-    // Preserve the Resources pointer across the memset -- it must be set by
-    // the caller (main.c / menu_new) before GameInit and is used by init
-    // steps like salt_spells/salt_continent/salt_villains.
-    const Resources *res_saved = g->res;
-    // Preserve any caller-supplied raw seed so tests can force determinism.
-    // Only consulted when seed_index < 0; see the seed resolution below.
-    uint64_t seed_saved = g->seed;
-    // Every table sized from the pack, zeroed (the Game must be zeroed or
-    // previously sized).
-    g->res = res_saved;
-    if (!GameAlloc(g)) {
-        fatal_user_error("OpenBounty", "Out of memory starting a game.");
-        exit(2);
-    }
-    player_io_reset(g);   // empty the uniform player-IO request queue (the
-                          // memset already zeroed it; this centralizes the
-                          // invariant -- see engine/include/player_io.h)
-    pending_reset();      // clear the pending-flow GLOBALS too: they leak across
-                          // in-process games (a stale pending_flow would make the
-                          // new game's first tick answer a phantom prompt).
-    (void)land;   // World byte-map is unused; we load zone maps lazily
-                  // via MapLoadZoneWithPlacements instead.
-
-    // Seed resolution, in priority order. seed_index is the catalog identity
-    // and `seed` is always derived from it; the raw-seed path is the escape
-    // hatch for callers that pin g->seed directly.
-    if (seed_index >= 0) {
-        g->seed_index = seed_index & 0xFF;
-        g->seed_from_catalog = true;
-        g->seed = GameSeedFromIndex((unsigned char)g->seed_index);
-    } else if (seed_saved != 0) {
-        g->seed = seed_saved;
-        g->seed_from_catalog = false;
-    } else {
-        // No world asked for: pick one from wall-clock time. Without this, the
-        // memset above leaves g->seed = 0 and every new game produces the
-        // exact same world (same dwellings, same artifacts, same scepter
-        // location). Mix in name + class so two games started in the same
-        // second still differ.
-        uint64_t t = (uint64_t)time(NULL);
-        uint64_t h = t;
-        h ^= (uint64_t)pclass * 2654435761ULL;
-        for (const char *p = name; p && *p; p++) {
-            h = h * 31ULL + (uint64_t)(unsigned char)*p;
-        }
-        g->seed_index = (int)(h & 0xFFu);
-        g->seed_from_catalog = true;
-        g->seed = GameSeedFromIndex((unsigned char)g->seed_index);
-    }
-
-    // Step 2 (play.c:385-388): Hide scepter.
-    // Seed the deterministic RNG from g->seed so every subsequent
-    // game_rng_next() call produces a reproducible world from this
-    // seed (saves restore g->seed and re-derive identical state).
-    game_rng_seed(g->seed);
-    g->scepter.key = game_rng_next(0, 255);
-    // The scepter's zone is drawn from every zone the pack declares (#77):
-    // a four-zone pack draws 0..3, and a pack with fewer or more zones buries
-    // in one of its own.
-    int zones = g->res->zone_count > 0 ? g->res->zone_count : 1;
-    int scepter_continent = game_rng_next(0, zones - 1);
-    bury_scepter(g, scepter_continent);
-
-    // Step 3 (play.c:390-400): Character name, class, difficulty, days, gold.
-    if (name && name[0]) {
-        strncpy(g->character.name, name, sizeof(g->character.name) - 1);
-        g->character.name[sizeof(g->character.name) - 1] = '\0';
-        // Capitalize first letter ).
-        if (g->character.name[0] >= 'a' && g->character.name[0] <= 'z') {
-            g->character.name[0] = (char)(g->character.name[0] - 'a' + 'A');
-        }
-    } else {
-        const char *dn = g->res->world.default_name;
-        strncpy(g->character.name, dn, sizeof(g->character.name) - 1);
-        g->character.name[sizeof(g->character.name) - 1] = '\0';
-    }
-
-    g->character.difficulty = difficulty;
-
-    const ClassDef *cls = (pclass >= 0 && pclass < classes_count()) ? class_by_index(pclass) : class_by_index(0);
-    if (!cls) cls = class_by_index(0);
-    copy_id(g->character.cls.id, sizeof(g->character.cls.id), cls->id);
-    g->character.cls.rank_index = 0;
-    copy_id(g->character.cls.rank_id, sizeof(g->character.cls.rank_id), cls->ranks[0].id);
-    copy_id(g->character.cls.rank_title, sizeof(g->character.cls.rank_title), cls->ranks[0].name);
-
-    int lead = 0, maxsp = 0, spp = 0, comm = 0;
-    class_stats_at_rank(cls, 0, &lead, &maxsp, &spp, &comm);
-    g->stats.gold = cls->starting_gold;
-    g->stats.commission_weekly = comm;
-    g->stats.leadership_base = lead;
-    g->stats.leadership_current = lead;
-    g->stats.spell_power = spp;
-    g->stats.max_spells = maxsp;
-    g->stats.knows_magic = cls->ranks[0].knows_magic;
-    g->stats.siege_weapons = 0;
-
-    int di = (difficulty >= 0 && difficulty < 4) ? difficulty : 0;
-    g->stats.days_left = g->res ? g->res->time.days_per_difficulty[di] : 900;
-    g->stats.steps_left_today = g->res ? g->res->time.day_steps : 40;
-    g->stats.last_commission = 0;
-    g->stats.last_renewed_spell = -1;
-    g->stats.last_week_on_hand = g->stats.last_week_army = g->stats.last_week_boat = 0;
-
-    // Step 4: Starting position (home continent, home_spawn). Look for
-    // the zone flagged is_home; fall back to world.starting_zone +
-    // hero_spawn.
-    g->position.zone[0] = '\0';
-    g->position.x = g->position.y = 0;
-    int home_zone_index = -1;
-    if (g->res) {
-        for (int zi = 0; zi < g->res->zone_count; zi++) {
-            const ResZone *z = &g->res->zones[zi];
-            if (!z->is_home) continue;
-            copy_id(g->position.zone, sizeof(g->position.zone), z->id);
-            g->position.x = z->home_spawn_x;
-            g->position.y = z->home_spawn_y;
-            home_zone_index = zi;
-            break;
-        }
-        if (!g->position.zone[0]) {
-            copy_id(g->position.zone, sizeof(g->position.zone),
-                    g->res->world.starting_zone);
-            for (int zi = 0; zi < g->res->zone_count; zi++) {
-                const ResZone *z = &g->res->zones[zi];
-                if (strcmp(z->id, g->res->world.starting_zone) == 0) {
-                    g->position.x = z->hero_spawn_x;
-                    g->position.y = z->hero_spawn_y;
-                    home_zone_index = zi;
-                    break;
-                }
-            }
-        }
-        // continent_found[HOME_CONTINENT] = 1
-        if (home_zone_index >= 0) {
-            g->world.zones_discovered[home_zone_index] = true;
-        }
-    }
-
-    // Step 5 (play.c:407-410): Mount, boat, last position.
-    g->character.mount = MOUNT_RIDE;
-    g->boat.has_boat = false;
-    g->boat.x = -1;
-    g->boat.y = -1;
-    g->position.last_x = g->position.x;
-    g->position.last_y = g->position.y;
-
-    // Step 6 (play.c:412-415): Rank init (leadership from base_leadership,
-    // time_stop = 0). Our player_accept_rank is a no-op today because rank
-    // stats already come from class_stats_at_rank above; leaving the call
-    // for sequence parity.
-    g->character.cls.rank_index = 0;
-    player_accept_rank(g);
-    g->stats.time_stop = 0;
-
-    // Step 7: Contract cycle. Seed with the first cycle_length villain
-    // ids from the catalog.
-    g->contract.active_id[0] = '\0';
-    int cycle_len = g->contract.cycle_count;
-    g->contract.last_contract = g->res ? g->res->contract.initial_last_contract
-                                       : cycle_len - 1;
-    g->contract.max_contract  = cycle_len;
-    for (i = 0; i < cycle_len; i++) {
-        const VillainDef *v = villain_by_index(i);
-        if (v) copy_id(g->contract.cycle[i],
-                       sizeof(g->contract.cycle[i]), v->id);
-        else   g->contract.cycle[i][0] = '\0';
-    }
-
-    // Step 8 (play.c:426-433): Starting army (2 slots + empty rest).
-    for (i = 0; i < cls->starting_troop_count && i < GAME_ARMY_SLOTS; i++) {
-        const char *troop = cls->starting_troops[i];
-        int count = cls->starting_counts[i];
-        if (!troop[0] || count <= 0) continue;
-        copy_id(g->army[i].id, sizeof(g->army[i].id), troop);
-        g->army[i].count = count;
-    }
-
-    // Step 9 (play.c:435-441): Default player options.
-    for (int oi = 0; oi < 7; oi++) {
-        g->stats.options[oi] = g->res ? g->res->world.default_options[oi] : 1;
-    }
-
-    // Step 10 (play.c:444): Randomize spells sold in towns.
-    salt_spells(g);
-
-    // Remove magic alcove(s) if the starting class already knows magic.
-    // The alcove is an overlay at the tile declared
-    // in zones[].magic_alcove; marking it consumed stops MapLoadZone /
-    // stamp_objects from rendering an interactive on that tile.
-    // With rites per zone, such a class knows only the home zone's rites, and
-    // only that alcove is spent.
-    if (g->stats.knows_magic && g->res) {
-        bool per_zone = g->res->economy.rites_per_zone;
-        for (int zi = 0; zi < g->res->zone_count; zi++) {
-            const ResZone *z = &g->res->zones[zi];
-            if (per_zone && strcmp(z->id, g->res->world.starting_zone) != 0) continue;
-            if (per_zone && zi < g->world.zone_count) g->world.zone_rites[zi] = true;
-            if (z->magic_alcove_x < 0 || z->magic_alcove_y < 0) continue;
-            GameAddConsumed(g, z->id, z->magic_alcove_x, z->magic_alcove_y);
-        }
-    }
-
-    // Salt each zone from its own salt budget (zones[].salt in game.json).
-    //  loops continents calling
-    //   salt_continent(game, i, 2, 1, 1, 2, 10, 5);
-    // with the same budget per continent. We read the budget from the
-    // ResZone so mods can tune it.
-    if (g->res) {
-        for (int zi = 0; zi < g->res->zone_count; zi++) {
-            const ResZone *z = &g->res->zones[zi];
-            salt_continent(g, zi,
-                           z->salt.artifacts,
-                           z->salt.navmaps,
-                           z->salt.orbs,
-                           z->salt.telecaves,
-                           z->salt.dwellings,
-                           z->salt.friendly_foes);
-        }
-    }
-
-    // Initialize castles: eagerly copy ids from the resource catalog so
-    // GameFindCastle works, and mark them all monster-owned 
-    // spawn_game:461-464 (castle_owner[i] = 0x7F). Villain assignment
-    // (salt_villains) runs later and overwrites owner_kind where applicable.
-    {
-        int ncastles = g->castle_count;
-        for (i = 0; i < ncastles; i++) {
-            const ResCastle *rc = &g->res->castles[i];
-            CastleRecord *cr = &g->castles[i];
-            copy_id(cr->id, sizeof(cr->id), rc->id);
-            cr->visited = false;
-            cr->known = false;
-            cr->owner_kind = CASTLE_OWNER_MONSTERS;
-            cr->villain_id[0] = '\0';
-            for (int sl = 0; sl < GAME_ARMY_SLOTS; sl++) {
-                cr->garrison[sl].id[0] = '\0';
-                cr->garrison[sl].count = 0;
-            }
-        }
-        // Any leftover slots stay zeroed from memset earlier in GameInit.
-    }
-
-    // Assign villains to castles.
-    salt_villains(g);
-
-    // Repopulate every remaining monster-owned castle with a troop stack
-    for (i = 0; i < g->castle_count; i++) {
-        if (!g->castles[i].id[0]) continue;
-        // Castles flagged special.excluded_from_contract never hold a
-        // monster garrison; mark them CASTLE_OWNER_SPECIAL so downstream
-        // UI/flow can distinguish them from ordinary monster castles.
-        if (g->res && i < g->res->castle_count &&
-            g->res->castles[i].special.excluded_from_contract) {
-            g->castles[i].owner_kind = CASTLE_OWNER_SPECIAL;
-            continue;
-        }
-        if (g->castles[i].owner_kind == CASTLE_OWNER_MONSTERS) {
-            repopulate_castle(g, i);
-        }
-    }
-
-    // enforce_dwelling: eagerly create a DwellingState row for every
-    // dwelling tile so save state matches the "all dwellings populated
-    // at game creation" model. Two sources:
-    //   1. JSON-declared dwellings (ResZone.dwellings[]).
-    //   2. Salt-placed dwellings (g->placements[] kind == DWELLING_*).
-    // Visit-time GameTouchDwelling becomes a pure lookup.
-    if (g->res) {
-        for (int zi = 0; zi < g->res->zone_count; zi++) {
-            const ResZone *z = &g->res->zones[zi];
-            for (int di = 0; di < z->dwelling_count; di++) {
-                const ResZoneDwelling *rd = &z->dwellings[di];
-                if (rd->troop[0])   // a pack-pinned breed (the elephant park)
-                    enforce_dwelling_pinned(g, z->id, rd->x, rd->y, rd->troop);
-                else
-                    enforce_dwelling(g, z->id, rd->x, rd->y, rd->kind);
-            }
-        }
-    }
-    for (int pi = 0; pi < g->placement_count; pi++) {
-        const SaltedPlacement *p = &g->placements[pi];
-        const char *kind = DwellingCatalogKind((Interact)p->kind);
-        if (!kind) continue;
-        enforce_dwelling(g, p->zone, p->x, p->y, kind);
-    }
-
-    // Clear fog around starting location
-    clear_fog(g);
+    game_copy_id(p->id, sizeof(p->id), id);
 }
 
 // The cast formulas, exposed as read-only queries so planning layers never
@@ -711,642 +131,6 @@ void GameCastFindVillain(Game *g) {
             continue;
         g->castles[i].known = true;
         return;
-    }
-}
-
-// Eagerly populates every TownRecord from res->towns[] and assigns a
-// spell to each:
-//   1. Towns with a non-empty `pinned_spell` field get that spell pre-placed.
-//      (Any town may pin any spell via its game.json record.)
-//   2. For every other spell (not already pinned): pick a random unclaimed
-//      town, assign the spell. Retry until placed.
-//   3. Any town left without a spell gets a random spell.
-// RNG is deterministic from g->seed (game_rng_seed already called).
-void salt_spells(Game *g) {
-    if (!g || !g->res) return;
-
-    const Resources *res = g->res;
-    int nspells = spells_count();
-    int ntowns  = g->town_count;
-    if (nspells <= 0 || ntowns <= 0) return;
-
-    // Eagerly create a TownRecord for every town in resources, so salt
-    // assignments survive independent of visit order. Reset spell_for_sale
-    // to ""  before assignment.
-    for (int i = 0; i < ntowns; i++) {
-        const ResTown *rt = &res->towns[i];
-        TownRecord *tr = &g->towns[i];
-        copy_id(tr->id, sizeof(tr->id), rt->id);
-        tr->visited = false;
-        tr->spell_for_sale[0] = '\0';
-    }
-
-    // Step 1: apply every town's pinned_spell, if any. Track which spell
-    // ids are already claimed so step 2 can skip them.
-    // One flag per spell of the pack (a spell's index beyond the count is never
-    // walked by step 2, so it needs no flag).
-    bool *spell_claimed = nspells > 0 ? calloc((size_t)nspells, sizeof *spell_claimed) : NULL;
-    for (int i = 0; i < ntowns; i++) {
-        const char *pin = res->towns[i].pinned_spell;
-        if (!pin[0]) continue;
-        const SpellDef *sp = spell_by_id(pin);
-        if (!sp) continue;
-        copy_id(g->towns[i].spell_for_sale,
-                sizeof(g->towns[i].spell_for_sale), sp->id);
-        if (spell_claimed && sp->index >= 0 && sp->index < nspells)
-            spell_claimed[sp->index] = true;
-    }
-
-    // Step 2: for every not-yet-claimed spell, place it at a random
-    // currently-empty town.  loop.
-    // A pack may declare more spells than towns (e.g. 14 spells, 11 towns).
-    // Once no empty town remains the surplus spells simply go unsold --
-    // without this bound the random-empty-town search spins forever. Packs
-    // with towns >= spells never hit empty_towns == 0 before s == nspells,
-    // so their draw sequence (and every derived digest) is unchanged.
-    int empty_towns = 0;
-    for (int i = 0; i < ntowns; i++)
-        if (g->towns[i].spell_for_sale[0] == '\0') empty_towns++;
-    for (int s = 0; s < nspells && empty_towns > 0; ) {
-        if (spell_claimed && spell_claimed[s]) { s++; continue; }
-        int t = game_rng_next(0, ntowns - 1);
-        if (g->towns[t].spell_for_sale[0] == '\0') {
-            const SpellDef *sp = spell_by_index(s);
-            if (sp) copy_id(g->towns[t].spell_for_sale,
-                            sizeof(g->towns[t].spell_for_sale), sp->id);
-            s++;
-            empty_towns--;
-        }
-    }
-    free(spell_claimed);
-
-    // Step 3: any still-empty town gets a random spell.
-    for (int i = 0; i < ntowns; i++) {
-        if (g->towns[i].spell_for_sale[0]) continue;
-        int s = game_rng_next(0, nspells - 1);
-        const SpellDef *sp = spell_by_index(s);
-        if (sp) copy_id(g->towns[i].spell_for_sale,
-                        sizeof(g->towns[i].spell_for_sale), sp->id);
-    }
-}
-
-// Salt kinds -- internal enum used while building the barrel.
-typedef enum {
-    SALT_NONE = 0,
-    SALT_ARTIFACT,
-    SALT_NAVMAP,
-    SALT_ORB,
-    SALT_TELECAVE,
-    SALT_DWELLING,
-    SALT_FRIENDLY,
-} SaltKind;
-
-// A troop's dwelling kind to its tile; any kind the tiles don't know (the
-// catalog's "castle", say) is a plains dwelling.
-static Interact dwelling_kind_to_interact(const char *kind) {
-    Interact i = DwellingInteractFromKind(kind);
-    return i != INTERACT_NONE ? i : INTERACT_DWELLING_PLAINS;
-}
-
-// pick the troop first, derive
-// kind from troops[id].dwells. Per-zone preferred troop list comes
-// first; remaining slots roll uniformly in dwelling_range_min..max.
-static const char *salt_pick_dwelling_troop(const Game *g, int continent,
-                                            int slot_index) {
-    const ResZone *z = &g->res->zones[continent];
-    if (slot_index < z->salt.preferred_troop_count) {
-        return z->salt.preferred_troops[slot_index];
-    }
-    int lo = z->salt.dwelling_range_min;
-    int hi = z->salt.dwelling_range_max;
-    if (lo < 0 || hi < 0 || lo > hi) return NULL;
-    int total = troops_count();
-    if (lo >= total) return NULL;
-    if (hi >= total) hi = total - 1;
-    // Castle-kind troops (militia, archers, pikemen, knights, cavalry) are
-    // recruited only at the home castle (REQ-310); they must never host a
-    // dwelling. The numeric range straddles their catalog indices, so re-roll
-    // whenever one comes up. Bounded guard avoids a spin if the range holds
-    // nothing else; returning NULL then leaves the slot unplaced.
-    for (int guard = 0; guard <= (hi - lo) * 20 + 20; guard++) {
-        int idx = game_rng_next(lo, hi);
-        const TroopDef *t = troop_by_index(idx);
-        if (!t || !t->id[0]) continue;
-        if (strcmp(t->dwelling, "castle") == 0) continue;
-        return t->id;
-    }
-    return NULL;
-}
-
-// Converts a subset of the zone's saltable slots (JSON-declared
-// chests[] positions) into randomly-typed objects per the supplied
-// budget. Placements land in Game.placements[] via GameAddPlacement,
-// so they survive across save/load.
-//
-// continent is the zone index in res->zones[]. RNG state has already been
-// seeded from g->seed in GameInit, so repeated runs with the same seed
-// produce the same layout (required for reproducible new games).
-// Roll a defending stack (up to GAME_ARMY_SLOTS units) for a hostile foe
-// using the zone's tier spawn pool. Deterministic given the current
-// game_rng state so save/load reproduces the same garrison.
-// difficulty (= continent) governs the
-// chance distribution; the dwelling kind is rolled fresh each call and
-// indexes the troop pool independently. So Saharia (cont 3) skews to
-// the rarest slot regardless of kind, but kind itself is uniform.
-// The calm start (REQ-283, #69): true when a hostile foe at (x, y) lies within
-// spawn.calm_radius of its zone's hero_spawn. Radius 0 (the King's Bounty
-// pack) never calms, so the original roll runs unchanged.
-static bool foe_is_calm(const Game *g, int continent, int x, int y) {
-    const ResSpawn *sp = &g->res->spawn;
-    if (sp->calm_radius <= 0) return false;
-    if (continent < 0 || continent >= g->res->zone_count) return false;
-    const ResZone *z = &g->res->zones[continent];
-    int dx = x - z->hero_spawn_x, dy = y - z->hero_spawn_y;
-    if (dx < 0) dx = -dx;
-    if (dy < 0) dy = -dy;
-    return (dx > dy ? dx : dy) <= sp->calm_radius;
-}
-
-static void roll_hostile_garrison(const Game *g, int continent, int x, int y, Unit *out) {
-    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-        out[i].id[0] = '\0';
-        out[i].count = 0;
-    }
-    if (!g || !g->res) return;
-    int continent_tier = continent & 3;
-    const bool calm = foe_is_calm(g, continent, x, y);
-    const ResSpawn *sp = &g->res->spawn;
-    int max_stacks = calm ? (sp->calm_max_stacks > 0 ? sp->calm_max_stacks : 1) : 3;
-    int stacks = 1 + game_rng_next(0, max_stacks - 1);   // 1..3 stacks; calm: 1..calm_max_stacks
-    if (stacks > GAME_ARMY_SLOTS) stacks = GAME_ARMY_SLOTS;
-    for (int s = 0; s < stacks; s++) {
-        int kind = game_rng_next(0, 3);     // dwelling = rand(0,3)
-        int chance = game_rng_next(1, 100);
-        const char *tid;
-        if (calm) {
-            int slot = resources_spawn_slot(sp, kind, continent_tier, chance);
-            if (slot > sp->calm_max_slot) slot = sp->calm_max_slot;
-            tid = resources_spawn_troop_at(sp, kind, slot);
-        } else {
-            tid = resources_spawn_troop(sp, kind, continent_tier, chance);
-        }
-        if (!tid || !tid[0]) continue;
-        const TroopDef *td = troop_by_id(tid);
-        if (!td) continue;
-        int base = td->tier_counts[continent_tier];
-        if (base < 2) base = 2;
-        int jitter = game_rng_next(0, base / 2);
-        copy_id(out[s].id, sizeof(out[s].id), tid);
-        out[s].count = base + jitter;
-    }
-}
-
-static void add_foe(Game *g, int continent, const char *zone, int x, int y,
-                    const char *placement_id, bool friendly,
-                    bool is_static, const ResZoneArmy *explicit_army) {
-    if (!g || !GameReserveFoes(g, g->foe_count + 1)) return;
-    FoeState *f = &g->foes[g->foe_count++];
-    copy_id(f->zone, sizeof(f->zone), zone);
-    f->x = x;
-    f->y = y;
-    f->origin_x = x;   // pinned to the spawn tile; wander updates x/y, not this
-    f->origin_y = y;
-    copy_id(f->placement_id, sizeof(f->placement_id), placement_id);
-    f->alive = true;
-    f->friendly = friendly;
-    f->is_static = is_static;
-    f->scene_index = -1;
-    if (explicit_army) {
-        copy_id(f->requires_troop, sizeof(f->requires_troop),
-                explicit_army->requires_troop);
-        f->scene_index = explicit_army->scene_index;
-        copy_id(f->scene_title, sizeof(f->scene_title), explicit_army->title);
-    }
-    // Explicit garrison (a hand-tuned guardian) if one was declared; otherwise
-    // roll by zone tier. For friendlies the garrison is unused (recruit dialog
-    // rolls a fresh creature), but populating it keeps save/load + tests uniform.
-    if (explicit_army && explicit_army->army_stacks > 0) {
-        for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
-            f->garrison[s].id[0] = '\0';
-            f->garrison[s].count = 0;
-        }
-        for (int s = 0; s < explicit_army->army_stacks && s < GAME_ARMY_SLOTS; s++) {
-            copy_id(f->garrison[s].id, sizeof(f->garrison[s].id),
-                    explicit_army->army_id[s]);
-            f->garrison[s].count = explicit_army->army_count[s];
-        }
-    } else {
-        roll_hostile_garrison(g, continent, x, y, f->garrison);
-    }
-}
-
-const ResZoneArmy *GameFoeArmy(const Game *g, const FoeState *f) {
-    if (!g || !g->res || !f || f->friendly) return NULL;
-    for (int zi = 0; zi < g->res->zone_count; zi++) {
-        const ResZone *z = &g->res->zones[zi];
-        if (strcmp(z->id, f->zone) != 0) continue;
-        for (int i = 0; i < z->army_count; i++) {
-            const ResZoneArmy *a = &z->armies[i];
-            char fallback[32];
-            const char *aid = a->id;
-            if (!aid[0]) {
-                snprintf(fallback, sizeof(fallback), "static_foe_%d", i);
-                aid = fallback;
-            }
-            if (strcmp(aid, f->placement_id) == 0) return a;
-        }
-        return NULL;
-    }
-    return NULL;
-}
-
-// True when a chest of the zone pins this artifact ("artifact": id).
-static bool chest_pins_artifact(const ResZone *z, const char *artifact_id) {
-    if (!z || !artifact_id || !artifact_id[0]) return false;
-    for (int i = 0; i < z->chest_count; i++)
-        if (strcmp(z->chests[i].artifact, artifact_id) == 0) return true;
-    return false;
-}
-
-void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
-                    int min_orbs, int min_telecaves, int min_dwellings,
-                    int min_friendly) {
-    if (!g || !g->res) return;
-    if (continent < 0 || continent >= g->res->zone_count) return;
-
-    const ResZone *z = &g->res->zones[continent];
-
-    // Hostile foes: every army the zone declares (zones[].wandering_armies)
-    // becomes a hostile foe, its garrison rolled or, for a guardian, its own.
-    // Registered first so friendly foes appear after them in g->foes[] -- but
-    // classification is by the per-foe `friendly` flag, not by index ordering.
-    // The list is sized by the pack: no count is dropped.
-    for (int i = 0; i < z->army_count; i++) {
-        const ResZoneArmy *a = &z->armies[i];
-        const char *aid = (a->id[0]) ? a->id : NULL;
-        char fallback[32];
-        if (!aid) {
-            snprintf(fallback, sizeof(fallback), "static_foe_%d", i);
-            aid = fallback;
-        }
-        add_foe(g, continent, z->id, a->x, a->y, aid, /*friendly=*/false,
-                a->is_static, a);
-    }
-
-    // A chest that names an artifact ("artifact": id) is that artifact: it is
-    // placed here, before the salt draws, and counts against the zone's
-    // artifact quota, so the salt scatters only the rest.
-    int pinned = 0;
-    for (int i = 0; i < z->chest_count; i++) {
-        const ResZoneChest *c = &z->chests[i];
-        if (!c->artifact[0]) continue;
-        GameAddPlacement(g, z->id, c->x, c->y, INTERACT_ARTIFACT, c->artifact);
-        pinned++;
-    }
-    min_artifacts = (min_artifacts > pinned) ? min_artifacts - pinned : 0;
-
-    // The barrel is every chest the salt may use: a "fixed" chest stays a
-    // chest (a prize at the end of a path), and a pinned artifact is already
-    // placed, so both are left out.
-    int *slots = (int *)calloc((size_t)(z->chest_count > 0 ? z->chest_count : 1), sizeof(int));
-    if (!slots) return;
-    int barrel_len = 0;
-    for (int i = 0; i < z->chest_count; i++)
-        if (!z->chests[i].fixed && !z->chests[i].artifact[0]) slots[barrel_len++] = i;
-    int min_len = min_artifacts + min_navmaps + min_orbs +
-                  min_telecaves + min_dwellings + min_friendly;
-
-    if (min_len == 0) { free(slots); return; }   // nothing to place beyond static foes
-    if (barrel_len < min_len) {
-        fprintf(stdout,
-                "salt_continent: zone '%s' has %d chests, need %d. "
-                "Skipping.\n",
-                z->id, barrel_len, min_len);
-        free(slots);
-        return;
-    }
-
-    // Allocate tag barrel.
-    SaltKind *barrel = (SaltKind *)calloc((size_t)barrel_len, sizeof(SaltKind));
-    if (!barrel) { free(slots); return; }
-
-    // Tag the required number of each kind at random unclaimed positions.
-    // This retries until unclaimed (OpenKB's play.c:222-234).
-    #define TAG_N(count, kind) do {                                     \
-        int _placed = 0;                                                \
-        int _guard = 0;                                                 \
-        while (_placed < (count) && _guard < barrel_len * 20) {         \
-            int _bi = game_rng_next(0, barrel_len - 1);                 \
-            if (barrel[_bi] == SALT_NONE) {                             \
-                barrel[_bi] = (kind);                                   \
-                _placed++;                                              \
-            }                                                           \
-            _guard++;                                                   \
-        }                                                               \
-    } while (0)
-
-    TAG_N(min_artifacts, SALT_ARTIFACT);
-    TAG_N(min_navmaps,   SALT_NAVMAP);
-    TAG_N(min_orbs,      SALT_ORB);
-    TAG_N(min_telecaves, SALT_TELECAVE);
-    TAG_N(min_dwellings, SALT_DWELLING);
-    TAG_N(min_friendly,  SALT_FRIENDLY);
-
-    #undef TAG_N
-
-    // Emit placements. For each tagged chest slot, add a SaltedPlacement
-    // which MapLoadZoneWithPlacements will stamp when the zone is loaded.
-    int artifact_counter = 0;
-    int telecave_counter = 0;
-    int dwelling_counter = 0;
-    int foe_counter      = 0;
-    int orb_counter      = 0;
-    int navmap_counter   = 0;
-
-    for (int i = 0; i < barrel_len; i++) {
-        const ResZoneChest *slot = &z->chests[slots[i]];
-        char id[32];
-        switch (barrel[i]) {
-            case SALT_ARTIFACT: {
-                // Each (continent, slot) is fixed by
-                // artifact_inversion[continent*2+slot]. We honour this by
-                // looking up the artifact whose `zone == z->id` and
-                // `local_idx == artifact_counter`, skipping any a chest has
-                // pinned (those are placed already, above).
-                int ac = g->res->artifacts_count;
-                int aidx = -1;
-                while (aidx < 0 && artifact_counter < ac) {
-                    for (int j = 0; j < ac; j++) {
-                        const ArtifactDef *cand = artifact_by_index(j);
-                        if (cand &&
-                            strcmp(cand->zone, z->id) == 0 &&
-                            cand->local_idx == artifact_counter) {
-                            aidx = j;
-                            break;
-                        }
-                    }
-                    if (aidx >= 0 && chest_pins_artifact(z, artifact_by_index(aidx)->id)) {
-                        aidx = -1;
-                        artifact_counter++;
-                        continue;
-                    }
-                    break;
-                }
-                if (aidx < 0) { artifact_counter++; break; }
-                const ArtifactDef *a = artifact_by_index(aidx);
-                const char *aid = (a && a->id[0]) ? a->id : "";
-                GameAddPlacement(g, z->id, slot->x, slot->y,
-                                 INTERACT_ARTIFACT, aid);
-                artifact_counter++;
-                break;
-            }
-            case SALT_NAVMAP: {
-                snprintf(id, sizeof(id), "navmap_%d", navmap_counter);
-                GameAddPlacement(g, z->id, slot->x, slot->y,
-                                 INTERACT_NAVMAP, id);
-                navmap_counter++;
-                break;
-            }
-            case SALT_ORB: {
-                snprintf(id, sizeof(id), "orb_%d", orb_counter);
-                GameAddPlacement(g, z->id, slot->x, slot->y,
-                                 INTERACT_ORB, id);
-                orb_counter++;
-                break;
-            }
-            case SALT_TELECAVE: {
-                snprintf(id, sizeof(id), "telecave_%d", telecave_counter);
-                GameAddPlacement(g, z->id, slot->x, slot->y,
-                                 INTERACT_TELECAVE, id);
-                telecave_counter++;
-                break;
-            }
-            case SALT_DWELLING: {
-                const char *tid = salt_pick_dwelling_troop(g, continent,
-                                                           dwelling_counter);
-                if (!tid) { dwelling_counter++; break; }
-                const TroopDef *td = troop_by_id(tid);
-                if (!td) { dwelling_counter++; break; }
-                // Derive kind from troop's dwells field.
-                Interact ik = dwelling_kind_to_interact(td->dwelling);
-                snprintf(id, sizeof(id), "sd_%.20s_%d", tid, dwelling_counter);
-                GameAddPlacement(g, z->id, slot->x, slot->y, ik, id);
-                // Pin the troop in the dwelling state row so first-visit
-                // returns this exact troop, not a random one of the kind.
-                enforce_dwelling_pinned(g, z->id, slot->x, slot->y, tid);
-                dwelling_counter++;
-                break;
-            }
-            case SALT_FRIENDLY: {
-                // Friendly foes go into g->foes[] (not placements[]).
-                // salt_continent -- friendlies are
-                // registered in foe_coords[], not via static map data.
-                snprintf(id, sizeof(id), "salt_foe_friendly_%d", foe_counter);
-                add_foe(g, continent, z->id, slot->x, slot->y, id, /*friendly=*/true,
-                        /*is_static=*/false, /*explicit_army=*/NULL);
-                foe_counter++;
-                break;
-            }
-            case SALT_NONE:
-            default:
-                break;
-        }
-    }
-
-    free(barrel);
-    free(slots);
-}
-
-void clear_fog(Game *g) {
-    //  reveals a 5x5 square around the hero in
-    // game->fog[continent][y][x]. In openbounty, fog is not owned by
-    // Game -- it lives in a standalone Fog struct in main.c, initialized
-    // *after* GameInit. The equivalent reveal happens there via
-    //   FogReveal(&fog, &map, game.position.x, game.position.y, ...);
-    // using the same 5x5 shape (see fog.c). This call is retained as a
-    // marker to preserve spawn_game sequence ordering.
-    (void)g;
-}
-
-void bury_scepter(Game *g, int continent) {
-    // Walk the continent's tile grid row-major, count plain-grass tiles,
-    // and bury the scepter on the Nth one (treating grass tiles as
-    // TERRAIN_GRASS with no interactive overlay).
-    if (!g || !g->res) return;
-    if (continent < 0 || continent >= g->res->zone_count) return;
-    const ResZone *z = &g->res->zones[continent];
-    copy_id(g->scepter.zone, sizeof(g->scepter.zone), z->id);
-    g->scepter.x = -1;
-    g->scepter.y = -1;
-
-    Map *m = (Map *)calloc(1, sizeof(Map));
-    if (!m) return;
-    if (!MapLoadZone(m, g->res, z->id)) {
-        MapFree(m); free(m);
-        return;
-    }
-    // First pass: count grass tiles.
-    int total = 0;
-    for (int y = 0; y < m->height; y++) {
-        for (int x = 0; x < m->width; x++) {
-            const Tile *t = &MAP_TILE(m, x, y);
-            if (t->terrain == TERRAIN_GRASS &&
-                t->interactive == INTERACT_NONE &&
-                !t->blocks_foot) {
-                total++;
-            }
-        }
-    }
-    if (total <= 0) { MapFree(m); free(m); return; }
-    int target = game_rng_next(0, total - 1);
-    int count = 0;
-    bool passing = false;   // the drawn tile was a bridge; take the next plain one
-    for (int y = 0; y < m->height; y++) {
-        for (int x = 0; x < m->width; x++) {
-            const Tile *t = &MAP_TILE(m, x, y);
-            if (t->terrain != TERRAIN_GRASS) continue;
-            if (t->interactive != INTERACT_NONE) continue;
-            if (t->blocks_foot) continue;
-            if (count == target || passing) {
-                // A bridge declares grass terrain over a river (#117): the
-                // scepter passes on to the next plain tile in the same walk,
-                // with no further draw, so the count and the draw above are
-                // untouched and no world that never drew a bridge moves.
-                if (t->is_bridge) { passing = true; continue; }
-                g->scepter.x = x;
-                g->scepter.y = y;
-                MapFree(m); free(m);
-                return;
-            }
-            count++;
-        }
-    }
-    if (passing) {
-        // The drawn bridge was the last tile of the walk: wrap to the first
-        // plain tile so a bridge never leaves the scepter unburied.
-        for (int y = 0; y < m->height; y++) {
-            for (int x = 0; x < m->width; x++) {
-                const Tile *t = &MAP_TILE(m, x, y);
-                if (t->terrain != TERRAIN_GRASS || t->interactive != INTERACT_NONE ||
-                    t->blocks_foot || t->is_bridge) continue;
-                g->scepter.x = x;
-                g->scepter.y = y;
-                MapFree(m); free(m);
-                return;
-            }
-        }
-    }
-    MapFree(m); free(m);
-}
-
-// player_accept_rank bumps leadership / spells / commission
-// when the player ranks up. OpenBounty does the equivalent inline in
-// GameMaybeRankUp (via class_stats_at_rank), so this entry point is a
-// pure marker matching  spawn_game call order.
-void player_accept_rank(Game *g) { (void)g; }
-
-// Iterate villains
-// by global index within each continent, picking random unowned castles
-// until the continent's quota is filled. OpenBounty each VillainDef
-// already declares its home zone, so we iterate the villain roster once
-// and place each in a random unowned castle in its own zone.
-//
-// Castles flagged special.excluded_from_contract are skipped -- they are
-// never held by villains even if in the same zone.
-void salt_villains(Game *g) {
-    if (!g || !g->res) return;
-
-    int nvillains = g->res->villains_count;
-    int ncastles  = g->res->castle_count;
-    if (ncastles > g->castle_count) ncastles = g->castle_count;
-    // The draw covers the castles up to the last one a contract may use:
-    // no-contract castles at the end of the list (King's Bounty's King
-    // Maximus) stay out of it, so every world keeps its villain placements.
-    while (ncastles > 0 &&
-           g->res->castles[ncastles - 1].special.excluded_from_contract)
-        ncastles--;
-    if (nvillains <= 0 || ncastles <= 0) return;
-
-    for (int vi = 0; vi < nvillains; vi++) {
-        const VillainDef *v = &g->res->villains[vi];
-        if (!v->zone[0]) continue;   // villain has no home zone
-
-        // Retry loop.
-        // Guard against infinite spin when no castles match.
-        int guard = 0;
-        while (guard < ncastles * 20) {
-            int ci = game_rng_next(0, ncastles - 1);
-            const ResCastle *rc = &g->res->castles[ci];
-            if (strcmp(rc->zone, v->zone) != 0) { guard++; continue; }
-            if (rc->special.excluded_from_contract) { guard++; continue; }
-            CastleRecord *cr = &g->castles[ci];
-            if (cr->owner_kind != CASTLE_OWNER_MONSTERS) {
-                guard++; continue;   // already owned by another villain
-            }
-
-            // Claim it.
-            cr->owner_kind = CASTLE_OWNER_VILLAIN;
-            copy_id(cr->villain_id, sizeof(cr->villain_id), v->id);
-            for (int s = 0; s < GAME_ARMY_SLOTS && s < 5; s++) {
-                copy_id(cr->garrison[s].id,
-                        sizeof(cr->garrison[s].id),
-                        v->army_troops[s]);
-                cr->garrison[s].count = v->army_counts[s];
-            }
-            break;
-        }
-    }
-}
-
-// Port of . Picks a random troop id
-// from a tier's pool via a chance-curve walk, then pulls the monster
-// stack size from the chosen troop's tier_counts[tier].
-//
-// *out_id is written to the picked troop's resource id (empty string if
-// the pool is unconfigured). *out_count is the stack size.
-// difficulty (= continent tier) governs
-// the chance distribution; the dwelling kind is rolled fresh each call
-// and indexes the troop pool independently.
-static void roll_creature(Game *g, int tier,
-                          char *out_id, size_t out_id_sz, int *out_count) {
-    out_id[0] = '\0';
-    if (out_count) *out_count = 0;
-    if (!g || !g->res) return;
-    if (tier < 0 || tier >= RES_SPAWN_TIERS) tier = 0;
-
-    const ResSpawn *sp = &g->res->spawn;
-
-    int kind = game_rng_next(0, 3);
-    int chance = game_rng_next(1, 100);
-    const char *troop_id = resources_spawn_troop(sp, kind, tier, chance);
-    if (!troop_id[0]) return;
-
-    const TroopDef *t = troop_by_id(troop_id);
-    copy_id(out_id, out_id_sz, troop_id);
-
-    int count = (t ? t->tier_counts[tier] : 0);
-    // Force minimum stack of 2: if (troop_count <= 1) troop_count = 2;
-    if (count <= 1) count = 2;
-    if (out_count) *out_count = count;
-}
-
-// Port of . Fills the castle's
-// garrison with 5 rolled troop stacks using the castle's difficulty_tier.
-void repopulate_castle(Game *g, int castle_id) {
-    if (!g || !g->res) return;
-    if (castle_id < 0 || castle_id >= g->castle_count) return;
-    if (castle_id >= g->res->castle_count) return;
-
-    int tier = g->res->castles[castle_id].difficulty_tier;
-    if (tier < 0 || tier >= RES_SPAWN_TIERS) tier = 0;
-
-    CastleRecord *cr = &g->castles[castle_id];
-    for (int s = 0; s < GAME_ARMY_SLOTS && s < 5; s++) {
-        char tid[CAT_ID_LEN];
-        int tcount = 0;
-        roll_creature(g, tier, tid, sizeof(tid), &tcount);
-        copy_id(cr->garrison[s].id, sizeof(cr->garrison[s].id), tid);
-        cr->garrison[s].count = tcount;
     }
 }
 
@@ -1678,7 +462,7 @@ void GameAddConsumed(Game *g, const char *zone, int x, int y) {
     }
     if (!GameReserveConsumed(g, g->consumed_count + 1)) return;
     TileMutation *m = &g->consumed[g->consumed_count++];
-    copy_id(m->zone, sizeof(m->zone), zone);
+    game_copy_id(m->zone, sizeof(m->zone), zone);
     m->x = x;
     m->y = y;
 }
@@ -1691,7 +475,7 @@ void GameAddBridge(Game *g, const char *zone, int x, int y, bool vertical) {
     }
     if (!GameReserveBridges(g, g->bridge_count + 1)) return;
     BuiltBridge *b = &g->bridges[g->bridge_count++];
-    copy_id(b->zone, sizeof(b->zone), zone);
+    game_copy_id(b->zone, sizeof(b->zone), zone);
     b->x = x;
     b->y = y;
     b->vertical = vertical ? 1 : 0;
@@ -1826,8 +610,8 @@ bool GameTryFireEvent(Game *g, Map *map, Fog *fog, int x, int y) {
                                ev->effects[e].code);
         }
         EventFired *done = &g->events_done[g->events_done_count++];
-        copy_id(done->zone, sizeof done->zone, g->position.zone);
-        copy_id(done->id, sizeof done->id, ev->id);
+        game_copy_id(done->zone, sizeof done->zone, g->position.zone);
+        game_copy_id(done->id, sizeof done->id, ev->id);
         player_io_note_scene_event(g, ev->title, ev->body, ev->scene_index);
         return true;
     }
@@ -1996,7 +780,7 @@ TownRecord *GameTouchTown(Game *g, const char *town_id) {
     for (int i = 0; i < g->town_count; i++) {
         if (g->towns[i].id[0]) continue;
         TownRecord *t = &g->towns[i];
-        copy_id(t->id, sizeof(t->id), town_id);
+        game_copy_id(t->id, sizeof(t->id), town_id);
         t->visited = true;
         // Deterministic spell: seed xor town slot index, modulo spells_count().
         // We don't
@@ -2006,7 +790,7 @@ TownRecord *GameTouchTown(Game *g, const char *town_id) {
         // per platform once the seed carried entropy above bit 31.
         int idx = (int)((g->seed ^ (uint64_t)(i + 1)) % (uint64_t)spells_count());
         const SpellDef *sp = spell_by_index(idx);
-        if (sp) copy_id(t->spell_for_sale, sizeof(t->spell_for_sale), sp->id);
+        if (sp) game_copy_id(t->spell_for_sale, sizeof(t->spell_for_sale), sp->id);
         else    t->spell_for_sale[0] = '\0';
         return t;
     }
@@ -2041,7 +825,7 @@ const char *GameTakeNextContract(Game *g) {
     if (g->contract.last_contract > n - 1) g->contract.last_contract = 0;
     const char *vid = g->contract.cycle[g->contract.last_contract];
     if (!vid[0]) return NULL;
-    copy_id(g->contract.active_id, sizeof(g->contract.active_id), vid);
+    game_copy_id(g->contract.active_id, sizeof(g->contract.active_id), vid);
     {
         char tag[64];
         snprintf(tag, sizeof tag, "contract:new:%s", vid);
@@ -2057,7 +841,7 @@ const char *GameTakeContractAt(Game *g, int slot) {
     const char *vid = g->contract.cycle[slot];
     if (!vid[0]) return NULL;
     g->contract.last_contract = slot;
-    copy_id(g->contract.active_id, sizeof(g->contract.active_id), vid);
+    game_copy_id(g->contract.active_id, sizeof(g->contract.active_id), vid);
     {
         char tag[64];
         snprintf(tag, sizeof tag, "contract:new:%s", vid);
@@ -2098,7 +882,7 @@ bool GameFulfillContract(Game *g, const char *villain_id) {
         if (!cand) continue;
         if (cand->index >= 0 && cand->index < g->contract.villain_count &&
             g->contract.villains_caught[cand->index]) continue;
-        copy_id(g->contract.cycle[slot],
+        game_copy_id(g->contract.cycle[slot],
                 sizeof(g->contract.cycle[slot]), cand->id);
         break;
     }
@@ -2125,9 +909,9 @@ bool GameMaybeRankUp(Game *g) {
     if (!changed) return false;
     int old_r = g->character.cls.rank_index;
     g->character.cls.rank_index = r;
-    copy_id(g->character.cls.rank_id, sizeof(g->character.cls.rank_id),
+    game_copy_id(g->character.cls.rank_id, sizeof(g->character.cls.rank_id),
             cls->ranks[r].id);
-    copy_id(g->character.cls.rank_title, sizeof(g->character.cls.rank_title),
+    game_copy_id(g->character.cls.rank_title, sizeof(g->character.cls.rank_title),
             cls->ranks[r].name);
     // Promotion applies the new ranks' bonuses ADDITIVELY (openkb: each stat
     // is an accumulator -- "base_leadership never decreases", spell_power /
@@ -2566,8 +1350,8 @@ static const char *dwelling_kind_normalize(const char *kind) {
 // DwellingState row for one tile: pick troop by kind+seed and set
 // count = max_population. Idempotent -- returns the existing row on
 // re-touch without overwriting it.
-static DwellingState *enforce_dwelling(Game *g, const char *zone, int x, int y,
-                                       const char *dwelling_kind) {
+DwellingState *game_enforce_dwelling(Game *g, const char *zone, int x, int y,
+                                     const char *dwelling_kind) {
     if (!g || !zone || !zone[0]) return NULL;
     // Find existing.
     for (int i = 0; i < g->dwelling_count; i++) {
@@ -2580,13 +1364,13 @@ static DwellingState *enforce_dwelling(Game *g, const char *zone, int x, int y,
     if (!GameReserveDwellings(g, g->dwelling_count + 1)) return NULL;
     DwellingState *d = &g->dwellings[g->dwelling_count++];
     memset(d, 0, sizeof(*d));
-    copy_id(d->zone, sizeof(d->zone), zone);
+    game_copy_id(d->zone, sizeof(d->zone), zone);
     d->x = x; d->y = y;
     const TroopDef *t = GameDwellingTroopAt(g,
                                             dwelling_kind_normalize(dwelling_kind),
                                             x, y);
     if (t) {
-        copy_id(d->troop_id, sizeof(d->troop_id), t->id);
+        game_copy_id(d->troop_id, sizeof(d->troop_id), t->id);
         d->max_population = t->max_population;
         // Dwellings start at full population.
         d->count = t->max_population;
@@ -2597,9 +1381,9 @@ static DwellingState *enforce_dwelling(Game *g, const char *zone, int x, int y,
 // Variant that pins the troop directly (populate_dwelling: troop
 // is decided up-front, kind is derived from troops[id].dwells). Used by
 // salt_continent so per-zone preferred-troop lists / dwelling_range work.
-static DwellingState *enforce_dwelling_pinned(Game *g, const char *zone,
-                                              int x, int y,
-                                              const char *troop_id) {
+DwellingState *game_enforce_dwelling_pinned(Game *g, const char *zone,
+                                            int x, int y,
+                                            const char *troop_id) {
     if (!g || !zone || !zone[0] || !troop_id || !troop_id[0]) return NULL;
     for (int i = 0; i < g->dwelling_count; i++) {
         if (g->dwellings[i].x == x && g->dwellings[i].y == y &&
@@ -2612,9 +1396,9 @@ static DwellingState *enforce_dwelling_pinned(Game *g, const char *zone,
     if (!t) return NULL;
     DwellingState *d = &g->dwellings[g->dwelling_count++];
     memset(d, 0, sizeof(*d));
-    copy_id(d->zone, sizeof(d->zone), zone);
+    game_copy_id(d->zone, sizeof(d->zone), zone);
     d->x = x; d->y = y;
-    copy_id(d->troop_id, sizeof(d->troop_id), t->id);
+    game_copy_id(d->troop_id, sizeof(d->troop_id), t->id);
     d->max_population = t->max_population;
     d->count = t->max_population;
     return d;
@@ -2625,7 +1409,7 @@ static DwellingState *enforce_dwelling_pinned(Game *g, const char *zone,
 // just looks it up.
 DwellingState *GameTouchDwelling(Game *g, const char *zone, int x, int y,
                                  const char *dwelling_kind) {
-    return enforce_dwelling(g, zone, x, y, dwelling_kind);
+    return game_enforce_dwelling(g, zone, x, y, dwelling_kind);
 }
 
 void GameTempDeath(Game *g, Map *map, Fog *fog, const Resources *res) {
@@ -2690,11 +1474,11 @@ bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id) {
 
     // The zone sailed from picks the landing ("arrivals"), else the spawn.
     char from[sizeof g->position.zone];
-    copy_id(from, sizeof from, g->position.zone);
+    game_copy_id(from, sizeof from, g->position.zone);
 
     if (!GameReloadZoneMap(g, map, zone_id)) return false;
     // Move hero to the arrival point.
-    copy_id(g->position.zone, sizeof(g->position.zone), zone_id);
+    game_copy_id(g->position.zone, sizeof(g->position.zone), zone_id);
     g->position.x = map->hero_spawn_x;
     g->position.y = map->hero_spawn_y;
     if (strcmp(from, zone_id) != 0)
@@ -2716,7 +1500,7 @@ bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id) {
             g->boat.x = g->position.x;
             g->boat.y = g->position.y;
             memset(g->boat.zone, 0, sizeof g->boat.zone);   // zero the tail before copy (canonical image)
-            copy_id(g->boat.zone, sizeof(g->boat.zone), zone_id);
+            game_copy_id(g->boat.zone, sizeof(g->boat.zone), zone_id);
         } else {
             g->travel_mode = TRAVEL_WALK;
             // Keep the boat; place it at the spawn so the player can
@@ -2726,7 +1510,7 @@ bool GameSwitchZone(Game *g, Map *map, Fog *fog, const char *zone_id) {
                 g->boat.x = g->position.x;
                 g->boat.y = g->position.y;
                 memset(g->boat.zone, 0, sizeof g->boat.zone);   // zero the tail before copy (canonical image)
-                copy_id(g->boat.zone, sizeof(g->boat.zone), zone_id);
+                game_copy_id(g->boat.zone, sizeof(g->boat.zone), zone_id);
             }
         }
     }
@@ -2826,7 +1610,7 @@ bool GameGateTeleport(Game *g, Map *map, Fog *fog,
         left_behind.has_boat = true;
         left_behind.x = g->position.x;
         left_behind.y = g->position.y;
-        copy_id(left_behind.zone, sizeof left_behind.zone, g->position.zone);
+        game_copy_id(left_behind.zone, sizeof left_behind.zone, g->position.zone);
         have_left = true;
     } else if (g->boat.has_boat) {
         // A docked boat (hero on foot) also stays where it is.
@@ -2915,292 +1699,12 @@ const char *GameApplyAstrology(Game *g, int troop_idx) {
             const TroopDef *t = troop_by_id(g->army[s].id);
             if (!t) continue;
             if (t->abilities & TROOP_ABIL_ABSORB) {
-                copy_id(g->army[s].id, sizeof(g->army[s].id), at->id);
+                game_copy_id(g->army[s].id, sizeof(g->army[s].id), at->id);
             }
         }
     }
 
     return at->id;
-}
-
-// Recruit-location guard (mirrors the in_town town-core guards): a troop may only
-// be bought where a player can buy it. Home-pool troops (catalog dwelling=="castle")
-// require the hero on the home-castle gate (position.home_castle set). Any other
-// troop is a dwelling troop: it requires the hero standing on a dwelling tile whose
-// offered troop matches AND that still has population. Returns the legal cap (>=0)
-// for the troop, or -1 when the hero is at no legal source for it.
-static int recruit_location_cap(const Game *g, const char *troop_id,
-                                const TroopDef *t) {
-    // A dwelling the hero is STANDING ON that offers this troop sells it,
-    // whatever the troop's catalog class: the salt roll can seed castle-class
-    // troops at dwellings (salt_pick_dwelling_troop draws from the full
-    // range), and the old castle-first early-return refused the very shop
-    // the world spawned -- the prompt opened, the buy silently failed.
-    if (g->position.dwelling_troop[0] &&
-        strcmp(g->position.dwelling_troop, troop_id) == 0) {
-        for (int i = 0; i < g->dwelling_count; i++) {
-            const DwellingState *d = &g->dwellings[i];
-            if (d->x == g->position.dwelling_x && d->y == g->position.dwelling_y &&
-                strcmp(d->zone, g->position.zone) == 0 &&
-                strcmp(d->troop_id, troop_id) == 0) {
-                return d->count;
-            }
-        }
-        return -1;
-    }
-    if (strcmp(t->dwelling, "castle") == 0) {
-        // Home pool: unlimited (the castle never runs dry); gated by being at
-        // the home castle and by the castle offering the troop.
-        return g->position.home_castle[0] && GameCastleOffersTroop(g, t)
-                   ? (1 << 28) : -1;
-    }
-    // Dwelling troop: the hero must be on the dwelling that offers this troop.
-    if (!g->position.dwelling_troop[0] ||
-        strcmp(g->position.dwelling_troop, troop_id) != 0) {
-        return -1;
-    }
-    for (int i = 0; i < g->dwelling_count; i++) {
-        const DwellingState *d = &g->dwellings[i];
-        if (d->x == g->position.dwelling_x && d->y == g->position.dwelling_y &&
-            strcmp(d->zone, g->position.zone) == 0 &&
-            strcmp(d->troop_id, troop_id) == 0) {
-            return d->count;
-        }
-    }
-    return -1;
-}
-
-char GameArmySlotMorale(const Game *g, int slot) {
-    if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 'N';
-    const TroopDef *me = troop_by_id(g->army[slot].id);
-    if (!me) return 'N';
-    int others = 0, low = 0, high = 0;
-    for (int j = 0; j < GAME_ARMY_SLOTS; j++) {
-        if (j == slot) continue;
-        if (!g->army[j].id[0] || g->army[j].count == 0) continue;
-        const TroopDef *o = troop_by_id(g->army[j].id);
-        if (!o) continue;
-        others++;
-        char r = morale_result(me->morale_group, o->morale_group);
-        if (r == 'L') low++;
-        else if (r == 'H') high++;
-    }
-    if (others == 0)    return 'H';
-    if (low > 0)        return 'L';
-    if (high == others) return 'H';
-    return 'N';
-}
-
-bool GameCastleOffersTroop(const Game *g, const TroopDef *t) {
-    return g && t && t->hit_points > 0 &&
-           g->stats.leadership_current >= t->hit_points * 6;
-}
-
-int GameRecruitLocationCap(const Game *g, const char *troop_id) {
-    if (!g || !troop_id) return -1;
-    const TroopDef *t = troop_by_id(troop_id);
-    if (!t) return -1;
-    return recruit_location_cap(g, troop_id, t);
-}
-
-int GameBuyTroop(Game *g, const char *troop_id, int count) {
-    if (!g || !troop_id || count <= 0) return 2;
-    const TroopDef *t = troop_by_id(troop_id);
-    if (!t) return 2;
-    // Location guard: refuse a recruit the hero cannot legally make from here.
-    // Same contract as the town transaction cores (GameBuySpell etc.) -- the engine,
-    // not the caller, is the legality boundary, so autoplay is held to it too.
-    int loc_cap = recruit_location_cap(g, troop_id, t);
-    if (loc_cap < 0 || count > loc_cap) {
-        return 4;   // illegal location / over the dwelling population
-    }
-    int total_cost = t->recruit_cost * count;
-    if (g->stats.gold < total_cost) return 1;
-    if (count > GameMaxRecruitable(g, troop_id)) return 3;
-
-    // Find matching stack or an empty slot.
-    int slot = -1;
-    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-        if (strcmp(g->army[i].id, troop_id) == 0) { slot = i; break; }
-    }
-    if (slot < 0) {
-        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-            if (!g->army[i].id[0]) { slot = i; break; }
-        }
-    }
-    if (slot < 0) return 2;
-    copy_id(g->army[slot].id, sizeof(g->army[slot].id), troop_id);
-    g->army[slot].count += count;
-    g->stats.gold -= total_cost;
-    {
-        char tag[64];
-        snprintf(tag, sizeof tag, "buy:%s:%d", troop_id, count);
-        recorder_capture(tag);
-    }
-    return 0;
-}
-
-int GameAddTroop(Game *g, const char *troop_id, int count) {
-    if (!g || !troop_id || count <= 0) return 1;
-    int slot = -1;
-    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-        if (strcmp(g->army[i].id, troop_id) == 0 && g->army[i].count > 0) {
-            slot = i;
-            break;
-        }
-    }
-    if (slot < 0) {
-        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-            if (!g->army[i].id[0] || g->army[i].count == 0) { slot = i; break; }
-        }
-    }
-    if (slot < 0) return 1;
-    copy_id(g->army[slot].id, sizeof(g->army[slot].id), troop_id);
-    g->army[slot].count += count;
-    {
-        char tag[64];
-        snprintf(tag, sizeof tag, "add:%s:%d", troop_id, count);
-        recorder_capture(tag);
-    }
-    return 0;
-}
-
-void GameCompactArmy(Game *g) {
-    if (!g) return;
-    int dst = 0;
-    for (int src = 0; src < GAME_ARMY_SLOTS; src++) {
-        if (!g->army[src].id[0] || g->army[src].count == 0) continue;
-        if (dst != src) {
-            g->army[dst] = g->army[src];
-        }
-        dst++;
-    }
-    for (int i = dst; i < GAME_ARMY_SLOTS; i++) {
-        g->army[i].id[0] = '\0';
-        g->army[i].count = 0;
-    }
-}
-
-// Garrison is only legal at an owned castle the hero is standing at -- the
-// own-castle screen (or the moment a siege win takes the castle). The engine, not
-// the caller, enforces it: position.own_castle must name THIS castle, and the
-// castle must be player-owned. Same contract as the in_town town cores.
-static bool garrison_location_ok(const Game *g, const char *castle_id) {
-    if (!castle_id || !castle_id[0]) return false;
-    if (strcmp(g->position.own_castle, castle_id) != 0) return false;
-    const CastleRecord *cr = GameFindCastleConst(g, castle_id);
-    return cr && cr->owner_kind == CASTLE_OWNER_PLAYER;
-}
-
-//  garrison_troop, generalised to part of a stack. Moving the whole stack is
-// exactly the original: refused when it is the hero's last, and the army is
-// compacted. Moving part of it always leaves the stack in the army, so it is
-// never the last-army refusal.
-int GameGarrisonTroopCount(Game *g, const char *castle_id, int slot, int count) {
-    if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 1;
-    if (!garrison_location_ok(g, castle_id)) return 1;
-    const ArmyStack *src = &g->army[slot];
-    if (!src->id[0] || src->count == 0) return 1;
-    if (count <= 0 || count > src->count) return 1;
-    bool whole = (count == src->count);
-
-    // Refuse if this would leave the player with no army (
-    // game->player_troops[1]; we count non-empty slots other than `slot`).
-    if (whole) {
-        int remaining = 0;
-        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-            if (i == slot) continue;
-            if (g->army[i].id[0] && g->army[i].count > 0) { remaining++; break; }
-        }
-        if (remaining == 0) return 2;
-    }
-
-    CastleRecord *cr = GameFindCastle(g, castle_id);
-    if (!cr) return 1;
-
-    // Find matching troop in garrison, or first empty slot.
-    int dst = -1;
-    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-        if (strcmp(cr->garrison[i].id, src->id) == 0 && cr->garrison[i].count > 0) {
-            dst = i;
-            break;
-        }
-        if (!cr->garrison[i].id[0] || cr->garrison[i].count == 0) {
-            if (dst < 0) dst = i;   // remember first empty
-        }
-    }
-    if (dst < 0) return 1;
-
-    copy_id(cr->garrison[dst].id, sizeof(cr->garrison[dst].id), src->id);
-    cr->garrison[dst].count += count;
-
-    if (!whole) {
-        g->army[slot].count -= count;
-        return 0;
-    }
-    // Remove from player. dismiss_troop zeroes the stack and
-    // leaves a gap; openbounty compacts so the filled slots stay
-    // contiguous (matches the visible UI expectation that A/B/C/...
-    // are dense).
-    g->army[slot].id[0] = '\0';
-    g->army[slot].count = 0;
-    GameCompactArmy(g);
-    return 0;
-}
-
-int GameGarrisonTroop(Game *g, const char *castle_id, int slot) {
-    if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 1;
-    return GameGarrisonTroopCount(g, castle_id, slot, g->army[slot].count);
-}
-
-//  ungarrison_troop, generalised to part of a stack. The whole stack is the
-// original move (the garrison is compacted); part of it leaves the rest there.
-int GameUngarrisonTroopCount(Game *g, const char *castle_id, int slot, int count) {
-    if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 1;
-    if (!garrison_location_ok(g, castle_id)) return 1;
-    CastleRecord *cr = GameFindCastle(g, castle_id);
-    if (!cr) return 1;
-    const Unit *src = &cr->garrison[slot];
-    if (!src->id[0] || src->count == 0) return 1;
-    if (count <= 0 || count > src->count) return 1;
-    bool whole = (count == src->count);
-
-    // Find matching army stack or empty slot.
-    int dst = -1;
-    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-        if (strcmp(g->army[i].id, src->id) == 0 && g->army[i].count > 0) {
-            dst = i;
-            break;
-        }
-        if (!g->army[i].id[0] || g->army[i].count == 0) {
-            if (dst < 0) dst = i;
-        }
-    }
-    if (dst < 0) return 1;
-
-    copy_id(g->army[dst].id, sizeof(g->army[dst].id), src->id);
-    g->army[dst].count += count;
-
-    if (!whole) {
-        cr->garrison[slot].count -= count;
-        return 0;
-    }
-    // Compact the garrison .
-    for (int i = slot; i < GAME_ARMY_SLOTS - 1; i++) {
-        copy_id(cr->garrison[i].id, sizeof(cr->garrison[i].id),
-                cr->garrison[i + 1].id);
-        cr->garrison[i].count = cr->garrison[i + 1].count;
-    }
-    cr->garrison[GAME_ARMY_SLOTS - 1].id[0] = '\0';
-    cr->garrison[GAME_ARMY_SLOTS - 1].count = 0;
-    return 0;
-}
-
-int GameUngarrisonTroop(Game *g, const char *castle_id, int slot) {
-    if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 1;
-    const CastleRecord *cr = GameFindCastleConst(g, castle_id);
-    if (!cr) return 1;
-    return GameUngarrisonTroopCount(g, castle_id, slot, cr->garrison[slot].count);
 }
 
 bool GameTroopFlies(const TroopDef *t) {
@@ -3415,212 +1919,3 @@ bool GameFriendlyFoeOriginAt(const Game *g, const char *zone, int x, int y) {
 // position. Combat on
 // collision is handled by the step-on-foe interact path, not here; this
 // function never steps onto the hero's current tile.
-
-// Integer Euclidean distance: isqrt32(dx^2 + dy^2).
-// Scaled x1000 internally so single-step differences (e.g. cardinal vs
-// diagonal) don't round-collapse to equal integers and starve the picker
-// of tie-breaking resolution. The absolute value doesn't matter -- only
-// ordering does.
-static unsigned foe_dist_sq(int x1, int y1, int x2, int y2) {
-    int dx = x2 - x1;
-    int dy = y2 - y1;
-    return (unsigned)(dx * dx + dy * dy);
-}
-
-// Keep foes off the eight tiles surrounding a castle gate. This is a house
-// rule, NOT a restoration: the original's 0x00 test does not prevent it,
-// because the approach tile below a gate is grass in both. Without it a foe
-// parks on the doorstep of the hero's own castle. See issue #22.
-static bool adjacent_to_castle_gate(const Map *map, int x, int y) {
-    for (int dy = -1; dy <= 1; dy++) {
-        for (int dx = -1; dx <= 1; dx++) {
-            if (dx == 0 && dy == 0) continue;
-            const Tile *n = MapGetTile(map, x + dx, y + dy);
-            if (n && n->interactive == INTERACT_CASTLE_GATE) return true;
-        }
-    }
-    return false;
-}
-
-static bool foe_can_stand(const Map *map, int x, int y) {
-    if (!MapInBounds(map, x, y)) return false;
-    const Tile *t = MapGetTile(map, x, y);
-    if (!t) return false;
-    if (t->blocks_foot) return false;
-    // The original accepts a candidate tile only when its map byte is 0x00,
-    // i.e. grass (OPENKB-SPEC.md:6234, foe_closest_offset at play.c:1738).
-    // Deliberately NOT TerrainWalkable(), which also admits desert: desert is
-    // a non-zero byte and impassable to foes, which is what makes it a refuge
-    // for the hero. Hero movement is unaffected; adventure_walkable_on_foot
-    // still crosses desert at 40 movement points per tile.
-    if (t->terrain != TERRAIN_GRASS) return false;
-    // Bridges have no terrain of their own: TerrainFromArt falls through to
-    // GRASS for art it does not recognise, so the test above lets them past.
-    // A bridge is a non-zero byte, so the original rejects it; without this a
-    // foe walks over water and follows the hero across a barrier.
-    if (t->is_bridge) return false;
-    // Treat any stamped tile byte as an obstacle -- the foe can't
-    // sit on a chest, castle gate, another foe, etc. Our INTERACT_NONE
-    // check captures the same rule.
-    if (t->interactive != INTERACT_NONE) return false;
-    if (adjacent_to_castle_gate(map, x, y)) return false;
-    return true;
-}
-
-// A zone event's tile (a vista such as Galliae's Temple of Ocean) is a
-// landmark, not open grass: a foe standing there would hide it, and its
-// leaving would repaint the cell as plain ground (MapClearInteractive).
-static bool foe_on_event_tile(const Game *g, const char *zone, int x, int y) {
-    const ResZone *z = (g && g->res) ? resources_zone_by_id(g->res, zone) : NULL;
-    for (int k = 0; z && k < z->event_count; k++)
-        if (z->events[k].x == x && z->events[k].y == y) return true;
-    return false;
-}
-
-// Authoritative occupancy: does any LIVE foe other than `except_idx`, in `zone`,
-// sit at (x,y)? Stamp-independent -- the map's INTERACT_FOE overlay can momentarily
-// disagree with real foe positions, so the anti-stacking gate consults g->foes[]
-// directly rather than trusting the tile byte.
-static bool foe_occupies(const Game *g, const char *zone, int x, int y,
-                         int except_idx) {
-    for (int j = 0; j < g->foe_count; j++) {
-        if (j == except_idx) continue;
-        const FoeState *o = &g->foes[j];
-        if (!o->alive) continue;
-        if (o->x != x || o->y != y) continue;
-        if (strcmp(o->zone, zone) != 0) continue;
-        return true;
-    }
-    return false;
-}
-
-int GameFoesFollow(Game *g, Map *map) {
-    if (!g || !map) return -1;
-    int tx = g->position.last_x;
-    int ty = g->position.last_y;
-    int collided = -1;
-    // STAMP RE-SYNC: every live in-zone foe NOT on the hero's current tile must
-    // carry its INTERACT_FOE stamp before we read the map for standability below.
-    // A foe that stepped onto the hero (collision path) is intentionally left
-    // unstamped while the hero shares its tile; once the hero moves away nothing
-    // else re-stamps it, leaving an unstamped "phantom" the occupancy proxy can't
-    // see (another foe stacks on it) and the stamp-based combat trigger can't
-    // engage. Re-establish the invariant here so foe_can_stand and the step-onto
-    // combat trigger are both correct. (Skips the hero's tile: the collided foe
-    // stays unstamped, preserving the `collided` contract below.)
-    for (int i = 0; i < g->foe_count; i++) {
-        const FoeState *f = &g->foes[i];
-        if (!f->alive) continue;
-        if (strcmp(f->zone, g->position.zone) != 0) continue;
-        if (f->x == g->position.x && f->y == g->position.y) continue;
-        MapStampFoe(map, f->x, f->y, f->placement_id);
-    }
-    // Iterate ALL foes -- friendly and hostile -- through foes_follow.
-    // The friendly/hostile distinction only matters at attack time.
-    for (int i = 0; i < g->foe_count; i++) {
-        FoeState *f = &g->foes[i];
-        if (!f->alive) continue;
-        if (strcmp(f->zone, g->position.zone) != 0) continue;
-        if (f->is_static) continue;   // fixed guardian: never moves
-        // Range gate (OpenKB's play.c:823-829): foe must be within
-        // GAME_FOE_FOLLOW_RANGE tiles on each axis of the hero's previous
-        // position.
-        int diff_x = f->x - tx; if (diff_x < 0) diff_x = -diff_x;
-        int diff_y = f->y - ty; if (diff_y < 0) diff_y = -diff_y;
-        if (diff_x > GAME_FOE_FOLLOW_RANGE || diff_y > GAME_FOE_FOLLOW_RANGE)
-            continue;
-
-        // Evaluate all 9 neighborhood cells (foe_closest_offset,
-        // play.c:1738). The center is always eligible (foe can stand still).
-        // Non-center obstacles get a sentinel distance, so any real cell
-        // beats them. The hero's current tile is NOT excluded --
-        // allows a foe to step onto the hero, which becomes the combat
-        // trigger via the "stepped on a foe" check at game.c:6552.
-        const unsigned SENTINEL = 0xFFFFFFFFu;
-        unsigned best_dist = SENTINEL;
-        int      best_x = f->x;
-        int      best_y = f->y;
-        for (int dy = -1; dy <= 1; dy++) {
-            for (int dx = -1; dx <= 1; dx++) {
-                int nx = f->x + dx;
-                int ny = f->y + dy;
-                if (!MapInBounds(map, nx, ny)) continue;
-                bool is_center = (dx == 0 && dy == 0);
-                bool is_hero_tile = (nx == g->position.x &&
-                                     ny == g->position.y);
-                // A flying hero is untouchable (issue #12): the foe must not
-                // step onto the hero's tile (no combat), nor chase the hero
-                // across the water / trees / castle no-go tiles it is flying
-                // over. Skip that tile entirely so only real, foe-standable
-                // ground is ever considered. Gated to real play: the autoplay
-                // oracle (oracle_mode) keeps the legacy behavior its search is
-                // tuned against -- wandering-foe contact gates no objective, so
-                // the winnability verdict is unchanged. The visible replay runs
-                // with oracle_mode set, so it stays consistent with the resolve.
-                if (is_hero_tile && g->character.mount == MOUNT_FLY &&
-                    !g->oracle_mode)
-                    continue;
-                // Used ONLY for the anti-stacking exemption below, not for
-                // walkability: a foe standing on the hero (the collision that
-                // triggers combat) is not a stack, so a second foe is still
-                // allowed to target that tile. Drops away in the boat, where
-                // the hero sits on water no land foe can occupy anyway.
-                bool hero_reachable = (is_hero_tile &&
-                                       g->travel_mode != TRAVEL_BOAT);
-                // `if (i || j)` gate: only non-center cells get the obstacle
-                // penalty, matching the original's `if (i != 0 or j != 0)`.
-                //
-                // The hero's tile gets NO exemption here. foe_closest_offset
-                // (OPENKB-SPEC.md:6234) tests the map byte of all eight
-                // non-center cells without caring where the player is, so a
-                // hero standing on any non-zero tile simply cannot be reached.
-                // That is what makes desert a refuge rather than merely
-                // impassable: foes neither cross it nor attack into it. The
-                // same now holds for bridges, towns and the other interactive
-                // tiles, and for the castle-gate approach.
-                //
-                // The hero's tile is not exempt: exempting it would let a foe
-                // on adjacent grass reach a hero standing anywhere at all.
-                if (!is_center && !foe_can_stand(map, nx, ny))
-                    continue;
-                if (!is_center && foe_on_event_tile(g, f->zone, nx, ny))
-                    continue;
-                // Anti-stacking, stamp-independent: never target a tile another
-                // live foe already holds (two foes may never share a spot). The
-                // hero's tile is exempt -- a foe stepping onto the hero is the
-                // combat trigger, not a stack.
-                if (!is_center && !hero_reachable &&
-                    foe_occupies(g, f->zone, nx, ny, i))
-                    continue;
-                unsigned d = foe_dist_sq(nx, ny, tx, ty);
-                if (d < best_dist) {
-                    best_dist = d;
-                    best_x = nx;
-                    best_y = ny;
-                }
-            }
-        }
-        if (best_x == f->x && best_y == f->y) continue;
-
-        // Move: clear the old tile -- foe stamp only (never a pickup the
-        // hero-tile exception let the foe stand on).
-        MapClearFoeStamp(map, f->x, f->y);
-        f->x = best_x;
-        f->y = best_y;
-
-        // If the foe stepped onto the hero, surface that to the caller and
-        // do NOT stamp the foe tile (the hero is on it). Caller will fire
-        // the attack/recruit flow against this foe.
-        if (best_x == g->position.x && best_y == g->position.y) {
-            collided = i;
-            continue;
-        }
-
-        // Otherwise stamp the new tile with the foe.
-        Tile *dst = &MAP_TILE(map, best_x, best_y);
-        dst->interactive = INTERACT_FOE;
-        TileSetId(map, dst, f->placement_id);
-        TileSetArt(map, dst, map->army_art[0] ? map->army_art : "wandering_army");
-    }
-    return collided;
-}
