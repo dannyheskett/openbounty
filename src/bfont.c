@@ -20,7 +20,6 @@ int bfont_src_glyph_w(void) { return g_src_w > 0 ? g_src_w : 8; }
 int bfont_src_glyph_h(void) { return g_src_h > 0 ? g_src_h : 8; }
 
 // places special glyph codepoints in the control-char range
-// ():
 //   \x1D pipe (twirl |)
 //   \x05 slash arrow (twirl /)
 //   \x1F dash (twirl -)
@@ -112,8 +111,6 @@ void bfont_shutdown(void) {
     else if (g_ready) gfx_texture_free(g_font_tex);
     g_ready = false;
 }
-
-bool bfont_ready(void) { return g_ready; }
 
 // The on-screen glyph is 8 DESIGN UNITS times ui_scale -- deliberately not the
 // source size. The layout is measured in 8px units throughout, so this has to

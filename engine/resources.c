@@ -2516,7 +2516,9 @@ static int villain_frame_paths(const VillainDef *v, char (**out)[RES_PATH_LEN]) 
     size_t sl = strlen(stem);
     if (sl >= 7 && stem[sl - 7] == '_' && stem[sl - 4] == '.') stem[sl - 7] = '\0';
     else if (sl >= 4 && stem[sl - 4] == '.') stem[sl - 4] = '\0';
-    for (int f = 0; f < n; f++) snprintf((*out)[f], RES_PATH_LEN, "%s_%02d.png", stem, f);
+    for (int f = 0; f < n; f++)
+        if (snprintf((*out)[f], RES_PATH_LEN, "%s_%02d.png", stem, f) >= RES_PATH_LEN)
+            (*out)[f][0] = '\0';   // too long a path names no frame
     return n;
 }
 
@@ -3509,18 +3511,6 @@ void resources_republish(const Resources *res) {
 
 // ---- Lookups ---------------------------------------------------------------
 
-const ResTown *resources_town_at(const Resources *r,
-                                 const char *zone, int x, int y) {
-    if (!r || !zone) return NULL;
-    for (int i = 0; i < r->town_count; i++) {
-        if (r->towns[i].x == x && r->towns[i].y == y &&
-            strcmp(r->towns[i].zone, zone) == 0) {
-            return &r->towns[i];
-        }
-    }
-    return NULL;
-}
-
 const ResTown *resources_town_by_id(const Resources *r, const char *id) {
     if (!r || !id) return NULL;
     for (int i = 0; i < r->town_count; i++) {
@@ -3534,26 +3524,6 @@ const ResTown *resources_zone_town(const Resources *r, const ResZone *z, int n) 
     int idx = z->town_idx[n];
     if (idx < 0 || idx >= r->town_count) return NULL;
     return &r->towns[idx];
-}
-
-const ResTown *resources_town_by_index(const Resources *r, int index) {
-    if (!r) return NULL;
-    for (int i = 0; i < r->town_count; i++) {
-        if (r->towns[i].index == index) return &r->towns[i];
-    }
-    return NULL;
-}
-
-const ResCastle *resources_castle_at(const Resources *r,
-                                     const char *zone, int x, int y) {
-    if (!r || !zone) return NULL;
-    for (int i = 0; i < r->castle_count; i++) {
-        if (r->castles[i].x == x && r->castles[i].y == y &&
-            strcmp(r->castles[i].zone, zone) == 0) {
-            return &r->castles[i];
-        }
-    }
-    return NULL;
 }
 
 const ResCastle *resources_castle_by_id(const Resources *r, const char *id) {

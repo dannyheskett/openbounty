@@ -149,8 +149,6 @@ bool shell_pump_note(Game *g) {
 }
 
 int dialog_page_current(void)  { return dialog_page; }
-void dialog_page_next(void)    { dialog_page++; }
-
 // Advance to the next page if available. Returns true if advanced, false if on last page.
 bool dialog_advance(void) {
     const char *body = dialog_body;

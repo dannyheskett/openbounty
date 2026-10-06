@@ -499,9 +499,8 @@ void salt_spells(Game *g);
 // `armies[]` placements in the zone definition, which this function
 // also registers as foes.
 void salt_continent(Game *g, int continent, int artifacts, int navmaps, int orbs, int telecaves, int dwellings, int friendly_foes);
-void furnish_map(Game *g);
 void clear_fog(Game *g);
-// : walk the zone's tile grid row-major
+// walk the zone's tile grid row-major
 // and bury the scepter on a grass tile chosen by the supplied 0..N
 // fraction of grass tiles.
 void bury_scepter(Game *g, int continent);
@@ -578,16 +577,6 @@ ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
                            char *out_body, int out_sz,
                            ChestPending *out_pending);
 
-// Read-only equivalent of GameRollChest: returns what *would* happen
-// if a chest at (x, y) in zone_index were opened, without mutating
-// any game state. Used by autoplay to pre-plan chest pick choices.
-// For CHEST_OUTCOME_GOLD, out_pending->pending_gold and
-// pending_leadership are populated (same values the prompt would
-// offer). For other outcomes, out_pending fields are 0 and the
-// effect value can be inferred from the outcome kind + zone tier.
-ChestOutcome GamePeekChest(const Game *g, int zone_index, int x, int y,
-                           ChestPending *out_pending);
-
 void GameAcceptChestGold(Game *g, int gold);
 void GameAcceptChestLeadership(Game *g, int leadership);
 
@@ -659,14 +648,10 @@ int GameRecruitLocationCap(const Game *g, const char *troop_id);
 DwellingState *GameTouchDwelling(Game *g, const char *zone, int x, int y,
                                  const char *dwelling_kind);
 
-// Grow all dwellings by their troop's growth_per_week, capped at
-// max_population. Called at week-end when no astrology event applies.
-void GameGrowDwellings(Game *g);
-
 // Week-end astrology: dwellings whose troop matches the astrology
 // creature of the week are fully repopulated to max_population, and
 // absorb-ability troops (ghosts) in the player's army are replaced by
-// the astrology creature (). `troop_idx` is a
+// the astrology creature. `troop_idx` is a
 // troop catalog index; -1 = no astrology event (growth-only).
 // Returns the troop id that was broadcast, or empty on no-op.
 const char *GameApplyAstrology(Game *g, int troop_idx);

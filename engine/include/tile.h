@@ -38,19 +38,11 @@ typedef enum {
 // Returns TERRAIN_GRASS for unknown names.
 Terrain TerrainFromArt(const char *art);
 
-// Whether the art visually blocks pedestrian movement (true for castle walls,
-// in addition to natural blockers like trees/rocks which are handled via terrain).
-bool ArtBlocksFoot(const char *art);
-
-// Whether the art is a bridge (walkable in both walk and boat mode).
-bool ArtIsBridge(const char *art);
-
 // Parse an interactive string into the enum.
 Interact InteractFromString(const char *s);
 const char *InteractToString(Interact i);
 
 bool TerrainWalkable(Terrain t);
-int  TerrainMoveCost(Terrain t);
 
 const char *TerrainName(Terrain t);
 

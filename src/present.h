@@ -65,7 +65,6 @@ int present_scale(int win_w, int win_h);
 // The player's chosen scale, in whole pixels, floored at 1. Not persisted: a
 // per-machine viewing preference, not pack data and not game state.
 void present_set_scale(int scale);
-int  present_get_scale(void);
 
 // Largest scale this window can show without dropping below the minimum
 // viewport. The Scale menu wraps here, so the label always matches what is

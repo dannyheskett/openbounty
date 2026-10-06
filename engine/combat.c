@@ -232,7 +232,7 @@ typedef enum {
 //
 // Ported (combat.morale_as_army_view absent or false; the King's Bounty
 // pack). Mirrors play.c troop_morale exactly, including the documented
-// bug ( lines 2531-2545 + ): every live unit of the side is
+// bug: every live unit of the side is
 // looked up, the unit itself included, as morale_result(other, self) --
 // the chart read the other way round from the army view -- and the
 // loop adopts the *lower-ranked* morale via `<`, where the converter
@@ -333,7 +333,7 @@ static inline unsigned char pack_uid(int side, int slot) {
     }
 }
 
-// AI side: open-field foe band -- the first 3 of 5 slots ( line 5216),
+// AI side: open-field foe band -- the first 3 of 5 slots,
 // unless the target asks for the full band (a fixed guardian in a modern
 // pack). Place at column W-1 = 5, rows 0..placed-1.
 // Castles use the full 5 slots (placement happens in reset_match).
@@ -399,7 +399,6 @@ static const unsigned char castle_omap[COMBAT_H][COMBAT_W] = {
 
 // reset_match: stamp obstacles, place units, refresh per-unit
 // per-match counters, prime the turn machinery. 
-// lines 5219-5230 +  + .
 /* exposed for tests */ void combat_reset_match(Combat *c) {
     memset(c->omap, 0, sizeof c->omap);
     memset(c->umap, 0, sizeof c->umap);
@@ -464,11 +463,11 @@ static const unsigned char castle_omap[COMBAT_H][COMBAT_W] = {
     c->banner[0] = '\0';
 }
 
-// ----- Damage formula () -----------------------------------------
+// ----- Damage formula -----------------------------------------
 //
 // deal_damage is the heart of the combat engine. The implementation
-// is a literal transcription of  (lines 5310-5380)
-// with each numbered step preserved as a comment. Order of operations
+// is a literal transcription of the original's damage routine, with each
+// numbered step preserved as a comment. Order of operations
 // is load-bearing -- every multiplicative step uses integer division
 // and floors before the next step, so reordering changes outcomes.
 //
@@ -680,7 +679,7 @@ int combat_hit_unit(Combat *c, int a_side, int a_id,
     return kills;
 }
 
-// ----- Movement, flight, melee driver () -------------------------
+// ----- Movement, flight, melee driver -------------------------
 
 bool combat_in_bounds(int x, int y) {
     return x >= 0 && x < COMBAT_W && y >= 0 && y < COMBAT_H;
@@ -720,7 +719,6 @@ int combat_move_unit(Combat *c, int side, int id, int dx, int dy) {
 }
 
 // Fly into a (nx, ny) target validated upstream by the picker.
-//  lines 5588-5593.
 int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     CombatUnit *u = &c->units[side][id];
     if (!combat_in_bounds(nx, ny)) return 0;
@@ -734,7 +732,7 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     return 1;
 }
 
-// ----- compact_units () ------------------------------------------
+// ----- compact_units ------------------------------------------
 // After deaths during a turn, dead stacks (count == 0) are cleared
 // from umap. The spec says "shifts trailing stacks up" for some
 // game modes -- we keep slot indices stable (resolved :
@@ -852,7 +850,7 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     return true;
 }
 
-// ----- Ranged + surround check () --------------------------------
+// ----- Ranged + surround check --------------------------------
 
 // True if any adjacent (8-neighbour) cell contains a hostile unit.
 // Ranged attacks are blocked while surrounded so a melee enemy
@@ -1013,17 +1011,6 @@ static int combat_spell_damage_base(int spell_idx) {
         case COMBAT_SPELL_TURN_UNDEAD: return 50;
         default:                       return 0;
     }
-}
-
-// Deterministic direct damage ONE cast of `spell_idx` deals to a non-IMMUNE
-// target stack -- the exact value combat_cast_spell applies. 0 for the enhancer
-// spells (clone/teleport/freeze/resurrect), whose value has no closed form.
-// turn_undead bites only UNDEAD targets; pass whether the intended target is one.
-int combat_spell_direct_damage(int spell_idx, int spell_power, bool target_undead) {
-    int base = combat_spell_damage_base(spell_idx);
-    if (base == 0) return 0;
-    if (spell_idx == COMBAT_SPELL_TURN_UNDEAD && !target_undead) return 0;
-    return spell_damage_value(base, spell_power);
 }
 
 // The legal target filter for each combat spell. Single source shared

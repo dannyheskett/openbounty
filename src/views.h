@@ -271,7 +271,6 @@ void views_gate_open(const GateDestination *dests, int count,
 int  views_gate_count(void);
 // Modern: the gate picker's columns of standard rows, and rows in each.
 #define VIEWS_GATE_COLUMNS 3
-int  views_gate_rows_per_column(void);
 bool views_gate_is_town(void);
 // Modern: the list's cursor -- a destination, Travel (the count) or Cancel.
 int  views_gate_row(void);

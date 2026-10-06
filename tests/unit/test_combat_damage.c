@@ -219,8 +219,9 @@ TEST every_attack_is_logged_where_the_pack_asks(void) {
     lone_peasant_attacks(&c, &g);
     ASSERT_EQ(2, c.log_count);
     const TroopDef *p = troop_by_id("peasants"), *d = troop_by_id("dragons");
-    char want[96];
-    snprintf(want, sizeof want, "%s attack %s: none die", p->name, d->name);
+    char want[160];
+    ASSERT(snprintf(want, sizeof want, "%s attack %s: none die", p->name, d->name)
+           < (int)sizeof want);
     ASSERT_STR_EQ(want, c.log_lines[0]);
     snprintf(want, sizeof want, "%s strike back: 1 die", d->name);
     ASSERT_STR_EQ(want, c.log_lines[1]);            // after the attack it answered

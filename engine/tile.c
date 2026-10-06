@@ -17,19 +17,6 @@ Terrain TerrainFromArt(const char *art) {
     return TERRAIN_GRASS;
 }
 
-bool ArtBlocksFoot(const char *art) {
-    if (!art) return false;
-    // Castle art tiles ( IS_CASTLE: 0x02-0x07) block pedestrian movement.
-    // Our naming: castle_base_*, castle_wall_*, castle_variant_a.
-    if (starts_with(art, "castle_")) return true;
-    return false;
-}
-
-bool ArtIsBridge(const char *art) {
-    if (!art) return false;
-    return strcmp(art, "bridge_h") == 0 || strcmp(art, "bridge_v") == 0;
-}
-
 Interact InteractFromString(const char *s) {
     if (!s) return INTERACT_NONE;
     if (strcmp(s, "castle_gate")        == 0) return INTERACT_CASTLE_GATE;
@@ -70,14 +57,6 @@ const char *InteractToString(Interact i) {
 
 bool TerrainWalkable(Terrain t) {
     return t == TERRAIN_GRASS || t == TERRAIN_DESERT;
-}
-
-int TerrainMoveCost(Terrain t) {
-    switch (t) {
-        case TERRAIN_GRASS:  return 1;
-        case TERRAIN_DESERT: return 40;   // authentic KB: ~1 tile per day
-        default:             return 0;    // not walkable
-    }
 }
 
 const char *TerrainName(Terrain t) {

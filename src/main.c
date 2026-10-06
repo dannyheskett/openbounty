@@ -1476,7 +1476,7 @@ title:;
             }
         } else if (views_active() == VIEW_HOME_CASTLE && !dialog_is_active()) {
             //  /  +
-            // : throne_room_or_barracks gamestate accepts A and B
+            // throne_room_or_barracks gamestate accepts A and B
             // to enter sub-flows; ESC pops back to the overworld.
             //
             // Gated on !dialog_is_active() so the audience modal popup

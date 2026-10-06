@@ -83,7 +83,7 @@ typedef struct {
     int  temp_death_count;
 } ResTuning;
 
-// Score formula coefficients (). Each villain caught,
+// Score formula coefficients. Each villain caught,
 // artifact found, and player-owned castle scales by its coefficient; each
 // follower killed during play subtracts at the kill_penalty rate. The
 // running total is then scaled by difficulty:
@@ -101,7 +101,7 @@ typedef struct {
     bool easy_halves;
 } ResScoring;
 
-// Treasure-chest probability and value tables ().
+// Treasure-chest probability and value tables.
 // Indexed by zone tier 0..3. The chance_* arrays are cumulative thresholds
 // against a 1..100 roll; the engine walks them top-to-bottom and the first
 // branch whose threshold strictly exceeds the roll fires. gold_min/max,
@@ -451,7 +451,7 @@ typedef struct {
     char title[RES_NAME_LEN];
 } ResZoneArmy;
 
-// ---- Strings  -----
+// ---- Strings -----
 
 typedef struct {
     char id[RES_ID_LEN];
@@ -1054,7 +1054,7 @@ typedef struct {
     char pad_confirm[RES_UI_LABEL_LEN];
     char give_up_header_modern[RES_UI_LABEL_LEN];
     char save_confirm_modern[RES_UI_LABEL_LEN];
-    // Status-bar fast-quit prompt (). Rendered into the
+    // Status-bar fast-quit prompt. Rendered into the
     // top status bar via KB_TopBox, not a bottom dialog.
     char quit_to_dos_prompt[RES_UI_LABEL_LEN * 2];
     char out_of_control[RES_UI_LABEL_LEN];
@@ -1534,7 +1534,6 @@ typedef struct {
     bool guardian_full_band;
 
     // Fuzzy-number labels for intelligence / enemy-sight text
-    // .
     // Entries are ordered high-to-low by threshold: the first entry
     // whose threshold is <= count wins. Up to 6 buckets.
     int   number_name_count;
@@ -1796,12 +1795,10 @@ bool resources_load(Resources *res, const char *manifest_path);
 // Returns the count written to `out` (capped at `cap`).
 //
 // This is the single source of truth for "what art does this pack use". Art
-// used to be reachable five different ways -- explicit paths here, bare
-// tile_codes names expanded under art/tiles/, a list hardcoded in the shell,
-// villain frames derived from a portrait filename, and the placed-object
-// names map.c stamps by interact kind -- so no caller could answer that
-// question without replicating all five. Tile names, the villain stem
-// fallback and the object names are expanded here so callers see real paths.
+// has been reachable five ways -- explicit paths, bare tile_codes names under
+// art/tiles/, the shell's own list, villain frames derived from a portrait
+// filename, and the placed-object names map.c stamps by interact kind -- and
+// this list has resolved all five, so callers see real paths.
 // The list grows to hold every path; free it with resources_art_list_free.
 typedef struct {
     char (*path)[RES_PATH_LEN];
@@ -1846,20 +1843,13 @@ void resources_republish(const Resources *res);
 
 // ---- Lookups ---------------------------------------------------------------
 
-// Global town lookup by (zone id, x, y). Returns NULL if no town sits at
-// those coords. () key.
-const ResTown   *resources_town_at(const Resources *r,
-                                   const char *zone, int x, int y);
 const ResTown   *resources_town_by_id(const Resources *r, const char *id);
-const ResTown   *resources_town_by_index(const Resources *r, int index);
 
 // Zone town enumeration over the authoritative catalog: `z->town_count` towns,
 // the n-th being `&r->towns[z->town_idx[n]]` (in the zone's JSON town order). The
 // accessor returns NULL on an out-of-range n or a stale index.
 const ResTown   *resources_zone_town(const Resources *r, const ResZone *z, int n);
 
-const ResCastle *resources_castle_at(const Resources *r,
-                                     const char *zone, int x, int y);
 const ResCastle *resources_castle_by_id(const Resources *r, const char *id);
 // Parse a castles[].footprint string. Absent/empty and "3x2" are the default;
 // "1x1" is the single-tile castle. Returns false (and writes the default) for

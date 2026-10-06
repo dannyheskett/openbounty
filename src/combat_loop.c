@@ -813,7 +813,7 @@ static void combat_present(const Combat *c, const Game *g, const Map *m, const F
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not
     // draw here -- combat exits silently and perform_temp_death shows
-    // the disgrace message at the home castle ().
+    // the disgrace message at the home castle.
     if (dialog_is_active()) overlay_draw_note();
     // Give-up confirm and any other y/n / numeric prompt draws on top
     // of everything else as a bottom-frame modal.

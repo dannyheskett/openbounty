@@ -39,10 +39,6 @@ typedef enum {
 // any non-scepter caller may pass 0).
 unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step, int open_others);
 
-// Actionable now := no HARD gate unmet. The cheap pre-filter a search uses to
-// drop a branch without paying an attempt for it.
-bool prereq_actionable(const ExecCtx *ctx, const PlanStep *step, int open_others);
-
 // Spell capability (the pathing primitive): are gate/bridge/stop casts legal
 // yet? Gates the zero-day crossings in the cost model.
 bool prereq_magic_enabled(const Game *g);

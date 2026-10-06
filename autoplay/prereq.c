@@ -137,11 +137,6 @@ unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step,
     return m;
 }
 
-bool prereq_actionable(const ExecCtx *ctx, const PlanStep *step,
-                       int open_others) {
-    return (prereq_gated(ctx, step, open_others) & PREREQ_HARD) == 0;
-}
-
 bool prereq_magic_enabled(const Game *g) {
     return g->stats.knows_magic;
 }

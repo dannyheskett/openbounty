@@ -412,7 +412,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
     int sy = ty;
     char buf[96];
 
-    // All header labels in YELLOW (). Lines: Name,
+    // All header labels in YELLOW. Lines: Name,
     // Alias, Reward, Last Seen, Castle.
     {
         ResTemplateVar v_[] = { { "VALUE", v->name } };
@@ -487,8 +487,8 @@ static void draw_contract(const Game *g, const Sprites *s) {
 // scepter deduction reads the same table.
 
 // Lazy-loaded scepter-zone map. The puzzle-view background shows the
-// scepter location with its 5x5 surroundings revealed cell-by-cell
-// (). We load the scepter's continent into a
+// scepter location with its 5x5 surroundings revealed cell-by-cell.
+// We load the scepter's continent into a
 // scratch Map the first time the puzzle view opens; reload only if
 // the scepter zone changes.
 static Map  s_puzzle_scepter_map;
@@ -611,8 +611,8 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
             if (reveal_step < seq[j][i]) caught = false;
 
             if (caught) {
-                // Reveal: show the underlying scepter-location terrain
-                // (). Each puzzle cell maps to a
+                // Reveal: show the underlying scepter-location terrain.
+                // Each puzzle cell maps to a
                 // map tile at (cam_x + i, cam_y + j).
                 bool drew = false;
                 if (s_puzzle_scepter_loaded) {

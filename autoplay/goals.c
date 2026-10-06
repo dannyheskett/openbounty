@@ -256,21 +256,3 @@ bool planstep_is_done(const Game *g, const PlanStep *step) {
     }
     return false;
 }
-
-const char *plan_kind_name(PlanKind k) {
-    switch (k) {
-    case STEP_CHEST:          return "chest";
-    case STEP_ARTIFACT:       return "artifact";
-    case STEP_NAVMAP:         return "navmap";
-    case STEP_ORB:            return "orb";
-    case STEP_ALCOVE:         return "alcove";
-    case STEP_VISTA:          return "vista";
-    case STEP_MUSTER:         return "muster";
-    case STEP_SIEGE_WEAPONS:  return "siege-weapons";
-    case STEP_MONSTER_CASTLE: return "castle";
-    case STEP_VILLAIN:        return "villain";
-    case STEP_FOE:            return "foe";
-    case STEP_SCEPTER:        return "scepter";
-    }
-    return "?";
-}

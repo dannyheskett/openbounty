@@ -42,9 +42,9 @@ static void format_end_text(char *out, int out_sz, const char *src,
 }
 
 void show_lose_game(const Game *g, const Resources *res) {
-    //  / : fullscreen ending
-    // image (right half) + DBLUE-tinted left half with rendered text
-    // = "Press 'ESC' to exit". We push VIEW_LOSE so chrome swaps the
+    // The fullscreen ending: the image on the right half, the text on a
+    // DBLUE-tinted left half, and "Press 'ESC' to exit" in the status bar.
+    // We push VIEW_LOSE so chrome swaps the
     // status bar and the ending art renders behind the text.
     char header[128];
     char tmp_body[RES_END_BODY_LEN];
@@ -52,7 +52,7 @@ void show_lose_game(const Game *g, const Resources *res) {
     format_end_text(header,     sizeof(header),     res->lose_text.header, g);
     format_end_text(tmp_body,   sizeof(tmp_body),   res->lose_text.body,   g);
     format_end_text(tmp_footer, sizeof(tmp_footer), res->lose_text.footer, g);
-    char composed[RES_END_BODY_LEN + RES_NAME_LEN * 2 + 32];
+    char composed[sizeof header + RES_END_BODY_LEN + RES_NAME_LEN * 2 + 8];
     if (header[0] && tmp_footer[0]) {
         snprintf(composed, sizeof(composed), "%s\n\n%s\n\n%s",
                  header, tmp_body, tmp_footer);
@@ -86,7 +86,7 @@ void show_win_game(Game *g, const Resources *res) {
     format_end_text(header,     sizeof(header),     res->win_text.header, g);
     format_end_text(tmp_body,   sizeof(tmp_body),   res->win_text.body,   g);
     format_end_text(tmp_footer, sizeof(tmp_footer), res->win_text.footer, g);
-    char composed[RES_END_BODY_LEN + RES_NAME_LEN * 2 + 32];
+    char composed[sizeof header + RES_END_BODY_LEN + RES_NAME_LEN * 2 + 8];
     if (header[0] && tmp_footer[0]) {
         snprintf(composed, sizeof(composed), "%s\n\n%s\n\n%s",
                  header, tmp_body, tmp_footer);
