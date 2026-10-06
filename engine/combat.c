@@ -1,6 +1,7 @@
 #include "combat.h"
 #include "tables.h"
 #include "resources.h"
+#include "pending.h"   // pending_flow, pending_castle_id, pending_foe_id
 #include "ui_host.h"   // host callbacks: recorder_capture, etc.
 #include <stdio.h>
 #include <string.h>
@@ -71,6 +72,56 @@ unsigned char combat_player_powers(const Game *g) {
 // statistical shape, but the seeded state is independent so a battle
 // does not perturb post-combat overworld outcomes. The determinism
 // test verifies that identical inputs produce identical outcomes.
+
+void CombatTargetForFoe(const Game *g, const char *foe_id, CombatTarget *out) {
+    memset(out, 0, sizeof *out);
+    out->name = "Hostile band";
+    out->seed_key = foe_id;
+    const FoeState *foe = (g && foe_id && foe_id[0]) ? GameFindFoeConst(g, foe_id)
+                                                     : NULL;
+    if (!foe) return;
+    out->garrison = foe->garrison;
+    out->garrison_slots = GAME_ARMY_SLOTS;
+    out->full_band = CombatFoeFieldsFullBand(g, foe);
+}
+
+void CombatTargetForCastle(const Game *g, const char *castle_id,
+                           CombatTarget *out) {
+    memset(out, 0, sizeof *out);
+    out->name = castle_id;
+    out->seed_key = castle_id;
+    const CastleRecord *cr = (g && castle_id && castle_id[0])
+                               ? GameFindCastleConst(g, castle_id) : NULL;
+    const ResCastle *rc = (g && castle_id && castle_id[0])
+                            ? resources_castle_by_id(g->res, castle_id) : NULL;
+    const VillainDef *v = (cr && cr->villain_id[0]) ? villain_by_id(cr->villain_id)
+                                                     : NULL;
+    if (v && v->name[0]) out->name = v->name;
+    else if (rc && rc->name[0]) out->name = rc->name;
+    if (!cr) return;
+    out->garrison = cr->garrison;
+    out->garrison_slots = GAME_ARMY_SLOTS;
+}
+
+bool CombatTargetForPendingFlow(const Game *g, CombatMode *out_mode,
+                                CombatTarget *out) {
+    memset(out, 0, sizeof *out);
+    if (pending_flow == FLOW_SIEGE_MONSTER || pending_flow == FLOW_SIEGE_VILLAIN) {
+        *out_mode = COMBAT_MODE_CASTLE;
+        CombatTargetForCastle(g, pending_castle_id, out);
+        return true;
+    }
+    if (pending_flow == FLOW_ATTACK_FOE) {
+        *out_mode = COMBAT_MODE_FOE;
+        CombatTargetForFoe(g, pending_foe_id, out);
+        return true;
+    }
+    return false;
+}
+
+bool CombatFoeFieldsFullBand(const Game *g, const FoeState *foe) {
+    return g && g->res && foe && foe->is_static && g->res->guardian_full_band;
+}
 
 /* exposed for tests */ void combat_seed_rng(Combat *c, const Game *g, CombatMode mode,
                             const CombatTarget *target) {

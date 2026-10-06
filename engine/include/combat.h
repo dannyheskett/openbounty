@@ -35,10 +35,29 @@ typedef struct {
     // outcome for the same foe. See combat_seed_rng.
     const char *seed_key;
     // Open field fields the first three garrison slots, the quirk the original
-    // shipped. A modern pack's hand-placed guardian is a gate rather than a
-    // wandering band, so it fields all five; the shell sets this.
+    // shipped. A fixed guardian in a pack with combat.guardian_full_band
+    // fields all five (CombatFoeFieldsFullBand).
     bool        full_band;
 } CombatTarget;
+
+// The one place a fight's target is built, for the game, autoplay, the demo
+// and the replay alike. The target points into the Game and at the id passed
+// in, so both must outlive it. An id the Game doesn't hold gives a target
+// with no garrison.
+// A foe: "Hostile band", its placement id as the RNG identity, its garrison,
+// and the full band when CombatFoeFieldsFullBand says so.
+void CombatTargetForFoe(const Game *g, const char *foe_id, CombatTarget *out);
+// A castle: named for its villain, else the castle, else the id; the castle
+// id as the RNG identity; its garrison.
+void CombatTargetForCastle(const Game *g, const char *castle_id,
+                           CombatTarget *out);
+// The target of the combat flow that is up (a siege, or an attack on a foe),
+// and its mode. False when no combat flow is pending.
+bool CombatTargetForPendingFlow(const Game *g, CombatMode *out_mode,
+                                CombatTarget *out);
+// True when the foe fields all five stacks: it is a fixed guardian and the
+// pack sets combat.guardian_full_band.
+bool CombatFoeFieldsFullBand(const Game *g, const FoeState *foe);
 
 // ----- Battlefield constants -------------------------------------------------
 #define COMBAT_W       6

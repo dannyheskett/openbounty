@@ -139,6 +139,37 @@ TEST fixed_guardian_fields_five(void) {
     PASS();
 }
 
+// The full band is the pack's rule (combat.guardian_full_band), read by the
+// engine's one target builder, so the game, autoplay and --validate-pack field
+// the same band.
+TEST full_band_follows_the_pack_key(void) {
+    Resources *res1; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res1, &g, &m, &f, NULL, FIXTURE_SEED));
+    ASSERT(g->foe_count > 0);
+    FoeState *foe = &g->foes[0];
+    CombatTarget t;
+
+    foe->is_static = true;
+    res1->guardian_full_band = false;        // King's Bounty: three
+    CombatTargetForFoe(g, foe->placement_id, &t);
+    ASSERT_EQ(foe->garrison, t.garrison);
+    ASSERT_STR_EQ(foe->placement_id, t.seed_key);
+    ASSERT_FALSE(t.full_band);
+
+    res1->guardian_full_band = true;         // Glory of Rome: a guardian, five
+    CombatTargetForFoe(g, foe->placement_id, &t);
+    ASSERT(t.full_band);
+
+    foe->is_static = false;                  // a wandering band stays three
+    CombatTargetForFoe(g, foe->placement_id, &t);
+    ASSERT_FALSE(t.full_band);
+
+    CombatTargetForFoe(g, "no_such_foe", &t);
+    ASSERT_EQ(NULL, t.garrison);
+    fx_free_game_full(res1, g, m, f);
+    PASS();
+}
+
 SUITE(unit_combat_unit_suite) {
     RUN_TEST(init_unit_sets_count_and_max);
     RUN_TEST(init_unit_zero_count);
@@ -148,4 +179,5 @@ SUITE(unit_combat_unit_suite) {
     RUN_TEST(under_control_invalid_troop_returns_false);
     RUN_TEST(wandering_band_fields_three);
     RUN_TEST(fixed_guardian_fields_five);
+    RUN_TEST(full_band_follows_the_pack_key);
 }
