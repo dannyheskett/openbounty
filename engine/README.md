@@ -24,6 +24,7 @@ engine/
 │   ├── fog.h
 │   ├── game.h            # Game state, GameInit
 │   ├── game_fwd.h        # Forward declaration of Game
+│   ├── goto.h            # Goto's route over the seen map
 │   ├── map.h
 │   ├── pack.h            # Pack discovery and access
 │   ├── pending.h         # Deferred-action scratch

@@ -76,8 +76,8 @@ step-by-step for creating them without a Mac.
 | Script | What it has done |
 |---|---|
 | `scripts/store_listing.py` | parsed both LISTING.md files, enforced each store's length limits, and banned a listing that names another store or the original game. CI has run `--check` on every PR. |
-| `scripts/asc_setup.py` | one-time Apple setup: registered the App ID, created the App Store provisioning profile bound to the team certificate, then set category, content rights, age rating, privacy-policy URL, support/marketing URLs, a free price, and availability in every territory except mainland China. |
-| `scripts/asc_release.py` | `status`, `listing` (text + screenshots), `release --build N [--submit]`. |
+| `scripts/asc_setup.py` | one-time Apple setup, one subcommand each: `bundle-id` registered the App ID; `profile --cert-sha1 SHA1 --out FILE` created (or reused) the App Store provisioning profile bound to the team certificate; `app-info [--privacy-url URL]` set category, content rights, age rating, privacy-policy URL, support/marketing URLs, a free price, and availability in every territory except mainland China. Each has taken `--dry-run`. |
+| `scripts/asc_release.py` | `status` (the current version, its state and builds); `listing [--skip-if-busy]` (text + screenshots); `release --build N [--submit] [--phased] [--whats-new TEXT] [--skip-if-busy]` (the build attached to version `1.0.N`, sent to App Review with `--submit`, released in phases with `--phased`). `--skip-if-busy` has exited 0 when no version is free to write onto; `listing` and `release` have taken `--dry-run`. |
 | `scripts/asc_next_build.py` | printed the next build number App Store Connect has not seen, so branch and release builds have never collided. |
 | `scripts/testflight_notes.py` | waited out Apple's processing window and written "What to Test" onto the build TestFlight has just received. |
 | `scripts/devicefarm_run.py` | uploaded the APK or `.ipa` to AWS Device Farm and fuzz-tested it on real phones. |

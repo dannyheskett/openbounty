@@ -235,7 +235,8 @@ composed from the pack's own title art by `tools/romeart.py icon`.
 ```
 make mac                                        # the pack tool for macOS
 make ios-sim PACK_TOOL=build/openbounty-mac     # Simulator .app
-make ios     PACK_TOOL=build/openbounty-mac     # device .ipa (signed when IOS_SIGN_IDENTITY is set)
+make ios     PACK_TOOL=build/openbounty-mac     # device .ipa (signed when IOS_SIGN_IDENTITY,
+                                                # IOS_PROFILE and IOS_TEAM_ID are set)
 ```
 
 iOS has drawn with its own Metal backend (`ios/gfx_metal.mm`) -- there has
