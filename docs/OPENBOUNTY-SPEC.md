@@ -1853,7 +1853,8 @@ flagged (§38).
   through `GameSpellRoom`: every charge held counts against it, or, with
   `game.json` `magic.max_per_spell` true (`glory-of-rome`), only that
   spell's own, so the hero can hold `max_spells` of each spell. Under that
-  key a chest's new spell has given no more charges than there is room for.
+  key a chest's new spell has given no more charges than there is room for,
+  and a chest whose spell is already full has been a gold chest instead.
   Casting has decremented, buying incremented. Spells have been bought at the
   town menu (§16) for the spell's `cost`. Buying has not required
   `knows_magic` (OpenKB-faithful) except under rites per zone (REQ-314a);
@@ -1868,8 +1869,8 @@ flagged (§38).
   astrology's step (REQ-370) twice, so a reload renews the same one, and
   none when nothing is learned. `GameRenewSpell` has filled it to
   `max_spells`, keeping charges already above. The save has carried the
-  learned spells as `spells_learned` (spell ids) only under the key, so
-  King's Bounty saves have not changed. With `magic.max_per_spell` a combat
+  learned spells as `spells_learned` (spell ids) in every pack (REQ-414).
+  With `magic.max_per_spell` a combat
   spell chosen on the map has only been noted (`spell_combat_only`): a
   discard would free nothing, so none has been offered.
 

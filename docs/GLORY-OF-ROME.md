@@ -293,7 +293,8 @@ REQ-321, REQ-540):
 
 - **A limit for each spell** (`max_per_spell`): the spell capacity has been
   the most charges the hero can carry of each spell, so a temple has refused
-  a sale only when that spell is full.
+  a sale only when that spell is full. A chest whose spell is full has held
+  gold instead.
 - **Weekly renewal** (`weekly_renewal`): a spell bought at a temple has been
   learned, and each week end one learned spell, drawn like the week's
   creature, has been filled to the limit, named under the creature ("The

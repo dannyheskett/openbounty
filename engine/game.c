@@ -2359,6 +2359,34 @@ static unsigned chest_rand(const Game *g, int x, int y, unsigned salt) {
     return h;
 }
 
+// The gold chest: a purse the player takes as gold or as leadership. The
+// caller runs the choice and calls GameAcceptChestGold or
+// GameAcceptChestLeadership.
+static ChestOutcome chest_gold(const Game *g, int x, int y, int zi,
+                               ChestPending *out_pending,
+                               char *out_body, size_t out_sz) {
+    const ResChest *ch = &g->res->economy.chest;
+    int points = (int)(chest_rand(g, x, y, 2) %
+                       (unsigned)(ch->gold_max[zi] > 0 ? ch->gold_max[zi] : 1)) + 1;
+    points += ch->gold_min[zi];
+    int gold = points * 100;
+    int leadership = gold / 50;
+    if (GameHasPower(g, ARTIFACT_POWER_DOUBLE_LEADERSHIP)) leadership *= 2;
+    if (out_pending) {
+        out_pending->pending_gold = gold;
+        out_pending->pending_leadership = leadership;
+    }
+    char gbuf[16], lbuf[16];
+    snprintf(gbuf, sizeof gbuf, "%d", gold);
+    snprintf(lbuf, sizeof lbuf, "%d", leadership);
+    ResTemplateVar vars[] = {
+        { "GOLD", gbuf }, { "LEADERSHIP", lbuf },
+    };
+    resources_format_template(out_body, out_sz, g->res->banners.chest_gold,
+                              vars, (int)(sizeof vars / sizeof vars[0]));
+    return CHEST_OUTCOME_GOLD;
+}
+
 ChestOutcome GamePeekChest(const Game *g, int zone_index, int x, int y,
                            ChestPending *out_pending) {
     if (out_pending) {
@@ -2428,30 +2456,8 @@ ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
         return CHEST_OUTCOME_GOLD;
     }
 
-    if (chance < ch->chance_gold[zi]) {
-        int points = (int)(chest_rand(g, x, y, 2) %
-                           (unsigned)(ch->gold_max[zi] > 0 ? ch->gold_max[zi] : 1)) + 1;
-        points += ch->gold_min[zi];
-        int gold = points * 100;
-        int leadership = gold / 50;
-        if (GameHasPower(g, ARTIFACT_POWER_DOUBLE_LEADERSHIP)) leadership *= 2;
-        // : caller runs the
-        // prompt and calls GameAcceptChestGold / GameAcceptChestLeadership
-        // based on the player's choice.
-        if (out_pending) {
-            out_pending->pending_gold = gold;
-            out_pending->pending_leadership = leadership;
-        }
-        char gbuf[16], lbuf[16];
-        snprintf(gbuf, sizeof gbuf, "%d", gold);
-        snprintf(lbuf, sizeof lbuf, "%d", leadership);
-        ResTemplateVar vars[] = {
-            { "GOLD", gbuf }, { "LEADERSHIP", lbuf },
-        };
-        resources_format_template(out_body, out_sz, bn->chest_gold,
-                                  vars, (int)(sizeof vars / sizeof vars[0]));
-        return CHEST_OUTCOME_GOLD;
-    }
+    if (chance < ch->chance_gold[zi])
+        return chest_gold(g, x, y, zi, out_pending, out_body, out_sz);
     if (chance < ch->chance_commission[zi]) {
         int points = (int)(chest_rand(g, x, y, 3) %
                            (unsigned)(ch->commission_max[zi] > 0 ? ch->commission_max[zi] : 1)) + 1;
@@ -2495,8 +2501,11 @@ ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
         int spell_num  = (int)(chest_rand(g, x, y, 5) % (unsigned)(zi + 1)) + 1;
         // Charges, not learning: only a temple teaches a spell (#157). Where
         // each spell is capped, the chest gives no more than there is room for.
+        // A spell already at its cap makes it a gold chest.
         if (g->res && g->res->economy.spell_limit_per_spell) {
             int room = GameSpellRoom(g, spell_type);
+            if (room <= 0)
+                return chest_gold(g, x, y, zi, out_pending, out_body, out_sz);
             if (spell_num > room) spell_num = room;
         }
         g->spells.counts[spell_type] += spell_num;
