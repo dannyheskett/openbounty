@@ -5,6 +5,7 @@
 #include "greatest.h"
 #include "cli_flags.h"
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -83,7 +84,56 @@ TEST spec_names_every_flag(void) {
     PASS();
 }
 
+static int parse(CliOptions *o, int n, ...) {
+    char *argv[16] = { "openbounty" };
+    va_list ap;
+    va_start(ap, n);
+    for (int k = 0; k < n && k < 15; k++) argv[k + 1] = va_arg(ap, char *);
+    va_end(ap);
+    return cli_parse(n + 1, argv, o);
+}
+
+TEST parse_reads_values_and_modifiers(void) {
+    CliOptions o;
+    ASSERT_EQ(-1, parse(&o, 0));
+    ASSERT_EQ(-1, o.seed_index);
+    ASSERT_EQ(0, o.vp_lo);
+    ASSERT_EQ(255, o.vp_hi);
+    ASSERT_EQ(-1, parse(&o, 7, "--pack", "glory-of-rome", "--seed", "42",
+                        "--autoplay", "--autoplay-level=hard", "--headless"));
+    ASSERT_STR_EQ("glory-of-rome", o.pack_arg);
+    ASSERT_EQ(42, o.seed_index);
+    ASSERT(o.autoplay_mode && o.headless_mode);
+    ASSERT_EQ(2, o.autoplay_level);
+    ASSERT_EQ(-1, parse(&o, 3, "--validate-pack", "3", "9"));
+    ASSERT(o.validate_pack);
+    ASSERT_EQ(3, o.vp_lo);
+    ASSERT_EQ(9, o.vp_hi);
+    ASSERT_EQ(-1, parse(&o, 2, "--window", "1125x553"));
+    ASSERT_EQ(1125, o.want_win_w);
+    ASSERT_EQ(553, o.want_win_h);
+    ASSERT_EQ(-1, parse(&o, 1, "--movie"));
+    ASSERT(o.movie_requested);
+    ASSERT_EQ(NULL, o.movie_path_arg);
+    PASS();
+}
+
+TEST parse_is_strict(void) {
+    CliOptions o;
+    ASSERT_EQ(2, parse(&o, 1, "--no-such-flag"));
+    ASSERT_EQ(2, parse(&o, 1, "--pack"));               // a value is missing
+    ASSERT_EQ(2, parse(&o, 1, "--gallery"));
+    ASSERT_EQ(2, parse(&o, 2, "--seed", "256"));        // out of range
+    ASSERT_EQ(2, parse(&o, 2, "--seed", "0x10"));       // decimal only
+    ASSERT_EQ(2, parse(&o, 3, "--validate-pack", "9", "3"));
+    ASSERT_EQ(2, parse(&o, 1, "--autoplay-level=medium"));
+    ASSERT_EQ(2, parse(&o, 2, "--window", "big"));
+    PASS();
+}
+
 SUITE(unit_cli_flags_suite) {
     RUN_TEST(readme_flag_table_matches_the_list);
     RUN_TEST(spec_names_every_flag);
+    RUN_TEST(parse_reads_values_and_modifiers);
+    RUN_TEST(parse_is_strict);
 }

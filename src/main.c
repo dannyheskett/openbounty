@@ -289,186 +289,41 @@ int shell_run_game(int argc, char **argv) {
     plat_ios_boot();
     BOOT_TRACE("[boot] save path resolved\n");
 
-    // Minimal CLI parsing.
-    bool want_fullscreen = false;
-    const char *pack_arg = NULL;     // --pack <name|path>
-    const char *lang_arg = NULL;     // --lang <code>: locale (strings/<code>.json)
-    bool extract_mode = false;        // --extract: build pack from KB.EXE then exit
-    const char *extract_out_dir = NULL; // --out-dir <dir>: extract to loose tree
-    const char *pack_dir_src = NULL;  // --pack-dir <src> <dst>: zip a loose asset tree
-    const char *pack_dir_dst = NULL;
-    // --movie [path]: record gameplay to an MP4. With no arg, defaults
-    // to <user-data>/openbounty/movie-<timestamp>.mp4.
-    bool        debug_flag      = false;   // --debug: the Debug page of cheats
-    bool        movie_requested = false;
-    const char *movie_path_arg  = NULL;
-    const char *gallery_dir     = NULL;   // --gallery <dir>: capture every modern screen
-    const char *intro_movie     = NULL;   // --intro-movie <out.mp4>: the Introduction to video
-    const char *puzzle_sweep_dir = NULL;  // --puzzle-sweep <dir>: the puzzle view of all 256 worlds
-    // --window WxH / --touch: the geometry a device has, on this desk. The
-    // window size drives everything (present_refit derives the buffer from
-    // it), and --touch turns on what only a finger turns on, so a capture at
-    // 1125x553 is the picture the phone draws rather than a guess about it.
-    int want_win_w = 0, want_win_h = 0;
-    bool force_touch = false;
-    // --seed N: pick catalog world N (0..255) for a reproducible run. -1 means
-    // "not asked for" -- the world is derived from time + name + class instead.
-    int seed_index = -1;
-    bool headless_mode = false;
-    // --demo: DEMO MODE -- the human-like player agent (demo/). The agent plays
-    // the LIVE game forward under a player's constraints (fog, prompts, one
-    // committed timeline with no rollback) and can win, lose, or get stuck.
-    // It does weigh a fight before entering it, by simulating it on a
-    // discarded copy of what it can already see (DEMO-SPEC.md DM-013).
-    //   --demo            -> VISIBLE: window opens, the agent plays at a
-    //                        watchable pace, hands off on completion.
-    //   --demo --headless -> HEADLESS: no window; plays to an ending, prints
-    //                        the [DEMO OVER] report, exits.
-    bool demo_mode = false;
-    // --autoplay: the headless automated player / pack-winnability oracle
-    // (autoplay/, docs/AUTOPLAY-SPECS.md).
-    //   --autoplay --headless -> HEADLESS: no window; drives the whole game to
-    //                            its verdict, prints [VERDICT READY], exits
-    //                            0=SOLVED 1=NOT-SOLVED 2=setup failure.
-    //   --autoplay            -> VISIBLE: the run is resolved headlessly first,
-    //                            then replayed on the live world at a watchable
-    //                            pace (AP-024).
-    bool autoplay_mode = false;
-    // --autoplay-hero=<class> / --autoplay-level=<easy|normal|hard|impossible>:
-    // the class and difficulty the oracle plays; the level sets the day budget
-    // via the pack. Defaults: knight / normal.
-    const char *autoplay_hero = NULL;   // NULL => AUTOPLAY_HERO_CLASS
-    int autoplay_level = AUTOPLAY_HERO_DIFFICULTY;
-    // --autoplay-speed=<slow|normal|fast>: visible replay pacing.
-    int autoplay_speed = AUTOPLAY_SPEED_NORMAL;
-    // --validate-pack [LO [HI]]: systematic winnability report over a seed
-    // range (default the whole catalog, 0..255).
-    bool validate_pack = false;
-    int  vp_lo = 0, vp_hi = 255;
-    // --verbose: turn on the agent diagnostic channels for the run.
-    // Observation-only: unset leaves the run bit-for-bit identical.
-    bool verbose_mode = false;
-    for (int i = 1; i < argc; i++) {
-        const char *a = argv[i];
-        if (strcmp(a, "--version") == 0 || strcmp(a, "-v") == 0) {
-            printf("openbounty build %s\n", OPENBOUNTY_VERSION);
-            return 0;
-        } else if (strcmp(a, "--help") == 0 || strcmp(a, "-h") == 0) {
-            cli_flags_print_help(stdout, OPENBOUNTY_VERSION);
-            return 0;
-        // Strict processing: an argument that does not make sense stops the
-        // program. A flag needing a value with none, a bad value, an unknown
-        // flag, or a stray token all print an error to stderr and exit 2 --
-        // nothing runs on a misunderstood command line.
-        } else if (strcmp(a, "--fullscreen") == 0) {
-            want_fullscreen = true;
-        } else if (strcmp(a, "--pack") == 0) {
-            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --pack requires <name|path>\n"); return 2; }
-            pack_arg = argv[++i];
-        } else if (strcmp(a, "--lang") == 0) {
-            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --lang requires <code>\n"); return 2; }
-            lang_arg = argv[++i];
-        } else if (strcmp(a, "--extract") == 0) {
-            extract_mode = true;
-        } else if (strcmp(a, "--out-dir") == 0) {
-            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --out-dir requires <dir>\n"); return 2; }
-            extract_out_dir = argv[++i];
-        } else if (strcmp(a, "--debug") == 0) {
-            // The Debug page of cheats in the modern game menu. Without this
-            // flag no cheat is reachable.
-            debug_flag = true;
-        } else if (strcmp(a, "--movie") == 0) {
-            movie_requested = true;
-            // Optional next-arg path: only consumed if it doesn't look
-            // like another flag (no leading "-"). Without an arg, the
-            // recorder picks an auto-named timestamp file.
-            if (i + 1 < argc && argv[i + 1][0] != '-') {
-                movie_path_arg = argv[++i];
-            }
-        } else if (strcmp(a, "--seed") == 0) {
-            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --seed requires 0-255\n"); return 2; }
-            const char *sv = argv[++i];
-            char *end = NULL;
-            long n = strtol(sv, &end, 10);
-            if (end == sv || *end != '\0' || n < 0 || n > 255) {
-                fprintf(stderr, "openbounty: --seed '%s' is not in range 0-255\n", sv);
-                return 2;
-            }
-            seed_index = (int)n;
-        } else if (strcmp(a, "--demo") == 0) {
-            demo_mode = true;
-        } else if (strcmp(a, "--autoplay") == 0) {
-            autoplay_mode = true;
-        } else if (strncmp(a, "--autoplay-hero=", 16) == 0) {
-            autoplay_hero = a + 16;   // validated against the pack after load
-            if (!autoplay_hero[0]) { fprintf(stderr, "openbounty: --autoplay-hero requires a class id\n"); return 2; }
-        } else if (strncmp(a, "--autoplay-level=", 17) == 0) {
-            const char *lv = a + 17;
-            if      (strcmp(lv, "easy") == 0)       autoplay_level = 0;
-            else if (strcmp(lv, "normal") == 0)     autoplay_level = 1;
-            else if (strcmp(lv, "hard") == 0)       autoplay_level = 2;
-            else if (strcmp(lv, "impossible") == 0) autoplay_level = 3;
-            else { fprintf(stderr, "openbounty: --autoplay-level '%s' is not easy|normal|hard|impossible\n", lv); return 2; }
-        } else if (strncmp(a, "--autoplay-speed=", 17) == 0) {
-            const char *sp = a + 17;
-            if      (strcmp(sp, "slow") == 0)   autoplay_speed = AUTOPLAY_SPEED_SLOW;
-            else if (strcmp(sp, "normal") == 0) autoplay_speed = AUTOPLAY_SPEED_NORMAL;
-            else if (strcmp(sp, "fast") == 0)   autoplay_speed = AUTOPLAY_SPEED_FAST;
-            else { fprintf(stderr, "openbounty: --autoplay-speed '%s' is not slow|normal|fast\n", sp); return 2; }
-        } else if (strcmp(a, "--validate-pack") == 0) {
-            validate_pack = true;
-            // Optional LO [HI] range (numeric next tokens); default 0..255.
-            if (i + 1 < argc && argv[i + 1][0] != '-') {
-                char *e = NULL;
-                long lo = strtol(argv[++i], &e, 10);
-                long hi = lo;
-                if (*e != '\0') { fprintf(stderr, "openbounty: --validate-pack LO must be 0-255\n"); return 2; }
-                if (i + 1 < argc && argv[i + 1][0] != '-') {
-                    char *e2 = NULL;
-                    hi = strtol(argv[++i], &e2, 10);
-                    if (*e2 != '\0') { fprintf(stderr, "openbounty: --validate-pack HI must be 0-255\n"); return 2; }
-                }
-                if (lo < 0 || hi > 255 || lo > hi) { fprintf(stderr, "openbounty: --validate-pack range must be 0-255 with LO<=HI\n"); return 2; }
-                vp_lo = (int)lo;
-                vp_hi = (int)hi;
-            }
-        } else if (strcmp(a, "--gallery") == 0) {
-            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --gallery requires <dir>\n"); return 2; }
-            gallery_dir = argv[++i];
-        } else if (strcmp(a, "--intro-movie") == 0) {
-            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --intro-movie requires <out.mp4>\n"); return 2; }
-            intro_movie = argv[++i];
-        } else if (strcmp(a, "--puzzle-sweep") == 0) {
-            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --puzzle-sweep requires <dir>\n"); return 2; }
-            puzzle_sweep_dir = argv[++i];
-        } else if (strcmp(a, "--window") == 0) {
-            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --window requires <WxH>\n"); return 2; }
-            int w = 0, h = 0;
-            if (sscanf(argv[++i], "%dx%d", &w, &h) == 2 && w > 0 && h > 0) {
-                want_win_w = w; want_win_h = h;
-            } else {
-                fprintf(stderr, "openbounty: --window wants WxH, e.g. --window 1125x553\n");
-                return 2;
-            }
-        } else if (strcmp(a, "--touch") == 0) {
-            force_touch = true;
-        } else if (strcmp(a, "--headless") == 0) {
-            headless_mode = true;
-        } else if (strcmp(a, "--verbose") == 0) {
-            verbose_mode = true;
-        } else if (strcmp(a, "--save-dir") == 0) {
-            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --save-dir requires <dir>\n"); return 2; }
-            SavePathSetDirOverride(argv[++i]);
-        } else if (strcmp(a, "--pack-dir") == 0) {
-            if (i + 2 >= argc) { fprintf(stderr, "openbounty: --pack-dir requires <src_dir> <out_zip>\n"); return 2; }
-            pack_dir_src = argv[++i];
-            pack_dir_dst = argv[++i];
-        } else {
-            fprintf(stderr, "openbounty: unknown option '%s'\n"
-                            "Try --help for usage.\n", a);
-            return 2;
-        }
+    // The command line (src/cli_flags.c): strict, and nothing runs on a
+    // misunderstood one.
+    CliOptions cli;
+    {
+        int rc = cli_parse(argc, argv, &cli);
+        if (rc >= 0) return rc;
     }
+    if (cli.save_dir) SavePathSetDirOverride(cli.save_dir);
+    bool want_fullscreen = cli.want_fullscreen;
+    const char *pack_arg = cli.pack_arg;
+    const char *lang_arg = cli.lang_arg;
+    bool extract_mode = cli.extract_mode;
+    const char *extract_out_dir = cli.extract_out_dir;
+    const char *pack_dir_src = cli.pack_dir_src;
+    const char *pack_dir_dst = cli.pack_dir_dst;
+    bool debug_flag = cli.debug_flag;
+    bool movie_requested = cli.movie_requested;
+    const char *movie_path_arg = cli.movie_path_arg;
+    const char *gallery_dir = cli.gallery_dir;
+    const char *intro_movie = cli.intro_movie;
+    const char *puzzle_sweep_dir = cli.puzzle_sweep_dir;
+    int want_win_w = cli.want_win_w;
+    int want_win_h = cli.want_win_h;
+    bool force_touch = cli.force_touch;
+    int seed_index = cli.seed_index;
+    bool headless_mode = cli.headless_mode;
+    bool demo_mode = cli.demo_mode;
+    bool autoplay_mode = cli.autoplay_mode;
+    const char *autoplay_hero = cli.autoplay_hero;
+    int autoplay_level = cli.autoplay_level;
+    int autoplay_speed = cli.autoplay_speed;
+    bool validate_pack = cli.validate_pack;
+    int vp_lo = cli.vp_lo;
+    int vp_hi = cli.vp_hi;
+    bool verbose_mode = cli.verbose_mode;
 
     // Set the agent diagnostic gates for the whole process, once, before any
     // agent path runs. Other modes never touch a gated hook, so this is inert.

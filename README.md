@@ -931,8 +931,9 @@ determinism.
   it is absent has kept `SAVE_VERSION`; any other change has bumped it in
   `engine/include/savegame.h` and updated the golden
   `tests/fixtures/save_v1.dat` (`docs/OPENBOUNTY-SPEC.md` REQ-414).
-- **Adding a CLI flag**: list it in `src/cli_flags.c` and parse it in
-  `src/main.c main()`; for an early-exit mode use `src/shell_earlyexit.c`.
+- **Adding a CLI flag**: list it in `cli_flags[]`, give it a `CliOptions`
+  field and parse it in `cli_parse` (all in `src/cli_flags.{c,h}`); for an
+  early-exit mode use `src/shell_earlyexit.c`.
   Add its row to §3 and its name to `docs/OPENBOUNTY-SPEC.md` REQ-480:
   `tests/unit/test_cli_flags.c` has failed until all three agree.
 - **Adding a combat ability/spell**: math in `engine/combat.c`, player input
