@@ -1,6 +1,6 @@
 // src/present.h
 //
-// The one place the 320x200 render target becomes window pixels.
+// The one place the internal render target becomes window pixels.
 //
 // Every caller (the main loop, startup, combat, the ending cartoon, visible
 // autoplay, the encode dialog and the frame dispatcher) blits through here:

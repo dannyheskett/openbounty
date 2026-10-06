@@ -28,20 +28,18 @@
 
 // ---- Modal prompts ---------------------------------------------------------
 //
-// Bottom-frame yes/no, A/B, and text-entry prompts. The engine opens a
-// prompt during a step (e.g. "Search this area?", "Buy how many?"), the
-// host's render/input loop drives it, and the host signals back to the
-// engine via dismissal: the next engine tick observes
-// `prompt_is_active() == false` and reads the result via host-specific
-// channels (the game's `prompt_update()` returns it, captured by step.c
-// flows). Engine code that opens a prompt then returns; the next step
-// call picks up the resolved state.
+// Bottom-frame yes/no, A/B, and text-entry prompts. The engine raises a
+// decision on the player-IO queue (player_io.h) and opens the matching prompt
+// (e.g. "Search this area?", "Buy how many?"); the host draws it and reads the
+// player's answer, then hands the answer back with player_io_answer, which
+// applies it.
 //
 // Lifecycle:
-//   1. Engine calls prompt_*_open(...)
-//   2. Host renders the prompt and consumes input until resolved
-//   3. Host dismisses (sets internal state so prompt_is_active() = false)
-//   4. Engine's next step sees no active prompt and proceeds
+//   1. Engine raises the decision and calls prompt_*_open(...)
+//   2. Host renders the prompt and consumes input until it is answered
+//   3. Host dismisses it (prompt_is_active() = false) and calls
+//      player_io_answer with the answer
+//   4. The engine applies the answer, and the next step proceeds
 //
 // `prompt_is_active`, `prompt_kind_str`, `prompt_header_text`,
 // `prompt_body_text` are also read by `state_serialize` so JSON

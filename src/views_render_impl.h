@@ -7,7 +7,8 @@
 //   src/legacy/views_render.c  -- FROZEN. The DOS original's view panels.
 //   src/modern/views_render.c  -- where modern UI work happens.
 //
-// Nothing outside this trio includes this header.
+// The views are drawn only through the dispatcher. Other shell files (main,
+// the actions, the gallery) include this header for the helpers it declares.
 
 #ifndef OB_VIEWS_RENDER_IMPL_H
 #define OB_VIEWS_RENDER_IMPL_H

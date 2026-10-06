@@ -1779,15 +1779,15 @@ typedef struct {
 void resources_resolve_path(const Resources *res, const char *rel,
                             char *out, size_t cap);
 
-// Load game.json at `manifest_path` and every referenced table file. Paths
-// inside game.json are resolved relative to the manifest file's directory.
-// Returns true on success; writes a human-readable error to stderr on
-// failure and leaves `*res` in an indeterminate state.
 // The tile code a tile_codes key names: the key's own byte for a
 // single-character key, or the byte a two-digit "\xNN" hex escape spells.
 // -1 if the key names no code. Pure; unit tested.
 int resources_tile_code_from_key(const char *key);
 
+// Load `manifest_path` (game.json) and every file it references from the pack
+// stack, and publish the result to the catalog lookups (tables.h). Returns
+// true on success; on failure it prints the reason to stdout, returns false
+// and leaves `*res` in an indeterminate state.
 bool resources_load(Resources *res, const char *manifest_path);
 
 // Every pack-relative art path this manifest resolves to, de-duplicated.
