@@ -486,6 +486,25 @@ TEST army_view_morale_follows_the_chart(void) {
     PASS();
 }
 
+// The pack's boat artifact ("cheaper_boat_rental") is the power the rent
+// reads: found, it brings the boat down to the cheap rent.
+TEST the_boat_artifact_cheapens_the_boat(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    int k = -1;
+    for (int i = 0; i < g->artifacts.count; i++) {
+        const ArtifactDef *a = artifact_by_index(i);
+        if (a && a->power == ARTIFACT_POWER_CHEAPER_BOATS) k = i;
+        g->artifacts.found[i] = false;
+    }
+    ASSERT(k >= 0);
+    ASSERT_EQ(res->economy.boat_cost_normal, GameBoatCost(g));
+    g->artifacts.found[k] = true;
+    ASSERT_EQ(res->economy.boat_cost_cheap, GameBoatCost(g));
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 SUITE(e2e_economy_suite) {
     RUN_TEST(rent_boat_deducts_gold_and_places);
     RUN_TEST(rent_boat_refuses_when_gold_equals_cost);
@@ -507,4 +526,5 @@ SUITE(e2e_economy_suite) {
     RUN_TEST(unpaid_troops_leave_where_the_pack_says);
     RUN_TEST(the_castle_offers_a_troop_at_six_times_its_hit_points);
     RUN_TEST(army_view_morale_follows_the_chart);
+    RUN_TEST(the_boat_artifact_cheapens_the_boat);
 }

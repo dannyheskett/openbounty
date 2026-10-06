@@ -966,7 +966,7 @@ static ArtifactPower artifact_power_from_name(const char *s) {
     if (strcmp(s, "increase_commission") == 0) return ARTIFACT_POWER_INCREASE_COMMISSION;
     if (strcmp(s, "double_spell_power")  == 0) return ARTIFACT_POWER_DOUBLE_SPELL_POWER;
     if (strcmp(s, "double_max_spells")   == 0) return ARTIFACT_POWER_DOUBLE_MAX_SPELLS;
-    if (strcmp(s, "cheaper_boats")       == 0) return ARTIFACT_POWER_CHEAPER_BOATS;
+    if (strcmp(s, "cheaper_boat_rental") == 0) return ARTIFACT_POWER_CHEAPER_BOATS;
     return ARTIFACT_POWER_UNKNOWN;
 }
 
@@ -1367,7 +1367,8 @@ static void parse_controls(Resources *res, cJSON *obj) {
     cJSON *it;
     int n = 0;
     cJSON_ArrayForEach(it, settings) {
-        if (n >= 8) break;
+        // A row is bound to Game.stats.options by position, which holds 7.
+        if (n >= 7) break;
         if (!cJSON_IsObject(it)) continue;
         copy_str(res->controls.items[n].id,
                  sizeof(res->controls.items[n].id),
