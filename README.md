@@ -900,11 +900,15 @@ determinism.
   has classified the tile; `engine/step.c` has read the result and
   dispatched to flows / screen openers (`engine/flows.c`, the host callbacks
   in `engine/include/ui_host.h`).
-- **Save format change**: `engine/savegame.c`, and bump `SAVE_VERSION` in
-  `engine/include/savegame.h`. Update or replace the golden
-  `tests/fixtures/save_v1.dat`.
-- **Adding a CLI flag**: `src/main.c main()` has parsed argv; for an
-  early-exit mode use `src/shell_earlyexit.c`. §3 has documented the set.
+- **Save format change**: the writer in `engine/state_serialize.c`, the
+  reader in `engine/savegame.c`. A new key the reader can fall back on when
+  it is absent has kept `SAVE_VERSION`; any other change has bumped it in
+  `engine/include/savegame.h` and updated the golden
+  `tests/fixtures/save_v1.dat` (`docs/OPENBOUNTY-SPEC.md` REQ-414).
+- **Adding a CLI flag**: list it in `src/cli_flags.c` and parse it in
+  `src/main.c main()`; for an early-exit mode use `src/shell_earlyexit.c`.
+  Add its row to §3 and its name to `docs/OPENBOUNTY-SPEC.md` REQ-480:
+  `tests/unit/test_cli_flags.c` has failed until all three agree.
 - **Adding a combat ability/spell**: math in `engine/combat.c`, player input
   wiring in `src/combat_loop.c`. Add a golden digest in
   `tests/regression/test_combat_digests.c` if it changes the formula.
