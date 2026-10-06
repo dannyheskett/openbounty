@@ -1,6 +1,7 @@
 // Goto's route (engine/goto.c GamePlanGoto, #70), on small drawn maps:
 // '.' grass, '^' mountain, '~' sea, 'd' desert, 'C' a chest, 'B' the parked
-// boat on the sea, '?' grass the player has not seen. The hero starts at 'H'.
+// boat on the sea, 'S' a sign, '?' grass the player has not seen. The hero
+// starts at 'H'.
 
 #include "greatest.h"
 #include "goto.h"
@@ -31,6 +32,7 @@ static void draw(World *w, const char *const *rows, int h) {
                        : c == 'd' ? TERRAIN_DESERT : TERRAIN_GRASS;
             t->blocks_foot = c == '^';
             if (c == 'C') t->interactive = INTERACT_TREASURE_CHEST;
+            if (c == 'S') t->interactive = INTERACT_SIGN;
             if (c == 'H') { w->g->position.x = x; w->g->position.y = y; }
             if (c == 'B') {
                 w->g->boat.has_boat = true;
@@ -228,6 +230,33 @@ TEST days_count_the_steps(void) {
     done(&w); PASS();
 }
 
+TEST a_sign_on_the_way_is_walked_over(void) {
+    // The only way east is through the sign: the hero stands on it to read it.
+    static const char *const R[] = {
+        "^^^^^",
+        "H.S..",
+        "^^^^^",
+    };
+    World w; draw(&w, R, 3);
+    GotoPath p;
+    ASSERT(plan(&w, 4, 1, &p));
+    ASSERT_EQ(4, p.n);
+    done(&w); PASS();
+}
+
+TEST a_landed_route_does_not_board_again(void) {
+    // Sailing west to east, the hero lands on the island; the boat stays at
+    // the landing, so the far sea beyond the island is out of reach.
+    static const char *const R[] = {
+        "HB~.~~.",
+    };
+    World w; draw(&w, R, 1);
+    GotoPath p;
+    ASSERT(plan(&w, 3, 0, &p));                   // the island: board, sail, land
+    ASSERT_FALSE(plan(&w, 6, 0, &p));             // beyond it would need the boat again
+    done(&w); PASS();
+}
+
 SUITE(unit_goto_suite) {
     RUN_TEST(a_straight_walk);
     RUN_TEST(round_the_mountains);
@@ -240,4 +269,6 @@ SUITE(unit_goto_suite) {
     RUN_TEST(flight_goes_straight_over_mountains);
     RUN_TEST(the_heros_own_tile_is_no_order);
     RUN_TEST(days_count_the_steps);
+    RUN_TEST(a_sign_on_the_way_is_walked_over);
+    RUN_TEST(a_landed_route_does_not_board_again);
 }
