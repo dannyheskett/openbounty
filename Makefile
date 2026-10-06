@@ -66,7 +66,7 @@ DEMO_OBJ     := $(patsubst %.c,$(DEMO_OBJ_DIR)/%.o,$(DEMO_SRC))
 AUTOPLAY_SRC := autoplay/autoplay.c autoplay/planner.c autoplay/goals.c autoplay/prereq.c autoplay/baltree.c autoplay/search.c autoplay/primitives.c autoplay/exec_move.c autoplay/exec_fight.c autoplay/exec_recruit.c autoplay/exec_loc.c autoplay/recording.c autoplay/worldsnap.c autoplay/plan.c autoplay/exec_replay.c autoplay/exec_ledger.c autoplay/diag.c
 AUTOPLAY_OBJ_DIR := build/$(BUILD)/objs/autoplay
 AUTOPLAY_OBJ     := $(patsubst %.c,$(AUTOPLAY_OBJ_DIR)/%.o,$(AUTOPLAY_SRC))
-SHELL_SRC  := src/main.c src/plat_android.c src/plat_ios.c src/safe_area.c src/gfx_raylib.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_goto.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/audio_raylib.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_mp4_aac.c src/intro_mix.c src/encode_dialog.c src/bfont.c src/text.c src/font_raylib.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/modern/page.c src/modern/rail.c src/input.c src/input_host.c src/touch.c src/uitouch.c src/frame_host.c src/prompt.c src/startup.c src/intro.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
+SHELL_SRC  := src/main.c src/cli_flags.c src/plat_android.c src/plat_ios.c src/safe_area.c src/gfx_raylib.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_goto.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/audio_raylib.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_mp4_aac.c src/intro_mix.c src/encode_dialog.c src/bfont.c src/text.c src/font_raylib.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/modern/page.c src/modern/rail.c src/input.c src/input_host.c src/touch.c src/uitouch.c src/frame_host.c src/prompt.c src/startup.c src/intro.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
 # plat_android.c is NOT here: its non-Android branch is two no-ops, and
 # main.c calls them on every platform.
 IOS_SKIP := src/gfx_raylib.c src/frame_host.c src/input_host.c \
@@ -359,8 +359,7 @@ web-serve: $(WEB_OUTS)
 #
 # MOBILE SHIPS GLORY OF ROME ONLY. The pack goes into the APK's assets/ and
 # src/plat_android.c opens it from there; there is no pack discovery, no
-# picker, and King's Bounty (DOS-extracted, copyright-restricted) is never
-# packaged.
+# picker, and King's Bounty is not packaged.
 #
 # Pass the toolchain on the make command line, never through the environment:
 #   make android ANDROID_NDK=<ndk root> ANDROID_SDK_ROOT=<sdk root>
@@ -819,8 +818,9 @@ dist-mac: $(OUT_MAC)
 # Glory of Rome desktop packages: the same binary as the OpenBounty archives
 # above, plus the Rome pack in assets/ beside it -- the directory pack
 # discovery already searches (src/main.c), so the game starts with no flags.
-# Rome's pack is ours to ship; King's Bounty's never is, and the release
-# workflow checks both halves of that rule.
+# Each game's archives carry its own pack only: the gloryofrome-* ones carry
+# Rome's and nothing of King's Bounty, and the release workflow checks it
+# (scripts/verify_release_packs.sh).
 # ---------------------------------------------------------------------------
 ROME_PACK_FILE := $(PACK_DIR)/glory-of-rome.openbounty
 ROME_SLUG      := gloryofrome-$(OPENBOUNTY_VERSION_SLUG)
@@ -874,8 +874,7 @@ dist-web: build/web/kings-bounty/openbounty.html $(OUT_WEB_ROME)
 
 # Android ships as the APK and the AAB themselves -- no archive, no README
 # alongside: a store artifact is a single signed file. Both carry the Glory of
-# Rome pack inside them, which is ours to distribute (the release workflow's
-# guard is about King's Bounty's DOS-extracted pack, which never reaches here).
+# Rome pack inside them, and only that pack.
 dist-android: $(ANDROID_APK)
 	@mkdir -p $(DIST)
 	cp $(ANDROID_APK) $(DIST)/gloryofrome-$(OPENBOUNTY_VERSION_SLUG)-android-arm64.apk

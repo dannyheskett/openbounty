@@ -53,7 +53,7 @@ have needed no guards. The demo agent and autoplay have been in the build.
   (`shell_run_game(1, {"gloryofrome"})`): the app has taken no launch flags.
 - The game's stdout has been piped into the unified log with `os_log`
   (`plat_ios_log_stdout`, `ios/plat_ios.mm`). stderr has been left alone,
-  because `NSLog` writes there and would feed itself.
+  because `NSLog` has written there and would have fed itself.
 
 ## What UIKit has published -- `ios/plat_ios.mm`
 
@@ -61,11 +61,11 @@ Screen size and safe-area origin, one touch contact, foreground state and the
 frame clock. Each value has been a word-sized store; the touch position and
 its down state have been published together under a sequence counter so the
 game thread has never read half an update. A contact has been measured from
-the safe-area origin, the same origin the frame is drawn at. The view has
-published the touch it was given, never one read out of the event's whole
+the safe-area origin, the same origin the frame has been drawn at. The view has
+published the touch it has been given, never one read out of the event's whole
 set, so a finger resting elsewhere on the glass has not been mistaken for
-the contact after a tap lifted. A press the game has not sampled yet has been
-kept until a read has seen it, so a tap that began and ended between two of
+the contact after a tap has lifted. A press the game has not sampled yet has been
+kept until a read has seen it, so a tap that has begun and ended between two of
 the game's once-a-frame looks has still arrived as a one-frame contact.
 
 `src/plat_ios.c` has been the shell half: the save root has been the app's
@@ -87,7 +87,7 @@ as on Android.
 - **Source rectangles have followed raylib's convention**: a negative width
   or height has mirrored that axis. A Metal render target has already been
   stored top-down, so a target's texture has ignored the vertical flip raylib
-  callers pass for it.
+  callers have passed for it.
 - Up to 4,096 live textures (`TEX_MAX`); exhausting the table has been logged
   loudly rather than returning id 0 silently.
 - Point filtering and clamped addressing throughout: the pack has been pixel
@@ -96,7 +96,7 @@ as on Android.
 ## Text, images and audio
 
 - **Fonts** (`ios/font_ios.c`): the pack has chosen its face, so the atlas has
-  been baked at load time with stb_truetype, with metrics that mirror raylib's
+  been baked at load time with stb_truetype, with metrics that have mirrored raylib's
   `LoadFontData` so line heights and positions have matched every other
   platform.
 - **Images** (`ios/image_ios.c`): stb_image has decoded the pack's PNGs from
@@ -128,7 +128,7 @@ make ios     PACK_TOOL=build/openbounty-mac     # device .ipa
 Everything has been compiled by `clang` from the Makefile; there has been no
 Xcode project. `make ios` has produced an App Store-shaped bundle -- device
 platform keys, the icon compiled by `actool` from a single 1024x1024 PNG, the
-toolchain provenance keys App Store Connect checks, and entitlements -- and
+toolchain provenance keys App Store Connect has checked, and entitlements -- and
 signed it when `IOS_SIGN_IDENTITY`, `IOS_PROFILE` and `IOS_TEAM_ID` have been
 given. All of it has run on GitHub's macOS runners: the `ios` CI job has built
 the Simulator app, booted a Simulator, launched it and captured screenshots,

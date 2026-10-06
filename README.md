@@ -20,13 +20,13 @@ Windows x86_64 and i686, and macOS universal, plus the web and mobile builds
 (`docs/RELEASE-PROCESS.md` has listed the file names):
 
 - **OpenBounty** (`openbounty-build-N-*`): the engine alone, with **no game
-  data**. It plays King's Bounty from a pack the player builds from a
+  data**. It has played King's Bounty from a pack the player has built from a
   legally-owned copy of the DOS distribution: run `./openbounty --extract` in
   the directory that holds `KB.EXE`, and it writes
   `kings-bounty.openbounty` into the user data directory, where the next
-  launch finds it.
+  launch has found it.
 - **Glory of Rome** (`gloryofrome-build-N-*`): the same binary with
-  `assets/glory-of-rome.openbounty` beside it; it starts with no flags.
+  `assets/glory-of-rome.openbounty` beside it; it has started with no flags.
 - **Web / WebAssembly**: two zips of `.html`/`.js`/`.wasm`/`.data`, served
   over HTTP, each with its game embedded: `openbounty-build-N-web-wasm.zip`
   (King's Bounty, danheskett.com/dist/openbounty/) and
@@ -65,8 +65,8 @@ engine library). The two binaries (`openbounty` for play and
 `openbounty-test` for tests) have both linked the same engine archive. The
 shell has reached the platform only through five seams (`src/gfx.h`,
 `src/frame_host.h`, `src/input_host.h`, `src/audio_backend.h`,
-`src/font_backend.h`): raylib implements them everywhere except iOS, where
-`ios/` implements them natively (`docs/IOS-BACKEND.md`).
+`src/font_backend.h`): raylib has implemented them everywhere except iOS,
+where `ios/` has implemented them natively (`docs/IOS-BACKEND.md`).
 
 ```
 .
@@ -105,7 +105,7 @@ shell has reached the platform only through five seams (`src/gfx.h`,
 ├── web/shell.html            # The WebAssembly page template
 │
 ├── assets/
-│   ├── kings-bounty/         # The reference pack (extracted, never shipped)
+│   ├── kings-bounty/         # The reference pack, extracted from KB.EXE
 │   └── glory-of-rome/        # The Glory of Rome pack
 │
 ├── art/                      # Rome art sources: generation jobs, map sources,
@@ -195,7 +195,7 @@ make web-serve         # build both + serve on http://localhost:8080
 A wasm module has embedded its pack, so there has been one build per pack,
 each in its own `build/web/<pack>/`. The pack has gone into `openbounty.data`
 via `--preload-file`, so each build has been self-contained. All four files
-have been needed, served over HTTP: browsers refuse to fetch `.wasm`/`.data`
+have been needed, served over HTTP: browsers have refused to fetch `.wasm`/`.data`
 over `file://`. Saves have persisted in IndexedDB. `make web` has not been
 part of `make dist`; `make dist-web` has packaged each build as its own zip,
 `openbounty-*` for King's Bounty and `gloryofrome-*` for Glory of Rome, and
@@ -235,11 +235,12 @@ composed from the pack's own title art by `tools/romeart.py icon`.
 ```
 make mac                                        # the pack tool for macOS
 make ios-sim PACK_TOOL=build/openbounty-mac     # Simulator .app
-make ios     PACK_TOOL=build/openbounty-mac     # device .ipa (signed when IOS_SIGN_IDENTITY is set)
+make ios     PACK_TOOL=build/openbounty-mac     # device .ipa (signed when IOS_SIGN_IDENTITY,
+                                                # IOS_PROFILE and IOS_TEAM_ID are set)
 ```
 
 iOS has drawn with its own Metal backend (`ios/gfx_metal.mm`) -- there has
-been no raylib in the build -- behind the same seams every platform uses
+been no raylib in the build -- behind the same seams every platform has used
 (`src/gfx.h`, `src/frame_host.h`, `src/input_host.h`, `src/audio_backend.h`,
 `src/font_backend.h`). The game has run on its own thread with its loops
 intact; UIKit and a `CADisplayLink` have run on the main thread. `make` has
@@ -266,7 +267,7 @@ texture.
 
 The build has produced two binaries, each with its own CLI surface, the game
 (`build/debug/openbounty`) and the test runner (`build/openbounty-test`), plus
-a compile-only library boundary check that emits no binary.
+a compile-only library boundary check that has emitted no binary.
 
 ### `build/debug/openbounty`, the game
 
@@ -278,17 +279,19 @@ builder, gallery, demo, autoplay and pack validation).
 | `--version`, `-v` | - | Has printed `openbounty build <N>` and exited. |
 | `--help`, `-h` | - | Has printed usage and exited. |
 | `--fullscreen` | - | Has toggled fullscreen after window creation. |
-| `--pack` | `<name\|path>` | Has selected a pack: a bare name resolves via pack discovery, a path opens a `.openbounty` zip or a directory containing `game.json`. |
+| `--pack` | `<name\|path>` | Has selected a pack: a bare name has resolved via pack discovery, a path has opened a `.openbounty` zip or a directory containing `game.json`. |
 | `--lang` | `<code>` | Has loaded the pack's `strings/<code>.json` instead of its base language (`world.language`, default `en`), falling back to the base file when that one is absent. A missing key has been a hard error. |
-| `--save-dir` | `<dir>` | Has overridden the user data directory (where saves and discovered packs live). |
-| `--seed` | `N` | Has selected catalog world `N` (`0`–`255`) for a reproducible run. A pack has held 256 worlds; the index has been expanded to a full-width RNG seed internally (§11). Out of range, negative, or unparseable has been a hard error (exit 2): nothing runs on a misunderstood command line. Without `--seed`, a world has been derived from time + name + class. |
-| `--movie` | `[<path>]` | Has recorded gameplay to an MP4: with no argument to `<user-data>/movie-<timestamp>.mp4`, with a path there. At shutdown an "Encoding…" dialog has run the muxer; intermediate per-tick frames have lived in `/tmp/openbounty-movie-<pid>`, deleted afterward. The file is written only on a clean shutdown. |
+| `--save-dir` | `<dir>` | Has overridden the user data directory (where saves and discovered packs have lived). |
+| `--seed` | `N` | Has selected catalog world `N` (`0`–`255`) for a reproducible run. A pack has held 256 worlds; the index has been expanded to a full-width RNG seed internally (§11). Out of range, negative, or unparseable has been a hard error (exit 2): nothing has run on a misunderstood command line. Without `--seed`, a world has been derived from time + name + class. |
+| `--movie` | `[<path>]` | Has recorded gameplay to an MP4: with no argument to `<user-data>/movie-<timestamp>.mp4`, with a path there. At shutdown an "Encoding…" dialog has run the muxer; intermediate per-tick frames have lived in `/tmp/openbounty-movie-<pid>`, deleted afterward. The file has been written only on a clean shutdown. |
 | `--debug` | - | Has added the Debug page of cheats to the game menu. Without it no cheat has been reachable. |
 | `--gallery` | `<dir>` | Has captured every modern screen to `<dir>/<name>.png` and exited: views, prompts, dialogs, town and castle pages, menus, combat. No input has been read. Each capture has also checked that a tap reaches the rows the screen drew; a failed check has printed `[tapcheck] FAIL` and made the exit code non-zero. |
+| `--intro-movie` | `<out.mp4>` | Has rendered the pack's Introduction offline to `<out.mp4>` at 15 frames a second, with its sound, printed its cue sheet (each scene's start and length) and exited. |
+| `--puzzle-sweep` | `<dir>` | Has captured the puzzle view of every catalog world, the centre piece lifted, to `<dir>/puzzle_<NNN>_<zone>_<x>_<y>.png` (the world's index and its scepter) and exited. |
 | `--window` | `WxH` | Has opened the window at that size, a device's surface on the desk. |
 | `--touch` | - | Has made the session a touch device: touch-sized rows and the letter grid for the name. |
 | `--demo` | - | Demo mode: the human-like player agent (`demo/`, `docs/DEMO-SPEC.md`) has played the live game at a watchable pace. With `--headless`, it has played to an ending with no window and printed the `[DEMO OVER]` report (exit 0 = WON). |
-| `--autoplay` | - | Autoplay, the pack-winnability oracle (`autoplay/`, `docs/AUTOPLAY-SPECS.md`). One mechanism: a single snapshot-tree search run once from boot, where a node is a reached world state and one expansion attempts exactly one objective. Greedy has not been a separate stage: it has been the tree's first descent. The expansion set has been bounded and declared (per-node branching cap, frontier beam, stagnation cut, runaway watchdog), so a run has ended when it commits a clear or exhausts that set. Visible mode has resolved headlessly then replayed on the live world. With `--headless`, it has driven to its verdict and printed `[VERDICT READY]` (exit 0 = SOLVED, 1 = NOT-SOLVED, 2 = setup failure). SOLVED has meant a full clear reached and committed; NOT-SOLVED has reported the best objective count reached and meant the declared expansion set ran out, not that the seed is unwinnable. |
+| `--autoplay` | - | Autoplay, the pack-winnability oracle (`autoplay/`, `docs/AUTOPLAY-SPECS.md`). One mechanism: a single snapshot-tree search run once from boot, where a node has been a reached world state and one expansion has attempted exactly one objective. Greedy has not been a separate stage: it has been the tree's first descent. The expansion set has been bounded and declared (per-node branching cap, frontier beam, stagnation cut, runaway watchdog), so a run has ended when it commits a clear or exhausts that set. Visible mode has resolved headlessly then replayed on the live world. With `--headless`, it has driven to its verdict and printed `[VERDICT READY]` (exit 0 = SOLVED, 1 = NOT-SOLVED, 2 = setup failure). SOLVED has meant a full clear reached and committed; NOT-SOLVED has reported the best objective count reached and meant the declared expansion set ran out, not that the seed is unwinnable. |
 | `--autoplay-hero` | `=<class>` | Modifier for `--autoplay` / `--validate-pack`: the class the oracle plays, by pack class id (default `knight`). A class the pack does not define has been a hard error. |
 | `--autoplay-level` | `=<easy\|normal\|hard\|impossible>` | Modifier for `--autoplay` / `--validate-pack`: the difficulty the oracle plays (default `normal`). The level has set the day budget the run is proved against, via the pack's `time.days_per_difficulty`. |
 | `--autoplay-speed` | `=<slow\|normal\|fast>` | Modifier for visible `--autoplay`: replay pacing (default `normal`). No effect headless. |
@@ -311,14 +314,14 @@ single-header framework, layered:
 | Layer | What it has covered |
 |---|---|
 | **unit** (`tests/unit/`) | Single-function or small-scope state checks: combat math, RNG, map/fog/tile state, table lookups, JSON serialization, player-IO queue, layout, touch. |
-| **regression** (`tests/regression/`) | Pinned golden outputs: combat-formula digests, save-file fixture round-trips. A failure has meant behavior changed; investigation decides intent vs bug. |
+| **regression** (`tests/regression/`) | Pinned golden outputs: combat-formula digests, save-file fixture round-trips. A failure has meant behavior changed; investigation has decided intent vs bug. |
 | **e2e** (`tests/e2e/`) | Multi-step flows across systems: game flow, chest, contract, economy, score, combat input, save round-trips, a pack with no content limits. |
 | **autoplay** (`tests/autoplay/`) | The oracle's determinism plumbing: world snapshot/rollback bit-identity and the recording sink's fingerprints and mark/rollback. |
 
 Suite names have carried their layer as a prefix (`unit_terrain_suite`,
 `regression_combat_digests_suite`, `e2e_game_flow_suite`,
-`autoplay_worldsnap_suite`), so greatest's `-s` substring filter selects a
-layer.
+`autoplay_worldsnap_suite`), so greatest's `-s` substring filter has selected
+a layer.
 
 | Flag | Argument | Effect |
 |---|---|---|
@@ -409,8 +412,8 @@ depending on shell headers or shell symbols, this build step has failed and
 
 - One save format: **JSON, version 11** (`SAVE_VERSION` in
   `engine/include/savegame.h`). Catalog references have used string IDs
-  (e.g. `troop_id: "knights"`). A catalog game has stored its world index
-  (`seed_index`) rather than the expanded seed, so the world reloads exactly
+  (e.g. `"troop": "knights"`). A catalog game has stored its world index
+  (`seed_index`) rather than the expanded seed, so the world has reloaded exactly
   (§11).
 - Save slots: 10 (`SAVE_SLOT_COUNT` in `engine/include/savepath.h`); the
   modern Save and Load pages have offered the first five
@@ -421,7 +424,7 @@ depending on shell headers or shell symbols, this build step has failed and
     `~/.local/share/openbounty`.
   - **Windows**: `%APPDATA%\OpenBounty`.
   - **macOS**: `~/Library/Application Support/OpenBounty`.
-  - **Web**: `/saves`, an IndexedDB-backed mount the page syncs.
+  - **Web**: `/saves`, an IndexedDB-backed mount the page has synced.
 - `--save-dir <dir>`, iOS (`Documents/saves`) and Android (the app's private
   `saves` directory) have used a flat directory with no per-pack level.
 - Fog of war has been encoded as 4 tiles per hex nibble (1 bit per tile).
@@ -442,32 +445,13 @@ its root and read through `LoadAssetBytes` / `LoadAssetTexture`.
 
 ## 5. Game configuration (`assets/kings-bounty/game.json`)
 
-All gameplay data has been JSON-driven; `docs/PACK-FORMAT.md` has been the
-full reference. King's Bounty's top-level keys:
-
-| Key | Contents |
-|---|---|
-| `title` | "King's Bounty" |
-| `version` | 1 (pack schema version) |
-| `pack_id` / `pack_kind` / `pack_name` | Pack identity (e.g. `"kings-bounty"`, `"base"`), see `docs/PACK-FORMAT.md` |
-| `world` | global flags: `language="en"`, `max_army_slots=5`, `starting_zone="continentia"`, `zone_noun`, `default_name="Hero"`, `default_options=[4,1,1,1,1]` |
-| `time` | `day_steps=40`, `week_days=5`, `days_per_difficulty={easy:900, normal:600, hard:400, impossible:200}` |
-| `economy` | `boat_cost_normal=500`, `boat_cost_cheap=100` (with anchor artifact), `siege_cost=3000`, `alcove_cost=5000` |
-| `contract` | `cycle_length=5`, `initial_last_contract=4` |
-| `combat` | `morale_chart` (5×5 table), `number_names` (6 quantifier strings) |
-| `controls` | `settings[]`, the controls-menu rows (delay, sounds, walk_beep, animation, cga [hidden], music, volume), persisted per-game in `Game.stats.options[]` |
-| `credits` | Credits screen: an optional `image`, `groups` of a label and its names, and `copyright` lines |
-| `ending` | Victory cartoon parameters (tile paths, frame count, etc.) |
-| `spawn` | Per-continent troop spawn tables (`troop_pool[4][N]` and `chance_curve[4][N]`) |
-| `tile_codes` | Map of `0x00..0x7F` byte → `{name, terrain, blocks_foot, is_bridge, art}`. The `.dat` map files reference these by ASCII char. |
-| `sprites` | Sprite sheet paths and frame counts |
-| `troops` | 25 troop definitions (id, name, HP, damage range, skill, recruit cost, growth, abilities, tier counts) |
-| `spells` | 14 spell definitions (id, name, cost, kind: combat/adventure) |
-| `artifacts` | 8 artifact definitions (id, name, power flag, effect text) |
-| `villains` | 17 villain definitions (id, name, reward gold, army composition, zone) |
-| `castles` | Castle catalog |
-| `towns` | Town catalog |
-| `zones` | 4 continents: `continentia`, `forestria`, `archipelia`, `saharia`, each with map path, dimensions, hero/home spawn, signs, towns, castles, chests, artifacts, dwellings, wandering_armies, salt budget. |
+All gameplay data has been JSON-driven, and `docs/PACK-FORMAT.md` has been
+the one reference for every key, its type and its default. King's Bounty's
+`game.json` has carried the top-level keys `title`, `version`, `pack_id`,
+`pack_name`, `pack_kind`, `render`, `world`, `time`, `economy`, `tuning`,
+`combat`, `zones`, `towns`, `castles`, `troops`, `spells`, `classes`,
+`villains`, `artifacts`, `tile_codes`, `spawn`, `contract`, `controls`,
+`sprites`, `ending`, `colors`, `credits` and `audio`.
 
 Every user-visible string has lived beside `game.json` in `strings/en.json`
 (rank titles, ending text, audience dialogs, etc.).
@@ -520,19 +504,22 @@ rollover has fired the end-of-week sequence (astrology + budget).
 ```
 score = 500 × villains_caught + 250 × artifacts_found
        + 100 × castles_owned − followers_killed
-       all multiplied by the difficulty modifier, never below 0
+       then halved on Easy, or multiplied by 1 / 2 / 4 on Normal / Hard /
+       Impossible, and never below 0
 ```
 
-Implemented in `GameComputeScore` (`engine/game.c`), from the pack's
-`economy.scoring`.
+Implemented in `GameComputeScore` (`engine/game.c`) from the pack's
+`economy.scoring`; `docs/OPENBOUNTY-SPEC.md` REQ-400 has given the rule.
 
 ### Movement
 
 - One step per keypress (no auto-repeat).
 - Arrow keys + numpad 1–9 + Home/End/PgUp/PgDn for 8-direction movement.
-- Numpad 5 = "rest one day" (consumes a step, no movement).
+- Numpad 5 (and, in modern mode, the number-row 5) = "rest one day"
+  (it has consumed a step, with no movement).
 - Walking on land, sailing in boat (water + bridges only), flying with
-  Mount=Fly bypasses ground/water restrictions and skips interactive tiles.
+  Mount=Fly has bypassed ground/water restrictions and skipped interactive
+  tiles.
 - Stepping onto an interactive tile has triggered its handler. Most interact
   tiles have bounced the hero back to the previous square (castles, towns,
   dwellings, the alcove, some foes); chests / artifacts / signs / orbs /
@@ -557,18 +544,18 @@ Implemented in `GameComputeScore` (`engine/game.c`), from the pack's
 ### foes_follow
 
 Each overworld step has called `GameFoesFollow`. For every foe within 2
-tiles of the hero's previous position (`last_x, last_y`):
+tiles of the hero's previous position (`last_x, last_y`), it has:
 
-1. Evaluate all 9 cells of the foe's 3×3 neighborhood.
-2. Score each cell by Euclidean distance to the hero's previous position.
-3. Non-center cells that are unwalkable (or another interactive) get a
-   sentinel max-distance score so they're never picked.
-4. The hero's current tile is *not* excluded: if the foe lands on the hero,
-   that's the combat trigger.
-5. The foe moves to the lowest-score cell.
-6. If the chosen cell is the hero's tile, the function returns the foe's
-   index so the caller fires the attack/recruit flow; otherwise the map tile
-   is updated and the previous tile cleared.
+1. Evaluated all 9 cells of the foe's 3×3 neighborhood.
+2. Scored each cell by Euclidean distance to the hero's previous position.
+3. Given non-center cells that are unwalkable (or another interactive) a
+   sentinel max-distance score, so they have never been picked.
+4. *Not* excluded the hero's current tile: a foe landing on the hero has
+   been the combat trigger.
+5. Moved the foe to the lowest-score cell.
+6. Returned the foe's index when the chosen cell is the hero's tile, so the
+   caller has fired the attack/recruit flow; otherwise updated the map tile
+   and cleared the previous tile.
 
 A static guardian has never moved. A foe has never stepped onto another foe,
 onto desert, a bridge, a town or any other interactive tile, or into the
@@ -579,7 +566,7 @@ approach of a castle gate, and a flying hero's tile has been skipped.
 At GameInit, for every continent, the engine has:
 
 1. Registered every `wandering_armies[]` entry as a hostile foe with a
-   rolled garrison (uses the per-continent tier spawn table).
+   rolled garrison (using the per-continent tier spawn table).
 2. Built a "barrel" of all chest slots in that zone.
 3. Tagged random barrel slots with the salt budget kinds: artifacts, navmaps,
    orbs, telecaves, dwellings, friendly foes.
@@ -619,14 +606,15 @@ fired from the in-combat spells menu.
 
 Adventure spell effects:
 
-- **Bridge**: prompts for direction, places 2 bridge tiles on water.
-- **Time Stop**: adds `spell_power × 10` steps to `time_stop`.
-  Steps during `time_stop` don't tick the day.
-- **Find Villain**: marks the active villain's castle as known on the map.
-- **Castle Gate / Town Gate**: prompt for a visited castle/town, teleport
-  the hero there.
-- **Instant Army**: spawns a troop slot.
-- **Raise Control**: bumps `leadership_current`.
+- **Bridge**: has prompted for direction and placed 2 bridge tiles on water.
+- **Time Stop**: has added `spell_power × 10` steps to `time_stop`.
+  Steps during `time_stop` have not ticked the day.
+- **Find Villain**: has marked the active villain's castle as known on the
+  map.
+- **Castle Gate / Town Gate**: have prompted for a visited castle/town and
+  teleported the hero there.
+- **Instant Army**: has spawned a troop slot.
+- **Raise Control**: has bumped `leadership_current`.
 
 ### Artifacts (8)
 
@@ -662,16 +650,16 @@ Powers have been applied on pickup in `GameClaimArtifact`. Querying with
 - **Garrison castle** (own non-home castle): swap troops between army and
   garrison.
 - **Siege castle** (enemy): with siege weapons, "Lay siege (y/n)?" ->
-  dispatches to the combat module (`engine/combat.c` + `src/combat_loop.c`);
+  has dispatched to the combat module (`engine/combat.c` + `src/combat_loop.c`);
   without them the gate has bounced the hero.
 - **Visit town**: A) New contract / B) Rent boat (500 / 1 week) /
   C) Gather information / D) Buy spell / E) Buy siege weapons (3000).
 - **Visit dwelling**: numeric prompt for troop count, capped by population
   and player leadership.
-- **Visit telecave**: teleports to the paired telecave.
+- **Visit telecave**: has teleported to the paired telecave.
 - **Visit alcove** (Aurange): pay 5000 gold to learn magic.
-- **Read sign**: opens a flavor dialog.
-- **Open chest**: rolls one of (gold-or-leadership / commission boost /
+- **Read sign**: has opened a flavor dialog.
+- **Open chest**: has rolled one of (gold-or-leadership / commission boost /
   spell power / max spells / new spell / empty); special outcomes for navmap
   / orb tiles.
 
@@ -686,15 +674,16 @@ Turn-based tactical combat on a 6×5 grid. Split:
   `combat_init`, `combat_ai_action`, `combat_run_headless`,
   `combat_test_digest`, the `spell_*` helpers.
 - **Shell half** (`src/combat_loop.c`): `RunCombat` + modal player input +
-  target picker + per-frame present. Uses raylib.
-- **Renderer** (`src/combat_render.c`): draws the battlefield, the units
+  target picker + per-frame present. It has used raylib.
+- **Renderer** (`src/combat_render.c`): has drawn the battlefield, the units
   and their count badges, and the banner.
 
 Player input has included movement, wait/skip (Space/W), shoot (S), **fly
 (F, only when the active unit has TROOP_ABIL_FLY)**, use magic (U), give up
-(G), and the controls/options/army/character views. In modern mode every one
-of them has also been a row in the combat menu (`docs/DESIGN-SPEC.md`), which
-has opened on the first command the active unit can use (DSGN-0119).
+(G), and the controls/options/army/character views (§8, Combat). In modern
+mode every one of them but Options has also been a row in the combat menu
+(`docs/DESIGN-SPEC.md`), which has opened on its Actions page with the cursor
+on Unit (DSGN-0119).
 
 The combat-formula golden digests have lived in
 `tests/regression/test_combat_digests.c` and run via `make test`.
@@ -703,8 +692,8 @@ The combat-formula golden digests have lived in
 
 ## 8. Keybindings
 
-Adventure mode (overworld). In modern mode every action has also been a menu
-row or a tap (`docs/DESIGN-SPEC.md`).
+Adventure mode (overworld), then combat and dialogs. In modern mode every
+action has also been a menu row or a tap (`docs/DESIGN-SPEC.md`).
 
 ### Movement
 
@@ -718,7 +707,7 @@ row or a tap (`docs/DESIGN-SPEC.md`).
 | Numpad 9 / PgUp | Move NE |
 | Numpad 1 / End | Move SW |
 | Numpad 3 / PgDn | Move SE |
-| Numpad 5 | Rest one day in place |
+| Numpad 5 (and `5` in modern) | Rest one day in place |
 
 ### Views (toggle on/off)
 
@@ -749,20 +738,60 @@ row or a tap (`docs/DESIGN-SPEC.md`).
 
 | Key | Action |
 |---|---|
-| `Q` | Save-and-quit prompt (legacy); the game menu on its Save page (modern) |
-| `Ctrl+Q` | Fast quit (no save) prompt |
+| `Q` | Legacy: save to slot 0 at once, then a message where `Ctrl+Q` quits and any other key continues. Modern: the game menu on its Save page |
+| `Ctrl+Q` | Quit without saving, after a yes/no; on an open message, quit at once |
 | Alt+Enter | Toggle fullscreen |
 | Backtick (\`) | Manual screenshot to `screenshots/shot_NNNN.png` |
 | Esc | Dismiss view / cancel prompt; in modern mode, open the game menu |
+
+### Gamepad
+
+On the map; a keyboard action in the same frame has won.
+
+| Button | Action |
+|---|---|
+| D-pad / left stick | Move |
+| A | Search |
+| X | Use magic |
+| Y | Wait until end of week |
+| LB | Army |
+| RB | Character |
+| LT | Fly |
+| RT | Land |
+| Start | Worldmap |
+| Back | Options (legacy); the game menu (modern) |
+| B | Cancel, where a screen reads it (Controls, Goto, the bridge, the quit question) |
+
+### Combat
+
+| Key | Action |
+|---|---|
+| Arrows / numpad / Home, End, PgUp, PgDn | Move the active unit (8 directions) |
+| Space / `W` / Numpad 5 | Wait (skip the unit's turn) |
+| `S` | Shoot: pick an enemy |
+| `F` | Fly: pick an empty cell (flyers only) |
+| `U` | Use magic: a lettered spell menu, `A`–`G` (legacy); the combat menu's spells page (modern) |
+| `G` | Give up (yes/no) |
+| `A` | Army view |
+| `V` | Character view |
+| `C` | Controls |
+| `O` | Options (legacy) |
+| Enter / Space / `A` / `C` | Confirm the picked cell (shoot, fly, spell target) |
+| Esc | Cancel a pick; close a view; in modern mode, open the combat menu or go back a page |
 
 ### Dialog dismiss
 
 | Key | Action |
 |---|---|
-| Any non-modifier key | Advance / dismiss |
+| Any non-modifier key | Advance / dismiss a message |
+| `Ctrl+Q` | Quit at once from a message |
 | `Y` / `N` | Yes / No on yes-no prompts |
-| `1`–`9` (or numpad) | Choice on numeric prompts |
-| Enter / Space | Confirm |
+| `1`–`5` (or numpad) | Choice on numbered prompts |
+| `A` / `B` | Choice on two-choice prompts |
+| Digits / Backspace | Type a count (legacy) |
+| Enter | Yes on a yes-no prompt and commit a count (legacy); act on the cursor's row (modern) |
+| Space | Act on the cursor's row, commit a count (modern) |
+| Arrows | Move the cursor; step a count by 1 (←/→) or 10 (↓/↑) (modern) |
 | Esc | Cancel / dismiss |
 
 ---
@@ -780,7 +809,7 @@ Legacy mode's conventions follow; modern mode's panels have been in
   has clamped at zone edges.
 - **Right sidebar**: 48px wide. It has shown the portrait, the
   contract/siege/magic/puzzle icons and the gold counter.
-- **Bottom**: drops out for dialogs and prompts.
+- **Bottom**: has dropped out for dialogs and prompts.
 
 ### Dialogs
 
@@ -805,10 +834,10 @@ The status bar has read `Press 'ESC' to exit`.
 
 Maps have been ASCII files at `maps/<zone>.dat` in the pack.
 
-- Lines starting with `#` are comments.
-- Each subsequent line is one row (y=0 at top).
-- Each character is one tile, mapped via `tile_codes` in `game.json`
-  (`0x20..0x7E` ASCII chars correspond to tile codes).
+- Lines starting with `#` have been comments.
+- Each subsequent line has been one row (y=0 at top).
+- Each character has been one tile, mapped via `tile_codes` in `game.json`
+  (`0x20..0x7E` ASCII chars have corresponded to tile codes).
 - Width and height have come from each zone's `width`/`height` JSON fields:
   64×64 for every King's Bounty zone; Glory of Rome's have been 64×128,
   64×64, 64×28 and 64×44.
@@ -816,8 +845,8 @@ Maps have been ASCII files at `maps/<zone>.dat` in the pack.
 Tile codes have carried: art name, terrain category (grass / forest /
 mountain / water / desert / river), `blocks_foot` flag, `is_bridge` flag.
 Walkability: terrain in {grass, desert} OR `is_bridge` OR
-`interactive != INTERACT_NONE` (interactive tiles override terrain blocking
-so the player can step on them to trigger interaction).
+`interactive != INTERACT_NONE` (interactive tiles have overridden terrain
+blocking so the player has been able to step on them to trigger interaction).
 
 Interactive tiles (signs, towns, castles, chests, dwellings, foes,
 artifacts, telecaves, navmaps, orbs) have not been in the .dat file:
@@ -832,10 +861,10 @@ files have been built from sources in `art/maps/` by `tools/mapbuild.py`.
 - World catalog: a pack has held 256 worlds, selected by an 8-bit index
   (`--seed 0`–`255`). Without `--seed` the index has been derived from
   system time + name + class. The index (not the expanded seed) has been
-  what the save stores, so a world reloads exactly.
+  what the save has stored, so a world has reloaded exactly.
 - Seed expansion: `GameSeedFromIndex` (`engine/game.c`) has avalanched the
   index into a full-width `uint64_t` before anything reads it. This has been
-  load-bearing, not cosmetic: the engine consumes the seed at three widths,
+  load-bearing, not cosmetic: the engine has consumed the seed at three widths,
   `(seed >> 8)` for spawn rolls (`engine/flows.c`), `(unsigned)` truncation
   for chest/dwelling/weekly-salt hashes, and all 64 bits in the world LCG,
   so a raw `0`–`255` seed would hand the first of those a constant 0 and
@@ -871,10 +900,10 @@ Packing a loose asset tree into a `.openbounty` zip has been done by the
 engine binary itself: `./build/debug/openbounty --pack-dir <src> <out_zip>`.
 
 The game and its build have used no Python. The rest of `tools/` has been
-the Glory of Rome authoring tools, which the build never runs: `romeart.py`,
+the Glory of Rome authoring tools, which the build has never run: `romeart.py`,
 the one art pipeline script (tile compositing, screen and combat art,
 animation review, the art record, the launcher icon, and the paid-API calls,
-which post only with `--run`); and `mapbuild.py`, `mapcheck.py` and
+which have posted only with `--run`); and `mapbuild.py`, `mapcheck.py` and
 `maprender.py` (maps). `capture.sh` and `walkthrough.sh` have
 driven a running window for screenshots; `detcheck.sh` has checked
 determinism.
@@ -885,8 +914,8 @@ determinism.
 
 - **Adding a game-state feature**: `engine/game.c` (mechanics + RNG
   salting), `engine/include/game.h` (struct fields), and possibly the
-  relevant flow handler in `src/shell_*.c`. State changes belong in the
-  engine; UI flow belongs in the shell.
+  relevant flow handler in `src/shell_*.c`. State changes have belonged in
+  the engine; UI flow has belonged in the shell.
 - **Fixing a dialog text bug**: the text has lived in the pack's
   `strings/en.json`, loaded via `engine/resources.c`; the engine has carried
   no text of its own.
@@ -897,11 +926,15 @@ determinism.
   has classified the tile; `engine/step.c` has read the result and
   dispatched to flows / screen openers (`engine/flows.c`, the host callbacks
   in `engine/include/ui_host.h`).
-- **Save format change**: `engine/savegame.c`, and bump `SAVE_VERSION` in
-  `engine/include/savegame.h`. Update or replace the golden
-  `tests/fixtures/save_v1.dat`.
-- **Adding a CLI flag**: `src/main.c main()` has parsed argv; for an
-  early-exit mode use `src/shell_earlyexit.c`. §3 has documented the set.
+- **Save format change**: the writer in `engine/state_serialize.c`, the
+  reader in `engine/savegame.c`. A new key the reader can fall back on when
+  it is absent has kept `SAVE_VERSION`; any other change has bumped it in
+  `engine/include/savegame.h` and updated the golden
+  `tests/fixtures/save_v1.dat` (`docs/OPENBOUNTY-SPEC.md` REQ-414).
+- **Adding a CLI flag**: list it in `src/cli_flags.c` and parse it in
+  `src/main.c main()`; for an early-exit mode use `src/shell_earlyexit.c`.
+  Add its row to §3 and its name to `docs/OPENBOUNTY-SPEC.md` REQ-480:
+  `tests/unit/test_cli_flags.c` has failed until all three agree.
 - **Adding a combat ability/spell**: math in `engine/combat.c`, player input
   wiring in `src/combat_loop.c`. Add a golden digest in
   `tests/regression/test_combat_digests.c` if it changes the formula.

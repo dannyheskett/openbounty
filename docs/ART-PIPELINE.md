@@ -17,7 +17,7 @@ held the prompt for each artwork; this file has been how to run them.
 
 ## The style
 
-Every figure has gone through one custom style so the roster reads as one
+Every figure has gone through one custom style so the roster has read as one
 set: `user__glory_of_rome_troops_bac676cd`. It has appended to every prompt
 
 ```
@@ -90,7 +90,7 @@ reads at 1:1 over grass.
   for a breathing loop; an attack at four frames has ended with an empty hand
   where six has had room for the return. Use six for attacks. The installed
   `art/jobs/velites_attack.json` has carried four frames and expansion off;
-  the recipe above is the settled one.
+  the recipe above has been the settled one.
 - `bypass_prompt_expansion` — **leave expansion on** (`false`) for
   animations; see "Prompt expansion" below.
 - `input_image_keep_alpha: true` — what has made the frames transparent
@@ -145,10 +145,10 @@ generated from.
 - **Location backdrops** — `figure: false`, `target [240, 102]`; the job has
   been `art/jobs/backdrop_castle.json`, and the others have differed only in
   id, prompt and seed.
-- **Base terrain** (grass, grass_variant, forest, desert, water; the mountain
-  interior until 2026-09-27, see below) —
+- **Base terrain** (grass, grass_variant, forest, desert, water; not the
+  mountain, see below) —
   `rd_tile__single_tile`, the API's purpose-built seamless tile style (cap 64;
-  its craft guide sizes single tiles at 16 to 32), at **48x48**, laid 2x2 by
+  its craft guide has sized single tiles at 16 to 32), at **48x48**, laid 2x2 by
   `tools/romeart.py tile2x2` into the 96x96 pack tile at native pixel density,
   so the repeat period has been 48. The terrain has been described plainly,
   "seen from directly above ... the same everywhere". Not `rd_plus__low_res`
@@ -160,10 +160,9 @@ generated from.
   terrain.
   - **Water** has been described flat, with no waves or bands: asked for
     waves, the tile style has drawn a block face with a lit top edge.
-  - **Mountain, Italia** — no longer a texture. The 48 px interior read as
-    rounded domes with a dark split (a tester: "a split Reese's cup", #67),
-    so on 2026-09-27 Italia's mountain has been rebuilt the way the other
-    continents' were: eight PixelLab rock sprites (`romeart.py sprites`,
+  - **Mountain, Italia** — not a texture, since a 48 px tile interior has
+    read as rounded domes with a dark split (#67). Italia's mountain has been
+    built the way the other continents' have: eight PixelLab rock sprites (`romeart.py sprites`,
     `art/jobs/italia_o96_rocks.json`) composed by the lattice into the
     interior and the 19 edges with a searched slot arrangement
     (`romeart.py slots`, `art/primitives/italia/rock_slots.json`), and the
@@ -182,7 +181,7 @@ generated from.
   - A reference image has made the model fill the frame edge to edge. The API
     docs have said references "re-imagine" the source, so use them for a
     character that must recur, not for palette.
-  - Generating smaller (RD Pro goes down to 12px) has not made a margin; the
+  - Generating smaller (RD Pro has gone down to 12px) has not made a margin; the
     model has filled whatever canvas it gets. Margin wording has been ignored
     too. The seed has been the lever for framing.
   - Freestanding has been wording: "no wall, fence or gate, only the flat
@@ -197,22 +196,22 @@ generated from.
   beneath every object tile.
 - **Bridges** (`bridge_h`, `bridge_v`) — a road, as in the original pack: an
   opaque square of grey stone paving with a lighter kerb along the two edges
-  the road does not cross, so tiles stack end to end. Object engine
+  the road does not cross, so tiles have stacked end to end. Object engine
   (`rd_pro__topdown`), no background removal, no water in the picture: the
   original tile has had none, and a transparent deck over water has not come
   back usable.
 - **River bridges** (`bridge_river_ew`, `bridge_river_ns`) — not generated.
   `tools/romeart.py bridge <tiles-dir> <out>` has built them from a set's
   installed `road_*`, `river_*` and `grass` tiles: the road's own pixels laid
-  across the river piece, so the deck joins the road by construction; over
+  across the river piece, so the deck has joined the road by construction; over
   the water a straight deck between two 5 px parapets (the road's stone mixed
   40/60 with pale travertine, a dark outer line, a joint every 8 px); and the
   deck's shadow on the water, 3 px at 0.6. Style `c` has been installed in
-  every province (2026-10-02); `zone` runs it as its sixth step.
+  every province; `zone` has run it as its sixth step.
 - **Terrain edges** — not generated. `tools/romeart.py edges` has
   composited each from the installed base and grass tiles: the original
   48x34 edge tile under `art/reference/edges/` has been read as a shape (each
-  pixel is terrain or grass by which original base's colours it is nearest),
+  pixel has been terrain or grass by which original base's colours it is nearest),
   the mask resized to the pack tile and filled with the new bases, so every
   edge has seamed with its neighbours by construction. Re-run it whenever a
   base changes; with a tile-set argument it has written a zone's folder.
@@ -264,7 +263,7 @@ generated from.
 - **Frames** — no generated piece has carried a painted frame or border. The
   model has drawn a different frame every run (gold, thin, missing), so no
   piece has had one: a modern screen has drawn no panel frame either (its
-  columns are joined by the lattice), and `sprites.ui.panel_frame` has been
+  columns have been joined by the lattice), and `sprites.ui.panel_frame` has been
   read by legacy screens alone. Prompts for those pieces have said "filling the whole
   picture edge to edge, no frame, no border". The one allowed edge treatment
   has been a villain portrait's flat colour bar, and only when it is
@@ -276,7 +275,7 @@ generated from.
   the black shadow band, a lighter top face, the moat as a smooth shape with a
   clean dark bank, rubble scattered at the breach), so layout and features
   have matched the original exactly. It has also drawn the top-down back wall
-  band the shell places above the siege board (`sprites.ui.siege_back_wall`,
+  band the shell has placed above the siege board (`sprites.ui.siege_back_wall`,
   `_left`, `_right`), with the moat turning the corners on a curve and the
   wall bands mitred. The API has not been able to make generated wall pieces
   that join, and a whole-board picture has been too coarse under the 256 cap.
@@ -294,7 +293,7 @@ generated from.
   (`art/jobs/siege_scene_grass_a.json`, returned at 192). Then
   `romeart.py siegeslice --grid` has written the 36 cells untouched at 32; the
   shell has scaled each to the 96 cell. Why not pieces: a per-code piece
-  repeats in every cell of its code, so a gatehouse, two different broken
+  has repeated in every cell of its code, so a gatehouse, two different broken
   ends and a moat under the bottom wall only have not been drawable that way.
 - **Field grid** (`art/combat/field/<zone>_<x>_<y>.png`, 30 cells at 96) —
   the ground of an open fight, one picture per continent (a zone's
@@ -305,19 +304,19 @@ generated from.
   boulders, small rocks, ferns, dark clumps, clover rosettes, pale moss and
   brown earth patches, and G'MIC's patch-based inpainting has filled them
   from the painting's own grass, so the tufts, tiny flowers and tonal
-  mottling stay and nothing large distracts from the troops. That is
-  preparation of a supplied source, not post-processing of generated
-  terrain; the fill is not deterministic, so the calmed picture that shipped
-  is kept beside the source. `romeart.py siegeslice --field` has then taken
+  mottling have stayed and nothing large has distracted from the troops. That
+  has been preparation of a supplied source, not post-processing of generated
+  terrain; the fill has not been deterministic, so the calmed picture that
+  has shipped has been kept beside the source. `romeart.py siegeslice --field` has then taken
   the largest 6:5 rectangle of content centred in it (726 x 605, the white
   kept out), scaled it to 576 x 480 with Lanczos and cut the thirty cells.
-  Generating this ground has been tried and rejected (2026-09-27): Retro
+  Generating this ground has been tried and rejected: Retro
   Diffusion's tile styles have tiled seamlessly but drawn flat game-green,
-  its RD Pro top-down style has drawn the look but stops at 256 and its
+  its RD Pro top-down style has drawn the look but has stopped at 256 and its
   joins have not blended, and variation tiles and pasted objects have read
   as squares and stickers; the painting route has been the only one that
-  kept the look. Galliae, Africa and Oriens (2026-09-28, #64) have been
-  derived from the calmed Italia painting rather than painted: each is a
+  has kept the look. Galliae, Africa and Oriens (#64) have been
+  derived from the calmed Italia painting rather than painted: each has been a
   696 x 580 window of `art/fields/italia_calm.png` whose edge is all
   content, taken off centre (top left, bottom right, top right), flipped,
   and colour-graded for its land by `romeart.py fieldgrade` (Galliae hue
@@ -325,9 +324,9 @@ generated from.
   moor; Africa hue -12, saturation x0.9, value x1.05, 12% tan, dry coastal
   grass against desert; Oriens hue -5, saturation x0.62, value x1.02, 10%
   grey-beige, a sun-bleached plateau), kept as `art/fields/<zone>.png` and
-  sliced the same way. The exact calls are in `art/fields/BUILD.md`; the
-  grade is deterministic, so the kept paintings are what the calls produce.
-  One painting recoloured three ways shares its tufts across the four
+  sliced the same way. The exact calls have been in `art/fields/BUILD.md`; the
+  grade has been deterministic, so the kept paintings have been what the calls
+  produce. One painting recoloured three ways has shared its tufts across the four
   fields; a painting per continent in the same style would replace a
   derived one with no other change.
 - **The title screen** (`art/ui/splash_title.png`, 256x164) — the eagle has
@@ -342,7 +341,7 @@ generated from.
   has been generated (`rd_pro__default`, `remove_bg`, magenta named in the
   prompt) and pasted where the original's globe sits; coins and sparkles have
   been drawn. The composition has been `romeart.py splashlogo`. The emblem has
-  been a Mediterranean globe in a laurel wreath, not an eagle, which reads as
+  been a Mediterranean globe in a laurel wreath, not an eagle, which has read as
   a Reich eagle.
 - **An archer** (Sagittarii) — the still has had to name the string: Silvani's
   "with the string slack and no arrow on it", or the bow has come back a bare
@@ -364,8 +363,8 @@ generated from.
   figure to three quarters.
 - **The Introduction** (#154, `art/intro/`, the jobs `art/jobs/intro_*.json`)
   — backgrounds, sprites and text, the way the 80s and 90s intros were built.
-  Every set is a 240x102 backdrop on the screen route with "no people" in
-  the prompt, except the Curia, whose senators are painted on their benches;
+  Every set has been a 240x102 backdrop on the screen route with "no people" in
+  the prompt, except the Curia, whose senators have been painted on their benches;
   the existing `backdrop_palace_welcome` and the four province vistas
   (`scenes/treasure_*`, under the province cards) have been reused. Trajan has sat on
   a curule stool, not a throne: the audience hall's dais (`bg_hall`) and the
@@ -374,20 +373,20 @@ generated from.
   style has refused any canvas under 64 (`invalid_style_dimensions`, no
   charge), so a small figure has been generated at 64 and animated at its
   final size: `custom_action` has redrawn the still at the output canvas
-  (32 to 256), a 64 still animated at 56 standing about 51 px tall. That is
+  (32 to 256), a 64 still animated at 56 standing about 51 px tall. That has been
   how the crier (56), the four heroes, the legion and Trajan on his stool
   (48) have been made without scaling; both palace shots have used the same
-  48 px Trajan, so he is to scale with the dais, and the Curia has his
+  48 px Trajan, so he has been to scale with the dais, and the Curia has had his
   Audience figure (`emperor_traianus_figure`) animated again at 64. The tribesman has appeared
   only where he attacks the eagle bearer. The heroes on foot have been prompted from their class
   portraits; a kneel animated straight from a standing still has come back
   as the move down, not a held loop, so it has played once and held its
   last frame. Their turn to face the camera has been animated from the last
-  frame of the walk, so the walk runs straight into it. Props
+  frame of the walk, so the walk has run straight into it. Props
   (the plinth, the hourglass) have been
   `rd_pro__default` cut-outs, magenta named and removed. The crier's face
   has been the villain portrait route (128, cropped to 96). Only frame 00 of
-  the crowd loop has been installed, at Dan's order: the engine draws it still, as
+  the crowd loop has been installed, at Dan's order: the engine has drawn it still, as
   cropped columns at staggered heights. Rain and lightning have been drawn
   by the engine, not painted. The theme has been synthesised by
   `romeart.py introtheme`, and every sound effect has been a CC0
@@ -500,13 +499,13 @@ python3 tools/romeart.py sweep <set-dir> <out-dir> --sweep [--rim N] [--rim-shad
 Every piece has been a signed-distance shape -- a straight band, a true
 quarter circle, a 45 degree diagonal, or an end that tapers away -- filled
 with the set's plain **upper** tile and left as the pack's own `grass.png`
-outside, with a periodic value noise on the boundary so the edge is ragged but
+outside, with a periodic value noise on the boundary so the edge has been ragged but
 continuous across a tile line. Two consequences worth knowing before writing
 a prompt:
 
 - Only the plain upper tile has reached the game. The set's transition tiles,
   and any kerb or edging the prompt asked for, have been discarded. A border
-  along the road has had to come from `--rim` / `--rim-shade`, which paint it
+  along the road has had to come from `--rim` / `--rim-shade`, which have painted it
   after the fact.
 - Every straight exit has been the same 32 px band and every diagonal the
   same corner triangle, so any piece has joined any other. The sweep has

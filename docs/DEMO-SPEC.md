@@ -35,18 +35,18 @@ using only what a player can see.
   DM-001's independence has carried no exception. The function has been
   engine-typed and battle-scoped; measured at the decisive margin (leadership
   ~150, the first wandering camp on seed 1) it has won the fight the built-in
-  AI loses.
+  AI has lost.
 
 ## 2. Player constraints
 
 - **DM-010.** One timeline: there has been no world snapshot/rollback on any
   decision path. Every action has committed; a lost fight has run the game's
-  own temp death. The throwaway `Game` copy the combat prediction runs on
+  own temp death. The throwaway `Game` copy the combat prediction has run on
   (DM-013) has not been a snapshot of this rule's kind: nothing has ever been
   restored FROM it, and the live world has never moved backwards.
 - **DM-011.** Demo has used player-visible information only: the fog
   (`demo/demo_path.c` has pathed only over fog-seen tiles), the prompt banners (fight judgment has read
-  the garrison the prompt shows, `demo/demo_brain.c resolve_combat_flow`),
+  the garrison the prompt has shown, `demo/demo_brain.c resolve_combat_flow`),
   the views' records, and the puzzle screen (`demo/demo_scepter.c` has matched
   the revealed cells (engine `tables.c puzzle_grid_entity`) against
   explored terrain). There has been no `GamePeekChest` and no `GameRngSnapshot`:
@@ -59,27 +59,27 @@ using only what a player can see.
   `demo/demo_brain.c demo_predict_boost` has copied the live `Game`, lifted
   the copy's leadership by `k` raise-control casts, and run the engine's own
   `combat_run_headless_rec` to completion on that copy, returning the
-  smallest `k` that wins at the required survivor count (`-1` when no held
-  charge wins). It has been called at fight entry (`resolve_combat_flow`) and
+  smallest `k` that has won at the required survivor count (`-1` when no held
+  charge has won). It has been called at fight entry (`resolve_combat_flow`) and
   when judging a blocking foe. The copy has been discarded either way; the
   live world has never been rolled back, which is what DM-010 has
-  constrained. The prediction has read only what the prompt already shows
+  constrained. The prediction has read only what the prompt has already shown
   (the target's garrison) plus the catalog rules, so it has been the same
-  arithmetic a player does by hand, run exactly. It has also been what makes
-  the run watchable: the `CombatTurnRecord` the prediction produces has been
-  the animation the viewer sees, so one simulation has served both the
+  arithmetic a player has done by hand, run exactly. It has also been what has made
+  the run watchable: the `CombatTurnRecord` the prediction has produced has been
+  the animation the viewer has seen, so one simulation has served both the
   decision and the presentation.
 
 ## 3. CLI
 
 - **DM-020.** The flags have been `--demo` (visible, watchable pace, hands off
-  on completion) and `--demo --headless` (no window, plays to an ending), with
+  on completion) and `--demo --headless` (no window, has played to an ending), with
   `--seed N` (catalog world `0`–`255`, default `DEMO_DEFAULT_SEED_INDEX = 1`);
   `src/main.c` has parsed them.
 - **DM-021.** The run's campaign engine has been the LEADERSHIP CHAIN, each
   link measured on seed 1: chest gold has been taken as permanent leadership
   unless broke; recruiting has been capped in peacetime (upkeep ≤ half the
-  commission, so the purse accumulates) and uncapped in WAR (a castle target
+  commission, so the purse has accumulated) and uncapped in WAR (a castle target
   known via the town's free intel screen (`demo/demo_brain.c town_business`)
   or sighted); fights have been entered on the engine's own predicted
   outcome, boosted by raise-control casts when charges are held. Idle boats

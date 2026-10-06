@@ -35,6 +35,7 @@ SUITE_EXTERN(unit_player_io_suite);
 SUITE_EXTERN(unit_resources_suite);
 SUITE_EXTERN(unit_anim_frames_suite);
 SUITE_EXTERN(unit_facing_suite);
+SUITE_EXTERN(unit_cli_flags_suite);
 SUITE_EXTERN(unit_save_foes_suite);
 SUITE_EXTERN(unit_touch_map_suite);
 SUITE_EXTERN(unit_touch_regions_suite);
@@ -119,6 +120,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_resources_suite);
     RUN_SUITE(unit_anim_frames_suite);
     RUN_SUITE(unit_facing_suite);
+    RUN_SUITE(unit_cli_flags_suite);
     RUN_SUITE(unit_save_foes_suite);
     RUN_SUITE(unit_touch_map_suite);
     RUN_SUITE(unit_touch_regions_suite);

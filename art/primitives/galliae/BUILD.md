@@ -22,7 +22,7 @@ What `zone` has done with them, in order:
                        again over forest.png and mountain.png (river_forest_*, river_mountain_*)
     bridge_river_*     romeart.py bridge over the built road and river pieces, style c: the
                        road's own cobbles across the river between pale parapets, a shadow
-                       on the water (2026-10-02; Africa and Oriens the same, Italia from
+                       on the water (Africa and Oriens the same, Italia from
                        its installed tiles)
     river_mouth_e      romeart.py mouth over water_edge_02.png; river_mouth_w is its mirror
 

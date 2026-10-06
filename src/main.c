@@ -1,6 +1,7 @@
 // localtime_r needs POSIX 199506+; 200809L covers everything we use.
 #define _POSIX_C_SOURCE 200809L
 
+#include "cli_flags.h"
 #include "frame_host.h"
 #include "gfx.h"
 #include "input_host.h"
@@ -355,22 +356,7 @@ int shell_run_game(int argc, char **argv) {
             printf("openbounty build %s\n", OPENBOUNTY_VERSION);
             return 0;
         } else if (strcmp(a, "--help") == 0 || strcmp(a, "-h") == 0) {
-            printf("openbounty build %s\n"
-                   "Usage: %s [--fullscreen] [--pack <name|path>] [--save-dir <dir>] [--debug]\n"
-                   "       %*s [--movie [<path>]] [--seed 0-255] [--version]\n"
-                   "       %s --demo [--headless] [--seed 0-255] [--verbose] [--movie [<path>]]\n"
-                   "       %s --autoplay [--headless] [--seed 0-255] [--verbose]\n"
-                   "       %*s [--autoplay-hero=<class>] [--autoplay-level=<easy|normal|hard|impossible>]\n"
-                   "       %*s [--autoplay-speed=<slow|normal|fast>]\n"
-                   "       %s --validate-pack [LO [HI]] [--pack <name|path>]\n"
-                   "       %s --extract [--out-dir <dir>]\n"
-                   "       %s --pack-dir <src_dir> <out_zip>\n",
-                   OPENBOUNTY_VERSION, argv[0],
-                   (int)strlen(argv[0]), "",
-                   argv[0], argv[0],
-                   (int)strlen(argv[0]), "",
-                   (int)strlen(argv[0]), "",
-                   argv[0], argv[0], argv[0]);
+            cli_flags_print_help(stdout, OPENBOUNTY_VERSION);
             return 0;
         // Strict processing: an argument that does not make sense stops the
         // program. A flag needing a value with none, a bad value, an unknown
@@ -405,7 +391,7 @@ int shell_run_game(int argc, char **argv) {
             if (i + 1 >= argc) { fprintf(stderr, "openbounty: --seed requires 0-255\n"); return 2; }
             const char *sv = argv[++i];
             char *end = NULL;
-            long n = strtol(sv, &end, 0);
+            long n = strtol(sv, &end, 10);
             if (end == sv || *end != '\0' || n < 0 || n > 255) {
                 fprintf(stderr, "openbounty: --seed '%s' is not in range 0-255\n", sv);
                 return 2;
@@ -436,30 +422,34 @@ int shell_run_game(int argc, char **argv) {
             // Optional LO [HI] range (numeric next tokens); default 0..255.
             if (i + 1 < argc && argv[i + 1][0] != '-') {
                 char *e = NULL;
-                long lo = strtol(argv[++i], &e, 0);
+                long lo = strtol(argv[++i], &e, 10);
                 long hi = lo;
                 if (*e != '\0') { fprintf(stderr, "openbounty: --validate-pack LO must be 0-255\n"); return 2; }
                 if (i + 1 < argc && argv[i + 1][0] != '-') {
                     char *e2 = NULL;
-                    hi = strtol(argv[++i], &e2, 0);
+                    hi = strtol(argv[++i], &e2, 10);
                     if (*e2 != '\0') { fprintf(stderr, "openbounty: --validate-pack HI must be 0-255\n"); return 2; }
                 }
                 if (lo < 0 || hi > 255 || lo > hi) { fprintf(stderr, "openbounty: --validate-pack range must be 0-255 with LO<=HI\n"); return 2; }
                 vp_lo = (int)lo;
                 vp_hi = (int)hi;
             }
-        } else if (strcmp(a, "--gallery") == 0 && i + 1 < argc) {
+        } else if (strcmp(a, "--gallery") == 0) {
+            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --gallery requires <dir>\n"); return 2; }
             gallery_dir = argv[++i];
-        } else if (strcmp(a, "--intro-movie") == 0 && i + 1 < argc) {
+        } else if (strcmp(a, "--intro-movie") == 0) {
+            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --intro-movie requires <out.mp4>\n"); return 2; }
             intro_movie = argv[++i];
-        } else if (strcmp(a, "--puzzle-sweep") == 0 && i + 1 < argc) {
+        } else if (strcmp(a, "--puzzle-sweep") == 0) {
+            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --puzzle-sweep requires <dir>\n"); return 2; }
             puzzle_sweep_dir = argv[++i];
-        } else if (strcmp(a, "--window") == 0 && i + 1 < argc) {
+        } else if (strcmp(a, "--window") == 0) {
+            if (i + 1 >= argc) { fprintf(stderr, "openbounty: --window requires <WxH>\n"); return 2; }
             int w = 0, h = 0;
             if (sscanf(argv[++i], "%dx%d", &w, &h) == 2 && w > 0 && h > 0) {
                 want_win_w = w; want_win_h = h;
             } else {
-                fprintf(stderr, "--window wants WxH, e.g. --window 1125x553\n");
+                fprintf(stderr, "openbounty: --window wants WxH, e.g. --window 1125x553\n");
                 return 2;
             }
         } else if (strcmp(a, "--touch") == 0) {
@@ -859,16 +849,10 @@ title:;
         choice.action = STARTUP_NEW;
         choice.slot = 0;
         // Autoplay's class/level come from --autoplay-hero / --autoplay-level
-        // (validated against the loaded pack; an unknown class warns and falls
-        // back to the default). Demo keeps its fixed profile.
+        // (an unknown class has already stopped the program). Demo keeps its
+        // fixed profile.
         const char *hero = (autoplay_mode && autoplay_hero && autoplay_hero[0])
                                ? autoplay_hero : AUTOPLAY_HERO_CLASS;
-        if (autoplay_mode && autoplay_hero && autoplay_hero[0] &&
-            !class_by_id(autoplay_hero)) {
-            fprintf(stdout, "[main] --autoplay-hero '%s' unknown; using %s\n",
-                    autoplay_hero, AUTOPLAY_HERO_CLASS);
-            hero = AUTOPLAY_HERO_CLASS;
-        }
         snprintf(choice.class_id, sizeof choice.class_id, "%s",
                  autoplay_mode ? hero : "");
         snprintf(choice.name, sizeof choice.name, "%s",

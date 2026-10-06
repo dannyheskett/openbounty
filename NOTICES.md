@@ -53,7 +53,7 @@ copyright statement(s).
 as distributed by the Copyright Holder(s).
 
 "Modified Version" refers to any derivative made by adding to, deleting,
-or substituting ? in part or in whole ?
+or substituting — in part or in whole —
 any of the components of the Original Version, by changing formats or
 by porting the Font Software to a new environment.
 
@@ -113,30 +113,6 @@ DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM OTHER
 DEALINGS IN THE FONT SOFTWARE.
 
-
-Files: debian/*
-Copyright:
-2008 Alan Baghumian <alan@technotux.org>
-2008-2018 Holger Levsen <holger@debian.org>
-2009-2012 Christian Perrier <bubulle@debian.org>
-2011-2023 Fabian Greffrath <fabian@debian.org>
-2018 Rene Engelhard <rene@debian.org>
-License: GPL-2+
-This package is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This package is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>
-
-On Debian systems, the complete text of the GNU General
-Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
 ```
 
 ---
@@ -145,8 +121,16 @@ Public License version 2 can be found in "/usr/share/common-licenses/GPL-2".
 
 A simple and easy-to-use library to enjoy videogames programming.
 
+- Version: 6.0, built from source by `scripts/build_raylib_<platform>.sh`
 - License: zlib/libpng
 - Project: https://www.raylib.com
+- Altered: the web and Android builds have applied two local patches, each
+  a plain diff with its reason in its comments:
+  `scripts/raylib-web-touchend.patch` (`rcore_web.c`: a touchend that lifts
+  several fingers at once clears all of them) and
+  `scripts/raylib-android-eglconfig.patch` (`rcore_android.c`: the EGL
+  framebuffer request steps down from 8-bit colour and a 24-bit depth buffer
+  until a configuration matches).
 
 ```
 Copyright (c) 2013-2026 Ramon Santamaria (@raysan5)
@@ -176,9 +160,11 @@ freely, subject to the following restrictions:
 
 Ultralightweight JSON parser in ANSI C.
 
+- Version: 1.7.19
 - License: MIT
 - Copyright (c) 2009-2017 Dave Gamble and cJSON contributors
 - Project: https://github.com/DaveGamble/cJSON
+- Vendored at: `third_party/cjson/`, licence `third_party/cjson/LICENSE`
 
 ```
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -206,6 +192,7 @@ THE SOFTWARE.
 
 Single-file zlib-replacement library with deflate/inflate, gzip, ZIP read/write.
 
+- Version: 11.0.2
 - License: MIT
 - Copyright 2013-2014 RAD Game Tools and Valve Software
 - Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC
@@ -518,10 +505,11 @@ Mark and Andy Caldwell, with graphics by Kenneth L. Mayfield and Vincent
 DeQuattro, Jr. Copyright 1990 New World Computing, Inc. All rights
 reserved.
 
-OpenBounty has shipped none of the original game's binaries, art, or audio.
-The player supplies original assets from a legally-owned copy of the DOS
-distribution; the `--extract` mode has produced a runnable asset pack from
-such a distribution.
+The King's Bounty pack (`assets/kings-bounty/`) has carried the art, maps,
+palette, font and PC-speaker tunes extracted from the original game, used and
+distributed with permission. Its two OGG music tracks have been modern
+recordings. The `--extract` mode has built the extracted files from a copy of
+the DOS distribution.
 
 ## Glory of Rome bitmap font
 

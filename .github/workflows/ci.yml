@@ -47,6 +47,8 @@ jobs:
       # live store.
       - name: Validate the store listings
         run: python3 scripts/store_listing.py --check
+      - name: Check the docs' links
+        run: python3 scripts/check_doc_links.py
 
   windows:
     runs-on: ubuntu-22.04
@@ -163,8 +165,8 @@ jobs:
           grep -q "assets/glory-of-rome.openbounty" /tmp/apk-listing.txt
           grep -q "lib/arm64-v8a/libgloryofrome.so" /tmp/apk-listing.txt
           grep -q "classes.dex" /tmp/apk-listing.txt
-          # King's Bounty's pack is DOS-extracted and copyright-restricted: it
-          # must never reach a distributable artifact.
+          # The Android app is Glory of Rome only: King's Bounty's pack has no
+          # place in it.
           if grep -q "kings-bounty" /tmp/apk-listing.txt; then
             echo "APK contains the King's Bounty pack"; exit 1
           fi

@@ -2,7 +2,7 @@
 # The release's pack rule, checked on the archives themselves.
 #
 #   openbounty-*   the engine: NO pack file of any kind. The desktop player
-#                  extracts King's Bounty's pack from their own KB.EXE.
+#                  builds King's Bounty's pack with --extract from KB.EXE.
 #   gloryofrome-*  the game: MUST carry assets/glory-of-rome.openbounty, and
 #                  nothing from King's Bounty.
 #   *-web-*        a browser bundle: its game's pack embedded in
@@ -11,7 +11,7 @@
 #
 # Every archive in the given directory is checked. The lister's own status is
 # tested separately: inside an `if`, a pipeline's status is its truth value,
-# so a truncated archive once made the lister fail, grep report "no match",
+# so a truncated archive would make the lister fail, grep report "no match",
 # and the guard pass clean.
 #
 #   scripts/verify_release_packs.sh [dist-dir]

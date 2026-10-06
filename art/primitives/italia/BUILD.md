@@ -1,8 +1,7 @@
-# Italia mountain: how art/tiles/mountain*.png and river_mountain_* have been built (2026-09-27, #67)
-Italia's set predates the zone builds (Galliae/Africa/Oriens); its grass, sea, river and forest
-tiles are the master set and stay. Only the mountain has been rebuilt here, after the tester
-called the old interior (a 48 px Retro Diffusion texture of rounded domes, art/jobs/mountain.json,
-now deleted) a split cup. The rocks the old edges were composed from had never been kept.
+# Italia mountain: how art/tiles/mountain*.png and river_mountain_* have been built (#67)
+Italia's grass, sea, river and forest tiles have been the master set the zone builds
+(Galliae/Africa/Oriens) start from. Its mountain has been built here from rock sprites, as the
+other zones' have, rather than as a tile texture (#67).
     python3 tools/romeart.py sprites art/jobs/italia_o96_rocks.json art/primitives/italia/rocks --run
     python3 tools/romeart.py slots art/primitives/italia/rocks art/primitives/italia/rock_slots.json --tries 500 --seed 3 --straddle 4567
     python3 tools/romeart.py lattice art/layouts/mountain96.json --sprites art/primitives/italia/rocks --terrain mountain --name mountain --slots art/primitives/italia/rock_slots.json
