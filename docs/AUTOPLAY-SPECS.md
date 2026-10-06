@@ -55,7 +55,7 @@ mover, recruiter, and their measurement layer.
 5. [Objectives and the plan-step set](#5-objectives-and-the-plan-step-set)
 6. [The planner step core and the snapshot-tree search](#6-the-planner-step-core-and-the-snapshot-tree-search)
 7. [Prerequisites](#7-prerequisites)
-8. [Plan cost, the lexicographic comparison (R-B)](#8-plan-cost--the-lexicographic-comparison-r-b)
+8. [Plan cost, the lexicographic comparison (R-B)](#8-plan-cost-the-lexicographic-comparison-r-b)
 
 **Part III: Execution**
 9. [The executor primitives and typed causes](#9-the-executor-primitives-and-typed-causes)

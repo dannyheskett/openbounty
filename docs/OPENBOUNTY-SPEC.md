@@ -53,7 +53,7 @@ flagged (§38).
 1. [Top-level architecture](#1-top-level-architecture)
 2. [Data types and conventions](#2-data-types-and-conventions)
 3. [Global constants and limits](#3-global-constants-and-limits)
-4. [The `Game` struct, complete game state](#4-the-game-struct--complete-game-state)
+4. [The `Game` struct, complete game state](#4-the-game-struct-complete-game-state)
 
 **Part II: Gameplay**
 5. [Game model and lifecycle](#5-game-model-and-lifecycle)
@@ -90,11 +90,11 @@ flagged (§38).
 34. [CLI, packs, and platform](#34-cli-packs-and-platform)
 35. [Recorder, encoder, and harness](#35-recorder-encoder-and-harness)
 36. [Autoplay planner](#36-autoplay-planner)
-37. [Tools, asset extraction](#37-tools--asset-extraction)
+37. [Tools, asset extraction](#37-tools-asset-extraction)
 
 **Part IV: Deviations & data**
 38. [Known deviations from OpenKB](#38-known-deviations-from-openkb)
-- [Appendix A, Complete data tables (from `game.json`)](#appendix-a--complete-data-tables-from-gamejson)
+- [Appendix A, Complete data tables (from `game.json`)](#appendix-a-complete-data-tables-from-gamejson)
 
 ---
 
