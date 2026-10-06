@@ -1870,6 +1870,12 @@ static void parse_count_buckets(ResCountBucket **outp, int *out_n, cJSON *arr) {
     *out_n = n;
 }
 
+// A strings group the pack must have is absent: refused like a missing key.
+static void missing_group(Resources *res, const char *group) {
+    fprintf(stdout, "resources: pack missing string group '%s'\n", group);
+    res->strings_missing++;
+}
+
 static void parse_ui(Resources *res, cJSON *root_strings) {
     ResUI *ui = &res->ui;
     // No defaults: keys come only from the pack (missing -> recorded, hard-fail).
@@ -1911,6 +1917,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(out_of_control,    "out_of_control");
         UI_SET(worldmap_hint_your_map,  "worldmap_hint_your_map");
         UI_SET(worldmap_hint_whole_map, "worldmap_hint_whole_map");
+    } else {
+        missing_group(res, "ui");
     }
 
     cJSON *jmenu = cJSON_GetObjectItem(root_strings, "menu");
@@ -1965,7 +1973,11 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
             UI_SET(gm_wait, "gm_wait");
             UI_SET(gm_shoot, "gm_shoot");
             UI_SET(gm_give_up, "gm_give_up");
+        } else {
+            missing_group(res, "menu.items");
         }
+    } else {
+        missing_group(res, "menu");
     }
 
     cJSON *jstats = cJSON_GetObjectItem(root_strings, "stats");
@@ -1981,6 +1993,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(stat_castles_garrisoned, "castles_garrisoned");
         UI_SET(stat_followers_killed,   "followers_killed");
         UI_SET(stat_current_score,      "current_score");
+    } else {
+        missing_group(res, "stats");
     }
 
     cJSON *jav = cJSON_GetObjectItem(root_strings, "army_view");
@@ -1992,6 +2006,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(army_hit_points, "hit_points");
         UI_SET(army_damage,     "damage");
         UI_SET(army_g_cost,     "g_cost");
+    } else {
+        missing_group(res, "army_view");
     }
 
     cJSON *jmor = cJSON_GetObjectItem(root_strings, "morale");
@@ -2000,6 +2016,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(morale_normal, "normal");
         UI_SET(morale_low,    "low");
         UI_SET(morale_high,   "high");
+    } else {
+        missing_group(res, "morale");
     }
 
     cJSON *jcb = cJSON_GetObjectItem(root_strings, "count_buckets");
@@ -2057,6 +2075,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(startup_save_picker_new_game, "save_picker_new_game");
         UI_SET(startup_new_game_table_header,"new_game_table_header");
         UI_SET(startup_new_game_select_hint, "new_game_select_hint");
+    } else {
+        missing_group(res, "startup");
     }
 
     cJSON *jctl = cJSON_GetObjectItem(root_strings, "controls");
@@ -2065,6 +2085,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(controls_title, "title");
         UI_SET(controls_on,    "on");
         UI_SET(controls_off,   "off");
+    } else {
+        missing_group(res, "controls");
     }
 
     cJSON *jpr = cJSON_GetObjectItem(root_strings, "prompts");
@@ -2076,6 +2098,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(prompt_yes,                "yes");
         UI_SET(prompt_no,                 "no");
         UI_SET(prompt_numeric_5_hint,     "numeric_5_hint");
+    } else {
+        missing_group(res, "prompts");
     }
 
     cJSON *jmisc = cJSON_GetObjectItem(root_strings, "ui");
@@ -2129,6 +2153,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(toast_load_ok,        "load_ok");
         UI_SET(toast_load_failed,    "load_failed");
         UI_SET(toast_new_game,       "new_game");
+    } else {
+        missing_group(res, "toasts");
     }
 
     cJSON *jcv = cJSON_GetObjectItem(root_strings, "contract_view");
@@ -2144,6 +2170,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(cv_castle_unknown,    "castle_unknown");
         UI_SET(cv_features_header,   "features_header");
         UI_SET(cv_crimes_header,     "crimes_header");
+    } else {
+        missing_group(res, "contract_view");
     }
 
     cJSON *jsv = cJSON_GetObjectItem(root_strings, "spells_view");
@@ -2152,6 +2180,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(sv_title,         "title");
         UI_SET(sv_combat_col,    "combat_col");
         UI_SET(sv_adventure_col, "adventure_col");
+    } else {
+        missing_group(res, "spells_view");
     }
 
     cJSON *jdt = cJSON_GetObjectItem(root_strings, "dialog_titles");
@@ -2169,6 +2199,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(dt_lose_fallback,  "lose_fallback");
         UI_SET(dt_win_fallback,   "win_fallback");
         UI_SET(dt_combat_victory, "combat_victory");
+    } else {
+        missing_group(res, "dialog_titles");
     }
 }
 
