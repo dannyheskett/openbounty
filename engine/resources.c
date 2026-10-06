@@ -7,6 +7,7 @@
 #include "combat.h"     // COMBAT_W / COMBAT_H for the siege grid
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
 // ---- Small helpers ---------------------------------------------------------
@@ -102,6 +103,11 @@ static void json_color(const cJSON *obj, const char *key, unsigned int *out) {
 // ...) can read catalog data without threading a Resources* through every
 // call site. Set by resources_load(); cleared by resources_free().
 static const Resources *g_resources = NULL;
+// Bumped whenever g_resources changes, so a lookup memo (tables.c) knows its
+// catalog is stale even when a new pack's tables land at the old address.
+static unsigned g_resources_generation = 0;
+
+unsigned resources_generation(void) { return g_resources_generation; }
 
 const Resources *resources_current(void) { return g_resources; }
 
@@ -961,7 +967,7 @@ static ArtifactPower artifact_power_from_name(const char *s) {
     if (strcmp(s, "increase_commission") == 0) return ARTIFACT_POWER_INCREASE_COMMISSION;
     if (strcmp(s, "double_spell_power")  == 0) return ARTIFACT_POWER_DOUBLE_SPELL_POWER;
     if (strcmp(s, "double_max_spells")   == 0) return ARTIFACT_POWER_DOUBLE_MAX_SPELLS;
-    if (strcmp(s, "cheaper_boats")       == 0) return ARTIFACT_POWER_CHEAPER_BOATS;
+    if (strcmp(s, "cheaper_boat_rental") == 0) return ARTIFACT_POWER_CHEAPER_BOATS;
     return ARTIFACT_POWER_UNKNOWN;
 }
 
@@ -1362,7 +1368,8 @@ static void parse_controls(Resources *res, cJSON *obj) {
     cJSON *it;
     int n = 0;
     cJSON_ArrayForEach(it, settings) {
-        if (n >= 8) break;
+        // A row is bound to Game.stats.options by position, which holds 7.
+        if (n >= 7) break;
         if (!cJSON_IsObject(it)) continue;
         copy_str(res->controls.items[n].id,
                  sizeof(res->controls.items[n].id),
@@ -3152,6 +3159,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
                         "resources: font block needs a file and a size of 6..64 "
                         "(or none) (got \"%s\", %d)\n",
                         res->font.file, res->font.size);
+                cJSON_Delete(root);
                 return false;
             }
         }
@@ -3189,6 +3197,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
             fprintf(stdout,
                     "resources: pack declares no render.mode "
                     "(expected \"legacy\" or \"modern\")\n");
+            cJSON_Delete(root);
             return false;
         }
         // The viewport must be odd on both axes: map_render centres the hero
@@ -3204,6 +3213,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
                     res->render.tiles_w, res->render.tiles_h,
                     res->render.tile_w, res->render.tile_h,
                     res->render.ui_scale);
+            cJSON_Delete(root);
             return false;
         }
         // A declared buffer must hold the frame, a one-tile column either side
@@ -3224,6 +3234,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
                         "the %dx%d viewport (needs at least %dx%d)\n",
                         r->native_w, r->native_h, r->tiles_w, r->tiles_h,
                         need_w, need_h);
+                cJSON_Delete(root);
                 return false;
             }
         }
@@ -3301,6 +3312,36 @@ bool resources_load(Resources *res, const char *manifest_path) {
         free(seen_idx);
     }
 
+    // Troops, spells, classes and artifacts are looked up by their `index` as
+    // an array position (spell slots, artifact bits, saved ids), so each must
+    // be its own position in the catalog.
+    {
+        struct { const char *what; int count; size_t stride; const void *base;
+                 size_t idx_off, id_off; } cats[] = {
+            { "troop",    res->troops_count,    sizeof(TroopDef),    res->troops,
+              offsetof(TroopDef, index),    offsetof(TroopDef, id) },
+            { "spell",    res->spells_count,    sizeof(SpellDef),    res->spells,
+              offsetof(SpellDef, index),    offsetof(SpellDef, id) },
+            { "class",    res->classes_count,   sizeof(ClassDef),    res->classes,
+              offsetof(ClassDef, index),    offsetof(ClassDef, id) },
+            { "artifact", res->artifacts_count, sizeof(ArtifactDef), res->artifacts,
+              offsetof(ArtifactDef, index), offsetof(ArtifactDef, id) },
+        };
+        for (size_t c = 0; c < sizeof cats / sizeof cats[0]; c++) {
+            for (int i = 0; i < cats[c].count; i++) {
+                const char *row = (const char *)cats[c].base + (size_t)i * cats[c].stride;
+                int idx = *(const int *)(row + cats[c].idx_off);
+                if (idx != i) {
+                    fprintf(stdout, "resources: %s '%s' has index %d; it must be "
+                            "its position in the catalog, %d\n",
+                            cats[c].what, row + cats[c].id_off, idx, i);
+                    cJSON_Delete(root);
+                    return false;
+                }
+            }
+        }
+    }
+
     // Temp-death knob validation (fail-loud like the other pack contracts):
     // a configured troop must exist and the count must be positive.
     bool temp_death_troop_ok = !res->tuning.temp_death_troop[0];
@@ -3371,11 +3412,12 @@ bool resources_load(Resources *res, const char *manifest_path) {
     }
 
     g_resources = res;    // publish to table lookups
+    g_resources_generation++;
     return true;
 }
 
 void resources_free(Resources *res) {
-    if (g_resources == res) g_resources = NULL;
+    if (g_resources == res) { g_resources = NULL; g_resources_generation++; }
     // Heap-owned tables, each sized from the pack.
     if (res) {
         intro_free(&res->intro);
@@ -3462,6 +3504,7 @@ void resources_free(Resources *res) {
 
 void resources_republish(const Resources *res) {
     g_resources = res;
+    g_resources_generation++;
 }
 
 // ---- Lookups ---------------------------------------------------------------

@@ -285,10 +285,7 @@ bool screen_recruit_soldiers_update(Game *g) {
             // a count for a "n/a" troop and recruit it anyway.
             if (key - 1 < s_pool_count) {
                 const TroopDef *t = troop_by_index(s_pool[key - 1]);
-                bool unreachable = !t ||
-                                   t->hit_points <= 0 ||
-                                   g->stats.leadership_current
-                                       < t->hit_points * 6;
+                bool unreachable = !GameCastleOffersTroop(g, t);
                 if (!unreachable) {
                     s_whom = key;
                     s_max = recompute_max(g, s_whom - 1);
@@ -374,14 +371,13 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     //
     // Show "n/a" when the player's total leadership can't fit at least
     // 6 of this troop:
-    //   total_leadership < hp * 6  ->  "n/a"
+    //   total_leadership < hp * 6  ->  "n/a"   (GameCastleOffersTroop)
     // Otherwise show the cost (even after the player has bought all
     // they can with current leadership). On fresh starts: Knight 100 /
     // Paladin 80 / Sorceress 60 leadership all flag Cavalry HP=20 and
     // Knights HP=35 as "n/a"; Pikemen HP=10 and smaller always show
     // their cost.
     int troop_ty = ty + row_h + 1;
-    int total_lead = g->stats.leadership_current;
     // Name column: legacy pads to 11 as the original did; modern pads to the
     // longest name in the pool plus one, so "Praetoriani" keeps its gap.
     int name_w = 11;
@@ -396,8 +392,7 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
         if (i >= s_pool_count || s_pool[i] < 0) continue;
         const TroopDef *t = troop_by_index(s_pool[i]);
         if (!t) continue;
-        bool unreachable = (t->hit_points <= 0) ||
-                           (total_lead < t->hit_points * 6);
+        bool unreachable = !GameCastleOffersTroop(g, t);
         char line[64];
         if (CL_IS_MODERN) {
             // No key letters: the rows are the choice.

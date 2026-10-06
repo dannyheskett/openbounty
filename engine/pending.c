@@ -18,7 +18,7 @@ int  pending_nav_count = 0;
 
 char pending_castle_id[24] = { 0 };
 
-char pending_foe_id[24] = { 0 };
+char pending_foe_id[32] = { 0 };
 bool pending_foe_forced = false;
 bool pending_foe_evade_blocked = false;
 int  pending_foe_x = -1, pending_foe_y = -1;
@@ -67,6 +67,10 @@ void pending_reset(void) {
     pending_foe_held = false;
     pending_foe_held_friendly = false;
     pending_foe_held_id[0] = '\0';
+    pending_foe_held_x = pending_foe_held_y = -1;
+    pending_foe_held_back_x = pending_foe_held_back_y = -1;
+    pending_foe_held_back_travel = 0;
+    pending_foe_held_back_boat_x = pending_foe_held_back_boat_y = -1;
     pending_chest_gold = 0;
     pending_chest_leadership = 0;
     pending_discard_spell_idx = -1;

@@ -108,6 +108,9 @@ typedef struct {
 const SpellDef *spell_by_id(const char *id);
 const SpellDef *spell_by_index(int idx);
 int             spells_count(void);
+// Changes whenever the published catalog does (a pack loaded, freed or
+// republished); a memo over the catalog rebuilds when it moves.
+unsigned        resources_generation(void);
 
 // Resolve a spell id to its slot in Game.spells.counts[]. Returns -1 if the
 // id is not present in the loaded catalog. Use this instead of hardcoding

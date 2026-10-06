@@ -115,10 +115,11 @@ SaveResult SaveGameWrite(const char *path,
 
     FILE *f = fopen(path, "wb");
     if (!f) { free(out); return SAVE_ERR_IO; }
-    fwrite(out, 1, strlen(out), f);
-    fclose(f);
+    size_t len = strlen(out);
+    bool wrote = fwrite(out, 1, len, f) == len;
+    if (fclose(f) != 0) wrote = false;
     free(out);
-    return SAVE_OK;
+    return wrote ? SAVE_OK : SAVE_ERR_IO;
 }
 
 static void copy_string(char *dst, size_t dst_sz, const char *src) {

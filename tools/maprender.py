@@ -17,6 +17,7 @@ With --zone, the pack's declared objects for that zone (towns, castles,
 chests, signs, dwellings, armies) are overlaid as labelled markers, so
 placement can be checked against the terrain under it.
 """
+import argparse
 import json
 import os
 import sys
@@ -148,32 +149,24 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_ar
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    flags = [a for a in sys.argv[1:] if a.startswith("--")]
-    if len(args) < 3:
-        print(__doc__)
-        return 2
-    pack_dir, map_path, out_path = args[0], args[1], args[2]
-
-    scale = 8
-    for f in flags:
-        if f.startswith("--scale"):
-            scale = int(f.split("=", 1)[1]) if "=" in f else 8
-    zone_id = None
-    for i, a in enumerate(sys.argv):
-        if a == "--zone" and i + 1 < len(sys.argv):
-            zone_id = sys.argv[i + 1]
-        elif a.startswith("--zone="):
-            zone_id = a.split("=", 1)[1]
-    if zone_id in args:
-        args.remove(zone_id)
+    ap = argparse.ArgumentParser(usage=__doc__)
+    ap.add_argument("pack_dir")
+    ap.add_argument("map_path")
+    ap.add_argument("out_path")
+    ap.add_argument("--scale", type=int, default=8)
+    ap.add_argument("--zone", default=None)
+    ap.add_argument("--grid", action="store_true")
+    ap.add_argument("--tiles", action="store_true")
+    a = ap.parse_args()
+    pack_dir, map_path, out_path = a.pack_dir, a.map_path, a.out_path
+    scale, zone_id = a.scale, a.zone
 
     pack = load_pack(pack_dir)
     codes = {c: v for c, v in ((code_char(k), v)
                                for k, v in pack["tile_codes"].items()) if c}
     rows, w, h = read_map(map_path)
 
-    if "--tiles" in flags:
+    if a.tiles:
         tile_set, set_arts = "", None
         for z in pack.get("zones", []):
             if zone_id and z.get("id") == zone_id:
@@ -186,7 +179,7 @@ def main():
         img = render_flat(rows, w, h, codes, scale)
         cell = (scale, scale)
 
-    if "--grid" in flags and cell[0] >= 6:
+    if a.grid and cell[0] >= 6:
         d = ImageDraw.Draw(img)
         for x in range(0, w + 1, 10):
             d.line([(x * cell[0], 0), (x * cell[0], h * cell[1])],
@@ -209,7 +202,7 @@ def main():
 
     img.save(out_path)
     print(f"wrote {out_path}  {img.width}x{img.height}  "
-          f"({w}x{h} tiles, {'art' if '--tiles' in flags else 'flat'})")
+          f"({w}x{h} tiles, {'art' if a.tiles else 'flat'})")
     return 0
 
 

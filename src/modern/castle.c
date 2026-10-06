@@ -231,12 +231,13 @@ static void set_message(const char *s) {
     snprintf(mc.message, sizeof mc.message, "%s", s ? s : "");
 }
 
-// The most of a castle troop the hero can recruit now: what leadership can
-// control and what the purse pays for.
+// Whether the castle offers the troop (GameCastleOffersTroop).
 bool modern_castle_troop_offered(const Game *g, const TroopDef *t) {
-    return g && t && t->hit_points > 0 && g->stats.leadership_current >= t->hit_points * 6;
+    return GameCastleOffersTroop(g, t);
 }
 
+// The most of a castle troop the hero can recruit now: what leadership can
+// control and what the purse pays for.
 static int recruit_max(const Game *g, const TroopDef *t) {
     int m = GameMaxRecruitable(g, t->id);
     if (m < 0) m = 0;

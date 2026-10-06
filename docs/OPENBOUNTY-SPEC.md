@@ -1533,7 +1533,11 @@ flagged (§38).
   leadership_current - same_troop_consumed`; the result has been
   `free_leadership / troop.hp` (0 / "n/a" when free leadership is negative).
   Buying has cost `recruit_cost * count`; the gold check has used strict `<`
-  (insufficient when `gold < cost`).
+  (insufficient when `gold < cost`). The home castle has offered a
+  castle-class troop only while `leadership_current >= troop.hp * 6`
+  (`GameCastleOffersTroop`); the legacy and modern recruit lists have shown
+  any other as "n/a" or greyed, and `GameBuyTroop` has refused it (rc 4), so
+  autoplay and the demo have been held to the same rule.
 - **REQ-264.** At each week boundary, each non-empty slot has paid `upkeep =
   count * (recruit_cost / 10)` gold (integer division), deducted after
   commission is credited.
@@ -1567,7 +1571,8 @@ flagged (§38).
   Row = the troop whose morale is computed; column = another troop present.
 - **REQ-271.** Per-troop morale: a troop alone in the army has been High;
   otherwise each other non-empty slot has been consulted on the chart and the
-  results counted: any `L` → Low; all `H` (≥1) → High; else Normal. Whether
+  results counted: any `L` → Low; all `H` (≥1) → High; else Normal
+  (`GameArmySlotMorale`, which both army views have drawn). Whether
   combat has applied this same rule or the ported one has depended on the
   pack (REQ-385, item 3).
 
@@ -1853,7 +1858,8 @@ flagged (§38).
   through `GameSpellRoom`: every charge held counts against it, or, with
   `game.json` `magic.max_per_spell` true (`glory-of-rome`), only that
   spell's own, so the hero can hold `max_spells` of each spell. Under that
-  key a chest's new spell has given no more charges than there is room for.
+  key a chest's new spell has given no more charges than there is room for,
+  and a chest whose spell is already full has been a gold chest instead.
   Casting has decremented, buying incremented. Spells have been bought at the
   town menu (§16) for the spell's `cost`. Buying has not required
   `knows_magic` (OpenKB-faithful) except under rites per zone (REQ-314a);
@@ -1868,8 +1874,8 @@ flagged (§38).
   astrology's step (REQ-370) twice, so a reload renews the same one, and
   none when nothing is learned. `GameRenewSpell` has filled it to
   `max_spells`, keeping charges already above. The save has carried the
-  learned spells as `spells_learned` (spell ids) only under the key, so
-  King's Bounty saves have not changed. With `magic.max_per_spell` a combat
+  learned spells as `spells_learned` (spell ids) in every pack (REQ-414).
+  With `magic.max_per_spell` a combat
   spell chosen on the map has only been noted (`spell_combat_only`): a
   discard would free nothing, so none has been offered.
 

@@ -633,8 +633,18 @@ int GameUngarrisonTroopCount(Game *g, const char *castle_id, int slot, int count
 // dismiss, post-combat losses). Order is preserved.
 void GameCompactArmy(Game *g);
 
+// The army view's morale for one stack (REQ-271): 'H' alone; otherwise its
+// group looked up against every other stack's, any 'L' Low, all 'H' High,
+// else 'N'. 'N' for an empty or unknown slot.
+char GameArmySlotMorale(const Game *g, int slot);
+
 // Max troops the player can handle based on leadership (leadership / hp).
 int GameMaxRecruitable(const Game *g, const char *troop_id);
+
+// True when the home castle offers this troop: the hero's current leadership
+// is at least six times its hit points, King's Bounty's rule. A troop it
+// doesn't offer can't be bought there (GameBuyTroop rc 4).
+bool GameCastleOffersTroop(const Game *g, const TroopDef *t);
 
 // Max troops buyable AT THE HERO'S CURRENT LOCATION -- the same legality bound
 // GameBuyTroop enforces (rc=4): the dwelling's live population when standing on

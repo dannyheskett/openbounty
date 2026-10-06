@@ -180,29 +180,15 @@ static void draw_character(const Game *g, const Sprites *s) {
 //  THE ARMY -- five rows, one troop each
 // ---------------------------------------------------------------------------
 
-// Compare this slot's group against
-// every other occupied slot. Any 'L' => Low; all 'H' => High; else Normal.
-// Single-stack armies always report High. Labels come from res.ui.morale_*.
+// The stack's army-view morale (GameArmySlotMorale) as its label from
+// res.ui.morale_*.
 static const char *army_slot_morale(const Game *g, int slot) {
     const ResUI *ui = &g->res->ui;
-    const TroopDef *me = troop_by_id(g->army[slot].id);
-    if (!me) return ui->morale_normal;
-
-    int others = 0, low = 0, high = 0;
-    for (int j = 0; j < GAME_ARMY_SLOTS; j++) {
-        if (j == slot) continue;
-        if (!g->army[j].id[0] || g->army[j].count == 0) continue;
-        const TroopDef *o = troop_by_id(g->army[j].id);
-        if (!o) continue;
-        others++;
-        char r = morale_result(me->morale_group, o->morale_group);
-        if (r == 'L') low++;
-        else if (r == 'H') high++;
+    switch (GameArmySlotMorale(g, slot)) {
+    case 'H': return ui->morale_high;
+    case 'L': return ui->morale_low;
+    default:  return ui->morale_normal;
     }
-    if (others == 0)    return ui->morale_high;
-    if (low > 0)        return ui->morale_low;
-    if (high == others) return ui->morale_high;
-    return ui->morale_normal;
 }
 
 static void draw_army(const Game *g, const Sprites *s) {

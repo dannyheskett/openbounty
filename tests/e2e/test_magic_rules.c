@@ -90,8 +90,9 @@ TEST only_a_temple_teaches_a_spell(void) {
     ASSERT_EQ(SPELL_BUY_OK, GameBuySpell(g, g->towns[0].id));
     ASSERT(g->spells.learned[2]);
 
-    // A chest that can only hold a new spell: charges, never learning, and
-    // never past the limit.
+    // A chest that can only hold a new spell: charges, never learning, never
+    // past the limit and never none; a spell already at its limit makes it a
+    // gold chest.
     ResChest *ch = &res->economy.chest;
     ch->chance_gold[0] = ch->chance_commission[0] = 0;
     ch->chance_spell_power[0] = ch->chance_max_spells[0] = 0;
@@ -101,12 +102,42 @@ TEST only_a_temple_teaches_a_spell(void) {
         bool before[64] = { 0 };
         for (int i = 0; i < g->spells.count && i < 64; i++) before[i] = g->spells.learned[i];
         int held = GameKnownSpells(g);
-        ASSERT_EQ(CHEST_OUTCOME_NEW_SPELL, GameRollChest(g, 0, x, -1, body, sizeof body, NULL));
-        ASSERT(GameKnownSpells(g) >= held);
+        ChestPending pend;
+        ChestOutcome o = GameRollChest(g, 0, x, -1, body, sizeof body, &pend);
+        if (o == CHEST_OUTCOME_GOLD) {
+            ASSERT(pend.pending_gold > 0);
+            ASSERT_EQ(held, GameKnownSpells(g));
+        } else {
+            ASSERT_EQ(CHEST_OUTCOME_NEW_SPELL, o);
+            ASSERT(GameKnownSpells(g) > held);
+        }
         for (int i = 0; i < g->spells.count && i < 64; i++) {
             ASSERT_EQ(before[i], g->spells.learned[i]);
             ASSERT(g->spells.counts[i] <= g->stats.max_spells);
         }
+    }
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
+TEST a_full_spell_makes_a_gold_chest(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    res->economy.spell_limit_per_spell = true;
+    clear_book(g);
+    g->stats.max_spells = 3;
+    for (int i = 0; i < g->spells.count; i++) g->spells.counts[i] = 3;
+    ResChest *ch = &res->economy.chest;
+    ch->chance_gold[0] = ch->chance_commission[0] = 0;
+    ch->chance_spell_power[0] = ch->chance_max_spells[0] = 0;
+    ch->chance_new_spell[0] = 101;
+    char body[256];
+    for (int x = 0; x < 20; x++) {
+        ChestPending pend;
+        ASSERT_EQ(CHEST_OUTCOME_GOLD,
+                  GameRollChest(g, 0, x, -1, body, sizeof body, &pend));
+        ASSERT(pend.pending_gold > 0);
+        for (int i = 0; i < g->spells.count; i++) ASSERT_EQ(3, g->spells.counts[i]);
     }
     fx_free_game_full(res, g, m, f);
     PASS();
@@ -171,19 +202,17 @@ TEST learned_spells_survive_a_save(void) {
     clear_book(g);
     g->spells.learned[2] = g->spells.learned[7] = true;
 
-    // Off (King's Bounty): no key, so its saves are unchanged.
-    res->economy.spell_weekly_renewal = false;
-    cJSON *snap = state_build_snapshot(g, NULL, m, f, NULL, NULL, 0, 0);
-    ASSERT(snap);
-    ASSERT_EQ(NULL, cJSON_GetObjectItem(snap, "spells_learned"));
-    cJSON_Delete(snap);
-
-    res->economy.spell_weekly_renewal = true;
-    ASSERT_EQ(SAVE_OK, SaveGameWrite(MAGIC_SAVE, g, m, f));
-    clear_book(g);
-    ASSERT_EQ(SAVE_OK, SaveGameRead(MAGIC_SAVE, g, m, f));
-    for (int i = 0; i < g->spells.count; i++)
-        ASSERT_EQ(i == 2 || i == 7, g->spells.learned[i]);
+    // With the weekly renewal off (King's Bounty) as with it on: the learned
+    // spells are part of the Game, so the save carries them either way.
+    for (int renewal = 0; renewal < 2; renewal++) {
+        res->economy.spell_weekly_renewal = renewal != 0;
+        g->spells.learned[2] = g->spells.learned[7] = true;
+        ASSERT_EQ(SAVE_OK, SaveGameWrite(MAGIC_SAVE, g, m, f));
+        clear_book(g);
+        ASSERT_EQ(SAVE_OK, SaveGameRead(MAGIC_SAVE, g, m, f));
+        for (int i = 0; i < g->spells.count; i++)
+            ASSERT_EQ(i == 2 || i == 7, g->spells.learned[i]);
+    }
     unlink(MAGIC_SAVE);
     fx_free_game_full(res, g, m, f);
     PASS();
@@ -217,6 +246,7 @@ SUITE(e2e_magic_rules_suite) {
     RUN_TEST(the_limit_is_per_spell_where_the_pack_says);
     RUN_TEST(spell_room_counts_one_spell_or_all);
     RUN_TEST(only_a_temple_teaches_a_spell);
+    RUN_TEST(a_full_spell_makes_a_gold_chest);
     RUN_TEST(the_weekly_pick_is_repeatable_and_learned_only);
     RUN_TEST(the_week_end_fills_the_picked_spell_to_the_limit);
     RUN_TEST(learned_spells_survive_a_save);

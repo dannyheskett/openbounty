@@ -441,6 +441,70 @@ TEST unpaid_troops_leave_where_the_pack_says(void) {
     PASS();
 }
 
+// The home castle offers a troop only at six times its hit points of
+// leadership, and the engine holds every caller to it (autoplay included).
+TEST the_castle_offers_a_troop_at_six_times_its_hit_points(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    const TroopDef *t = NULL;
+    for (int i = 0; i < res->troops_count && !t; i++)
+        if (strcmp(res->troops[i].dwelling, "castle") == 0 &&
+            res->troops[i].hit_points > 1) t = &res->troops[i];
+    ASSERT(t);
+    strcpy(g->position.home_castle, "home");
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) { g->army[i].id[0] = '\0'; g->army[i].count = 0; }
+    g->stats.gold = 1000000;
+    g->stats.leadership_current = t->hit_points * 6 - 1;
+    ASSERT_FALSE(GameCastleOffersTroop(g, t));
+    ASSERT_EQ(-1, GameRecruitLocationCap(g, t->id));
+    ASSERT_EQ(4, GameBuyTroop(g, t->id, 1));
+    g->stats.leadership_current = t->hit_points * 6;
+    ASSERT(GameCastleOffersTroop(g, t));
+    ASSERT(GameRecruitLocationCap(g, t->id) > 0);
+    ASSERT_EQ(0, GameBuyTroop(g, t->id, 1));
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
+TEST army_view_morale_follows_the_chart(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) { g->army[i].id[0] = '\0'; g->army[i].count = 0; }
+    ASSERT_EQ('N', GameArmySlotMorale(g, 0));             // empty
+    const TroopDef *a = &res->troops[0];
+    strcpy(g->army[0].id, a->id); g->army[0].count = 5;
+    ASSERT_EQ('H', GameArmySlotMorale(g, 0));             // alone
+    for (int j = 1; j < res->troops_count; j++) {
+        const TroopDef *b = &res->troops[j];
+        strcpy(g->army[1].id, b->id); g->army[1].count = 5;
+        char r = morale_result(a->morale_group, b->morale_group);
+        ASSERT_EQ(r == 'L' ? 'L' : (r == 'H' ? 'H' : 'N'), GameArmySlotMorale(g, 0));
+    }
+    ASSERT_EQ('N', GameArmySlotMorale(g, -1));
+    ASSERT_EQ('N', GameArmySlotMorale(g, GAME_ARMY_SLOTS));
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
+// The pack's boat artifact ("cheaper_boat_rental") is the power the rent
+// reads: found, it brings the boat down to the cheap rent.
+TEST the_boat_artifact_cheapens_the_boat(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    int k = -1;
+    for (int i = 0; i < g->artifacts.count; i++) {
+        const ArtifactDef *a = artifact_by_index(i);
+        if (a && a->power == ARTIFACT_POWER_CHEAPER_BOATS) k = i;
+        g->artifacts.found[i] = false;
+    }
+    ASSERT(k >= 0);
+    ASSERT_EQ(res->economy.boat_cost_normal, GameBoatCost(g));
+    g->artifacts.found[k] = true;
+    ASSERT_EQ(res->economy.boat_cost_cheap, GameBoatCost(g));
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 SUITE(e2e_economy_suite) {
     RUN_TEST(rent_boat_deducts_gold_and_places);
     RUN_TEST(rent_boat_refuses_when_gold_equals_cost);
@@ -460,4 +524,7 @@ SUITE(e2e_economy_suite) {
     RUN_TEST(empty_player_castle_is_retaken_at_week_end);
     RUN_TEST(week_end_records_what_it_charged);
     RUN_TEST(unpaid_troops_leave_where_the_pack_says);
+    RUN_TEST(the_castle_offers_a_troop_at_six_times_its_hit_points);
+    RUN_TEST(army_view_morale_follows_the_chart);
+    RUN_TEST(the_boat_artifact_cheapens_the_boat);
 }

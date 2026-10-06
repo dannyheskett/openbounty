@@ -44,7 +44,7 @@ typedef struct {
     // the placement id and the bounce_back gate (only hostiles bounce --
     // friendlies are walked-onto and recruit dialog opens in place).
     bool opened_foe;
-    char foe_id[24];       // when opened_foe: placement id
+    char foe_id[32];       // when opened_foe: placement id
 } InteractResult;
 
 // Handle a step onto an interactive tile. Pops a dialog if applicable.

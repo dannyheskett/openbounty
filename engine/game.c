@@ -2359,6 +2359,34 @@ static unsigned chest_rand(const Game *g, int x, int y, unsigned salt) {
     return h;
 }
 
+// The gold chest: a purse the player takes as gold or as leadership. The
+// caller runs the choice and calls GameAcceptChestGold or
+// GameAcceptChestLeadership.
+static ChestOutcome chest_gold(const Game *g, int x, int y, int zi,
+                               ChestPending *out_pending,
+                               char *out_body, size_t out_sz) {
+    const ResChest *ch = &g->res->economy.chest;
+    int points = (int)(chest_rand(g, x, y, 2) %
+                       (unsigned)(ch->gold_max[zi] > 0 ? ch->gold_max[zi] : 1)) + 1;
+    points += ch->gold_min[zi];
+    int gold = points * 100;
+    int leadership = gold / 50;
+    if (GameHasPower(g, ARTIFACT_POWER_DOUBLE_LEADERSHIP)) leadership *= 2;
+    if (out_pending) {
+        out_pending->pending_gold = gold;
+        out_pending->pending_leadership = leadership;
+    }
+    char gbuf[16], lbuf[16];
+    snprintf(gbuf, sizeof gbuf, "%d", gold);
+    snprintf(lbuf, sizeof lbuf, "%d", leadership);
+    ResTemplateVar vars[] = {
+        { "GOLD", gbuf }, { "LEADERSHIP", lbuf },
+    };
+    resources_format_template(out_body, out_sz, g->res->banners.chest_gold,
+                              vars, (int)(sizeof vars / sizeof vars[0]));
+    return CHEST_OUTCOME_GOLD;
+}
+
 ChestOutcome GamePeekChest(const Game *g, int zone_index, int x, int y,
                            ChestPending *out_pending) {
     if (out_pending) {
@@ -2428,30 +2456,8 @@ ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
         return CHEST_OUTCOME_GOLD;
     }
 
-    if (chance < ch->chance_gold[zi]) {
-        int points = (int)(chest_rand(g, x, y, 2) %
-                           (unsigned)(ch->gold_max[zi] > 0 ? ch->gold_max[zi] : 1)) + 1;
-        points += ch->gold_min[zi];
-        int gold = points * 100;
-        int leadership = gold / 50;
-        if (GameHasPower(g, ARTIFACT_POWER_DOUBLE_LEADERSHIP)) leadership *= 2;
-        // : caller runs the
-        // prompt and calls GameAcceptChestGold / GameAcceptChestLeadership
-        // based on the player's choice.
-        if (out_pending) {
-            out_pending->pending_gold = gold;
-            out_pending->pending_leadership = leadership;
-        }
-        char gbuf[16], lbuf[16];
-        snprintf(gbuf, sizeof gbuf, "%d", gold);
-        snprintf(lbuf, sizeof lbuf, "%d", leadership);
-        ResTemplateVar vars[] = {
-            { "GOLD", gbuf }, { "LEADERSHIP", lbuf },
-        };
-        resources_format_template(out_body, out_sz, bn->chest_gold,
-                                  vars, (int)(sizeof vars / sizeof vars[0]));
-        return CHEST_OUTCOME_GOLD;
-    }
+    if (chance < ch->chance_gold[zi])
+        return chest_gold(g, x, y, zi, out_pending, out_body, out_sz);
     if (chance < ch->chance_commission[zi]) {
         int points = (int)(chest_rand(g, x, y, 3) %
                            (unsigned)(ch->commission_max[zi] > 0 ? ch->commission_max[zi] : 1)) + 1;
@@ -2495,8 +2501,11 @@ ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
         int spell_num  = (int)(chest_rand(g, x, y, 5) % (unsigned)(zi + 1)) + 1;
         // Charges, not learning: only a temple teaches a spell (#157). Where
         // each spell is capped, the chest gives no more than there is room for.
+        // A spell already at its cap makes it a gold chest.
         if (g->res && g->res->economy.spell_limit_per_spell) {
             int room = GameSpellRoom(g, spell_type);
+            if (room <= 0)
+                return chest_gold(g, x, y, zi, out_pending, out_body, out_sz);
             if (spell_num > room) spell_num = room;
         }
         g->spells.counts[spell_type] += spell_num;
@@ -3008,9 +3017,10 @@ static int recruit_location_cap(const Game *g, const char *troop_id,
         return -1;
     }
     if (strcmp(t->dwelling, "castle") == 0) {
-        // Home pool: unlimited (the castle never runs dry); gated only by being
-        // at the home castle.
-        return g->position.home_castle[0] ? (1 << 28) : -1;
+        // Home pool: unlimited (the castle never runs dry); gated by being at
+        // the home castle and by the castle offering the troop.
+        return g->position.home_castle[0] && GameCastleOffersTroop(g, t)
+                   ? (1 << 28) : -1;
     }
     // Dwelling troop: the hero must be on the dwelling that offers this troop.
     if (!g->position.dwelling_troop[0] ||
@@ -3026,6 +3036,32 @@ static int recruit_location_cap(const Game *g, const char *troop_id,
         }
     }
     return -1;
+}
+
+char GameArmySlotMorale(const Game *g, int slot) {
+    if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 'N';
+    const TroopDef *me = troop_by_id(g->army[slot].id);
+    if (!me) return 'N';
+    int others = 0, low = 0, high = 0;
+    for (int j = 0; j < GAME_ARMY_SLOTS; j++) {
+        if (j == slot) continue;
+        if (!g->army[j].id[0] || g->army[j].count == 0) continue;
+        const TroopDef *o = troop_by_id(g->army[j].id);
+        if (!o) continue;
+        others++;
+        char r = morale_result(me->morale_group, o->morale_group);
+        if (r == 'L') low++;
+        else if (r == 'H') high++;
+    }
+    if (others == 0)    return 'H';
+    if (low > 0)        return 'L';
+    if (high == others) return 'H';
+    return 'N';
+}
+
+bool GameCastleOffersTroop(const Game *g, const TroopDef *t) {
+    return g && t && t->hit_points > 0 &&
+           g->stats.leadership_current >= t->hit_points * 6;
 }
 
 int GameRecruitLocationCap(const Game *g, const char *troop_id) {

@@ -131,7 +131,7 @@ typedef struct {
     char nav_zones[5][32];
     int  nav_count;
     char castle_id[24];
-    char foe_id[24];
+    char foe_id[32];
     int  foe_x, foe_y;
     int  chest_gold, chest_leadership;
 
