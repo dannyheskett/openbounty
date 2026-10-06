@@ -19,10 +19,9 @@
 #define RES_SIGN_BODY_LEN    256   // Rome's longest is 147 (#135)
 #define RES_PATH_LEN         128
 // Indexed by raw map byte, so the table spans the whole byte range: a map
-// file's code can be any of 256 values and always indexes this table. It was
-// 128 (printable ASCII and below) until Rome used 91 of them and the road
-// end pieces needed four more. A map that uses a code above 127 is no longer
-// plain ASCII -- the reader is byte-wise, so such a file is latin-1.
+// file's code can be any of 256 values and always indexes this table. A map
+// that uses a code above 127 is not plain ASCII -- the reader is byte-wise, so
+// such a file is latin-1.
 #define RES_TILE_CODE_COUNT  256
 #define RES_TILE_ART_LEN      24
 // Animation cycle default: OB_ANIM_FRAMES_DEFAULT, in tables.h.
@@ -184,7 +183,7 @@ typedef struct {
     bool   kind_curve_set[RES_SPAWN_TIERS];
     int   *kind_curve[RES_SPAWN_TIERS][RES_SPAWN_TIERS];   // [kind][tier]
     int    kind_curve_len[RES_SPAWN_TIERS][RES_SPAWN_TIERS];
-    // The calm start (2026-09-28, #69): a hostile foe whose spawn tile lies
+    // The calm start (#69): a hostile foe whose spawn tile lies
     // within calm_radius (Chebyshev) of its zone's hero_spawn rolls no pool
     // slot above calm_max_slot and no more than calm_max_stacks stacks.
     // calm_radius 0 (absent) disables it: the King's Bounty pack rolls as
@@ -1522,7 +1521,7 @@ typedef struct {
     // army view's rule (REQ-271: alone High; each OTHER slot looked up as
     // chart[mine][theirs]; any L Low, all H High, else Normal). Absent or
     // false = the behaviour ported from King's Bounty (REQ-385), kept for
-    // the legacy pack. Glory of Rome sets it (2026-09-27, #75).
+    // the legacy pack. Glory of Rome sets it (#75).
     bool morale_as_army_view;
     // combat.field_obstacle_chance: the percent chance that each cell of an
     // open-field battle's middle columns holds an obstacle. Absent = 10, King's

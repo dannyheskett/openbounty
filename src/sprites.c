@@ -317,9 +317,9 @@ void sprites_load(Sprites *s, const Resources *res) {
         s->field_grid_ok[z] = ok;
     }
 
-    // Combat tileset, in the role order the renderer indexes by. The list
-    // lives in the manifest now (res->sprites.combat) rather than here, so a
-    // pack can name its own battle art.
+    // Combat tileset, in the role order the renderer indexes by. The list is
+    // the manifest's (res->sprites.combat), so a pack can name its own battle
+    // art.
     // The same two rules the manifest applies (REQ-165c/d): no field tile
     // when the hero's terrain is the ground, no wall pieces under a siege grid.
     for (int i = 0; i < res->sprites.combat_count && i < 15; i++) {

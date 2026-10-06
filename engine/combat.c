@@ -877,8 +877,8 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
 
 // ----- Target picker -------------------------------------------
 
-// PickFilter enum moved to engine/include/combat.h so the shell-side
-// target picker (src/combat_loop.c) can name the filter values.
+// The PickFilter enum is in engine/include/combat.h, so the shell's target
+// picker (src/combat_loop.c) can name the filter values.
 
 /* exposed for tests */ bool combat_cell_passes_filter(const Combat *c, int x, int y,
                                       int caster_side, int filter) {
@@ -1028,13 +1028,11 @@ int combat_spell_target_filter(int spell_idx) {
     }
 }
 
-// The single engine cast dispatcher. This IS the index->effect logic
-// that used to live in the shell's APPLY phase (src/combat_loop.c) -- moved here
-// verbatim so the shell and the autoplay policy share one implementation. The
-// shell now calls this from its APPLY phase (after its UI picks the spell +
-// target); the autoplay policy calls it directly. Damage values (25/10/50),
-// IMMUNE no-effect handling, charge decrement, and the spells_this_round latch
-// are identical to the old shell code.
+// The single engine cast dispatcher, the spell index -> effect logic, shared
+// by the shell and the autoplay policy. The shell calls it from its APPLY
+// phase (after its UI picks the spell and target); the autoplay policy calls
+// it directly. It owns the damage values (25/10/50), the IMMUNE no-effect
+// handling, the charge decrement and the spells_this_round latch.
 int combat_cast_spell(Combat *c, int side, int spell_idx,
                       int t_side, int t_slot, int dest_x, int dest_y) {
     // Preconditions -- return ILLEGAL (mutate nothing) if any fail. The NULL-hero

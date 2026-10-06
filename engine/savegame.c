@@ -29,7 +29,7 @@ static char *read_whole_file(const char *path, size_t *out_len) {
     return buf;
 }
 
-// Forward direction (Difficulty -> id) lives in state_serialize.c now.
+// The reverse (Difficulty -> id) is in state_serialize.c.
 static Difficulty difficulty_from_id(const char *s) {
     if (!s) return DIFFICULTY_EASY;
     if (strcmp(s, "normal") == 0) return DIFFICULTY_NORMAL;
@@ -37,14 +37,14 @@ static Difficulty difficulty_from_id(const char *s) {
     if (strcmp(s, "impossible") == 0) return DIFFICULTY_IMPOSSIBLE;
     return DIFFICULTY_EASY;
 }
-// Forward direction (Mount -> id) lives in state_serialize.c now.
+// The reverse (Mount -> id) is in state_serialize.c.
 static Mount mount_from_id(const char *s) {
     if (!s) return MOUNT_RIDE;
     if (strcmp(s, "sail") == 0) return MOUNT_SAIL;
     if (strcmp(s, "fly")  == 0) return MOUNT_FLY;
     return MOUNT_RIDE;
 }
-// Forward direction (CastleOwnerKind -> id) lives in state_serialize.c now.
+// The reverse (CastleOwnerKind -> id) is in state_serialize.c.
 static CastleOwnerKind castle_owner_from_id(const char *s) {
     if (!s) return CASTLE_OWNER_PLAYER;
     if (strcmp(s, "monsters") == 0) return CASTLE_OWNER_MONSTERS;
@@ -54,7 +54,7 @@ static CastleOwnerKind castle_owner_from_id(const char *s) {
 }
 
 // ----- Fog encoding ---------------------------------------------------------
-// Encode lives in state_serialize.c now. Decode (load path) stays here.
+// Decoding, for the load; the encoder is in state_serialize.c.
 static bool decode_fog_row(Fog *fog, int row, int width, const char *s) {
     int nibbles = (width + 3) / 4;
     if ((int)strlen(s) != nibbles) return false;
@@ -75,7 +75,7 @@ static bool decode_fog_row(Fog *fog, int row, int width, const char *s) {
 }
 
 // ----- Unit array (troops + counts) ----------------------------------------
-// Build lives in state_serialize.c now. Parse (load path) stays here.
+// Parsing, for the load; the writer is in state_serialize.c.
 static void parse_unit_array(const cJSON *arr, Unit *out, int max) {
     memset(out, 0, sizeof(Unit) * max);
     if (!cJSON_IsArray(arr)) return;

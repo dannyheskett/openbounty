@@ -419,9 +419,8 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     game_rng_seed(g->seed);
     g->scepter.key = game_rng_next(0, 255);
     // The scepter's zone is drawn from every zone the pack declares (#77):
-    // a four-zone pack draws 0..3 as it always did, so no shipped world
-    // re-maps; a pack with fewer zones no longer buries nothing, and one
-    // with more can use them all.
+    // a four-zone pack draws 0..3, and a pack with fewer or more zones buries
+    // in one of its own.
     int zones = g->res->zone_count > 0 ? g->res->zone_count : 1;
     int scepter_continent = game_rng_next(0, zones - 1);
     bury_scepter(g, scepter_continent);
@@ -3593,9 +3592,8 @@ int GameFoesFollow(Game *g, Map *map) {
                 // same now holds for bridges, towns and the other interactive
                 // tiles, and for the castle-gate approach.
                 //
-                // This previously exempted the hero's tile so the foe could
-                // step on and trigger combat, which let a foe on adjacent
-                // grass reach a hero standing anywhere at all.
+                // The hero's tile is not exempt: exempting it would let a foe
+                // on adjacent grass reach a hero standing anywhere at all.
                 if (!is_center && !foe_can_stand(map, nx, ny))
                     continue;
                 if (!is_center && foe_on_event_tile(g, f->zone, nx, ny))

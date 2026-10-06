@@ -1056,8 +1056,8 @@ static void parse_anim_set(cJSON *obj, ResAnimSet *out) {
 }
 
 static void parse_sprites(Resources *res, cJSON *obj) {
-    // Art paths that used to be compiled into the shell. A pack may override
-    // any of them in the sprites block; these keep packs that don't unchanged.
+    // Default art paths. A pack may override any of them in the sprites block;
+    // a pack that doesn't gets these.
     {
         static const char *COMBAT_DEFAULT[RES_COMBAT_TILES] = {
             "art/combat/field_grass.png",
@@ -1094,9 +1094,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         parse_anim_set(cJSON_GetObjectItem(hero, "boat"), &res->sprites.hero_boat);
     }
 
-    // Combat tileset. The shell used to carry this list as a static array,
-    // which meant the pack could not name its own battle art. Declared here
-    // now; the defaults installed before parsing keep older packs working.
+    // Combat tileset: the pack may name its own battle art; the defaults
+    // installed before parsing stand for a pack that doesn't.
     // Guarded: parse_path_array zeroes the out-count for a missing key, which
     // would wipe the defaults installed above rather than leave them alone.
     cJSON *jcombat = cJSON_GetObjectItem(obj, "combat");

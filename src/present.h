@@ -2,10 +2,9 @@
 //
 // The one place the 320x200 render target becomes window pixels.
 //
-// This blit used to be copy-pasted, identically, in seven files (the main
-// loop, startup, combat, the ending cartoon, visible autoplay, the encode
-// dialog, and the frame dispatcher). Capping the scale meant changing all
-// seven, so it lives here instead: one implementation, one set of bounds.
+// Every caller (the main loop, startup, combat, the ending cartoon, visible
+// autoplay, the encode dialog and the frame dispatcher) blits through here:
+// one implementation, one set of bounds.
 
 #ifndef OB_PRESENT_H
 #define OB_PRESENT_H

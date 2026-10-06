@@ -333,9 +333,9 @@ static void draw_contract(const Game *g, const Sprites *s) {
     // (3 tiles tall = 102px). Top map row + bottom map row remain visible;
     // HUD sidebar untouched. Don't override the status bar -- it stays
     // normal ("Options / Controls / Days Left:NNN").
-    // x and w must come from the SAME rect. They used to be the content rect
-    // and the pane respectively, which put the left edge at the centred panel
-    // and the right edge a pane-width further on -- off the screen entirely.
+    // x and w must come from the SAME rect: taking x from the content rect
+    // and w from the pane would put the right edge a pane-width past the
+    // centred panel, off the screen.
     int panel_x = FULL_VIEW_X + 2 * CL_UI;
     int panel_y = VIEW_Y + CL_TILE_H;        // 1 tile down
     int panel_w = FULL_VIEW_W - 4 * CL_UI;   // 2px inset on each side

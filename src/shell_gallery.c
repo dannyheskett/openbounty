@@ -512,7 +512,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     }
     shot(&G, "04_message_titled");
     // The artifact message: the engine's longest title, which wraps to two
-    // lines. It used to print the second line under the body's first.
+    // lines, both above the body.
     reset(&G);
     {
         char hb[192], bb[512];

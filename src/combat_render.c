@@ -89,9 +89,6 @@ void combat_format_title(const Combat *c, const Game *g, char *buf, int cap) {
     (void)g;
 }
 
-// combat_log / combat_log_template moved to engine/combat_log.c (pure
-// data, no raylib).
-
 // ----- Cell math -------------------------------------------------------------
 
 static Texture2D s_ground;   // see combat_render_set_ground

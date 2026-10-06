@@ -141,8 +141,8 @@ static SwStat s_sw_restore;   // worldsnap_restore per expansion
 // path that revisits its own state can never be needed -- and consecutive
 // KEPT edges (world kept, nothing completed: the PREFOUGHT shape) are
 // capped, because an unbounded KEPT chain is a calendar-burning descent at
-// constant progress (measured: 15k expansions pinned at 28/280, tip 385
-// days deep, once the global set was removed).
+// constant progress (measured without the cap: 15k expansions pinned at
+// 28/280, tip 385 days deep).
 
 static uint64_t fnv64(uint64_t h, const void *p, size_t n) {
     const unsigned char *b = (const unsigned char *)p;

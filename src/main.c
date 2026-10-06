@@ -102,11 +102,10 @@
 // continuation state) lives in spells_adventure.{c,h}.
 #include "spells_adventure.h"
 
-// Game-menu (Esc / O) callbacks (Save/Load/New/Quit) moved to
-// src/shell_menu.{c,h}.
+// Game-menu (Esc / O) callbacks: Save, Load, New, Quit.
 #include "shell_menu.h"
 
-// perform_temp_death() moved to src/shell_tempdeath.{c,h}.
+// perform_temp_death(): a lost fight sends the hero home.
 #include "shell_tempdeath.h"
 
 // End-of-week two-screen sequence (astrology -> budget). Implementation
@@ -116,8 +115,7 @@
 #include "shell_weekend.h"
 
 
-// run_audience_dialog() (King Maximus audience flow) moved to
-// src/shell_audience.{c,h}.
+// run_audience_dialog(): the audience with the king.
 #include "shell_audience.h"
 #include "modern/castle.h"
 #include "modern/gamemenu.h"
@@ -125,7 +123,7 @@
 #include "modern/location.h"
 #include "shell_gallery.h"
 
-// Per-frame draw_frame() dispatcher moved to src/shell_frame.{c,h}.
+// draw_frame(): the per-frame draw.
 #include "shell_frame.h"
 
 // Town/Castle Gate destination picker (player_io_message + letter dispatch,
@@ -1445,7 +1443,7 @@ title:;
             } else if ((!CL_IS_MODERN || !views_spells_casting()) && ui_any_key_pressed()) {
                 // Legacy, or only looking: any other key closes. Modern casting
                 // keeps its keys -- the arrows move the cursor and Escape closes
-                // (views_spells_update); an arrow here used to close the list.
+                // (views_spells_update), so an arrow never closes the list.
                 views_dismiss();
             }
         } else if (views_active() == VIEW_GATE) {
@@ -1776,10 +1774,6 @@ title:;
         frame_host_end_frame();
 
         // Screenshot on demand: backtick (`) -> screenshots/shot_NNNN.png.
-        // An automatic save on entering the Character view (a layout-diff
-        // hook from the first commit) used to sit here; it wrote into a
-        // folder that a fresh checkout does not have and warned on every
-        // start-up. Removed 2026-09-07.
         screenshot_tick(render_target, "shot");
 
     }

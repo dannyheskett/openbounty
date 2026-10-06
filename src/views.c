@@ -569,7 +569,7 @@ bool shell_pump_player_io_view(Game *g) {
         if (replace) views_set(v);
         else         views_push(v);
     }
-    player_io_ack(g);   // transport complete; the view now lives on the stack
+    player_io_ack(g);   // transport complete; the view is on the stack
     return true;
 }
 

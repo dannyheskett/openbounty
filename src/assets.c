@@ -22,4 +22,4 @@ Texture2D LoadAssetTexture(const char *path) {
     return tex;
 }
 
-// LoadAssetBytes / UnloadAssetBytes moved to engine/assets_bytes.c.
+// LoadAssetBytes / UnloadAssetBytes are the engine's (engine/assets_bytes.c).

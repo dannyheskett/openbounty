@@ -270,7 +270,7 @@ PromptResult prompt_update(void) {
         // immediately, without waiting for a keypress -- no decline offered.
         if (pending_foe_forced) { prompt_dismiss(); return PROMPT_RESULT_YES; }
         // Modern: two rows, Yes and No, with the cursor; Enter confirms the
-        // cursor row (so Enter is no longer a blind yes), Y and N still answer.
+        // cursor row (Enter is never a blind yes), and Y and N answer too.
         if (CL_IS_MODERN) {
             SelList l = { 2, g_yn_cursor };
             int row = -1;
