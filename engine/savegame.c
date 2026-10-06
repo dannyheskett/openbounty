@@ -121,6 +121,12 @@ SaveResult SaveGameWrite(const char *path,
     return SAVE_OK;
 }
 
+static void copy_string(char *dst, size_t dst_sz, const char *src) {
+    size_t i = 0;
+    while (i + 1 < dst_sz && src[i]) { dst[i] = src[i]; i++; }
+    dst[i] = '\0';
+}
+
 static void copy_json_string(char *dst, size_t dst_sz, const cJSON *j) {
     if (!cJSON_IsString(j)) { dst[0] = '\0'; return; }
     size_t i = 0;
@@ -610,6 +616,28 @@ SaveResult SaveGameRead(const char *path,
             } else {
                 f->friendly = (strstr(f->placement_id, "friendly") != NULL);
             }
+            // A guardian's traits. Absent in saves written before they were
+            // saved, so taken from the zone army the foe was spawned from
+            // rather than bumping SAVE_VERSION and orphaning those saves.
+            const ResZoneArmy *za = GameFoeArmy(g, f);
+            cJSON *jst = cJSON_GetObjectItem(m, "static");
+            cJSON *jrt = cJSON_GetObjectItem(m, "requires_troop");
+            cJSON *jsi = cJSON_GetObjectItem(m, "scene_index");
+            cJSON *jstl = cJSON_GetObjectItem(m, "scene_title");
+            f->is_static = cJSON_IsBool(jst) ? cJSON_IsTrue(jst)
+                                             : (za && za->is_static);
+            if (cJSON_IsString(jrt))
+                copy_json_string(f->requires_troop, sizeof(f->requires_troop), jrt);
+            else
+                copy_string(f->requires_troop, sizeof(f->requires_troop),
+                            za ? za->requires_troop : "");
+            f->scene_index = cJSON_IsNumber(jsi) ? jsi->valueint
+                                                 : (za ? za->scene_index : -1);
+            if (cJSON_IsString(jstl))
+                copy_json_string(f->scene_title, sizeof(f->scene_title), jstl);
+            else
+                copy_string(f->scene_title, sizeof(f->scene_title),
+                            za ? za->title : "");
             for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
                 f->garrison[s].id[0] = '\0';
                 f->garrison[s].count = 0;

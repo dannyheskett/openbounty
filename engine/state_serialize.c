@@ -592,6 +592,10 @@ cJSON *state_build_snapshot(const Game *g,
             cJSON_AddStringToObject(m, "id", f->placement_id);
             cJSON_AddBoolToObject  (m, "alive", f->alive);
             cJSON_AddBoolToObject  (m, "friendly", f->friendly);
+            cJSON_AddBoolToObject  (m, "static", f->is_static);
+            cJSON_AddStringToObject(m, "requires_troop", f->requires_troop);
+            cJSON_AddNumberToObject(m, "scene_index", f->scene_index);
+            cJSON_AddStringToObject(m, "scene_title", f->scene_title);
             cJSON *gar = cJSON_CreateArray();
             for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
                 cJSON *u = cJSON_CreateObject();
