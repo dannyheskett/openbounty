@@ -61,10 +61,13 @@ void rail_draw(const Game *g, const Sprites *s) {
                 Rectangle dst = { (float)x, (float)ty, (float)CL_RAIL_W, (float)CL_TILE_H };
                 gfx_texture_draw(t, src, dst, WHITE);
             } else if (ROWS[i].action == INPUT_ACTION_GOTO && res) {
-                // A pack without the Goto icon: its name on a dark card.
+                // A pack without the Goto icon: its name on a dark card, or
+                // the row's key when the pack names it nothing.
+                const char *label = res->banners.rail_goto[0] ? res->banners.rail_goto
+                                                              : ROWS[i].key;
                 gfx_rect(x, ty, CL_RAIL_W, CL_TILE_H, PAL_CLR(DBLUE));
-                Vector2 tm = bfont_measure(res->banners.rail_goto);
-                bfont_draw(res->banners.rail_goto, x + (CL_RAIL_W - (int)tm.x) / 2,
+                Vector2 tm = bfont_measure(label);
+                bfont_draw(label, x + (CL_RAIL_W - (int)tm.x) / 2,
                            ty + (CL_TILE_H - (int)tm.y) / 2, PAL_CLR(YELLOW));
             }
         } else {

@@ -1460,9 +1460,11 @@ flagged (§38).
   or Go has given the order; Escape or Cancel has left. The route has been
   `GamePlanGoto` (`engine/goto.c`): the cheapest in the current province
   over tiles the player has seen, a step costing 1 and a desert step the rest
-  of a day; no object on the way (the target may be one); on foot it has
-  walked, the boat parked in this province has been the only way onto the
-  water, land beyond it a landing; in flight it has flown straight. A tile
+  of a day; no object on the way but a sign, which the hero has stood on to
+  read (the target may be any object); on foot it has walked, the boat
+  parked in this province has been the only way onto the water, boarded at
+  most once, and land beyond it a landing; in flight it has flown
+  straight. A tile
   unseen, the hero's own or with no route has refused the order, the
   cursor's ring flashing red. An order has been walked by
   `src/shell_goto.c`, one ordinary `GameStep` every 0.15 s, so foes, days,
