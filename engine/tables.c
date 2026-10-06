@@ -49,23 +49,22 @@ int spell_index_by_adventure_effect(AdventureEffect e) {
     if (e == ADV_EFFECT_NONE) return -1;
     // The effect->index map is constant for a given loaded catalog, but this
     // scan is a hot path in the autoplay mover (millions of calls per run, each
-    // doing spell_adventure_effect strcmps). Memoize it and rebuild only when
-    // the catalog identity changes (a different pack loaded). 16 > the number
+    // doing spell_adventure_effect strcmps). Memoize it and rebuild whenever
+    // the published catalog changes (resources_generation). 16 > the number
     // of AdventureEffect values.
-    static const SpellDef *s_cat0 = NULL;
-    static int s_count = -1;
+    static unsigned s_gen = 0;
+    static bool s_built = false;
     static int s_map[16];
-    const SpellDef *cat0 = spell_by_index(0);
     int cnt = spells_count();
-    if (cat0 != s_cat0 || cnt != s_count) {
+    if (!s_built || s_gen != resources_generation()) {
         for (int k = 0; k < 16; k++) s_map[k] = -1;
         for (int i = 0; i < cnt; i++) {
             AdventureEffect ae = spell_adventure_effect(i);
             if (ae > ADV_EFFECT_NONE && (int)ae < 16 && s_map[ae] < 0)
                 s_map[ae] = i;
         }
-        s_cat0 = cat0;
-        s_count = cnt;
+        s_gen = resources_generation();
+        s_built = true;
     }
     if ((int)e < 16) return s_map[e];
     for (int i = 0; i < cnt; i++)

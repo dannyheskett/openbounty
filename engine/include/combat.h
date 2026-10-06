@@ -433,6 +433,7 @@ typedef enum {
 //   - heroes[side]->stats.knows_magic
 //   - c->spells_this_round < 1   (one cast per side activation)
 //   - spell_idx in [0,6] and heroes[side]->spells.counts[spell_idx] > 0
+//   - Turn Undead: the target is a live enemy undead (PICK_FILTER_UNDEAD)
 // On a successful cast decrements the charge and bumps spells_this_round.
 int combat_cast_spell(Combat *c, int side, int spell_idx,
                       int t_side, int t_slot, int dest_x, int dest_y);

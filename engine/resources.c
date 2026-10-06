@@ -102,6 +102,11 @@ static void json_color(const cJSON *obj, const char *key, unsigned int *out) {
 // ...) can read catalog data without threading a Resources* through every
 // call site. Set by resources_load(); cleared by resources_free().
 static const Resources *g_resources = NULL;
+// Bumped whenever g_resources changes, so a lookup memo (tables.c) knows its
+// catalog is stale even when a new pack's tables land at the old address.
+static unsigned g_resources_generation = 0;
+
+unsigned resources_generation(void) { return g_resources_generation; }
 
 const Resources *resources_current(void) { return g_resources; }
 
@@ -3152,6 +3157,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
                         "resources: font block needs a file and a size of 6..64 "
                         "(or none) (got \"%s\", %d)\n",
                         res->font.file, res->font.size);
+                cJSON_Delete(root);
                 return false;
             }
         }
@@ -3189,6 +3195,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
             fprintf(stdout,
                     "resources: pack declares no render.mode "
                     "(expected \"legacy\" or \"modern\")\n");
+            cJSON_Delete(root);
             return false;
         }
         // The viewport must be odd on both axes: map_render centres the hero
@@ -3204,6 +3211,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
                     res->render.tiles_w, res->render.tiles_h,
                     res->render.tile_w, res->render.tile_h,
                     res->render.ui_scale);
+            cJSON_Delete(root);
             return false;
         }
         // A declared buffer must hold the frame, a one-tile column either side
@@ -3224,6 +3232,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
                         "the %dx%d viewport (needs at least %dx%d)\n",
                         r->native_w, r->native_h, r->tiles_w, r->tiles_h,
                         need_w, need_h);
+                cJSON_Delete(root);
                 return false;
             }
         }
@@ -3371,11 +3380,12 @@ bool resources_load(Resources *res, const char *manifest_path) {
     }
 
     g_resources = res;    // publish to table lookups
+    g_resources_generation++;
     return true;
 }
 
 void resources_free(Resources *res) {
-    if (g_resources == res) g_resources = NULL;
+    if (g_resources == res) { g_resources = NULL; g_resources_generation++; }
     // Heap-owned tables, each sized from the pack.
     if (res) {
         intro_free(&res->intro);
@@ -3462,6 +3472,7 @@ void resources_free(Resources *res) {
 
 void resources_republish(const Resources *res) {
     g_resources = res;
+    g_resources_generation++;
 }
 
 // ---- Lookups ---------------------------------------------------------------

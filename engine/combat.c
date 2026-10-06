@@ -1061,6 +1061,16 @@ int combat_cast_spell(Combat *c, int side, int spell_idx,
     if (spell_idx < 0 || spell_idx > COMBAT_SPELL_TURN_UNDEAD)
         return COMBAT_CAST_ILLEGAL;
     if (gw->spells.counts[spell_idx] <= 0) return COMBAT_CAST_ILLEGAL;
+    // Turn Undead takes only an enemy undead, the picker's own filter, so a
+    // caller without the picker (autoplay, the demo) is held to it too.
+    if (spell_idx == COMBAT_SPELL_TURN_UNDEAD) {
+        if (t_side < 0 || t_side >= COMBAT_SIDES || t_slot < 0 || t_slot >= COMBAT_SLOTS)
+            return COMBAT_CAST_ILLEGAL;
+        const CombatUnit *tu = &c->units[t_side][t_slot];
+        if (tu->troop_idx < 0 || tu->count <= 0 ||
+            !combat_cell_passes_filter(c, tu->x, tu->y, side, PICK_FILTER_UNDEAD))
+            return COMBAT_CAST_ILLEGAL;
+    }
 
     int sp = gw->stats.spell_power;
     if (sp < 1) sp = 1;
