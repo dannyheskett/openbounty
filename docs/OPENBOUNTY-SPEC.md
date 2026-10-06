@@ -546,7 +546,7 @@ flagged (§38).
   and `count`.
 - **REQ-147.** `Spellbook` has held `count`, `counts` and `learned` (heap),
   parallel to the spell catalog; `learned` has been saved (as
-  `spells_learned`) only for a pack with `economy.spell_weekly_renewal`. `GameKnownSpells` has summed the counts;
+  `spells_learned`) in every pack. `GameKnownSpells` has summed the counts;
   `GameSpellRoom` has answered how many more of one spell the hero can hold
   (REQ-321).
 - **REQ-148.** `Contract` has held `active_id[24]` (current contract, empty =
