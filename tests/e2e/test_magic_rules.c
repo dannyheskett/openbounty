@@ -18,7 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define MAGIC_SAVE "/tmp/openbounty_magic_rules.dat"
+#define MAGIC_SAVE "build/openbounty_magic_rules.dat"
 
 // The hero stands in the first town, which sells spell `idx`.
 static void at_temple(Game *g, int idx) {

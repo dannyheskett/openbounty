@@ -73,15 +73,17 @@ engine/
 ## Building the library
 
 ```
-make build/libobengine.a
+make build/debug/libobengine.a                  # BUILD=debug, the default
+make BUILD=release build/release/libobengine.a
 ```
 
-The archive has been produced at `build/libobengine.a`. Internal `.o` files
-have lived in `build/objs/englib/`.
+The archive has been produced at `build/<BUILD>/libobengine.a`, its `.o`
+files in `build/<BUILD>/objs/englib/`. It has been compiled with the build's
+own flags: `-O0 -g` for debug, `-O2 -DNDEBUG` for release.
 
-Compile flags used (from the Makefile):
+Compile flags used (from the Makefile, release shown):
 ```
-gcc -std=c99 -Wall -Wextra -O2 -fPIC \
+gcc -std=c99 -Wall -Wextra -O2 -DNDEBUG -fPIC \
     -Iengine/headless -Iengine/include -Ibuild \
     -Ithird_party/cjson -Ithird_party/miniz \
     -DOB_HEADLESS \
@@ -103,7 +105,7 @@ The simplest version has used the bundled `engine/host_noop.c`:
 ```
 gcc -std=c99 -O2 \
     -Iengine/headless -Iengine/include -Ithird_party/cjson \
-    my_consumer.c engine/host_noop.c build/libobengine.a \
+    my_consumer.c engine/host_noop.c build/release/libobengine.a \
     -o my_consumer \
     -lm -lpthread
 ```

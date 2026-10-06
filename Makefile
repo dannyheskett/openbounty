@@ -103,7 +103,7 @@ PACK_DIR   := build/$(BUILD)/assets
 PACKS := $(addprefix $(PACK_DIR)/,$(addsuffix .openbounty,$(PACK_NAMES)))
 
 OUT_TEST      := build/openbounty-test
-OUT_ENGLIB    := build/libobengine.a
+OUT_ENGLIB    := build/$(BUILD)/libobengine.a
 LIBTEST_STAMP := build/libtest-pass.stamp
 TOUCH_STAMP := build/touch-guard.stamp
 PAGE_STAMP  := build/page-guard.stamp
@@ -901,7 +901,11 @@ TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) \
             $(DEMO_SRC) $(AUTOPLAY_SRC) \
             $(TEST_ONLY_SRC)
 
-$(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
+# One gcc call compiles every source, so no .d files track its headers: it
+# depends on every header instead, and an edited header rebuilds it.
+TEST_HDR := $(wildcard engine/include/*.h src/*.h src/*/*.h demo/*.h autoplay/*.h tools/*.h tests/*.h)
+
+$(OUT_TEST): $(TEST_SRC) $(TEST_HDR) $(OUT_ENGLIB) build/version.h Makefile | build
 	gcc $(CFLAGS) -Ithird_party/greatest -Itests $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
 
 # ---------------------------------------------------------------------------
@@ -914,9 +918,9 @@ $(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
 # the library itself has no raylib dependency.
 # ---------------------------------------------------------------------------
 ENGLIB_SRC := $(ENGINE_SRC) $(VENDOR_SRC)
-ENGLIB_OBJ_DIR := build/objs/englib
+ENGLIB_OBJ_DIR := build/$(BUILD)/objs/englib
 ENGLIB_OBJ := $(patsubst %.c,$(ENGLIB_OBJ_DIR)/%.o,$(ENGLIB_SRC))
-ENGLIB_CFLAGS := -std=c99 -Wall -Wextra -O2 -fPIC $(OB_EXTRA_CFLAGS) -Iengine/headless -Iengine/include -Ibuild -Ithird_party/cjson -Ithird_party/miniz -DOB_HEADLESS
+ENGLIB_CFLAGS := -std=c99 -Wall -Wextra $(CFLAGS_$(BUILD)) -fPIC $(OB_EXTRA_CFLAGS) -Iengine/headless -Iengine/include -Ibuild -Ithird_party/cjson -Ithird_party/miniz -DOB_HEADLESS
 
 $(ENGLIB_OBJ_DIR)/%.o: %.c Makefile | $(ENGLIB_OBJ_DIR) build/version.h
 	@mkdir -p $(dir $@)

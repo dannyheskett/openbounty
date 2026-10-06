@@ -11,7 +11,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define SAVE_PATH "/tmp/openbounty_fog.dat"
+#define SAVE_PATH "build/openbounty_fog.dat"
 
 TEST init_starts_with_no_tiles_seen(void) {
     Fog f = { 0 };
