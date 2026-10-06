@@ -19,38 +19,25 @@ int shell_run_pack_dir_mode(const char *src, const char *dst) {
     return 0;
 }
 
-int shell_run_extract_mode(const char *out_dir) {
-    // Inputs come from legacy/bin/ when it holds KB.EXE, else from the
-    // current directory. With --out-dir, emit loose tree.
-    // Otherwise zip into <user-data>/openbounty/<pack_id>.openbounty.
-    const char *in_dir = "legacy/bin";
-    struct stat sst;
-    if (stat("legacy/bin/KB.EXE", &sst) != 0) {
-        if (stat("KB.EXE", &sst) == 0) {
-            in_dir = ".";
-        } else {
-            fprintf(stdout,
-                    "extract: KB.EXE not found. Place your game files "
-                    "in legacy/bin/ or in the current directory.\n");
-            return 2;
-        }
-    }
-    if (out_dir) {
-        int rc = extract_run(in_dir, out_dir);
-        return rc == 0 ? 0 : 1;
-    }
+const char *shell_extract_input_dir(void) {
+    struct stat st;
+    if (stat("legacy/bin/KB.EXE", &st) == 0) return "legacy/bin";
+    if (stat("KB.EXE", &st) == 0) return ".";
+    return NULL;
+}
+
+bool shell_extract_to_user_dir(const char *in_dir, char *out_zip, size_t cap) {
     char user_dir[PACK_ENTRY_PATH_MAX];
     if (!SavePathGetDir(user_dir, sizeof user_dir)) {
         fprintf(stdout, "extract: cannot resolve user data dir\n");
-        return 1;
+        return false;
     }
     char tmp_dir[PACK_ENTRY_PATH_MAX + 32];
     snprintf(tmp_dir, sizeof tmp_dir, "%s/.tmp-extract", user_dir);
     pack_rmtree(tmp_dir);
-    int rc = extract_run(in_dir, tmp_dir);
-    if (rc != 0) {
+    if (extract_run(in_dir, tmp_dir) != 0) {
         pack_rmtree(tmp_dir);
-        return 1;
+        return false;
     }
     // Read pack_id from the emitted game.json so the output filename
     // matches what discovery will surface.
@@ -63,14 +50,38 @@ int shell_run_extract_mode(const char *out_dir) {
             pack_close(p);
         }
     }
-    char out_zip[PACK_ENTRY_PATH_MAX + 96];
-    snprintf(out_zip, sizeof out_zip, "%s/%s.openbounty", user_dir, pid);
-    if (!pack_zip_dir(tmp_dir, out_zip)) {
-        fprintf(stdout, "extract: failed to write %s\n", out_zip);
+    char zip[PACK_ENTRY_PATH_MAX + 96];
+    snprintf(zip, sizeof zip, "%s/%s.openbounty", user_dir, pid);
+    if (!pack_zip_dir(tmp_dir, zip)) {
+        fprintf(stdout, "extract: failed to write %s\n", zip);
         pack_rmtree(tmp_dir);
-        return 1;
+        return false;
     }
     pack_rmtree(tmp_dir);
-    fprintf(stdout, "extract: wrote %s\n", out_zip);
-    return 0;
+    fprintf(stdout, "extract: wrote %s\n", zip);
+    if (out_zip && cap > 0) {
+        size_t n = strlen(zip);
+        if (n >= cap) n = cap - 1;
+        memcpy(out_zip, zip, n);
+        out_zip[n] = '\0';
+    }
+    return true;
+}
+
+int shell_run_extract_mode(const char *out_dir) {
+    // Inputs come from legacy/bin/ when it holds KB.EXE, else from the
+    // current directory. With --out-dir, emit a loose tree; otherwise zip
+    // into <user-data>/<pack_id>.openbounty.
+    const char *in_dir = shell_extract_input_dir();
+    if (!in_dir) {
+        fprintf(stdout,
+                "extract: KB.EXE not found. Place your game files "
+                "in legacy/bin/ or in the current directory.\n");
+        return 2;
+    }
+    if (out_dir) {
+        int rc = extract_run(in_dir, out_dir);
+        return rc == 0 ? 0 : 1;
+    }
+    return shell_extract_to_user_dir(in_dir, NULL, 0) ? 0 : 1;
 }

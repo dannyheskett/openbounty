@@ -134,11 +134,12 @@ flagged (§38).
 
 ### 1.2 Process flow
 
-- **REQ-010.** `main` (`src/main.c`) has parsed argv, resolved the active pack,
+- **REQ-010.** `main` (`src/main.c`) has parsed argv (`cli_parse`,
+  `src/cli_flags.c`), resolved the active pack,
   loaded `Resources` from `game.json`, created the window and render target,
   loaded assets, and entered the macro-state machine (§5.2). Early-exit CLI
   modes have been handled before window creation: `--version` and `--help`
-  inside the argv parse in `src/main.c`, `--extract` and `--pack-dir` in
+  inside `cli_parse`, `--extract` and `--pack-dir` in
   `src/shell_earlyexit.c`.
 - **REQ-011.** Engine combat (state, AI, headless turn loop, damage formula,
   combat spells) has lived in `engine/combat.c`. The **rendered** combat loop
@@ -3113,7 +3114,8 @@ every menu; this section has held the rules.
 
 ### 34.1 CLI flags (`build/debug/openbounty`)
 
-- **REQ-480.** Parsed in `src/main.c` (early-exit modes in
+- **REQ-480.** Parsed by `cli_parse` in `src/cli_flags.c` into a `CliOptions`
+  (early-exit modes in
   `src/shell_earlyexit.c`): `--version`/`-v`, `--help`/`-h`, `--fullscreen`,
   `--pack <name|path>`, `--lang <code>`, `--save-dir <dir>`, `--seed N`
   (catalog world `0`–`255`, REQ-166), `--movie [<path>]`, `--debug` (the
