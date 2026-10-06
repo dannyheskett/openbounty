@@ -707,6 +707,7 @@ static cJSON *emit_time(void) {
 
 static cJSON *emit_world(void) {
     cJSON *o = cJSON_CreateObject();
+    cJSON_AddNumberToObject(o, "max_army_slots", EX_MAX_PLAYER_ARMY);
     // Nominal sight radius. The engine's FogReveal ignores this argument
     // and always stamps the DOS-authentic 5x5 box, but the pack still
     // declares the value the original used.
@@ -716,6 +717,8 @@ static cJSON *emit_world(void) {
     // English vocabulary -- KB uses "continent" / "continents" everywhere
     // (continent_names[]). Hard-coded per phase 1
     // decision: these stay in game.json as port-extractor constants.
+    cJSON_AddStringToObject(o, "zone_noun",        "continent");
+    cJSON_AddStringToObject(o, "zone_noun_plural", "continents");
     // Default name when the player enters none. Original game prompts
     // for a name; openbounty falls back to "Hero".
     cJSON_AddStringToObject(o, "default_name",     "Hero");

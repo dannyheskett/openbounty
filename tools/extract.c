@@ -32,6 +32,9 @@
 //   puzzle_cover.png             -- synthesized procedurally (ex_emit_synth);
 //                                   9x6 black border + palette-color-4
 //                                   interior.
+//   throne_backdrop              -- game.json points throne_backdrop at
+//                                   end_lose_screen.png; there is no
+//                                   separate throne art.
 //
 // These sources compile into the game binary, not a separate tool.
 // Run:    ./build/debug/openbounty --extract [--out-dir <dir>]
