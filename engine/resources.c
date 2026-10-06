@@ -1300,8 +1300,12 @@ static void parse_combat(Resources *res, cJSON *obj) {
             res->morale_chart[i][j] = 'N';
     res->number_name_count = 0;
     res->morale_as_army_view = false;
+    res->field_obstacle_chance = 10;
     if (!cJSON_IsObject(obj)) return;
     res->morale_as_army_view = cJSON_IsTrue(cJSON_GetObjectItem(obj, "morale_as_army_view"));
+    cJSON *foc = cJSON_GetObjectItem(obj, "field_obstacle_chance");
+    if (cJSON_IsNumber(foc) && foc->valueint >= 0 && foc->valueint <= 100)
+        res->field_obstacle_chance = foc->valueint;
 
     cJSON *mc = cJSON_GetObjectItem(obj, "morale_chart");
     if (cJSON_IsArray(mc)) {

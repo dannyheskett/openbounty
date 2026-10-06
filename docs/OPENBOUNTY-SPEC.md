@@ -2117,7 +2117,11 @@ golden-digest regression tests have pinned the formulas.
   is a static guardian in modern mode, which has fielded all five
   (`full_band`). Two modes: **field** (`COMBAT_MODE_FOE`, open field, scattered
   obstacles) and **castle** (`COMBAT_MODE_CASTLE`, siege layout with walls).
-  The player has started one troop per row (slot i → column 0, row i). The
+  The player has started one troop per row (slot i → column 0, row i). In
+  the field each cell of columns 1–3 has held an obstacle (code 1..3, drawn
+  at random) at the pack's `combat.field_obstacle_chance` percent: absent,
+  King's Bounty's one in ten, drawn exactly as the original draws it, so
+  its random stream is unchanged; Glory of Rome sets 20. The
   obstacle map (`omap`) has used codes 1..3 for field obstacles and 5..10 for
   castle walls (0 = open); the unit map (`umap`) has held packed unit ids
   (1-based; 0 = empty). Both maps have been sized `[H+1][W+1]` for off-by-one

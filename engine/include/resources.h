@@ -1512,6 +1512,10 @@ typedef struct {
     // false = the behaviour ported from King's Bounty (REQ-385), kept for
     // the legacy pack. Glory of Rome sets it (2026-09-27, #75).
     bool morale_as_army_view;
+    // combat.field_obstacle_chance: the percent chance that each cell of an
+    // open-field battle's middle columns holds an obstacle. Absent = 10, King's
+    // Bounty's one in ten, drawn exactly as the original draws it.
+    int field_obstacle_chance;
 
     // Fuzzy-number labels for intelligence / enemy-sight text
     // .
