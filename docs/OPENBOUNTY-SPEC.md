@@ -1303,7 +1303,7 @@ flagged (§38).
 
 ### 10.2 Algorithm
 
-- **REQ-231.** `salt_continent` (`engine/game.c`) has run once per zone at
+- **REQ-231.** `salt_continent` (`engine/game_world.c`) has run once per zone at
   game init. It has: (1) registered every static foe army on the zone as a
   hostile `FoeState`; (2) built a barrel of `chest_count` slots (one per chest
   placeholder), each tagged `SALT_NONE`; (3) for each kind in order
@@ -1335,7 +1335,7 @@ flagged (§38).
 
 ### 10.4 Salt of villains
 
-- **REQ-233.** `salt_villains` (`engine/game.c`) has run after
+- **REQ-233.** `salt_villains` (`engine/game_world.c`) has run after
   `salt_continent`. For each villain in catalog order, a retry loop (guarded
   by `ncastles * 20` tries, castles excluded from contracts at the tail of
   the list trimmed from the draw) has picked a random castle in the
@@ -1346,7 +1346,7 @@ flagged (§38).
 
 ### 10.5 Salt of spells
 
-- **REQ-234.** `salt_spells` (`engine/game.c`) has assigned exactly one spell
+- **REQ-234.** `salt_spells` (`engine/game_world.c`) has assigned exactly one spell
   to each town's `spell_for_sale` in three phases: (1) **pinned**: each town
   with a non-empty `pinned_spell` has received it and the spell has been
   marked claimed; (2) **random**: each unclaimed spell has been placed in a
@@ -1355,7 +1355,7 @@ flagged (§38).
 
 ### 10.6 Scepter burial
 
-- **REQ-235.** `bury_scepter` (`engine/game.c`) has taken the zone index
+- **REQ-235.** `bury_scepter` (`engine/game_world.c`) has taken the zone index
   `GameInitSeeded` has drawn as `game_rng_next(0, zone_count - 1)`, one draw
   over every zone the pack declares (#77), loaded
   its map, counted all tiles whose terrain
@@ -1642,7 +1642,7 @@ flagged (§38).
 
 ### 15.3 Roll
 
-- **REQ-283.** `roll_creature(continent_tier)` (`engine/game.c`, the castle
+- **REQ-283.** `roll_creature(continent_tier)` (`engine/game_world.c`, the castle
   roll): `kind = rng(0,3)`; `chance = rng(1,100)`; walk the kind's curve for
   the smallest slot where `chance <= curve[slot]` (else the last slot,
   `resources_spawn_slot`); `troop_id = troop_pool[kind][slot]`; `count =
@@ -1673,7 +1673,7 @@ flagged (§38).
 ### 15.5 Hero-on-foe
 
 - **REQ-285.** Hostile (and friendly) foes have proactively walked toward the
-  hero each turn via `GameFoesFollow` (`engine/game.c`): for each foe within
+  hero each turn via `GameFoesFollow` (`engine/game_foes.c`): for each foe within
   Chebyshev distance 2 of the hero's *previous* position, all 9 cells of the
   foe's 3×3 neighborhood have been scored by Euclidean distance to that
   position (`foe_dist_sq`); unwalkable or occupied non-center cells have been
