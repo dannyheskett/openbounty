@@ -445,32 +445,13 @@ its root and read through `LoadAssetBytes` / `LoadAssetTexture`.
 
 ## 5. Game configuration (`assets/kings-bounty/game.json`)
 
-All gameplay data has been JSON-driven; `docs/PACK-FORMAT.md` has been the
-full reference. King's Bounty's top-level keys:
-
-| Key | Contents |
-|---|---|
-| `title` | "King's Bounty" |
-| `version` | 1 (pack schema version) |
-| `pack_id` / `pack_kind` / `pack_name` | Pack identity (e.g. `"kings-bounty"`, `"base"`), see `docs/PACK-FORMAT.md` |
-| `world` | global flags: `language="en"`, `max_army_slots=5`, `starting_zone="continentia"`, `zone_noun`, `default_name="Hero"`, `default_options=[4,1,1,1,1]` |
-| `time` | `day_steps=40`, `week_days=5`, `days_per_difficulty={easy:900, normal:600, hard:400, impossible:200}` |
-| `economy` | `boat_cost_normal=500`, `boat_cost_cheap=100` (with anchor artifact), `siege_cost=3000`, `alcove_cost=5000` |
-| `contract` | `cycle_length=5`, `initial_last_contract=4` |
-| `combat` | `morale_chart` (5×5 table), `number_names` (6 quantifier strings) |
-| `controls` | `settings[]`, the controls-menu rows (delay, sounds, walk_beep, animation, cga [hidden], music, volume), persisted per-game in `Game.stats.options[]` |
-| `credits` | Credits screen: an optional `image`, `groups` of a label and its names, and `copyright` lines |
-| `ending` | Victory cartoon parameters (tile paths, frame count, etc.) |
-| `spawn` | Per-continent troop spawn tables (`troop_pool[4][N]` and `chance_curve[4][N]`) |
-| `tile_codes` | Map of `0x00..0x7F` byte → `{name, terrain, blocks_foot, is_bridge, art}`. The `.dat` map files reference these by ASCII char. |
-| `sprites` | Sprite sheet paths and frame counts |
-| `troops` | 25 troop definitions (id, name, HP, damage range, skill, recruit cost, growth, abilities, tier counts) |
-| `spells` | 14 spell definitions (id, name, cost, kind: combat/adventure) |
-| `artifacts` | 8 artifact definitions (id, name, power flag, effect text) |
-| `villains` | 17 villain definitions (id, name, reward gold, army composition, zone) |
-| `castles` | Castle catalog |
-| `towns` | Town catalog |
-| `zones` | 4 continents: `continentia`, `forestria`, `archipelia`, `saharia`, each with map path, dimensions, hero/home spawn, signs, towns, castles, chests, artifacts, dwellings, wandering_armies, salt budget. |
+All gameplay data has been JSON-driven, and `docs/PACK-FORMAT.md` has been
+the one reference for every key, its type and its default. King's Bounty's
+`game.json` has carried the top-level keys `title`, `version`, `pack_id`,
+`pack_name`, `pack_kind`, `render`, `world`, `time`, `economy`, `tuning`,
+`combat`, `zones`, `towns`, `castles`, `troops`, `spells`, `classes`,
+`villains`, `artifacts`, `tile_codes`, `spawn`, `contract`, `controls`,
+`sprites`, `ending`, `colors`, `credits` and `audio`.
 
 Every user-visible string has lived beside `game.json` in `strings/en.json`
 (rank titles, ending text, audience dialogs, etc.).
@@ -523,11 +504,12 @@ rollover has fired the end-of-week sequence (astrology + budget).
 ```
 score = 500 × villains_caught + 250 × artifacts_found
        + 100 × castles_owned − followers_killed
-       all multiplied by the difficulty modifier, never below 0
+       then halved on Easy, or multiplied by 1 / 2 / 4 on Normal / Hard /
+       Impossible, and never below 0
 ```
 
-Implemented in `GameComputeScore` (`engine/game.c`), from the pack's
-`economy.scoring`.
+Implemented in `GameComputeScore` (`engine/game.c`) from the pack's
+`economy.scoring`; `docs/OPENBOUNTY-SPEC.md` REQ-400 has given the rule.
 
 ### Movement
 
