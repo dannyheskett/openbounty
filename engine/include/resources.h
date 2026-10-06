@@ -674,8 +674,6 @@ typedef struct {
     char town_menu_info[RES_BANNER_LEN];
     char town_menu_spell[RES_BANNER_LEN];
     char town_menu_siege[RES_BANNER_LEN];
-    char town_detail_boat_dock[RES_BANNER_LEN];  // %X% %Y%
-    char town_detail_intel[RES_BANNER_LEN];      // %CASTLE%
     char town_contract_confirm[RES_BANNER_LEN];
     char foe_fight[RES_BANNER_LEN];
     char foe_evade[RES_BANNER_LEN];
@@ -709,7 +707,6 @@ typedef struct {
     char castle_tribute_confirm[RES_BANNER_LEN];
     char castle_artifacts[RES_BANNER_LEN];
     char castle_over_leadership[RES_BANNER_LEN];
-    char castle_count_of[RES_BANNER_LEN];
     char castle_cost[RES_BANNER_LEN];
     char castle_no_troops[RES_BANNER_LEN];
     char town_temple_needs_rites[RES_BANNER_LEN]; // %HERO% %ZONE% %X% %Y% (the zone's alcove)
@@ -737,15 +734,11 @@ typedef struct {
     char spell_bridge_built[RES_BANNER_LEN];              // %COUNT%
     char spell_bridge_invalid[RES_BANNER_LEN];
     char spell_castle_gate_none[RES_BANNER_LEN];
-    char spell_castle_gate_choose[RES_BANNER_LEN];
     char spell_town_gate_none[RES_BANNER_LEN];
-    char spell_town_gate_choose[RES_BANNER_LEN];
     char spell_instant_army_fizzle[RES_BANNER_LEN];
     char spell_instant_army_no_room[RES_BANNER_LEN];
     char spell_instant_army_success[RES_BANNER_LEN];      // %QTY% %TROOP%
     char spell_raise_control_success[RES_BANNER_LEN];     // %AMOUNT%
-    char spell_gate_teleported[RES_BANNER_LEN];
-    char spell_gate_invalid[RES_BANNER_LEN];
 
     // Foe encounters .
     // Substitutions: %LABEL%, %COUNT%, %TROOP%, %COST%.
@@ -777,13 +770,11 @@ typedef struct {
     char gmd_unit[RES_BANNER_LEN];
     char fv_your_army[RES_BANNER_LEN];
     char loc_joined[RES_BANNER_LEN];
-    char loc_gold_change[RES_BANNER_LEN];
     char count_heading[RES_BANNER_LEN];
     char count_of_lead[RES_BANNER_LEN];
     char count_of_army[RES_BANNER_LEN];
     char count_of_garrison[RES_BANNER_LEN];
     char count_cost[RES_BANNER_LEN];
-    char count_gold_left[RES_BANNER_LEN];
     char count_recruit[RES_BANNER_LEN];
     char count_garrison[RES_BANNER_LEN];
     char count_withdraw[RES_BANNER_LEN];
@@ -796,11 +787,6 @@ typedef struct {
     char capture_promoted[RES_BANNER_LEN];
     char temple_intro[RES_BANNER_LEN];
     char dwelling_intro[RES_BANNER_LEN];
-    char loc_title_taught[RES_BANNER_LEN];
-    char loc_title_refused[RES_BANNER_LEN];
-    char loc_title_known[RES_BANNER_LEN];
-    char loc_title_joined[RES_BANNER_LEN];
-    char loc_title_none[RES_BANNER_LEN];
     char gmd_leave[RES_BANNER_LEN];
     char gmd_army[RES_BANNER_LEN];
     char gmd_character[RES_BANNER_LEN];
@@ -829,7 +815,6 @@ typedef struct {
     char gmd_combat_army[RES_BANNER_LEN];
     char gmd_combat_character[RES_BANNER_LEN];
     char gmd_give_up[RES_BANNER_LEN];
-    char gmd_slot[RES_BANNER_LEN];
     char gmr_no_troops[RES_BANNER_LEN];
     char gmr_not_sailing[RES_BANNER_LEN];
     char gmr_no_saves[RES_BANNER_LEN];
@@ -874,14 +859,7 @@ typedef struct {
     char combat_give_up_header[RES_BANNER_LEN];
     char combat_give_up_body[RES_BANNER_LEN];
 
-    // Pre-combat scout report. Substitutions: %COUNT% %TROOP%.
-    char combat_scouts_header[RES_BANNER_LEN];
-    char combat_scouts_count[RES_BANNER_LEN];
-    char combat_scouts_small_band[RES_BANNER_LEN];
-    char combat_header_siege[RES_BANNER_LEN];      // dialog title
-    char combat_header_default[RES_BANNER_LEN];    // dialog title
-
-    // Signposts .
+    // Signposts.
     // Substitutions: %TITLE%, %BODY%.
     char signpost_with_body[RES_BANNER_LEN];
     char signpost_title_only[RES_BANNER_LEN];
@@ -899,14 +877,6 @@ typedef struct {
 
     // Status bar (chrome.c). Substitutions: %DAYS%, %STEPS%.
     char status_days_left[RES_BANNER_LEN];
-    // Modern: the top bar opens the menu, so it reads "Menu" in place of
-    // "Options / Controls".
-    char status_days_left_modern[RES_BANNER_LEN];
-    char status_time_stop_modern[RES_BANNER_LEN];
-    char status_menu_prefix[RES_BANNER_LEN];
-    char status_game_menu[RES_BANNER_LEN];
-    char status_days_remaining[RES_BANNER_LEN];
-    char status_time_stop_remaining[RES_BANNER_LEN];
     char status_time_stop[RES_BANNER_LEN];
 
     // Composite prompt bodies (system flows that have %TOKEN%-style values).
@@ -917,9 +887,6 @@ typedef struct {
     char body_dismiss_pick[RES_BANNER_LEN];
     char body_dismiss_last[RES_BANNER_LEN];
     char body_home_castle[RES_BANNER_LEN];
-    char body_own_castle[RES_BANNER_LEN];           // %NAME%
-    char body_garrison_row_named[RES_BANNER_LEN];   // %INDEX% %TROOP% %COUNT%
-    char body_garrison_row_empty[RES_BANNER_LEN];   // %INDEX%
     char body_navigate_row[RES_BANNER_LEN];         // %INDEX% %ZONE%
     char body_navigate_confirm[RES_BANNER_LEN];     // %ZONE%: the sail-to confirmation
     char body_no_continents[RES_BANNER_LEN];
@@ -929,8 +896,6 @@ typedef struct {
     char cannot_garrison_last[RES_BANNER_LEN];
     char no_troop_slots[RES_BANNER_LEN];
     char army_cannot_handle[RES_BANNER_LEN];
-    char no_troops_to_garrison[RES_BANNER_LEN];
-    char castle_garrison_empty[RES_BANNER_LEN];
     char spell_unavailable[RES_BANNER_LEN];
     char spell_combat_only[RES_BANNER_LEN];  // %SPELL%; optional (#157)
     char spell_not_known[RES_BANNER_LEN];
@@ -958,10 +923,7 @@ typedef struct {
     char no_effect_msg[RES_BANNER_LEN];      // (no tokens)
     char fly[RES_BANNER_LEN];                // %TROOP%
     char move[RES_BANNER_LEN];               // %TROOP%
-    char wait[RES_BANNER_LEN];               // %TROOP%
-    char pass[RES_BANNER_LEN];               // %TROOP%
     char frozen[RES_BANNER_LEN];             // %TROOP%
-    char ooc[RES_BANNER_LEN];                // %TROOP%
     char immune[RES_BANNER_LEN];             // %TROOP%
     char cloned[RES_BANNER_LEN];             // %COUNT% %TROOP%
     char resurrected[RES_BANNER_LEN];        // %COUNT% %TROOP%
@@ -972,17 +934,9 @@ typedef struct {
     char cast_fireball[RES_BANNER_LEN];      // (no tokens)
     char cast_lightning[RES_BANNER_LEN];     // (no tokens)
     char cast_turn_undead[RES_BANNER_LEN];   // (no tokens)
-    char select_clone[RES_BANNER_LEN];
-    char select_freeze[RES_BANNER_LEN];
-    char select_resurrect[RES_BANNER_LEN];
-    char select_damage[RES_BANNER_LEN];      // %SPELL%
-    char select_teleport[RES_BANNER_LEN];
-    char select_dest[RES_BANNER_LEN];
     char cant_shoot[RES_BANNER_LEN];
     char no_ammo[RES_BANNER_LEN];
     char cant_fly[RES_BANNER_LEN];
-    char give_up_prompt[RES_BANNER_LEN];
-    char exit_hint[RES_BANNER_LEN];
 } ResCombatLog;
 
 // UI label strings (game.json strings.ui / strings.menu / strings.stats /
@@ -1013,11 +967,7 @@ typedef struct {
     char press_esc_to_exit[RES_UI_LABEL_LEN];
     // Modern foe view: short stat labels.
     char fv_hp[RES_UI_LABEL_LEN];
-    char fv_skill[RES_UI_LABEL_LEN];
     char fv_dmg[RES_UI_LABEL_LEN];
-    char fv_move[RES_UI_LABEL_LEN];
-    char fv_range[RES_UI_LABEL_LEN];
-    char fv_flies[RES_UI_LABEL_LEN];
     // Modern character view.
     char cv_army[RES_UI_LABEL_LEN];
     char cv_magic[RES_UI_LABEL_LEN];
@@ -1044,15 +994,9 @@ typedef struct {
     char cv_next[RES_UI_LABEL_LEN];
     char cv_top_rank[RES_UI_LABEL_LEN];
     // Modern hint buttons: labels, key names by device, key-free texts.
-    char hint_back[RES_UI_LABEL_LEN];
-    char hint_quit[RES_UI_LABEL_LEN];
-    char hint_continue[RES_UI_LABEL_LEN];
     char key_esc[RES_UI_LABEL_LEN];
-    char key_ctrl_q[RES_UI_LABEL_LEN];
     char pad_back[RES_UI_LABEL_LEN];
-    char pad_confirm[RES_UI_LABEL_LEN];
     char give_up_header_modern[RES_UI_LABEL_LEN];
-    char save_confirm_modern[RES_UI_LABEL_LEN];
     // Status-bar fast-quit prompt. Rendered into the
     // top status bar via KB_TopBox, not a bottom dialog.
     char quit_to_dos_prompt[RES_UI_LABEL_LEN * 2];
@@ -1077,8 +1021,6 @@ typedef struct {
     char menu_contract[RES_UI_LABEL_LEN];
     char menu_puzzle[RES_UI_LABEL_LEN];
     char menu_view_map[RES_UI_LABEL_LEN];
-    char menu_screens[RES_UI_LABEL_LEN];   // modern game menu pages
-    char menu_actions[RES_UI_LABEL_LEN];
     // Modern game and combat menus.
     char gm_title[RES_UI_LABEL_LEN];
     char gm_hero[RES_UI_LABEL_LEN];
@@ -1176,27 +1118,18 @@ typedef struct {
     // Spell-flow headers come from spell_by_id()->name and are not stored
     // here; everything else (artifact pickups, system flows, fallbacks)
     // gets a slot.
-    char dt_treasure[RES_UI_LABEL_LEN];
     char dt_teleport_cave[RES_UI_LABEL_LEN];
     char dt_crystal_ball[RES_UI_LABEL_LEN];
     char dt_foes[RES_UI_LABEL_LEN];
     char dt_alcove_offer[RES_UI_LABEL_LEN];   // Archmage Aurange
     char dt_alcove_result[RES_UI_LABEL_LEN];  // Aurange
-    char dt_castle_default[RES_UI_LABEL_LEN]; // home-castle picker fallback
-    char dt_own_castle[RES_UI_LABEL_LEN];
     char dt_search[RES_UI_LABEL_LEN];
     char dt_dismiss_army[RES_UI_LABEL_LEN];
     char dt_dismiss_last[RES_UI_LABEL_LEN];
     char dt_navigate[RES_UI_LABEL_LEN];
-    char dt_garrison_pick[RES_UI_LABEL_LEN];
-    char dt_remove_pick[RES_UI_LABEL_LEN];
-    char dt_save_confirm[RES_UI_LABEL_LEN];
     char dt_lose_fallback[RES_UI_LABEL_LEN];   // header when win_text.header empty
     char dt_win_fallback[RES_UI_LABEL_LEN];
     char dt_combat_victory[RES_UI_LABEL_LEN];  // title of the post-battle spoils dialog
-
-    // Misc fallbacks.
-    char empty_slot[RES_UI_LABEL_LEN];   // garrison-row "Empty" placeholder
 
     // Combat spell-pick screen labels.
     char combat_spells_title[RES_UI_LABEL_LEN];
@@ -1233,8 +1166,6 @@ typedef struct {
     char own_castle_row_remove[RES_UI_LABEL_LEN];
     char worldmap_row_your_map[RES_UI_LABEL_LEN];
     char worldmap_row_whole_map[RES_UI_LABEL_LEN];
-    char class_select_load[RES_UI_LABEL_LEN];
-    char class_select_arrows[RES_UI_LABEL_LEN * 2];
     // Modern title menu (before class select) and the in-game New Game.
     char title_new_adventure[RES_UI_LABEL_LEN];
     char title_load_adventure[RES_UI_LABEL_LEN];
@@ -1242,12 +1173,6 @@ typedef struct {
     char title_intro[RES_UI_LABEL_LEN];      // "" unless the pack has an intro
     char new_game_confirm[RES_UI_LABEL_LEN * 2];
     char hero_name_label[RES_UI_LABEL_LEN];
-    char combat_act_wait[RES_UI_LABEL_LEN];
-    char combat_act_shoot[RES_UI_LABEL_LEN];
-    char combat_act_fly[RES_UI_LABEL_LEN];
-    char combat_act_cast[RES_UI_LABEL_LEN];
-    char combat_act_controls[RES_UI_LABEL_LEN];
-    char combat_act_give_up[RES_UI_LABEL_LEN];
 
     // Gate-landing view titles (town vs. castle gate).
     char gate_title_town[RES_UI_LABEL_LEN];
