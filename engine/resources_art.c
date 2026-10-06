@@ -164,12 +164,10 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
     art_add(out, cap, &n, res->sprites.class_highlight);
     for (int i = 0; i < res->sprites.class_picker_selected_count; i++)
         art_add(out, cap, &n, res->sprites.class_picker_selected[i]);
-    art_add(out, cap, &n, res->sprites.orb);
 
     art_add(out, cap, &n, res->ending.grass_tile);
     art_add(out, cap, &n, res->ending.carpet_tile);
     art_add(out, cap, &n, res->ending.hero_tile);
-    art_add(out, cap, &n, res->ending.throne_backdrop);
 
     for (int i = 0; i < res->classes_count; i++) {
         art_add(out, cap, &n, res->classes[i].portrait);

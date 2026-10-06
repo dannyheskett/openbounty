@@ -9,10 +9,7 @@
 	},
 	"world":	{
 		"language":	"en",
-		"max_army_slots":	5,
 		"starting_zone":	"continentia",
-		"zone_noun":	"continent",
-		"zone_noun_plural":	"continents",
 		"default_name":	"Hero",
 		"default_options":	[4, 1, 1, 1, 1]
 	},
@@ -4472,44 +4469,37 @@
 				"id":	"delay",
 				"label":	"Delay",
 				"type":	"numeric",
-				"range":	10,
-				"default":	5
+				"range":	10
 			}, {
 				"id":	"sounds",
 				"audio":	true,
 				"label":	"Sounds",
-				"type":	"bool",
-				"default":	1
+				"type":	"bool"
 			}, {
 				"id":	"walk_beep",
 				"label":	"Walk Beep",
-				"type":	"bool",
-				"default":	1
+				"type":	"bool"
 			}, {
 				"id":	"animation",
 				"label":	"Animation",
-				"type":	"bool",
-				"default":	1
+				"type":	"bool"
 			}, {
 				"id":	"cga",
 				"label":	"CGA",
 				"type":	"numeric",
 				"range":	8,
-				"default":	0,
 				"hidden":	true
 			}, {
 				"id":	"music",
 				"audio":	true,
 				"label":	"Music",
-				"type":	"bool",
-				"default":	0
+				"type":	"bool"
 			}, {
 				"id":	"volume",
 				"audio":	true,
 				"label":	"Volume",
 				"type":	"numeric",
-				"range":	10,
-				"default":	5
+				"range":	10
 			}]
 	},
 	"sprites":	{
@@ -4549,7 +4539,6 @@
 		"grass_tile":	"art/ui/end_grass.png",
 		"carpet_tile":	"art/ui/end_carpet.png",
 		"hero_tile":	"art/ui/end_hero.png",
-		"throne_backdrop":	"art/ui/end_lose_screen.png",
 		"grid_width":	6,
 		"grid_height":	5,
 		"carpet_column":	4,

@@ -278,7 +278,6 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->class_picker_selected = load_strip((const char (*)[RES_PATH_LEN])res->sprites.class_picker_selected,
                                           res->sprites.class_picker_selected_count);
     s->class_picker_selected_count = s->class_picker_selected ? res->sprites.class_picker_selected_count : 0;
-    s->orb              = load_rel(res->sprites.orb);
 
     // Victory cartoon tiles.
     s->end_grass  = load_rel(res->ending.grass_tile);
@@ -290,7 +289,6 @@ void sprites_load(Sprites *s, const Resources *res) {
         s->siege_back_wall_end[0] = load_rel(res->sprites.siege_back_wall_left);
     if (res->sprites.siege_back_wall_right[0])
         s->siege_back_wall_end[1] = load_rel(res->sprites.siege_back_wall_right);
-    s->end_throne = load_rel(res->ending.throne_backdrop);
     // Siege grid: all or nothing, so a half-loaded grid never mixes with the
     // per-code walls on the same board.
     s->siege_grid_ok = res->sprites.siege_grid[0] != '\0';
@@ -430,7 +428,6 @@ void sprites_unload(Sprites *s) {
     gfx_texture_free(s->class_picker);
     gfx_texture_free(s->class_highlight);
     unload_strip(&s->class_picker_selected, &s->class_picker_selected_count);
-    gfx_texture_free(s->orb);
     gfx_texture_free(s->end_grass);
     gfx_texture_free(s->end_carpet);
     gfx_texture_free(s->end_hero);
@@ -444,7 +441,6 @@ void sprites_unload(Sprites *s) {
     free(s->field_grid);    s->field_grid = NULL;
     free(s->field_grid_ok); s->field_grid_ok = NULL;
     s->field_grid_zones = 0;
-    gfx_texture_free(s->end_throne);
 }
 
 static int class_slot(const Sprites *s, const char *class_id) {

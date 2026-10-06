@@ -251,10 +251,7 @@ typedef struct {
 
 typedef struct {
     char starting_zone[RES_ID_LEN];
-    char zone_noun[RES_ID_LEN];
-    char zone_noun_plural[RES_ID_LEN];
     char language[RES_ID_LEN];    // base locale code; strings load from strings/<language>.json
-    int  max_army_slots;
     // A cleared object (a fought foe, an opened chest, a fled army) gives the
     // cell back its own walkable ground, desert included, instead of the
     // original's plain grass (REQ-229f, #107). Absent or false, the cleared
@@ -1474,7 +1471,6 @@ typedef struct {
             char label[24];
             char type[16];       // "bool" or "numeric"
             int  range;          // numeric upper bound (exclusive)
-            int  def;            // default value
             bool hidden;         // not shown unless CGA mode active
             bool audio;          // needs a working audio device ("audio": true)
         } items[8];
@@ -1513,7 +1509,6 @@ typedef struct {
         char grass_tile[RES_PATH_LEN];   // GR_ENDTILE sub 0
         char carpet_tile[RES_PATH_LEN];  // GR_ENDTILE sub 1
         char hero_tile[RES_PATH_LEN];    // GR_ENDTILE sub 2
-        char throne_backdrop[RES_PATH_LEN]; // optional post-cartoon image
         int  grid_width;                 // default 6
         int  grid_height;                // default 5
         int  carpet_column;              // x-column the carpet/hero use
@@ -1667,7 +1662,6 @@ typedef struct {
         // cell; "terrain" draws the map tile the hero stands on instead and
         // combat[0] is not part of the pack.
         char combat_ground[16];
-        char orb[RES_PATH_LEN];              // orb of power tile overlay
     } sprites;
 
     // Background music tracks (OGG) and tune sound effects (WAV).
