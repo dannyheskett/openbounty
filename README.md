@@ -105,7 +105,7 @@ shell has reached the platform only through five seams (`src/gfx.h`,
 ├── web/shell.html            # The WebAssembly page template
 │
 ├── assets/
-│   ├── kings-bounty/         # The reference pack (extracted, never shipped)
+│   ├── kings-bounty/         # The reference pack, extracted from KB.EXE
 │   └── glory-of-rome/        # The Glory of Rome pack
 │
 ├── art/                      # Rome art sources: generation jobs, map sources,

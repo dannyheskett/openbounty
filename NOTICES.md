@@ -518,10 +518,11 @@ Mark and Andy Caldwell, with graphics by Kenneth L. Mayfield and Vincent
 DeQuattro, Jr. Copyright 1990 New World Computing, Inc. All rights
 reserved.
 
-OpenBounty has shipped none of the original game's binaries, art, or audio.
-The player supplies original assets from a legally-owned copy of the DOS
-distribution; the `--extract` mode has produced a runnable asset pack from
-such a distribution.
+The King's Bounty pack (`assets/kings-bounty/`) has carried the art, maps,
+palette, font and PC-speaker tunes extracted from the original game, used and
+distributed with permission. Its two OGG music tracks have been modern
+recordings. The `--extract` mode has built the extracted files from a copy of
+the DOS distribution.
 
 ## Glory of Rome bitmap font
 

@@ -359,8 +359,7 @@ web-serve: $(WEB_OUTS)
 #
 # MOBILE SHIPS GLORY OF ROME ONLY. The pack goes into the APK's assets/ and
 # src/plat_android.c opens it from there; there is no pack discovery, no
-# picker, and King's Bounty (DOS-extracted, copyright-restricted) is never
-# packaged.
+# picker, and King's Bounty is not packaged.
 #
 # Pass the toolchain on the make command line, never through the environment:
 #   make android ANDROID_NDK=<ndk root> ANDROID_SDK_ROOT=<sdk root>
@@ -819,8 +818,9 @@ dist-mac: $(OUT_MAC)
 # Glory of Rome desktop packages: the same binary as the OpenBounty archives
 # above, plus the Rome pack in assets/ beside it -- the directory pack
 # discovery already searches (src/main.c), so the game starts with no flags.
-# Rome's pack is ours to ship; King's Bounty's never is, and the release
-# workflow checks both halves of that rule.
+# Each game's archives carry its own pack only: the gloryofrome-* ones carry
+# Rome's and nothing of King's Bounty, and the release workflow checks it
+# (scripts/verify_release_packs.sh).
 # ---------------------------------------------------------------------------
 ROME_PACK_FILE := $(PACK_DIR)/glory-of-rome.openbounty
 ROME_SLUG      := gloryofrome-$(OPENBOUNTY_VERSION_SLUG)
@@ -874,8 +874,7 @@ dist-web: build/web/kings-bounty/openbounty.html $(OUT_WEB_ROME)
 
 # Android ships as the APK and the AAB themselves -- no archive, no README
 # alongside: a store artifact is a single signed file. Both carry the Glory of
-# Rome pack inside them, which is ours to distribute (the release workflow's
-# guard is about King's Bounty's DOS-extracted pack, which never reaches here).
+# Rome pack inside them, and only that pack.
 dist-android: $(ANDROID_APK)
 	@mkdir -p $(DIST)
 	cp $(ANDROID_APK) $(DIST)/gloryofrome-$(OPENBOUNTY_VERSION_SLUG)-android-arm64.apk
