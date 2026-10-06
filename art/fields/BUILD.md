@@ -4,7 +4,7 @@ One picture per continent, cut into the 30 open-field cells of
 `assets/glory-of-rome/art/combat/field/<zone>_<x>_<y>.png` (ART-PIPELINE,
 "Field grid").
 
-`italia.png` was supplied (2026-09-25, #64). `italia_calm.png` is that
+`italia.png` has been the supplied painting (#64). `italia_calm.png` is that
 painting with its boulders, ferns, clover, moss and earth patches painted
 out from its own grass:
 
@@ -14,7 +14,7 @@ out from its own grass:
 deterministic, so the calmed file kept here is the one that shipped.)
 
 `galliae.png`, `africa.png` and `oriens.png` are windows of the calmed
-painting, flipped and colour-graded for each land (2026-09-28, #64). The
+painting, flipped and colour-graded for each land (#64). The
 grade is deterministic; these calls reproduce the files exactly:
 
     python3 tools/romeart.py fieldgrade art/fields/italia_calm.png art/fields/galliae.png --window 208,268,696,580 --flip h   --hue 6   --sat 1.20 --val 0.86

@@ -145,8 +145,8 @@ generated from.
 - **Location backdrops** — `figure: false`, `target [240, 102]`; the job has
   been `art/jobs/backdrop_castle.json`, and the others have differed only in
   id, prompt and seed.
-- **Base terrain** (grass, grass_variant, forest, desert, water; the mountain
-  interior until 2026-09-27, see below) —
+- **Base terrain** (grass, grass_variant, forest, desert, water; not the
+  mountain, see below) —
   `rd_tile__single_tile`, the API's purpose-built seamless tile style (cap 64;
   its craft guide sizes single tiles at 16 to 32), at **48x48**, laid 2x2 by
   `tools/romeart.py tile2x2` into the 96x96 pack tile at native pixel density,
@@ -160,10 +160,9 @@ generated from.
   terrain.
   - **Water** has been described flat, with no waves or bands: asked for
     waves, the tile style has drawn a block face with a lit top edge.
-  - **Mountain, Italia** — no longer a texture. The 48 px interior read as
-    rounded domes with a dark split (a tester: "a split Reese's cup", #67),
-    so on 2026-09-27 Italia's mountain has been rebuilt the way the other
-    continents' were: eight PixelLab rock sprites (`romeart.py sprites`,
+  - **Mountain, Italia** — not a texture, since a 48 px tile interior has
+    read as rounded domes with a dark split (#67). Italia's mountain has been
+    built the way the other continents' have: eight PixelLab rock sprites (`romeart.py sprites`,
     `art/jobs/italia_o96_rocks.json`) composed by the lattice into the
     interior and the 19 edges with a searched slot arrangement
     (`romeart.py slots`, `art/primitives/italia/rock_slots.json`), and the
@@ -208,7 +207,7 @@ generated from.
   the water a straight deck between two 5 px parapets (the road's stone mixed
   40/60 with pale travertine, a dark outer line, a joint every 8 px); and the
   deck's shadow on the water, 3 px at 0.6. Style `c` has been installed in
-  every province (2026-10-02); `zone` runs it as its sixth step.
+  every province; `zone` has run it as its sixth step.
 - **Terrain edges** — not generated. `tools/romeart.py edges` has
   composited each from the installed base and grass tiles: the original
   48x34 edge tile under `art/reference/edges/` has been read as a shape (each
@@ -311,12 +310,12 @@ generated from.
   is kept beside the source. `romeart.py siegeslice --field` has then taken
   the largest 6:5 rectangle of content centred in it (726 x 605, the white
   kept out), scaled it to 576 x 480 with Lanczos and cut the thirty cells.
-  Generating this ground has been tried and rejected (2026-09-27): Retro
+  Generating this ground has been tried and rejected: Retro
   Diffusion's tile styles have tiled seamlessly but drawn flat game-green,
   its RD Pro top-down style has drawn the look but stops at 256 and its
   joins have not blended, and variation tiles and pasted objects have read
   as squares and stickers; the painting route has been the only one that
-  kept the look. Galliae, Africa and Oriens (2026-09-28, #64) have been
+  kept the look. Galliae, Africa and Oriens (#64) have been
   derived from the calmed Italia painting rather than painted: each is a
   696 x 580 window of `art/fields/italia_calm.png` whose edge is all
   content, taken off centre (top left, bottom right, top right), flipped,

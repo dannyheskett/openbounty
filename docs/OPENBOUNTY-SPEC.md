@@ -1079,7 +1079,7 @@ flagged (§38).
   `art/fields/italia.png` calmed by `romeart.py fieldcalm`, then
   `romeart.py siegeslice --field`; Galliae, Africa and Oriens from windows
   of that calmed painting, flipped and colour-graded by
-  `romeart.py fieldgrade`, 2026-09-28, #64);
+  `romeart.py fieldgrade`, #64);
   `kings-bounty` has declared none.
 - **REQ-165a.** When `sprites.ui.panel_frame` names a palette colour the
   legacy shell has drawn a frame round every panel slot
@@ -1217,7 +1217,7 @@ flagged (§38).
   grass-terrain ground has been restored: on any other ground (desert, a
   dwelling on a mountain edge) the cleared cell has become plain grass, and
   water has stayed water. A pack that sets `world.clear_keeps_ground`
-  (2026-09-28, #107) has had any walkable ground restored, desert included,
+  (#107) has had any walkable ground restored, desert included,
   so a fought foe, an opened chest or a fled army on sand has left sand;
   unwalkable ground has still become grass and water has stayed water.
   `glory-of-rome` sets it; `kings-bounty` does not and plays as the original.
@@ -1327,10 +1327,8 @@ flagged (§38).
   first, else `dwelling_range`), derived the dwelling kind from the troop's
   `dwelling` field, placed `INTERACT_DWELLING_*`, and registered a pinned
   `DwellingState`. The lists and ranges are per zone and rise with it:
-  `kings-bounty` carries the original's four; `glory-of-rome` carried
-  Continentia's on all four provinces until 2026-09-28 (#106), so every
-  province salted the same low lairs, and now carries its own (GLORY-OF-ROME
-  §10.7). `SALT_FRIENDLY` has created a `FoeState` with
+  `kings-bounty` has carried the original's four, and each `glory-of-rome`
+  province its own (#106, GLORY-OF-ROME §10.7). `SALT_FRIENDLY` has created a `FoeState` with
   `friendly = true` and a placeholder garrison (re-rolled fresh on accept,
   §15.5).
 
@@ -1358,21 +1356,18 @@ flagged (§38).
 
 - **REQ-235.** `bury_scepter` (`engine/game.c`) has taken the zone index
   `GameInitSeeded` draws as `game_rng_next(0, zone_count - 1)`, one draw
-  over every zone the pack declares (2026-09-28, #77; until then the draw
-  was a fixed `game_rng_next(0, 3)`, the four continents of the reference
-  world, so a pack with fewer zones buried nothing on the seeds that drew
-  past its count and a pack with more never used its later zones), loaded
+  over every zone the pack declares (#77), loaded
   its map, counted all tiles whose terrain
   is `TERRAIN_GRASS`, interactive is `INTERACT_NONE`, and `blocks_foot` is
   false; picked the Nth such tile (N uniform in `[0, count-1]`), passing
   on to the next such tile when the Nth is a bridge (a bridge declares
-  grass terrain over a river; since 2026-09-28, #117, with no further draw
-  so the count and the draw are unchanged and no shipped world moved); and
+  grass terrain over a river, #117; passing on has taken no further draw, so
+  bridges have changed neither the count nor the draw); and
   stored
   the tile's zone id, x, and y in `Game.scepter`. The draw's range is part
-  of catalog identity (REQ-181a): both shipped packs declare four zones, so
-  their draw is the same `0..3` it always was and no shipped world has
-  re-mapped; a pack that changes its zone count re-maps its own worlds.
+  of catalog identity (REQ-181a): both shipped packs have declared four
+  zones, so their draw has been `0..3`; a pack that changes its zone count
+  re-maps its own worlds.
   The scepter has not been
   visible on the map; searching (key `S`) on the buried tile has triggered
   the win flow (§26).
@@ -1652,7 +1647,7 @@ flagged (§38).
   `roll_hostile_garrison` (the foe roll) has filled 1..3 slots
   (`1 + rng(0,2)`), each with its own `kind` and `chance` rolls through the
   same slot walk and `count = base + rng(0, base / 2)` where `base` is
-  `tier_counts[tier]` clamped to ≥ 2. **The calm start** (2026-09-28, #69):
+  `tier_counts[tier]` clamped to ≥ 2. **The calm start** (#69):
   when the pack's `spawn.calm_radius` is positive, a hostile foe whose spawn
   tile lies within that Chebyshev distance of its zone's `hero_spawn` has
   rolled `1 + rng(0, calm_max_stacks - 1)` stacks and, for each, the same
@@ -1762,7 +1757,7 @@ flagged (§38).
   `repopulate_castle`. At each week's end a player-owned castle with no
   troops in any of its five slots has fallen back to the monsters:
   `owner_kind = CASTLE_OWNER_MONSTERS` and a fresh `repopulate_castle`
-  garrison, so it has had to be besieged again, and it has no longer counted
+  garrison, so it has had to be besieged again, and it has not counted
   among the hero's castles for the score. A castle holding any stack has
   stayed the hero's untouched. The original (OPENKB-SPEC §16.11) tested stack
   0 alone and kept the owner byte, so a castle with stack 0 moved out lost
@@ -2231,7 +2226,7 @@ golden-digest regression tests have pinned the formulas.
        there the army view's label (REQ-271) has looked the pairs up the
        other way round and left the troop itself out, so label and
        multiplier have been able to differ where the chart is asymmetric.
-     - **Army view** (the flag true; `glory-of-rome`, 2026-09-27, #75):
+     - **Army view** (the flag true; `glory-of-rome`, #75):
        exactly REQ-271 -- alone High; every other live unit looked up as
        `morale_result(self, other)`; any L Low, all H High, else Normal --
        so the label the player reads and the multiplier the blow uses have
@@ -2847,8 +2842,8 @@ every menu; this section has held the rules.
   artifacts_found; a lifted piece has shown the scepter zone's land with
   the ground alone where an object stands, as the original blanked its
   objects, and the scepter's own cell has been framed, since the window is
-  clamped at the map's edge and the centre is not always the spot,
-  2026-09-28, #104), Worldmap (`M`), Controls (`C`), Options (`O`, legacy).
+  clamped at the map's edge and the centre is not always the spot, #104),
+  Worldmap (`M`), Controls (`C`), Options (`O`, legacy).
   Location views: Town, Home Castle, Own Castle, Dwelling, Alcove, Recruit
   Soldiers. Spell-driven view: Gate, the Town/Castle Gate destination picker
   opened by a cast rather than by a key (REQ-322). End views: Win, Lose.

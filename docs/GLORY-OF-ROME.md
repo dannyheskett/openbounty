@@ -173,8 +173,7 @@ from the zone's tier.
 
 What the zone tier *has* driven has been ambient danger only: monster-castle
 garrisons (`difficulty_tier` → `repopulate_castle`), wandering-foe strength
-(`tier_chance_curve`), and the chest tables. One exception since 2026-09-28
-(#69, a tester met giants north of Roma and worse south of it on day one):
+(`tier_chance_curve`), and the chest tables. One exception (#69):
 hostile foes within 12 cells of a zone's `hero_spawn` have rolled only the
 two weakest troops of each kind in at most two stacks (`spawn.calm_radius`,
 `calm_max_slot`, `calm_max_stacks`, PACK-FORMAT); the King's Bounty pack
@@ -182,10 +181,9 @@ declares none and rolls as the original did.
 
 The monster castles' `difficulty_tier` has stepped up with the province as
 the reference pack's does (Continentia 0, Forestria 1, Archipelia 2, Saharia
-3): Italia 0 and 1, Galliae 1, Africa 2, Oriens 3. Until #105 (2026-09-29)
-Africa sat at 1 with Galliae and Oriens at 2, so no Rome castle rolled from
-the top tier and the last sieges were easy; a castle left empty and retaken
-(REQ-302) refills at the same tier.
+3): Italia 0 and 1, Galliae 1, Africa 2, Oriens 3 (#105), so the last
+province's sieges have rolled from the top tier. A castle left empty and
+retaken (REQ-302) has refilled at the same tier.
 
 A castle gate has reported on its castle (`world.castle_gate_report`, #71):
 without siege engines the hero learns whose rule it is under ("Under
@@ -276,7 +274,7 @@ Two per zone, sited by theme (`local_idx` 0 and 1).
 The Senatus Consultum has not been salted: the chest at the end of Sardinia's
 guarded trail has pinned it (`"artifact"` on a zone chest, PACK-FORMAT), so
 the three guardians on that road have always kept an artifact, not a purse.
-The Sibylline Fragment has been pinned too since 2026-09-27, in the mountain cove (#66), so Italia's salt has scattered no artifact of its own.
+The Sibylline Fragment has been pinned too, in the mountain cove (#66), so Italia's salt has scattered no artifact of its own.
 The Scutum of Aeneas has been pinned at the end of the Thracian road in
 Oriens, behind `guardian_thrace` (#66), so Oriens' salt has scattered only the
 Corona Triumphalis.
@@ -598,8 +596,8 @@ the open sea, and printed what the hero reaches from the spawn on foot and by
 boat -- a boat sails only the water it is rented on -- first with every river
 shut, then with them bridged.
 
-**The two coves** (2026-09-27, #66: sailing had had no purpose on the
-peninsula itself). Two pockets on the Adriatic coast have been reachable only
+**The two coves** (#66), which have given sailing a purpose on the
+peninsula itself. Two pockets on the Adriatic coast have been reachable only
 from the water, rented at Ancona's harbour: a winding channel into the
 Apennine cliffs east of the spine (in at column 43 of row 52, three cells
 west, two south, two west), whose last chamber has held the pinned Sibylline
@@ -699,17 +697,15 @@ Real requirements, not guidelines:
   them (REQ-231): 2 artifacts + 1 navmap + 1 orb + 2 telecaves + 10 dwellings
   + 5 friendly foes. Anything above 21 has remained a real chest. Reference
   zones have carried 45–75; Rome's have carried 30–40.
-- **Lairs have risen with the province** (2026-09-28, #106). The ten salted
-  dwellings take the zone's `preferred_troops` first and roll the rest from
+- **Lairs have risen with the province** (#106). The ten salted
+  dwellings have taken the zone's `preferred_troops` first and roll the rest from
   its `dwelling_range`, so each province carries its own, on the reference
   pack's curve with the flavour swapped where Rome demands it: Italia the
   Coloni, Lares, Baleares, Larvae, Lupi and Fauni from the catalog's first
   fifteen; Galliae the Ligures, Lemures, Druidae, Silvani, Cyclopes and
   Silvani again, range `[1, 14]`; Africa the Manes, Sarmatae, Antaei and
   Numidae, range `[2, 14]`; Oriens the Gigantes, Striges, Furiae, Dracones
-  and Empusae, range `[20, 26]`, which reaches the Elephanti. Until then all
-  four provinces copied Italia's list, so the last province had peasants'
-  lairs and Baleares everywhere.
+  and Empusae, range `[20, 26]`, which reaches the Elephanti.
 - **More contract-eligible castles than villains, with margin.** Italia has
   hosted six and has had ten.
 - **Castles have been single tiles.** Every catalog entry has declared
