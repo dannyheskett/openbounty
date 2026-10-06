@@ -285,6 +285,8 @@ builder, gallery, demo, autoplay and pack validation).
 | `--movie` | `[<path>]` | Has recorded gameplay to an MP4: with no argument to `<user-data>/movie-<timestamp>.mp4`, with a path there. At shutdown an "Encoding…" dialog has run the muxer; intermediate per-tick frames have lived in `/tmp/openbounty-movie-<pid>`, deleted afterward. The file is written only on a clean shutdown. |
 | `--debug` | - | Has added the Debug page of cheats to the game menu. Without it no cheat has been reachable. |
 | `--gallery` | `<dir>` | Has captured every modern screen to `<dir>/<name>.png` and exited: views, prompts, dialogs, town and castle pages, menus, combat. No input has been read. Each capture has also checked that a tap reaches the rows the screen drew; a failed check has printed `[tapcheck] FAIL` and made the exit code non-zero. |
+| `--intro-movie` | `<out.mp4>` | Has rendered the pack's Introduction offline to `<out.mp4>` at 15 frames a second, with its sound, printed its cue sheet (each scene's start and length) and exited. |
+| `--puzzle-sweep` | `<dir>` | Has captured the puzzle view of every catalog world, the centre piece lifted, to `<dir>/puzzle_<NNN>_<zone>_<x>_<y>.png` (the world's index and its scepter) and exited. |
 | `--window` | `WxH` | Has opened the window at that size, a device's surface on the desk. |
 | `--touch` | - | Has made the session a touch device: touch-sized rows and the letter grid for the name. |
 | `--demo` | - | Demo mode: the human-like player agent (`demo/`, `docs/DEMO-SPEC.md`) has played the live game at a watchable pace. With `--headless`, it has played to an ending with no window and printed the `[DEMO OVER]` report (exit 0 = WON). |

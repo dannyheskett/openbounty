@@ -3081,6 +3081,8 @@ every menu; this section has held the rules.
   and `--autoplay-speed=<slow|normal|fast>`, `--intro-movie <out.mp4>` (the
   Introduction rendered offline at 15 frames a second, with its sound,
   and its cue sheet printed: each scene's start and length, REQ-430u, REQ-490),
+  `--puzzle-sweep <dir>` (the puzzle view of all 256 catalog worlds with the
+  centre piece lifted, one PNG each, named by index and scepter),
   `--validate-pack [LO [HI]]` (the
   pack-author winnability report), `--headless` (modifier for the agent
   modes), `--verbose` (agent diagnostics), `--extract`, `--out-dir <dir>`
@@ -3088,7 +3090,9 @@ every menu; this section has held the rules.
   no flags; README §3 has described each. Parsing has been STRICT: a flag
   needing a value with none, a value outside its range, an unknown flag, or a
   stray token has printed the reason to stderr and exited `2` without running
-  anything.
+  anything. Numbers have been decimal. `src/cli_flags.c` has listed every
+  flag once: `--help` has printed that list, and `tests/unit/test_cli_flags.c`
+  has checked that this requirement and README §3 name exactly those flags.
 
 ### 34.2 Packs
 

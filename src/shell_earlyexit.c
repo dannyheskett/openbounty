@@ -20,12 +20,12 @@ int shell_run_pack_dir_mode(const char *src, const char *dst) {
 }
 
 int shell_run_extract_mode(const char *out_dir) {
-    // Inputs come from cwd's legacy/bin/ subdir; if that's missing,
-    // look in cwd directly. With --out-dir, emit loose tree.
+    // Inputs come from legacy/bin/ when it holds KB.EXE, else from the
+    // current directory. With --out-dir, emit loose tree.
     // Otherwise zip into <user-data>/openbounty/<pack_id>.openbounty.
     const char *in_dir = "legacy/bin";
     struct stat sst;
-    if (stat(in_dir, &sst) != 0) {
+    if (stat("legacy/bin/KB.EXE", &sst) != 0) {
         if (stat("KB.EXE", &sst) == 0) {
             in_dir = ".";
         } else {
