@@ -32,9 +32,9 @@ static void report_no_pack(void) {
     // honors the literal newlines.
     snprintf(body, sizeof body,
         "OpenBounty cannot start because no game pack was found.\n\n"
-        "OpenBounty is a reimplementation of King's Bounty (1990) and ships without game data. To play, you must supply your own asset pack derived from a legally-owned copy of the original game.\n\n"
+        "The release archive carries the King's Bounty pack in its assets folder, next to openbounty.exe; it may have been moved or deleted.\n\n"
         "How to fix this:\n\n"
-        "1. Place a *.openbounty pack file in this folder:\n"
+        "1. Put the assets folder back, or place a *.openbounty pack file in this folder:\n"
         "     %s\n"
         "     or in the folder you start openbounty.exe from.\n\n"
         "2. Or, place your KB.EXE and its game files in the folder you start openbounty.exe from and re-run; the engine extracts a pack on first launch.\n\n"
@@ -45,11 +45,11 @@ static void report_no_pack(void) {
 #elif defined(__APPLE__)
     snprintf(body, sizeof body,
         "OpenBounty cannot start because no game pack was found.\n\n"
-        "OpenBounty is a reimplementation of King's Bounty (1990) and "
-        "ships without game data. To play, you must supply your own "
-        "asset pack derived from a legally-owned copy of the original game.\n\n"
+        "The release archive carries the King's Bounty pack in its "
+        "assets folder, next to openbounty; it may have been moved or "
+        "deleted.\n\n"
         "How to fix this:\n\n"
-        "1. Place a *.openbounty pack file in:\n"
+        "1. Put the assets folder back, or place a *.openbounty pack file in:\n"
         "     %s\n"
         "   or in the folder you run openbounty from.\n\n"
         "2. Or, from a Terminal in the folder that holds KB.EXE, run:\n"
@@ -60,11 +60,11 @@ static void report_no_pack(void) {
 #else
     snprintf(body, sizeof body,
         "OpenBounty cannot start because no game pack was found.\n\n"
-        "OpenBounty is a reimplementation of King's Bounty (1990) and "
-        "ships without game data. To play, you must supply your own "
-        "asset pack derived from a legally-owned copy of the original game.\n\n"
+        "The release archive carries the King's Bounty pack in its "
+        "assets folder, next to openbounty; it may have been moved or "
+        "deleted.\n\n"
         "How to fix this:\n\n"
-        "1. Place a *.openbounty pack file in:\n"
+        "1. Put the assets folder back, or place a *.openbounty pack file in:\n"
         "     %s\n"
         "   or in the directory you run openbounty from.\n\n"
         "2. Or, in the directory that holds KB.EXE, run:\n"

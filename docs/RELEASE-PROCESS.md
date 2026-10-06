@@ -119,10 +119,10 @@ any build has failed, no tag has been created and `N` has been reused next time.
 
 Each desktop archive has contained: the binary, `README.txt` (rendered from
 `dist/README.txt.in` with the build number substituted), `LICENSE`, and
-`NOTICES.md`; a `gloryofrome-*` archive has also carried
-`assets/glory-of-rome.openbounty`. No desktop archive has carried King's
-Bounty's pack: desktop users have supplied their own by running
-`./openbounty --extract` in the directory that has held `KB.EXE`.
+`NOTICES.md`, and its game's pack in `assets/`: `kings-bounty.openbounty`
+in an `openbounty-*` archive, `glory-of-rome.openbounty` in a `gloryofrome-*`
+one. `scripts/verify_release_packs.sh` has checked that each archive carries
+its own pack and nothing of the other game.
 
 Each web archive has embedded its game's pack inside `openbounty.data`,
 since it must carry a pack to run at all: `openbounty-*-web-wasm.zip` King's
@@ -168,7 +168,7 @@ Each merge to `main` has produced one `release-N` with all of these:
 
 | Artifact | What it has been |
 |---|---|
-| `openbounty-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **OpenBounty** -- the engine alone. It has played King's Bounty from a pack the player has built from their own `KB.EXE` (`openbounty --extract`), and has contained no pack. |
+| `openbounty-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **OpenBounty** -- King's Bounty: the binary with `assets/kings-bounty.openbounty`. |
 | `gloryofrome-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **Glory of Rome** -- the same binary with `assets/glory-of-rome.openbounty` beside it, where pack discovery has looked, so it has started with no flags. |
 | `openbounty-build-<N>-web-wasm.zip` | The King's Bounty browser build (its pack embedded in `openbounty.data`), served at danheskett.com/dist/openbounty/. |
 | `gloryofrome-build-<N>-web-wasm.zip` | The Glory of Rome browser build (its pack embedded in `openbounty.data`), served at danheskett.com/dist/gloryofrome/. |

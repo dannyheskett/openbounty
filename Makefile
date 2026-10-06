@@ -762,13 +762,10 @@ dist-ios: $(IOS_IPA)
 # Distribution archives (consumed by GitHub Actions release workflow).
 # Each `dist-<platform>` target stages the platform-specific binary plus
 # README.txt (rendered from dist/README.txt.in with $(OPENBOUNTY_VERSION)
-# substituted), LICENSE, and NOTICES.md, then archives them. The output
-# lands in dist/ next to the build/ tree.
-#
-# CRITICAL: no .openbounty pack file is ever included in a release
-# archive, the asset pack is DOS-extracted and copyright-restricted.
-# The release workflow has a CI-side belt-and-braces check that fails
-# if any dist/*.tar.gz or dist/*.zip contains a .openbounty file.
+# substituted), LICENSE, NOTICES.md and the King's Bounty pack in assets/,
+# then archives them. The output lands in dist/ next to the build/ tree.
+# Each game's archives carry its own pack only, and the release workflow
+# checks it (scripts/verify_release_packs.sh).
 # ---------------------------------------------------------------------------
 DIST    := dist
 STAGING := build/staging
@@ -778,9 +775,12 @@ STAGING := build/staging
 # The release workflow invokes it from its own job.
 dist: dist-linux dist-windows dist-mac
 
-dist-linux: release
-	@rm -rf $(STAGING)/linux && mkdir -p $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)
+KB_PACK_FILE := $(PACK_DIR)/kings-bounty.openbounty
+
+dist-linux: release $(KB_PACK_FILE)
+	@rm -rf $(STAGING)/linux && mkdir -p $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets
 	cp build/release/openbounty $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty
+	cp $(KB_PACK_FILE) $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets/kings-bounty.openbounty
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	@mkdir -p $(DIST)
@@ -792,22 +792,25 @@ dist-linux: release
 # saw the exit status of its last one -- the zip. A failing `cp LICENSE
 # NOTICES.md` left make reporting success and shipped archives with no licence
 # text. The other five games are written this way; this one was the exception.
-dist-windows: $(OUT_WIN64) $(OUT_WIN32)
+dist-windows: $(OUT_WIN64) $(OUT_WIN32) $(KB_PACK_FILE)
 	@rm -rf $(STAGING)/win-x86_64 $(STAGING)/win-i686 && mkdir -p $(DIST) \
-	    $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG) \
-	    $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)
+	    $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets \
+	    $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets
 	cp $(OUT_WIN64) $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe
+	cp $(KB_PACK_FILE) $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets/kings-bounty.openbounty
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	cp $(OUT_WIN32) $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe
+	cp $(KB_PACK_FILE) $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets/kings-bounty.openbounty
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	(cd $(STAGING)/win-x86_64 && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-windows-x86_64.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
 	(cd $(STAGING)/win-i686 && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-windows-i686.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
 
-dist-mac: $(OUT_MAC)
-	@rm -rf $(STAGING)/mac && mkdir -p $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)
+dist-mac: $(OUT_MAC) $(KB_PACK_FILE)
+	@rm -rf $(STAGING)/mac && mkdir -p $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets
 	cp $(OUT_MAC) $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty
+	cp $(KB_PACK_FILE) $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets/kings-bounty.openbounty
 	codesign --force --sign - --options runtime $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/

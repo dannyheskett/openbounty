@@ -2,8 +2,8 @@ OpenBounty <version>
 ====================
 
 OpenBounty has been an open-source reimplementation of the 1990 strategy
-game King's Bounty. The engine has shipped without game data; supply your
-own asset pack.
+game King's Bounty. The King's Bounty pack has been in the assets folder
+beside the program, where the game finds it.
 
 
 INSTALL
@@ -19,16 +19,17 @@ INSTALL
 ASSET PACK
 
   OpenBounty has looked for a *.openbounty file in the directory you run
-  it from, in your user data directory, and in an assets folder next to
-  the binary. To create a pack from your own copy of the King's Bounty
-  DOS distribution, run this in the directory that holds KB.EXE:
+  it from, in your user data directory, and in the assets folder next to
+  the binary, which holds kings-bounty.openbounty. To build the same pack
+  from a copy of the King's Bounty DOS distribution, run this in the
+  directory that holds KB.EXE:
 
       ./openbounty --extract
 
   It has written kings-bounty.openbounty into your user data directory
   (Linux ~/.local/share/openbounty, macOS ~/Library/Application
-  Support/OpenBounty, Windows %APPDATA%\OpenBounty), where the game
-  finds it on the next launch.
+  Support/OpenBounty, Windows %APPDATA%\OpenBounty), which the game
+  searches before the assets folder.
 
 
 CONTROLS
