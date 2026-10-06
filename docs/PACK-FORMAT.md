@@ -668,10 +668,10 @@ never interactive. An entry without `art` has been skipped. `kings-bounty`
 has ringed its home castle this way.
 
 **Dwellings.** A zone's `dwellings` entry has stamped a dwelling at `x, y`
-by its `kind`, in the plural: `plains`, `forest`, `hills` or `dungeon`, drawn
-with `dwelling_<kind>`. Any other kind, the troop catalog's singular `hill`
-included, has stamped no dwelling. This has differed from a troop's `dwelling`,
-which has been singular (`hill`).
+by its `kind`: `plains`, `forest`, `hills` (or `hill`, as a troop's catalog
+`dwelling` names it) or `dungeon`, drawn with `dwelling_plains`,
+`dwelling_forest`, `dwelling_hills` or `dwelling_dungeon`. Any other kind has
+stamped no dwelling.
 
 **Salt.** A zone's `salt` has turned some of its `chests` into other objects
 at the start of each game. Each count has been a number of chest positions

@@ -644,14 +644,8 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     }
     for (int pi = 0; pi < g->placement_count; pi++) {
         const SaltedPlacement *p = &g->placements[pi];
-        const char *kind = NULL;
-        switch ((Interact)p->kind) {
-            case INTERACT_DWELLING_PLAINS:  kind = "plains";  break;
-            case INTERACT_DWELLING_FOREST:  kind = "forest";  break;
-            case INTERACT_DWELLING_HILLS:   kind = "hills";   break;
-            case INTERACT_DWELLING_DUNGEON: kind = "dungeon"; break;
-            default: continue;
-        }
+        const char *kind = DwellingCatalogKind((Interact)p->kind);
+        if (!kind) continue;
         enforce_dwelling(g, p->zone, p->x, p->y, kind);
     }
 
@@ -807,14 +801,11 @@ typedef enum {
     SALT_FRIENDLY,
 } SaltKind;
 
+// A troop's dwelling kind to its tile; any kind the tiles don't know (the
+// catalog's "castle", say) is a plains dwelling.
 static Interact dwelling_kind_to_interact(const char *kind) {
-    if (!kind) return INTERACT_DWELLING_PLAINS;
-    // troop->dwelling uses singular "hill"; zone JSON uses plural "hills".
-    if (strcmp(kind, "forest") == 0)  return INTERACT_DWELLING_FOREST;
-    if (strcmp(kind, "hills") == 0)   return INTERACT_DWELLING_HILLS;
-    if (strcmp(kind, "hill") == 0)    return INTERACT_DWELLING_HILLS;
-    if (strcmp(kind, "dungeon") == 0) return INTERACT_DWELLING_DUNGEON;
-    return INTERACT_DWELLING_PLAINS;
+    Interact i = DwellingInteractFromKind(kind);
+    return i != INTERACT_NONE ? i : INTERACT_DWELLING_PLAINS;
 }
 
 // pick the troop first, derive
@@ -1136,9 +1127,7 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
                 if (!tid) { dwelling_counter++; break; }
                 const TroopDef *td = troop_by_id(tid);
                 if (!td) { dwelling_counter++; break; }
-                // Derive kind from troop's dwells field. Catalog
-                // uses singular ("hill"); dwelling_kind_to_interact handles
-                // both singular and plural.
+                // Derive kind from troop's dwells field.
                 Interact ik = dwelling_kind_to_interact(td->dwelling);
                 snprintf(id, sizeof(id), "sd_%.20s_%d", tid, dwelling_counter);
                 GameAddPlacement(g, z->id, slot->x, slot->y, ik, id);
@@ -2566,13 +2555,11 @@ int GameMaxRecruitable(const Game *g, const char *troop_id) {
     return free_leadership / t->hit_points;
 }
 
-// JSON-declared dwellings use plural kinds ("hills"), but troop catalog
-// entries use singular ("hill"). Normalize so GameDwellingTroopAt's
-// strcmp against troop->dwelling matches.
+// A zone's kind ("hills") as the troop catalog names it ("hill"), so
+// GameDwellingTroopAt's strcmp against troop->dwelling matches.
 static const char *dwelling_kind_normalize(const char *kind) {
-    if (!kind) return "";
-    if (strcmp(kind, "hills") == 0) return "hill";
-    return kind;
+    const char *k = DwellingCatalogKind(DwellingInteractFromKind(kind));
+    return k ? k : (kind ? kind : "");
 }
 
 // enforce_dwelling: eagerly materialize a
