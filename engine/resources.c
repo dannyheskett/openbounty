@@ -7,6 +7,7 @@
 #include "combat.h"     // COMBAT_W / COMBAT_H for the siege grid
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
 // ---- Small helpers ---------------------------------------------------------
@@ -3309,6 +3310,36 @@ bool resources_load(Resources *res, const char *manifest_path) {
             seen_idx[vi] = true;
         }
         free(seen_idx);
+    }
+
+    // Troops, spells, classes and artifacts are looked up by their `index` as
+    // an array position (spell slots, artifact bits, saved ids), so each must
+    // be its own position in the catalog.
+    {
+        struct { const char *what; int count; size_t stride; const void *base;
+                 size_t idx_off, id_off; } cats[] = {
+            { "troop",    res->troops_count,    sizeof(TroopDef),    res->troops,
+              offsetof(TroopDef, index),    offsetof(TroopDef, id) },
+            { "spell",    res->spells_count,    sizeof(SpellDef),    res->spells,
+              offsetof(SpellDef, index),    offsetof(SpellDef, id) },
+            { "class",    res->classes_count,   sizeof(ClassDef),    res->classes,
+              offsetof(ClassDef, index),    offsetof(ClassDef, id) },
+            { "artifact", res->artifacts_count, sizeof(ArtifactDef), res->artifacts,
+              offsetof(ArtifactDef, index), offsetof(ArtifactDef, id) },
+        };
+        for (size_t c = 0; c < sizeof cats / sizeof cats[0]; c++) {
+            for (int i = 0; i < cats[c].count; i++) {
+                const char *row = (const char *)cats[c].base + (size_t)i * cats[c].stride;
+                int idx = *(const int *)(row + cats[c].idx_off);
+                if (idx != i) {
+                    fprintf(stdout, "resources: %s '%s' has index %d; it must be "
+                            "its position in the catalog, %d\n",
+                            cats[c].what, row + cats[c].id_off, idx, i);
+                    cJSON_Delete(root);
+                    return false;
+                }
+            }
+        }
     }
 
     // Temp-death knob validation (fail-loud like the other pack contracts):
