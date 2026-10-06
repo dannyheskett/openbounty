@@ -1,7 +1,7 @@
 // Open-field obstacles (engine/combat.c combat_reset_match): each cell of the
 // middle columns holds one at the pack's combat.field_obstacle_chance. At King's
 // Bounty's 10 the draw is the original one in ten, random stream and all; Glory
-// of Rome's 20 doubles them (#64).
+// of Rome sets 12 (#64).
 
 #include "greatest.h"
 #include "combat.h"

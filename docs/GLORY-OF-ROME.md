@@ -434,10 +434,10 @@ them. Baleares, human slingers, have sat in group D with wolves and dragons,
 and Gigantes in group C with allied peoples.
 
 **Field obstacles.** An open-field battle has stamped an obstacle (rubble, a
-bramble or a broken wall) in each cell of the middle three columns at 20%
-(`combat.field_obstacle_chance`), twice King's Bounty's one in ten: about
-three a battle instead of one and a half, and a field with none in about one
-battle in twenty-eight instead of one in five (#64).
+bramble or a broken wall) in each cell of the middle three columns at 12%
+(`combat.field_obstacle_chance`), a little above King's Bounty's one in ten:
+about 1.8 a battle instead of one and a half, and a field with none in about
+one battle in seven instead of one in five (#64).
 
 ---
 
