@@ -412,7 +412,7 @@ depending on shell headers or shell symbols, this build step has failed and
 
 - One save format: **JSON, version 11** (`SAVE_VERSION` in
   `engine/include/savegame.h`). Catalog references have used string IDs
-  (e.g. `troop_id: "knights"`). A catalog game has stored its world index
+  (e.g. `"troop": "knights"`). A catalog game has stored its world index
   (`seed_index`) rather than the expanded seed, so the world reloads exactly
   (§11).
 - Save slots: 10 (`SAVE_SLOT_COUNT` in `engine/include/savepath.h`); the
@@ -533,7 +533,8 @@ Implemented in `GameComputeScore` (`engine/game.c`), from the pack's
 
 - One step per keypress (no auto-repeat).
 - Arrow keys + numpad 1–9 + Home/End/PgUp/PgDn for 8-direction movement.
-- Numpad 5 = "rest one day" (consumes a step, no movement).
+- Numpad 5 (and, in modern mode, the number-row 5) = "rest one day"
+  (consumes a step, no movement).
 - Walking on land, sailing in boat (water + bridges only), flying with
   Mount=Fly bypasses ground/water restrictions and skips interactive tiles.
 - Stepping onto an interactive tile has triggered its handler. Most interact
@@ -695,9 +696,10 @@ Turn-based tactical combat on a 6×5 grid. Split:
 
 Player input has included movement, wait/skip (Space/W), shoot (S), **fly
 (F, only when the active unit has TROOP_ABIL_FLY)**, use magic (U), give up
-(G), and the controls/options/army/character views. In modern mode every one
-of them has also been a row in the combat menu (`docs/DESIGN-SPEC.md`), which
-has opened on the first command the active unit can use (DSGN-0119).
+(G), and the controls/options/army/character views (§8, Combat). In modern
+mode every one of them but Options has also been a row in the combat menu
+(`docs/DESIGN-SPEC.md`), which has opened on its Actions page with the cursor
+on Unit (DSGN-0119).
 
 The combat-formula golden digests have lived in
 `tests/regression/test_combat_digests.c` and run via `make test`.
@@ -706,8 +708,8 @@ The combat-formula golden digests have lived in
 
 ## 8. Keybindings
 
-Adventure mode (overworld). In modern mode every action has also been a menu
-row or a tap (`docs/DESIGN-SPEC.md`).
+Adventure mode (overworld), then combat and dialogs. In modern mode every
+action has also been a menu row or a tap (`docs/DESIGN-SPEC.md`).
 
 ### Movement
 
@@ -721,7 +723,7 @@ row or a tap (`docs/DESIGN-SPEC.md`).
 | Numpad 9 / PgUp | Move NE |
 | Numpad 1 / End | Move SW |
 | Numpad 3 / PgDn | Move SE |
-| Numpad 5 | Rest one day in place |
+| Numpad 5 (and `5` in modern) | Rest one day in place |
 
 ### Views (toggle on/off)
 
@@ -752,20 +754,60 @@ row or a tap (`docs/DESIGN-SPEC.md`).
 
 | Key | Action |
 |---|---|
-| `Q` | Save-and-quit prompt (legacy); the game menu on its Save page (modern) |
-| `Ctrl+Q` | Fast quit (no save) prompt |
+| `Q` | Legacy: save to slot 0 at once, then a message where `Ctrl+Q` quits and any other key continues. Modern: the game menu on its Save page |
+| `Ctrl+Q` | Quit without saving, after a yes/no; on an open message, quit at once |
 | Alt+Enter | Toggle fullscreen |
 | Backtick (\`) | Manual screenshot to `screenshots/shot_NNNN.png` |
 | Esc | Dismiss view / cancel prompt; in modern mode, open the game menu |
+
+### Gamepad
+
+On the map; a keyboard action in the same frame has won.
+
+| Button | Action |
+|---|---|
+| D-pad / left stick | Move |
+| A | Search |
+| X | Use magic |
+| Y | Wait until end of week |
+| LB | Army |
+| RB | Character |
+| LT | Fly |
+| RT | Land |
+| Start | Worldmap |
+| Back | Options (legacy); the game menu (modern) |
+| B | Cancel, where a screen reads it (Controls, Goto, the bridge, the quit question) |
+
+### Combat
+
+| Key | Action |
+|---|---|
+| Arrows / numpad / Home, End, PgUp, PgDn | Move the active unit (8 directions) |
+| Space / `W` / Numpad 5 | Wait (skip the unit's turn) |
+| `S` | Shoot: pick an enemy |
+| `F` | Fly: pick an empty cell (flyers only) |
+| `U` | Use magic: a lettered spell menu, `A`–`G` (legacy); the combat menu's spells page (modern) |
+| `G` | Give up (yes/no) |
+| `A` | Army view |
+| `V` | Character view |
+| `C` | Controls |
+| `O` | Options (legacy) |
+| Enter / Space / `A` / `C` | Confirm the picked cell (shoot, fly, spell target) |
+| Esc | Cancel a pick; close a view; in modern mode, open the combat menu or go back a page |
 
 ### Dialog dismiss
 
 | Key | Action |
 |---|---|
-| Any non-modifier key | Advance / dismiss |
+| Any non-modifier key | Advance / dismiss a message |
+| `Ctrl+Q` | Quit at once from a message |
 | `Y` / `N` | Yes / No on yes-no prompts |
-| `1`–`9` (or numpad) | Choice on numeric prompts |
-| Enter / Space | Confirm |
+| `1`–`5` (or numpad) | Choice on numbered prompts |
+| `A` / `B` | Choice on two-choice prompts |
+| Digits / Backspace | Type a count (legacy) |
+| Enter | Yes on a yes-no prompt and commit a count (legacy); act on the cursor's row (modern) |
+| Space | Act on the cursor's row, commit a count (modern) |
+| Arrows | Move the cursor; step a count by 1 (←/→) or 10 (↓/↑) (modern) |
 | Esc | Cancel / dismiss |
 
 ---

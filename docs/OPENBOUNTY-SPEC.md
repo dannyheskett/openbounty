@@ -342,7 +342,7 @@ flagged (§38).
 - **REQ-102.** Catalog entries (troops, spells, castles, towns, villains,
   artifacts, classes, zones) have been referenced by **string id**
   (lowercase snake_case), not array index. Ids have been stable across pack
-  versions and have been what appears in save files (`troop_id: "knights"`).
+  versions and have been what appears in save files (`"troop": "knights"`).
   This has kept saves readable and pack-portable.
 - **REQ-103.** String ids have been stored in fixed-size char arrays
   (commonly `[24]` or `[32]`; see the per-struct field widths in §4). An empty
@@ -522,23 +522,31 @@ flagged (§38).
   `spell_power`, `max_spells`, `knows_magic` (bool), `siege_weapons` (flag),
   `time_stop` (overworld steps where the day does not advance),
   `steps_left_today`, `days_left`, `game_over` (set when `days_left` hits 0),
-  `won` (set when the scepter is recovered), `last_commission` and
-  `last_astrology_troop` (UI carry from the most recent week-end), `blessed`
-  and `tributes` (the modern audience's Blessing and Tribute), and
-  `options[7]` (the controls-menu settings, persisted per game, parallel to
-  `res->controls.items[]`).
+  `won` (set when the scepter is recovered), `last_commission`,
+  `last_astrology_troop` and `last_renewed_spell` (UI carry from the most
+  recent week-end), `last_week_on_hand`, `last_week_army` and
+  `last_week_boat` (what that week-end took, for the budget screen),
+  `last_week_left[5]` (the stacks it could not pay that left), `blessed` and
+  `tributes` (the modern audience's Blessing and Tribute), and `options[7]`
+  (the controls-menu settings, persisted per game, parallel to
+  `res->controls.items[]`). `last_astrology_troop`, `last_renewed_spell` and
+  `last_week_left` have not been saved; `blessed` and `tributes` have been
+  saved only for a pack with `economy.audiences`.
 - **REQ-144.** `Character` has held: `name[16]`, `cls` (a `ClassState`:
   class id, `rank_index` 0..3, denormalized `rank_id` + `rank_title`),
-  `difficulty`, and `mount`.
+  `difficulty`, and `mount`. `rank_id` has not been saved; the load has
+  taken it from the class's rank.
 - **REQ-145.** `Position` has held `zone[24]`, `x`, `y`, `last_x`, `last_y`
   (previous tile, for bump-back), `facing_left` and `facing`, and the
   location the hero is standing in: `in_town`, `home_castle`, `own_castle`,
-  and `dwelling_troop` with `dwelling_x`, `dwelling_y`.
+  and `dwelling_troop` with `dwelling_x`, `dwelling_y`. The location fields
+  have not been saved.
 - **REQ-146.** `ArmyStack` has held `id[32]` (troop id; empty = empty slot)
   and `count`. `Unit` (used inside garrisons and foe rows) has held `id[24]`
   and `count`.
 - **REQ-147.** `Spellbook` has held `count`, `counts` and `learned` (heap),
-  parallel to the spell catalog. `GameKnownSpells` has summed the counts;
+  parallel to the spell catalog; `learned` has been saved (as
+  `spells_learned`) only for a pack with `economy.spell_weekly_renewal`. `GameKnownSpells` has summed the counts;
   `GameSpellRoom` has answered how many more of one spell the hero can hold
   (REQ-321).
 - **REQ-148.** `Contract` has held `active_id[24]` (current contract, empty =
@@ -549,8 +557,9 @@ flagged (§38).
   `VillainDef.index`).
 - **REQ-149.** `Artifacts` has held `count` and `found` (heap), parallel to
   the artifact catalog. `WorldProgress` has held `zone_count` and, per zone,
-  `zones_discovered`, `zone_rites` (the Augur's rites, modern), `orbs_found`,
-  and `continent_fog` (per-continent fog snapshots; the active continent's
+  `zones_discovered`, `zone_rites` (the Augur's rites, modern; saved only for
+  a pack with `economy.rites_per_zone`), `orbs_found`, and `continent_fog`
+  (per-continent fog snapshots, saved as `map_state`; the active continent's
   fog has lived in the shell's standalone `Fog` and been swapped in/out on
   zone change). The puzzle view has derived its reveal state directly from
   `contract.villains_caught` + `artifacts.found`; there has been no separate
@@ -576,17 +585,17 @@ flagged (§38).
   save was read into the game, as the original's world map kept its bridge
   tiles. Saved as `bridges`; a save without the key has loaded none (#109).
 - **REQ-153.** `DwellingState`: `zone[24]`, `x`, `y`, `troop_id[32]`
-  (deterministic, set on first visit), `count` (current available recruits),
-  `max_population`.
+  (deterministic, set on first visit; saved as `troop`), `count` (current
+  available recruits), `max_population`.
 - **REQ-154.** `SaltedPlacement`: `zone[24]`, `x`, `y`, `kind` (an `Interact`
-  enum value stored as `int` for save stability), `id[32]` (payload, troop
-  id for a dwelling, artifact id, etc.; may be empty).
+  enum value held as `int`, saved as its name, `InteractToString`), `id[32]`
+  (payload, troop id for a dwelling, artifact id, etc.; may be empty).
 - **REQ-155.** `FoeState`: `zone[24]`, `x`, `y`, `origin_x`, `origin_y` (the
   spawn tile, unchanged as the foe wanders; a friendly foe's origin is the
   chest slot it was salted onto, which the map never draws as a chest),
-  `placement_id[32]`, `garrison[5]`, `alive`, `friendly` (true → recruit
-  dialog; false → attack prompt), `is_static` (never moves; the fight is
-  forced on contact), `requires_troop[32]` (the one arm a gate army admits,
+  `placement_id[32]` (saved as `id`), `garrison[5]`, `alive`, `friendly`
+  (true → recruit dialog; false → attack prompt), `is_static` (never moves;
+  the fight is forced on contact; saved as `static`), `requires_troop[32]` (the one arm a gate army admits,
   empty = anyone), `scene_index` and `scene_title[48]` (the picture and
   heading shown when it turns the hero back; `-1` / empty = none). Friendly
   and hostile foes have shared the one `foes` table; classification has been
@@ -1437,8 +1446,10 @@ flagged (§38).
   within a turn), dispatched through `src/shell_actions.c` / `src/input.c`,
   have been: `A` view army, `C` view controls, `D` dismiss army, `F` fly, `I`
   view contract, `L` land, `M` worldmap, `N` navigate (sail), `O` options
-  (legacy) or the game menu (modern), `P` view puzzle, `Q` save-and-quit,
-  `Ctrl+Q` fast quit, `S` search, `U` cast spell, `V` view character, `W` end
+  (legacy) or the game menu (modern), `P` view puzzle, `Q` save (legacy: it
+  has written slot 0 at once and said so, any key continuing and `Ctrl+Q`
+  quitting; modern: the game menu on its Save page), `Ctrl+Q` quit without
+  saving, after a yes/no, `S` search, `U` cast spell, `V` view character, `W` end
   week, `Numpad 5` (and, in modern mode, the number-row `5`) rest one day,
   `G` Goto (modern only, REQ-541),
   `Esc` close overlay (and, in modern mode with nothing open, the game
@@ -1469,7 +1480,8 @@ flagged (§38).
 
 - **REQ-251.** D-pad / left stick → 8-direction movement; A → search; X →
   cast spell; Y → end week; LB → army; RB → character; LT → fly; RT → land;
-  Start → worldmap; Back → options; B → cancel.
+  Start → worldmap; Back → options (legacy) or the game menu (modern); B →
+  cancel. A keyboard action in the same frame has won.
 
 ### 12.3 Search / dismiss / end week
 
@@ -2275,14 +2287,22 @@ golden-digest regression tests have pinned the formulas.
 
 ### 25.9 Player input
 
-- **REQ-390.** Movement via arrows / numpad 8/4/6/2 (cardinals) and
-  Home/PgUp/End/PgDn or numpad 7/9/1/3 (diagonals); numpad 5 = wait. `S` has
-  shot (rejected when `shots == 0` or surrounded). `U` has opened the spell
-  menu (A..G for spells 0..6). `G` (give up) has asked Yes/No and Yes has set
-  `result = 2`; `Esc` with nothing armed has done nothing in legacy, and in
-  modern mode has opened the combat menu, whose Game page holds Give up
-  (REQ-430s, `docs/DESIGN-SPEC.md`). `C` has shown the controls
-  overlay (modal, not consuming the turn).
+- **REQ-390.** Combat keys (`src/combat_loop.c`): movement via arrows /
+  numpad 8/4/6/2 (cardinals) and Home/PgUp/End/PgDn or numpad 7/9/1/3
+  (diagonals); `Space`, `W` or numpad 5 has waited. `S` has armed the shot
+  picker (rejected when `shots == 0` or surrounded); `F` has armed the flight
+  picker (rejected without `TROOP_ABIL_FLY` or with no flights left). `U` has
+  opened the spells (rejected after a spell this round or without magic): in
+  legacy a lettered menu (A..G for spells 0..6), in modern the combat menu's
+  spells page. A picker has moved its cursor with the movement keys,
+  confirmed on a legal cell with Enter, keypad Enter, `Space`, `A` or `C`, and
+  cancelled with `Esc`, no turn spent. `G` (give up) has asked Yes/No and Yes
+  has set `result = 2`. `A` has shown the army, `V` the character and `O`
+  (legacy only) the options, with nothing armed, even on the foe's turn; `C`
+  has shown the controls on the player's turn; none of them has consumed the
+  turn. `Esc` has closed an open view or menu page; with nothing armed it has
+  done nothing in legacy, and in modern mode has opened the combat menu
+  (REQ-430s, `docs/DESIGN-SPEC.md`).
 
 ### 25.10 AI behaviour
 
@@ -2427,7 +2447,7 @@ golden-digest regression tests have pinned the formulas.
 
 - **REQ-410.** Saves have been **JSON, version 11** (`SAVE_VERSION` in
   `engine/include/savegame.h`). Catalog references have used string ids
-  (`troop_id: "knights"`), so saves have been human-readable and
+  (`"troop": "knights"`), so saves have been human-readable and
   pack-portable. Read/write has been `engine/savegame.c`; the full-state
   snapshot builder `engine/state_serialize.c`.
 - **REQ-411.** Save slots: 10 (`SAVE_SLOT_COUNT` in
@@ -2449,8 +2469,24 @@ golden-digest regression tests have pinned the formulas.
 
 ### 27.2 Schema and load
 
-- **REQ-414.** The save schema has mirrored the `Game` struct field-for-field
-  (§4), so serialization has round-tripped without loss. The one deliberate
+- **REQ-414.** The save schema has mirrored the `Game` struct (§4), less the
+  fields §4 names as not saved, so serialization has round-tripped without
+  loss. `state_build_snapshot` has written `version`, `mode`,
+  `seed_from_catalog`, `seed_index` or `seed`, `pack_id`, `pack_hash`,
+  `character` (`name`, `class`, `rank_index`, `rank_title`, `difficulty`,
+  `mount`), `stats`, `position` (with `travel_mode` and `hud_visible`),
+  `army` (`slot`, `troop`, `count` per stack), `spells` (spell id → charges),
+  `spells_learned`, `contract` (`active`, `cycle`, `last_contract`,
+  `max_contract`, `villains_caught`, `villains_prefought`), `artifacts`
+  (`found`), `world` (`zones_discovered`, `zone_rites`, `orbs_found`),
+  `boat`, `towns`, `castles`, `scepter`, `consumed`, `bridges`,
+  `events_done`, `placements`, `foes` (`zone`, `x`, `y`, `origin_x`,
+  `origin_y`, `id`, `alive`, `friendly`, `garrison`, `static`,
+  `requires_troop`, `scene_index`, `scene_title`), `dwellings` (`zone`, `x`,
+  `y`, `troop`, `count`, `max_population`) and `map_state` (a `fog` row list
+  per discovered zone); the snapshot's `tiles`, `dialog`, `prompt`,
+  `fast_quit_prompt` and `view`, and the towns' and castles' catalog
+  coordinates, have been read by nothing on load. The one deliberate
   exception has been the seed: a catalog game writes `seed_from_catalog:
   true` and `seed_index`, and re-derives `Game.seed` on load (REQ-166,
   REQ-186); a raw-seed game writes `seed_from_catalog: false` and the `seed`
@@ -2594,8 +2630,8 @@ every menu; this section has held the rules.
   TrueType atlas at size times zoom; design metrics have never changed, only
   sharpness. Legacy: plain `BeginTextureMode`, a 320x200 target.
 - **REQ-430e.** **One list reader (modern).** `ml_list_input`
-  (`src/modern/mlist.c`) has read every modern list: Up/Down and KP8/KP2 have
-  moved the cursor, wrapping; Enter, KP Enter and Space have acted on the
+  (`src/modern/mlist.c`) has read every modern list: Up/Down, Left/Right and
+  KP8/KP2/KP4/KP6 have moved the cursor, wrapping; Enter, KP Enter and Space have acted on the
   cursor's row; a tapped row (`touch_tapped_row`) has been select-and-act; a
   row's own key -- its shortcut letter or its digit -- has acted on that row;
   Escape has been Back. A row that cannot be chosen has taken the cursor and
@@ -2786,10 +2822,10 @@ every menu; this section has held the rules.
   Escape or the left column's Menu tile; its pages have been Menu (Hero,
   World, Game, then Close and Exit on the foot of the page, REQ-529), Hero,
   World and Game (Debug first with `--debug`, Save, Load, Controls, New
-  Game). The combat menu has opened with Enter, Escape, a tap on the active
-  unit or the battle column's Menu tile, on its Unit page (REQ-536); its
-  top page has held Unit, Hero, Game and Close, and Game has held Controls,
-  Back and Give up last. Rows that do not apply have been greyed with the
+  Game). The combat menu has opened with Escape, a tap on the active unit or
+  the battle column's Menu tile, on its top page with the cursor on Unit;
+  its top page has held Unit, Hero, Game, Close and Give up last, and Game
+  has held Controls and Back. Rows that do not apply have been greyed with the
   reason rather than removed. In-game Save and Load have picked one of five
   slots; overwriting, loading, a new game and Exit have asked Yes/No in the
   page's place.
@@ -2824,8 +2860,14 @@ every menu; this section has held the rules.
   (`overlay_dialog_page_count`); and the blocking prompts (`src/prompt.c`:
   `prompt_yes_no_open`, `prompt_numeric_open`, `prompt_text_input_open`)
   whose results have been dispatched through a pending-flow state machine
-  (`src/shell_promptdispatch.c`, `engine/include/pending.h`). The engine has
-  never rendered; it has requested prompts and dialogs through the player-IO
+  (`src/shell_promptdispatch.c`, `engine/include/pending.h`). A prompt has
+  answered `Y` / `N` on a yes/no (legacy Enter also yes), `1`–`5` or the
+  keypad's on a numbered prompt (`prompt_numeric_open` has capped the choices
+  at 5), `A` / `B` on a two-choice prompt, and digits, Backspace and Enter on
+  a legacy count; `Esc` has cancelled; modern rows have been read as REQ-430e
+  says and a modern count by Left/Right (1), Down/Up (10), Home/End and
+  Enter or Space (`docs/DESIGN-SPEC.md` DSGN-0054). `Ctrl+Q` on an open dialog has quit at once. The engine has never
+  rendered; it has requested prompts and dialogs through the player-IO
   queue and the host callbacks in `engine/include/ui_host.h`, which the shell
   implements.
 
@@ -2833,16 +2875,18 @@ every menu; this section has held the rules.
 
 ## 30. Input and controls
 
-- **REQ-440.** Keyboard bindings (adventure §12; combat §25.9) have been owned
-  by `src/input.c`, which has also mapped the gamepad. The raylib exit key has
+- **REQ-440.** Adventure keyboard bindings (§12) have been owned by
+  `src/input.c`, which has also mapped the gamepad; combat keys (§25.9) by
+  `src/combat_loop.c`. The raylib exit key has
   been disabled so `Escape` dismisses overlays rather than closing the window.
 - **REQ-441.** The Controls menu (`VIEW_CONTROLS`) has exposed per-game
   settings persisted in `Game.stats.options[7]` (parallel to
   `res->controls.items[]`): animation delay, sounds, walk-beep, animation
   toggle, CGA, music, volume. Meta keys: Alt+Enter fullscreen, backtick
   screenshot (`screenshots/shot_NNNN.png`, `src/screenshot.c`, the folder
-  created on first use), `Q` save-and-quit, `Ctrl+Q` fast quit
-  (`src/shell_fastquit.c`).
+  created on first use), `Q` save (REQ-250), `Ctrl+Q` quit without saving
+  after a yes/no (`src/shell_fastquit.c`), and `Ctrl+Q` on any open message
+  quitting at once (`src/main.c`).
 - **REQ-442.** **Touch input** (`src/touch.c`) has translated taps into
   synthetic key events injected at the `input_host` shim
   (`input_host_inject_key/_char`), so every screen has kept its keyboard
@@ -3050,8 +3094,8 @@ every menu; this section has held the rules.
   Shoot, Wait, Fly and Cast in that order for every troop (the grid reading
   across then down after its Menu tile), greying what the unit cannot do
   this turn, so a command has been in the same place every turn
-  (`src/combat_loop.c`). The menu has opened with its cursor on the first
-  command the unit can use; on the foe's turn every command tile has been
+  (`src/combat_loop.c`). The Unit page has opened with its cursor on the
+  first command the unit can use; on the foe's turn every command tile has been
   greyed.
 
 - **REQ-529.** **No Exit on a phone.** The title menu's Exit row and the game

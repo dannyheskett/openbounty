@@ -869,8 +869,8 @@ Source: `src/hud.c` `hud_key_hint`; `src/modern/mlist.c` `ml_keys_shown`,
 `ml_exit_hint`, `ml_hint_text`; `src/modern/gamemenu.c` `gm_row`.
 
 **DSGN-0088. The one list reader.** Every modern list has read its keys and
-taps through `ml_list_input`: Up, Down and keypad 8 and 2 have moved the
-cursor, wrapping; Enter, keypad Enter or Space has acted on the cursor's row;
+taps through `ml_list_input`: Up, Down, Left, Right and keypad 8, 2, 4 and 6
+have moved the cursor, wrapping; Enter, keypad Enter or Space has acted on the cursor's row;
 a tap on a row has put the cursor there and acted on it; a row's own key
 (its shortcut letter, or its digit, the keypad's digit too) has acted on it;
 Escape has been Back. A row that cannot be chosen has taken the cursor but has
@@ -907,7 +907,7 @@ Source: `src/modern/gamemenu.c` `modern_gamemenu_page`, `gm_load_page`;
 F flown, L landed, I the contract, M the world map, P the puzzle, S searched,
 U cast, V the character sheet, W ended the week, D dismissed, N set sail,
 G opened Goto (REQ-541), 5 and keypad 5 rested, O and Escape opened the game menu, Q opened it on the
-Save page, and Ctrl+Q quit. Arrows, the keypad and Home, End, PgUp and PgDn
+Save page, and Ctrl+Q asked Yes/No to quit without saving. Arrows, the keypad and Home, End, PgUp and PgDn
 have stepped once a press; Enter and Space have done nothing.
 Source: `src/input.c` `input_poll`, `poll_direction`;
 `src/shell_actions.c` `shell_dispatch_action`.
@@ -1321,7 +1321,7 @@ Source: `src/prompt.c` `default_choices`, `prompt_set_choices`,
 
 **DSGN-0130. A count question.** A count not raised in place has been a menu
 page: the question's words (at most 3 lines), the How many block (DSGN-0055)
-and Continue and Cancel on the foot; Enter has committed and Escape
+and Continue and Cancel on the foot; Enter or Space has committed and Escape
 cancelled.
 Source: `src/modern/prompt.c` `modern_prompt_draw`; `src/prompt.c`
 `prompt_update`.
