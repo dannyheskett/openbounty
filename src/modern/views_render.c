@@ -334,8 +334,8 @@ static void draw_contract(const Game *g, const Sprites *s) {
 // (-1 = artifact 0, ...), non-negative values are villain indices.
 
 // Lazy-loaded scepter-zone map. The puzzle-view background shows the
-// scepter location with its 5x5 surroundings revealed cell-by-cell
-// (). We load the scepter's continent into a
+// scepter location with its 5x5 surroundings revealed cell-by-cell.
+// We load the scepter's continent into a
 // scratch Map the first time the puzzle view opens; reload only if
 // the scepter zone changes.
 static Map  s_puzzle_scepter_map;

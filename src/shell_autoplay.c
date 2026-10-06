@@ -121,7 +121,6 @@ static double speed_read_dwell(void) {
     }
 }
 
-bool   shell_autoplay_active(void) { return s_active; }
 double shell_autoplay_step_delay(void) { return speed_step_delay(); }
 double shell_autoplay_read_dwell(void) { return speed_read_dwell(); }
 

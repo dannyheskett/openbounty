@@ -82,7 +82,7 @@ bool GameStep(Game *game, Map *map, Fog *fog,
     bool can_move = false;
 
     if (flying) {
-        // Flight bypasses ground restrictions ().
+        // Flight bypasses ground restrictions.
         can_move = adventure_walkable_in_flight(nt);
     } else if (walking && game->boat.has_boat &&
         nx == game->boat.x && ny == game->boat.y &&

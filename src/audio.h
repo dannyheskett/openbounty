@@ -42,9 +42,6 @@ typedef enum {
 } AudioStatus;
 AudioStatus audio_status(void);
 
-// True iff a playback device is open and loaded.
-bool audio_is_available(void);
-
 // Per-frame tick. Drives raylib's UpdateMusicStream for whichever
 // track is active. Cheap when no track is playing.
 void audio_tick(void);

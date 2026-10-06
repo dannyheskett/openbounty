@@ -248,13 +248,11 @@ int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
         // Fall through to APPLY this same frame.
     }
     if (c->cast_phase == COMBAT_CAST_APPLY) {
-        // The index->effect dispatch now lives in the engine (combat_cast_spell)
-        // -- shared with the autoplay casting policy so the spell dynamics
-        // exist in exactly one place. The shell still owns the UI phases above
+        // The index->effect dispatch is the engine's (combat_cast_spell),
+        // shared with the autoplay casting policy so the spell dynamics exist
+        // in exactly one place. The shell owns the UI phases above
         // (PICK_SPELL / PICK_TARGET) that populated cast_spell_idx + the target;
-        // here it just applies and clears its UI phase. Behavior is identical to
-        // the old inline switch: same effects, logs, charge decrement, and the
-        // spells_this_round latch.
+        // here it applies the cast and clears its UI phase.
         int r = combat_cast_spell(c, c->side, c->cast_spell_idx,
                                   c->pick_t1_side, c->pick_t1_slot,
                                   c->cast_dest_x, c->cast_dest_y);
@@ -813,7 +811,7 @@ static void combat_present(const Combat *c, const Game *g, const Map *m, const F
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not
     // draw here -- combat exits silently and perform_temp_death shows
-    // the disgrace message at the home castle ().
+    // the disgrace message at the home castle.
     if (dialog_is_active()) overlay_draw_note();
     // Give-up confirm and any other y/n / numeric prompt draws on top
     // of everything else as a bottom-frame modal.

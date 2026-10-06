@@ -29,7 +29,6 @@ bool text_preload_file(const char *path, int size, int caps);
 // back to the strip.
 bool text_init(void);
 void text_shutdown(void);
-bool text_ready(void);
 
 // Rebuild the atlas at cell times `zoom` so a frame rendered at that zoom
 // draws sharp glyphs; the metrics in design units do not change.

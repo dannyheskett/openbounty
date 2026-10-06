@@ -8,11 +8,10 @@
 // internal pixels; present.c blits that target to the window at an integer
 // scale.
 //
-// The geometry is no longer fixed. A pack declares render.mode: "legacy" keeps
-// the 320x200 / 48x34 / 5x5 layout the DOS original used, and "modern" allows
-// square tiles and a larger viewport. layout_init() fills g_layout from the
-// pack before the render target or window exist; every CL_ macro below reads
-// from it, so the ~340 call sites across the shell are unchanged.
+// The geometry comes from the pack. render.mode "legacy" keeps the 320x200 /
+// 48x34 / 5x5 layout the DOS original used, and "modern" allows square tiles
+// and a larger viewport. layout_init() fills g_layout from the pack before the
+// render target or window exist, and every CL_ macro below reads from it.
 //
 // The chrome bands (frame, status, bar) stay literal: they are text and border
 // furniture measured in pixels, not in tiles, and do not scale with tile size.

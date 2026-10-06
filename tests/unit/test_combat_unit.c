@@ -88,12 +88,15 @@ TEST under_control_invalid_troop_returns_false(void) {
 }
 
 // Open field fields three of the five garrison slots -- the original's quirk --
-// unless the target is a fixed guardian in a modern pack, which fields all
-// five (combat_prepare_foe, engine/combat.c).
+// unless the target is a fixed guardian in a pack with combat.guardian_full_band,
+// which fields all five (combat_prepare_foe, engine/combat.c).
 static void fill_five(Unit *g) {
     for (int i = 0; i < 5; i++) {
         const TroopDef *t = troop_by_index(i);
-        snprintf(g[i].id, sizeof g[i].id, "%s", t->id);
+        size_t n = strlen(t->id);
+        if (n >= sizeof g[i].id) n = sizeof g[i].id - 1;
+        memcpy(g[i].id, t->id, n);
+        g[i].id[n] = '\0';
         g[i].count = 10 + i;
     }
 }

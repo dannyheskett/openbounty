@@ -86,7 +86,7 @@ void hud_draw_puzzle_tile(const Game *g, const Sprites *s, int x, int y, bool fr
     // fills in toward the scepter's location.
     blit_tile(s->hud_puzzle_grid, x, y, frame);
     if (g && s->puzzle_cover.id) {
-        // : stamp piece.png (9x6) over each
+        // stamp piece.png (9x6) over each
         // uncaught/unfound cell with a 2px inset within the panel,
         // leaving the underlying map-fragment art visible only on
         // caught/found cells.

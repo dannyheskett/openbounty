@@ -419,9 +419,8 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     game_rng_seed(g->seed);
     g->scepter.key = game_rng_next(0, 255);
     // The scepter's zone is drawn from every zone the pack declares (#77):
-    // a four-zone pack draws 0..3 as it always did, so no shipped world
-    // re-maps; a pack with fewer zones no longer buries nothing, and one
-    // with more can use them all.
+    // a four-zone pack draws 0..3, and a pack with fewer or more zones buries
+    // in one of its own.
     int zones = g->res->zone_count > 0 ? g->res->zone_count : 1;
     int scepter_continent = game_rng_next(0, zones - 1);
     bury_scepter(g, scepter_continent);
@@ -496,7 +495,7 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
                 }
             }
         }
-        // : continent_found[HOME_CONTINENT] = 1
+        // continent_found[HOME_CONTINENT] = 1
         if (home_zone_index >= 0) {
             g->world.zones_discovered[home_zone_index] = true;
         }
@@ -549,8 +548,8 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     // Step 10 (play.c:444): Randomize spells sold in towns.
     salt_spells(g);
 
-    // Remove magic alcove(s) if the starting class already knows magic
-    // (). The alcove is an overlay at the tile declared
+    // Remove magic alcove(s) if the starting class already knows magic.
+    // The alcove is an overlay at the tile declared
     // in zones[].magic_alcove; marking it consumed stops MapLoadZone /
     // stamp_objects from rendering an interactive on that tile.
     // With rites per zone, such a class knows only the home zone's rites, and
@@ -606,11 +605,10 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
         // Any leftover slots stay zeroed from memset earlier in GameInit.
     }
 
-    // Assign villains to castles ().
+    // Assign villains to castles.
     salt_villains(g);
 
     // Repopulate every remaining monster-owned castle with a troop stack
-    // ().
     for (i = 0; i < g->castle_count; i++) {
         if (!g->castles[i].id[0]) continue;
         // Castles flagged special.excluded_from_contract never hold a
@@ -819,7 +817,7 @@ static Interact dwelling_kind_to_interact(const char *kind) {
     return INTERACT_DWELLING_PLAINS;
 }
 
-// : pick the troop first, derive
+// pick the troop first, derive
 // kind from troops[id].dwells. Per-zone preferred troop list comes
 // first; remaining slots roll uniformly in dwelling_range_min..max.
 static const char *salt_pick_dwelling_troop(const Game *g, int continent,
@@ -860,7 +858,7 @@ static const char *salt_pick_dwelling_troop(const Game *g, int continent,
 // Roll a defending stack (up to GAME_ARMY_SLOTS units) for a hostile foe
 // using the zone's tier spawn pool. Deterministic given the current
 // game_rng state so save/load reproduces the same garrison.
-// : difficulty (= continent) governs the
+// difficulty (= continent) governs the
 // chance distribution; the dwelling kind is rolled fresh each call and
 // indexes the troop pool independently. So Saharia (cont 3) skews to
 // the rarest slot regardless of kind, but kind itself is uniform.
@@ -1170,15 +1168,6 @@ void salt_continent(Game *g, int continent, int min_artifacts, int min_navmaps,
     free(slots);
 }
 
-void furnish_map(Game *g) {
-    // furnish_map rewrites base terrain bytes into
-    // edge-variant bytes at runtime. OpenBounty bakes edge variants
-    // directly into the per-zone .dat files (see assets/kings-bounty/
-    // data/*.dat), so this step is a no-op here. Retained only to mirror
-    //  spawn_game call sequence.
-    (void)g;
-}
-
 void clear_fog(Game *g) {
     //  reveals a 5x5 square around the hero in
     // game->fog[continent][y][x]. In openbounty, fog is not owned by
@@ -1326,7 +1315,7 @@ void salt_villains(Game *g) {
 //
 // *out_id is written to the picked troop's resource id (empty string if
 // the pool is unconfigured). *out_count is the stack size.
-// : difficulty (= continent tier) governs
+// difficulty (= continent tier) governs
 // the chance distribution; the dwelling kind is rolled fresh each call
 // and indexes the troop pool independently.
 static void roll_creature(Game *g, int tier,
@@ -1541,7 +1530,7 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
                 g->position.own_castle[0] = '\0';
         }
 
-        // : weekly astrology growth.
+        // weekly astrology growth.
         // For every non-player-owned castle, stacks whose troop matches
         // the astrology creature grow by troop.growth_per_week. Hostile
         // foes on the overworld grow by the same rule (play.c:1028-1031).
@@ -2344,7 +2333,7 @@ int GameCastlesOwned(const Game *g) {
     return n;
 }
 
-// ---- Treasure chest rolls  ---------------
+// ---- Treasure chest rolls ---------------
 // Curves and value ranges live in res->economy.chest (game.json economy.chest).
 // Defaults match ..503 when game.json omits the block.
 
@@ -2385,38 +2374,6 @@ static ChestOutcome chest_gold(const Game *g, int x, int y, int zi,
     resources_format_template(out_body, out_sz, g->res->banners.chest_gold,
                               vars, (int)(sizeof vars / sizeof vars[0]));
     return CHEST_OUTCOME_GOLD;
-}
-
-ChestOutcome GamePeekChest(const Game *g, int zone_index, int x, int y,
-                           ChestPending *out_pending) {
-    if (out_pending) {
-        out_pending->pending_gold = 0;
-        out_pending->pending_leadership = 0;
-    }
-    int zi = (zone_index >= 0 && zone_index < 4) ? zone_index : 0;
-    const ResChest *ch = &g->res->economy.chest;
-    int chance = (int)(chest_rand(g, x, y, 1) % 100u) + 1;
-    if (chance < ch->chance_gold[zi]) {
-        int points = (int)(chest_rand(g, x, y, 2) %
-                           (unsigned)(ch->gold_max[zi] > 0 ? ch->gold_max[zi] : 1)) + 1;
-        points += ch->gold_min[zi];
-        int gold = points * 100;
-        int leadership = gold / 50;
-        if (GameHasPower(g, ARTIFACT_POWER_DOUBLE_LEADERSHIP)) leadership *= 2;
-        if (out_pending) {
-            out_pending->pending_gold = gold;
-            out_pending->pending_leadership = leadership;
-        }
-        return CHEST_OUTCOME_GOLD;
-    }
-    if (chance < ch->chance_commission[zi]) return CHEST_OUTCOME_COMMISSION;
-    if (chance < ch->chance_spell_power[zi]) return CHEST_OUTCOME_SPELL_POWER;
-    if (chance < ch->chance_max_spells[zi]) return CHEST_OUTCOME_MAX_SPELLS;
-    if (chance < ch->chance_new_spell[zi]) {
-        if (spells_count() <= 0) return CHEST_OUTCOME_EMPTY;
-        return CHEST_OUTCOME_NEW_SPELL;
-    }
-    return CHEST_OUTCOME_EMPTY;
 }
 
 ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
@@ -2910,18 +2867,6 @@ bool GameGateTeleport(Game *g, Map *map, Fog *fog,
     int sidx = spell_index_by_id(spell_id);
     if (sidx >= 0 && g->spells.counts[sidx] > 0) g->spells.counts[sidx]--;
     return true;
-}
-
-void GameGrowDwellings(Game *g) {
-    if (!g) return;
-    for (int i = 0; i < g->dwelling_count; i++) {
-        DwellingState *d = &g->dwellings[i];
-        if (!d->troop_id[0]) continue;
-        const TroopDef *t = troop_by_id(d->troop_id);
-        if (!t) continue;
-        d->count += t->growth_per_week;
-        if (d->count > d->max_population) d->count = d->max_population;
-    }
 }
 
 int GamePickAstrologyCreature(const Game *g, int week_id) {
@@ -3647,9 +3592,8 @@ int GameFoesFollow(Game *g, Map *map) {
                 // same now holds for bridges, towns and the other interactive
                 // tiles, and for the castle-gate approach.
                 //
-                // This previously exempted the hero's tile so the foe could
-                // step on and trigger combat, which let a foe on adjacent
-                // grass reach a hero standing anywhere at all.
+                // The hero's tile is not exempt: exempting it would let a foe
+                // on adjacent grass reach a hero standing anywhere at all.
                 if (!is_center && !foe_can_stand(map, nx, ny))
                     continue;
                 if (!is_center && foe_on_event_tile(g, f->zone, nx, ny))

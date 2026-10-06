@@ -452,7 +452,7 @@ void legacy_overlay_draw_town(const Game *g, const Sprites *s) {
     draw_panel(x, y, w, h, PAL_CLR(DBLUE));
 
     int tx = x + pad;
-    // : header rendered at `text->y - fs->h/4 - fs->h/8`,
+    // header rendered at `text->y - fs->h/4 - fs->h/8`,
     // a few pixels above the inner-text top.
     int ty = y + pad - row_h / 4 - row_h / 8;
     if (ty < y + CL_UI) ty = y + CL_UI;
@@ -538,7 +538,7 @@ void legacy_overlay_draw_town(const Game *g, const Sprites *s) {
 // ---------------------------------------------------------------------------
 
 void legacy_overlay_draw_options(const Game *g) {
-    // : movement-reference rows on top
+    // movement-reference rows on top
     // (8 direction keys + numpad equivalents), then the lettered command
     // list below. One unified blue panel below the status bar.
     int pad = 3 * CL_UI;

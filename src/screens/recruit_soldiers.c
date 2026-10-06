@@ -356,7 +356,7 @@ void screen_recruit_soldiers_draw(const Game *g, const Sprites *s) {
     if (s_error_msg[0]) {
         // 3 blank lines of padding (matches "\n\n\nYou don't have
         // enough gold!" ). Slots error renders without
-        // extra padding ().
+        // extra padding.
         int e_ty = ty + 3 * row_h;
         bfont_draw_centered(s_error_msg, x + w / 2, e_ty, PAL_CLR(WHITE));
         return;

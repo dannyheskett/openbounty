@@ -122,8 +122,8 @@ unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step,
     // A gate foe that demands one arm is NOT gated here: the MUSTER candidate
     // (prereq_unmet) runs under the attempt's own snapshot and fetches the
     // arm. Gating it instead demoted the gate in the candidate ordering, and
-    // the search then thrashed on the objectives behind it (measured on seeds
-    // 1 and 2, 2026-09-20).
+    // the search thrashes on the objectives behind it (as measured on seeds 1
+    // and 2).
     case STEP_SCEPTER:
         // Finale (AP-052, re-homed from the planner's select loop): the dig
         // ends the game, so it waits until every other objective is done -- the
@@ -135,11 +135,6 @@ unsigned prereq_gated(const ExecCtx *ctx, const PlanStep *step,
         break;
     }
     return m;
-}
-
-bool prereq_actionable(const ExecCtx *ctx, const PlanStep *step,
-                       int open_others) {
-    return (prereq_gated(ctx, step, open_others) & PREREQ_HARD) == 0;
 }
 
 bool prereq_magic_enabled(const Game *g) {

@@ -49,7 +49,7 @@ using only what a player can see.
   the garrison the prompt has shown, `demo/demo_brain.c resolve_combat_flow`),
   the views' records, and the puzzle screen (`demo/demo_scepter.c` has matched
   the revealed cells (engine `tables.c puzzle_grid_entity`) against
-  explored terrain). There has been no `GamePeekChest` and no `GameRngSnapshot`:
+  explored terrain). There has been no `GameRngSnapshot`:
   hidden state has never been read. Public catalog data (troops, morale chart,
   burial rule) has been manual knowledge and fair.
 - **DM-012.** The verdict has been the game's own: `[DEMO OVER]` has reported

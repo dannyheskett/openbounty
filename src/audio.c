@@ -335,10 +335,6 @@ void audio_tick(void) {
     if (m != AUDIO_NONE) audio_backend_stream_update(m);
 }
 
-bool audio_is_available(void) {
-    return s_inited;
-}
-
 void audio_set_sounds_enabled(bool on) {
     s_sfx_enabled = on;
 }

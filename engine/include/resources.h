@@ -19,10 +19,9 @@
 #define RES_SIGN_BODY_LEN    256   // Rome's longest is 147 (#135)
 #define RES_PATH_LEN         128
 // Indexed by raw map byte, so the table spans the whole byte range: a map
-// file's code can be any of 256 values and always indexes this table. It was
-// 128 (printable ASCII and below) until Rome used 91 of them and the road
-// end pieces needed four more. A map that uses a code above 127 is no longer
-// plain ASCII -- the reader is byte-wise, so such a file is latin-1.
+// file's code can be any of 256 values and always indexes this table. A map
+// that uses a code above 127 is not plain ASCII -- the reader is byte-wise, so
+// such a file is latin-1.
 #define RES_TILE_CODE_COUNT  256
 #define RES_TILE_ART_LEN      24
 // Animation cycle default: OB_ANIM_FRAMES_DEFAULT, in tables.h.
@@ -83,7 +82,7 @@ typedef struct {
     int  temp_death_count;
 } ResTuning;
 
-// Score formula coefficients (). Each villain caught,
+// Score formula coefficients. Each villain caught,
 // artifact found, and player-owned castle scales by its coefficient; each
 // follower killed during play subtracts at the kill_penalty rate. The
 // running total is then scaled by difficulty:
@@ -101,7 +100,7 @@ typedef struct {
     bool easy_halves;
 } ResScoring;
 
-// Treasure-chest probability and value tables ().
+// Treasure-chest probability and value tables.
 // Indexed by zone tier 0..3. The chance_* arrays are cumulative thresholds
 // against a 1..100 roll; the engine walks them top-to-bottom and the first
 // branch whose threshold strictly exceeds the roll fires. gold_min/max,
@@ -184,7 +183,7 @@ typedef struct {
     bool   kind_curve_set[RES_SPAWN_TIERS];
     int   *kind_curve[RES_SPAWN_TIERS][RES_SPAWN_TIERS];   // [kind][tier]
     int    kind_curve_len[RES_SPAWN_TIERS][RES_SPAWN_TIERS];
-    // The calm start (2026-09-28, #69): a hostile foe whose spawn tile lies
+    // The calm start (#69): a hostile foe whose spawn tile lies
     // within calm_radius (Chebyshev) of its zone's hero_spawn rolls no pool
     // slot above calm_max_slot and no more than calm_max_stacks stacks.
     // calm_radius 0 (absent) disables it: the King's Bounty pack rolls as
@@ -451,7 +450,7 @@ typedef struct {
     char title[RES_NAME_LEN];
 } ResZoneArmy;
 
-// ---- Strings  -----
+// ---- Strings -----
 
 typedef struct {
     char id[RES_ID_LEN];
@@ -1054,7 +1053,7 @@ typedef struct {
     char pad_confirm[RES_UI_LABEL_LEN];
     char give_up_header_modern[RES_UI_LABEL_LEN];
     char save_confirm_modern[RES_UI_LABEL_LEN];
-    // Status-bar fast-quit prompt (). Rendered into the
+    // Status-bar fast-quit prompt. Rendered into the
     // top status bar via KB_TopBox, not a bottom dialog.
     char quit_to_dos_prompt[RES_UI_LABEL_LEN * 2];
     char out_of_control[RES_UI_LABEL_LEN];
@@ -1522,7 +1521,7 @@ typedef struct {
     // army view's rule (REQ-271: alone High; each OTHER slot looked up as
     // chart[mine][theirs]; any L Low, all H High, else Normal). Absent or
     // false = the behaviour ported from King's Bounty (REQ-385), kept for
-    // the legacy pack. Glory of Rome sets it (2026-09-27, #75).
+    // the legacy pack. Glory of Rome sets it (#75).
     bool morale_as_army_view;
     // combat.field_obstacle_chance: the percent chance that each cell of an
     // open-field battle's middle columns holds an obstacle. Absent = 10, King's
@@ -1534,7 +1533,6 @@ typedef struct {
     bool guardian_full_band;
 
     // Fuzzy-number labels for intelligence / enemy-sight text
-    // .
     // Entries are ordered high-to-low by threshold: the first entry
     // whose threshold is <= count wins. Up to 6 buckets.
     int   number_name_count;
@@ -1781,27 +1779,25 @@ typedef struct {
 void resources_resolve_path(const Resources *res, const char *rel,
                             char *out, size_t cap);
 
-// Load game.json at `manifest_path` and every referenced table file. Paths
-// inside game.json are resolved relative to the manifest file's directory.
-// Returns true on success; writes a human-readable error to stderr on
-// failure and leaves `*res` in an indeterminate state.
 // The tile code a tile_codes key names: the key's own byte for a
 // single-character key, or the byte a two-digit "\xNN" hex escape spells.
 // -1 if the key names no code. Pure; unit tested.
 int resources_tile_code_from_key(const char *key);
 
+// Load `manifest_path` (game.json) and every file it references from the pack
+// stack, and publish the result to the catalog lookups (tables.h). Returns
+// true on success; on failure it prints the reason to stdout, returns false
+// and leaves `*res` in an indeterminate state.
 bool resources_load(Resources *res, const char *manifest_path);
 
 // Every pack-relative art path this manifest resolves to, de-duplicated.
 // Returns the count written to `out` (capped at `cap`).
 //
 // This is the single source of truth for "what art does this pack use". Art
-// used to be reachable five different ways -- explicit paths here, bare
-// tile_codes names expanded under art/tiles/, a list hardcoded in the shell,
-// villain frames derived from a portrait filename, and the placed-object
-// names map.c stamps by interact kind -- so no caller could answer that
-// question without replicating all five. Tile names, the villain stem
-// fallback and the object names are expanded here so callers see real paths.
+// has been reachable five ways -- explicit paths, bare tile_codes names under
+// art/tiles/, the shell's own list, villain frames derived from a portrait
+// filename, and the placed-object names map.c stamps by interact kind -- and
+// this list has resolved all five, so callers see real paths.
 // The list grows to hold every path; free it with resources_art_list_free.
 typedef struct {
     char (*path)[RES_PATH_LEN];
@@ -1846,20 +1842,13 @@ void resources_republish(const Resources *res);
 
 // ---- Lookups ---------------------------------------------------------------
 
-// Global town lookup by (zone id, x, y). Returns NULL if no town sits at
-// those coords. () key.
-const ResTown   *resources_town_at(const Resources *r,
-                                   const char *zone, int x, int y);
 const ResTown   *resources_town_by_id(const Resources *r, const char *id);
-const ResTown   *resources_town_by_index(const Resources *r, int index);
 
 // Zone town enumeration over the authoritative catalog: `z->town_count` towns,
 // the n-th being `&r->towns[z->town_idx[n]]` (in the zone's JSON town order). The
 // accessor returns NULL on an out-of-range n or a stale index.
 const ResTown   *resources_zone_town(const Resources *r, const ResZone *z, int n);
 
-const ResCastle *resources_castle_at(const Resources *r,
-                                     const char *zone, int x, int y);
 const ResCastle *resources_castle_by_id(const Resources *r, const char *id);
 // Parse a castles[].footprint string. Absent/empty and "3x2" are the default;
 // "1x1" is the single-tile castle. Returns false (and writes the default) for

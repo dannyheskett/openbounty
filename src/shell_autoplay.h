@@ -43,9 +43,6 @@ void shell_autoplay_end(void);
 // window-close during the resolve) -- the caller should quit, not play manually.
 bool   shell_autoplay_cancelled(void);
 
-// True while visible autoplay owns the frames; the pacing the combat animator
-// scales off when demo mode is not the driver.
-bool   shell_autoplay_active(void);
 double shell_autoplay_step_delay(void);
 double shell_autoplay_read_dwell(void);
 

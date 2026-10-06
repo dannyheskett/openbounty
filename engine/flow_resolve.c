@@ -173,8 +173,12 @@ bool flow_apply_siege_villain(Game *g, const Resources *res,
             for (int s = 0; s < GAME_ARMY_SLOTS && s < 5; s++) {
                 if (!captured->army_troops[s][0] || captured->army_counts[s] <= 0)
                     continue;
-                snprintf(cr->garrison[s].id, sizeof cr->garrison[s].id,
-                         "%s", captured->army_troops[s]);
+                // An id too long for the garrison names no troop it holds.
+                if (snprintf(cr->garrison[s].id, sizeof cr->garrison[s].id, "%s",
+                             captured->army_troops[s]) >= (int)sizeof cr->garrison[s].id) {
+                    cr->garrison[s].id[0] = '\0';
+                    continue;
+                }
                 cr->garrison[s].count = captured->army_counts[s];
             }
             if (captured->index >= 0 && captured->index < g->contract.villain_count)

@@ -9,8 +9,9 @@
 //                            it to serve a modern need.
 //   src/modern/overlay.c  -- where modern UI work happens.
 //
-// Neither file is called from anywhere but the dispatcher, and nothing outside
-// this trio includes this header.
+// The overlay itself is drawn only through the dispatcher. Other shell files
+// (combat, the castle screens, the modern prompt and widgets) include this
+// header for the drawing helpers it declares.
 
 #ifndef OB_OVERLAY_IMPL_H
 #define OB_OVERLAY_IMPL_H

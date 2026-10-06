@@ -39,8 +39,4 @@ void screen_dwelling_draw(const Game *g, const Sprites *s);
 // returns the dwelling kind's name ("Lucus").
 const char *screen_dwelling_info(const Game *g, int *troop_idx, int *pop, int *cost, int *cap);
 
-// Refresh the cached pop/cost/gold/cap for the panel (called after a
-// successful purchase so the panel updates).
-void screen_dwelling_refresh(int dwelling_pop, int gold, int cap);
-
 #endif

@@ -768,13 +768,6 @@ void planner_refresh_done(ExecCtx *ctx, PlannerRun *run) {
             run->st[k].done = planstep_is_done(ctx->g, &s_set.steps[k]);
 }
 
-bool planner_done(const ExecCtx *ctx, const PlannerRun *run) {
-    (void)ctx;
-    for (int i = 0; i < s_set.count; i++)
-        if (!run->st[i].done) return false;
-    return s_set.count > 0;
-}
-
 void planner_first_unmet(const PlannerRun *run, char *out_label, int label_cap,
                          char *out_cause, int cause_cap) {
     if (out_label && label_cap > 0) out_label[0] = '\0';

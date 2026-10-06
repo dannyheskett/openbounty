@@ -1,8 +1,7 @@
 // src/shell_promptdispatch.c
 //
 // Shell ADAPTER for prompt-flow resolution. The state-mutation half
-// of each flow now lives in the engine (engine/flow_resolve.c) so autoplay can
-// share it. This file keeps the three host-side concerns:
+// of each flow is the engine's (engine/flow_resolve.c), shared with autoplay. This file keeps the three host-side concerns:
 //   - reading the answer (prompt_update / prompt_text_input_value);
 //   - running combat for siege/attack flows via RunCombat (rendered), then
 //     handing the CombatResult to the engine apply-core;

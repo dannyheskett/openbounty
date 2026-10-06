@@ -384,12 +384,6 @@ int  combat_deal_damage(Combat *c, int a_side, int a_id,
 // Spells
 int  spell_damage_value(int base, int sp);
 
-// Deterministic direct damage one cast of `spell_idx` deals to a non-IMMUNE
-// target stack (the same bases combat_cast_spell applies); 0 for enhancer
-// spells (clone/teleport/freeze/resurrect) whose value has no closed form.
-// turn_undead bites only UNDEAD targets -- pass whether the target is one.
-// Planning layers size loadouts with THIS, never with restated formulas.
-int  combat_spell_direct_damage(int spell_idx, int spell_power, bool target_undead);
 int  spell_damage(Combat *c, int t_side, int t_slot, int dmg);
 void spell_clone(Combat *c, int t_side, int t_slot, int sp);
 void spell_teleport(Combat *c, int from_side, int from_slot, int to_x, int to_y);

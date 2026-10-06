@@ -1056,8 +1056,8 @@ static void parse_anim_set(cJSON *obj, ResAnimSet *out) {
 }
 
 static void parse_sprites(Resources *res, cJSON *obj) {
-    // Art paths that used to be compiled into the shell. A pack may override
-    // any of them in the sprites block; these keep packs that don't unchanged.
+    // Default art paths. A pack may override any of them in the sprites block;
+    // a pack that doesn't gets these.
     {
         static const char *COMBAT_DEFAULT[RES_COMBAT_TILES] = {
             "art/combat/field_grass.png",
@@ -1094,9 +1094,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
         parse_anim_set(cJSON_GetObjectItem(hero, "boat"), &res->sprites.hero_boat);
     }
 
-    // Combat tileset. The shell used to carry this list as a static array,
-    // which meant the pack could not name its own battle art. Declared here
-    // now; the defaults installed before parsing keep older packs working.
+    // Combat tileset: the pack may name its own battle art; the defaults
+    // installed before parsing stand for a pack that doesn't.
     // Guarded: parse_path_array zeroes the out-count for a missing key, which
     // would wipe the defaults installed above rather than leave them alone.
     cJSON *jcombat = cJSON_GetObjectItem(obj, "combat");
@@ -2516,7 +2515,9 @@ static int villain_frame_paths(const VillainDef *v, char (**out)[RES_PATH_LEN]) 
     size_t sl = strlen(stem);
     if (sl >= 7 && stem[sl - 7] == '_' && stem[sl - 4] == '.') stem[sl - 7] = '\0';
     else if (sl >= 4 && stem[sl - 4] == '.') stem[sl - 4] = '\0';
-    for (int f = 0; f < n; f++) snprintf((*out)[f], RES_PATH_LEN, "%s_%02d.png", stem, f);
+    for (int f = 0; f < n; f++)
+        if (snprintf((*out)[f], RES_PATH_LEN, "%s_%02d.png", stem, f) >= RES_PATH_LEN)
+            (*out)[f][0] = '\0';   // too long a path names no frame
     return n;
 }
 
@@ -3509,18 +3510,6 @@ void resources_republish(const Resources *res) {
 
 // ---- Lookups ---------------------------------------------------------------
 
-const ResTown *resources_town_at(const Resources *r,
-                                 const char *zone, int x, int y) {
-    if (!r || !zone) return NULL;
-    for (int i = 0; i < r->town_count; i++) {
-        if (r->towns[i].x == x && r->towns[i].y == y &&
-            strcmp(r->towns[i].zone, zone) == 0) {
-            return &r->towns[i];
-        }
-    }
-    return NULL;
-}
-
 const ResTown *resources_town_by_id(const Resources *r, const char *id) {
     if (!r || !id) return NULL;
     for (int i = 0; i < r->town_count; i++) {
@@ -3534,26 +3523,6 @@ const ResTown *resources_zone_town(const Resources *r, const ResZone *z, int n) 
     int idx = z->town_idx[n];
     if (idx < 0 || idx >= r->town_count) return NULL;
     return &r->towns[idx];
-}
-
-const ResTown *resources_town_by_index(const Resources *r, int index) {
-    if (!r) return NULL;
-    for (int i = 0; i < r->town_count; i++) {
-        if (r->towns[i].index == index) return &r->towns[i];
-    }
-    return NULL;
-}
-
-const ResCastle *resources_castle_at(const Resources *r,
-                                     const char *zone, int x, int y) {
-    if (!r || !zone) return NULL;
-    for (int i = 0; i < r->castle_count; i++) {
-        if (r->castles[i].x == x && r->castles[i].y == y &&
-            strcmp(r->castles[i].zone, zone) == 0) {
-            return &r->castles[i];
-        }
-    }
-    return NULL;
 }
 
 const ResCastle *resources_castle_by_id(const Resources *r, const char *id) {
