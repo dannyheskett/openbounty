@@ -370,10 +370,16 @@ static const unsigned char castle_omap[COMBAT_H][COMBAT_W] = {
         }
     } else {
         // Open-field random obstacles.  lines 5862-5871.
-        // i  in  {1, 2, 3}; ~10% chance per cell; obstacle code 1..3.
+        // i  in  {1, 2, 3}; obstacle code 1..3. The chance per cell is the
+        // pack's combat.field_obstacle_chance; at King's Bounty's 10 it is the
+        // original one-in-ten draw, so the random stream is unchanged.
+        const Resources *res = resources_current();
+        int chance = res ? res->field_obstacle_chance : 10;
         for (int j = 0; j < COMBAT_H; j++) {
             for (int i = 1; i <= COMBAT_W - 3; i++) {
-                if (combat_rand(c, 0, 9) == 0) {
+                bool hit = chance == 10 ? combat_rand(c, 0, 9) == 0
+                                        : combat_rand(c, 0, 99) < chance;
+                if (hit) {
                     c->omap[j][i] = (unsigned char)combat_rand(c, 1, 3);
                 }
             }

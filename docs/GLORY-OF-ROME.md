@@ -419,7 +419,7 @@ Rome has supplied this tier natively; none of it has been borrowed fantasy.
 | 21 | vampires | **Striges** | 5/30/1, `FLY\|LEECH\|UNDEAD` | Screech-owl blood-drinkers — a genuine Roman vampire, and `FLY\|LEECH` is the myth verbatim |
 | 23 | demons | **Empusae** | 6/50/1, `FLY\|SCYTHE` | Shape-shifting devourers in Hecate's service |
 
-### 7.6 Two consequences worth noting
+### 7.6 Consequences worth noting
 
 **Dwelling names.** The engine's `dwelling` field has stayed
 `plains` / `forest` / `hill` / `dungeon` / `castle` — those have been matched
@@ -432,6 +432,12 @@ recruited at the Emperor's seat and has had no dwelling screen.
 to E, which is all the morale chart reads; the game has shown no label for
 them. Baleares, human slingers, have sat in group D with wolves and dragons,
 and Gigantes in group C with allied peoples.
+
+**Field obstacles.** An open-field battle has stamped an obstacle (rubble, a
+bramble or a broken wall) in each cell of the middle three columns at 20%
+(`combat.field_obstacle_chance`), twice King's Bounty's one in ten: about
+three a battle instead of one and a half, and a field with none in about one
+battle in twenty-eight instead of one in five (#64).
 
 ---
 

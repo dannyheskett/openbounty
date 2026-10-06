@@ -69,6 +69,7 @@ SUITE_EXTERN(unit_signs_suite);
 SUITE_EXTERN(unit_scepter_bridge_suite);
 SUITE_EXTERN(unit_combat_spells_suite);
 SUITE_EXTERN(unit_combat_ai_suite);
+SUITE_EXTERN(unit_field_obstacles_suite);
 
 // ---- regression ------------------------------------------------------------
 SUITE_EXTERN(regression_combat_digests_suite);
@@ -149,6 +150,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_scepter_bridge_suite);
     RUN_SUITE(unit_combat_spells_suite);
     RUN_SUITE(unit_combat_ai_suite);
+    RUN_SUITE(unit_field_obstacles_suite);
 
     // regression
     RUN_SUITE(regression_combat_digests_suite);
