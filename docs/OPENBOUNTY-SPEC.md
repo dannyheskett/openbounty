@@ -1533,7 +1533,11 @@ flagged (§38).
   leadership_current - same_troop_consumed`; the result has been
   `free_leadership / troop.hp` (0 / "n/a" when free leadership is negative).
   Buying has cost `recruit_cost * count`; the gold check has used strict `<`
-  (insufficient when `gold < cost`).
+  (insufficient when `gold < cost`). The home castle has offered a
+  castle-class troop only while `leadership_current >= troop.hp * 6`
+  (`GameCastleOffersTroop`); the legacy and modern recruit lists have shown
+  any other as "n/a" or greyed, and `GameBuyTroop` has refused it (rc 4), so
+  autoplay and the demo have been held to the same rule.
 - **REQ-264.** At each week boundary, each non-empty slot has paid `upkeep =
   count * (recruit_cost / 10)` gold (integer division), deducted after
   commission is credited.
@@ -1567,7 +1571,8 @@ flagged (§38).
   Row = the troop whose morale is computed; column = another troop present.
 - **REQ-271.** Per-troop morale: a troop alone in the army has been High;
   otherwise each other non-empty slot has been consulted on the chart and the
-  results counted: any `L` → Low; all `H` (≥1) → High; else Normal. Whether
+  results counted: any `L` → Low; all `H` (≥1) → High; else Normal
+  (`GameArmySlotMorale`, which both army views have drawn). Whether
   combat has applied this same rule or the ported one has depended on the
   pack (REQ-385, item 3).
 

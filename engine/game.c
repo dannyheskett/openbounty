@@ -3017,9 +3017,10 @@ static int recruit_location_cap(const Game *g, const char *troop_id,
         return -1;
     }
     if (strcmp(t->dwelling, "castle") == 0) {
-        // Home pool: unlimited (the castle never runs dry); gated only by being
-        // at the home castle.
-        return g->position.home_castle[0] ? (1 << 28) : -1;
+        // Home pool: unlimited (the castle never runs dry); gated by being at
+        // the home castle and by the castle offering the troop.
+        return g->position.home_castle[0] && GameCastleOffersTroop(g, t)
+                   ? (1 << 28) : -1;
     }
     // Dwelling troop: the hero must be on the dwelling that offers this troop.
     if (!g->position.dwelling_troop[0] ||
@@ -3035,6 +3036,32 @@ static int recruit_location_cap(const Game *g, const char *troop_id,
         }
     }
     return -1;
+}
+
+char GameArmySlotMorale(const Game *g, int slot) {
+    if (!g || slot < 0 || slot >= GAME_ARMY_SLOTS) return 'N';
+    const TroopDef *me = troop_by_id(g->army[slot].id);
+    if (!me) return 'N';
+    int others = 0, low = 0, high = 0;
+    for (int j = 0; j < GAME_ARMY_SLOTS; j++) {
+        if (j == slot) continue;
+        if (!g->army[j].id[0] || g->army[j].count == 0) continue;
+        const TroopDef *o = troop_by_id(g->army[j].id);
+        if (!o) continue;
+        others++;
+        char r = morale_result(me->morale_group, o->morale_group);
+        if (r == 'L') low++;
+        else if (r == 'H') high++;
+    }
+    if (others == 0)    return 'H';
+    if (low > 0)        return 'L';
+    if (high == others) return 'H';
+    return 'N';
+}
+
+bool GameCastleOffersTroop(const Game *g, const TroopDef *t) {
+    return g && t && t->hit_points > 0 &&
+           g->stats.leadership_current >= t->hit_points * 6;
 }
 
 int GameRecruitLocationCap(const Game *g, const char *troop_id) {
