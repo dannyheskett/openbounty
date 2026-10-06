@@ -1594,8 +1594,6 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_menu_info,          "town_menu_info");
     SET_BANNER(town_menu_spell,         "town_menu_spell");
     SET_BANNER(town_menu_siege,         "town_menu_siege");
-    SET_BANNER(town_detail_boat_dock,   "town_detail_boat_dock");
-    SET_BANNER(town_detail_intel,       "town_detail_intel");
     SET_BANNER(town_contract_confirm,   "town_contract_confirm");
     SET_BANNER(foe_fight, "foe_fight");
     SET_BANNER(foe_evade, "foe_evade");
@@ -1632,7 +1630,6 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(castle_tribute_confirm, "castle_tribute_confirm");
     SET_BANNER(castle_artifacts, "castle_artifacts");
     SET_BANNER(castle_over_leadership, "castle_over_leadership");
-    SET_BANNER(castle_count_of, "castle_count_of");
     SET_BANNER(castle_cost, "castle_cost");
     SET_BANNER(castle_no_troops, "castle_no_troops");
     SET_BANNER(town_temple_needs_rites, "town_temple_needs_rites");
@@ -1657,15 +1654,11 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(spell_bridge_built,             "spell_bridge_built");
     SET_BANNER(spell_bridge_invalid,           "spell_bridge_invalid");
     SET_BANNER(spell_castle_gate_none,         "spell_castle_gate_none");
-    SET_BANNER(spell_castle_gate_choose,       "spell_castle_gate_choose");
     SET_BANNER(spell_town_gate_none,           "spell_town_gate_none");
-    SET_BANNER(spell_town_gate_choose,         "spell_town_gate_choose");
     SET_BANNER(spell_instant_army_fizzle,      "spell_instant_army_fizzle");
     SET_BANNER(spell_instant_army_no_room,     "spell_instant_army_no_room");
     SET_BANNER(spell_instant_army_success,     "spell_instant_army_success");
     SET_BANNER(spell_raise_control_success,    "spell_raise_control_success");
-    SET_BANNER(spell_gate_teleported,          "spell_gate_teleported");
-    SET_BANNER(spell_gate_invalid,             "spell_gate_invalid");
     SET_BANNER(encounter_join_named,           "encounter_join_named");
     SET_BANNER(encounter_join_numeric,         "encounter_join_numeric");
     SET_BANNER(encounter_join_title,           "encounter_join_title");
@@ -1687,13 +1680,11 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(gmd_unit, "gmd_unit");
     SET_BANNER(fv_your_army, "fv_your_army");
     SET_BANNER(loc_joined, "loc_joined");
-    SET_BANNER(loc_gold_change, "loc_gold_change");
     SET_BANNER(count_heading, "count_heading");
     SET_BANNER(count_of_lead, "count_of_lead");
     SET_BANNER(count_of_army, "count_of_army");
     SET_BANNER(count_of_garrison, "count_of_garrison");
     SET_BANNER(count_cost, "count_cost");
-    SET_BANNER(count_gold_left, "count_gold_left");
     SET_BANNER(count_recruit, "count_recruit");
     SET_BANNER(count_garrison, "count_garrison");
     SET_BANNER(count_withdraw, "count_withdraw");
@@ -1706,11 +1697,6 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(capture_promoted, "capture_promoted");
     SET_BANNER(temple_intro, "temple_intro");
     SET_BANNER(dwelling_intro, "dwelling_intro");
-    SET_BANNER(loc_title_taught, "loc_title_taught");
-    SET_BANNER(loc_title_refused, "loc_title_refused");
-    SET_BANNER(loc_title_known, "loc_title_known");
-    SET_BANNER(loc_title_joined, "loc_title_joined");
-    SET_BANNER(loc_title_none, "loc_title_none");
     SET_BANNER(gmd_leave, "gmd_leave");
     SET_BANNER(gmd_army, "gmd_army");
     SET_BANNER(gmd_character, "gmd_character");
@@ -1739,7 +1725,6 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(gmd_combat_army, "gmd_combat_army");
     SET_BANNER(gmd_combat_character, "gmd_combat_character");
     SET_BANNER(gmd_give_up, "gmd_give_up");
-    SET_BANNER(gmd_slot, "gmd_slot");
     SET_BANNER(gmr_no_troops, "gmr_no_troops");
     SET_BANNER(gmr_not_sailing, "gmr_not_sailing");
     SET_BANNER(gmr_no_saves, "gmr_no_saves");
@@ -1772,11 +1757,6 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(temp_death,                     "temp_death");
     SET_BANNER(combat_give_up_header,          "combat_give_up_header");
     SET_BANNER(combat_give_up_body,            "combat_give_up_body");
-    SET_BANNER(combat_scouts_header,           "combat_scouts_header");
-    SET_BANNER(combat_scouts_count,            "combat_scouts_count");
-    SET_BANNER(combat_scouts_small_band,       "combat_scouts_small_band");
-    SET_BANNER(combat_header_siege,            "combat_header_siege");
-    SET_BANNER(combat_header_default,          "combat_header_default");
     SET_BANNER(signpost_with_body,             "signpost_with_body");
     SET_BANNER(signpost_title_only,            "signpost_title_only");
     SET_BANNER(budget_header,                  "budget_header");
@@ -1797,20 +1777,11 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     }
     SET_BANNER(status_days_left,               "status_days_left");
     SET_BANNER(status_time_stop,               "status_time_stop");
-    SET_BANNER(status_days_left_modern,        "status_days_left_modern");
-    SET_BANNER(status_time_stop_modern,        "status_time_stop_modern");
-    SET_BANNER(status_menu_prefix,             "status_menu_prefix");
-    SET_BANNER(status_game_menu, "status_game_menu");
-    SET_BANNER(status_days_remaining, "status_days_remaining");
-    SET_BANNER(status_time_stop_remaining, "status_time_stop_remaining");
     SET_BANNER(body_save_confirm,              "body_save_confirm");
     SET_BANNER(body_search,                    "body_search");
     SET_BANNER(body_dismiss_pick,              "body_dismiss_pick");
     SET_BANNER(body_dismiss_last,              "body_dismiss_last");
     SET_BANNER(body_home_castle,               "body_home_castle");
-    SET_BANNER(body_own_castle,                "body_own_castle");
-    SET_BANNER(body_garrison_row_named,        "body_garrison_row_named");
-    SET_BANNER(body_garrison_row_empty,        "body_garrison_row_empty");
     SET_BANNER(body_navigate_row,              "body_navigate_row");
     // Optional: only a pack that ships the sailing picture asks the question,
     // so a pack without the scene is not required to word it (REQ-221c).
@@ -1823,8 +1794,6 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(cannot_garrison_last,           "cannot_garrison_last");
     SET_BANNER(no_troop_slots,                 "no_troop_slots");
     SET_BANNER(army_cannot_handle,             "army_cannot_handle");
-    SET_BANNER(no_troops_to_garrison,          "no_troops_to_garrison");
-    SET_BANNER(castle_garrison_empty,          "castle_garrison_empty");
     SET_BANNER(spell_unavailable,              "spell_unavailable");
     SET_BANNER(spell_not_known,                "spell_not_known");
     SET_BANNER(spell_unknown,                  "spell_unknown");
@@ -1853,10 +1822,7 @@ static void parse_combat_log(ResCombatLog *cl, cJSON *obj, Resources *res) {
     SET_CL(no_effect_msg,    "no_effect_msg");
     SET_CL(fly,              "fly");
     SET_CL(move,             "move");
-    SET_CL(wait,             "wait");
-    SET_CL(pass,             "pass");
     SET_CL(frozen,           "frozen");
-    SET_CL(ooc,              "ooc");
     SET_CL(immune,           "immune");
     SET_CL(cloned,           "cloned");
     SET_CL(resurrected,      "resurrected");
@@ -1867,17 +1833,9 @@ static void parse_combat_log(ResCombatLog *cl, cJSON *obj, Resources *res) {
     SET_CL(cast_fireball,    "cast_fireball");
     SET_CL(cast_lightning,   "cast_lightning");
     SET_CL(cast_turn_undead, "cast_turn_undead");
-    SET_CL(select_clone,     "select_clone");
-    SET_CL(select_freeze,    "select_freeze");
-    SET_CL(select_resurrect, "select_resurrect");
-    SET_CL(select_damage,    "select_damage");
-    SET_CL(select_teleport,  "select_teleport");
-    SET_CL(select_dest,      "select_dest");
     SET_CL(cant_shoot,       "cant_shoot");
     SET_CL(no_ammo,          "no_ammo");
     SET_CL(cant_fly,         "cant_fly");
-    SET_CL(give_up_prompt,   "give_up_prompt");
-    SET_CL(exit_hint,        "exit_hint");
     #undef SET_CL
 }
 
@@ -1921,11 +1879,7 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         cJSON *obj = jui;
         UI_SET(press_esc_to_exit, "press_esc_to_exit");
         UI_SET(fv_hp, "fv_hp");
-        UI_SET(fv_skill, "fv_skill");
         UI_SET(fv_dmg, "fv_dmg");
-        UI_SET(fv_move, "fv_move");
-        UI_SET(fv_range, "fv_range");
-        UI_SET(fv_flies, "fv_flies");
         UI_SET(cv_army, "cv_army");
         UI_SET(cv_magic, "cv_magic");
         UI_SET(cv_campaign, "cv_campaign");
@@ -1950,15 +1904,9 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(cv_no, "cv_no");
         UI_SET(cv_next, "cv_next");
         UI_SET(cv_top_rank, "cv_top_rank");
-        UI_SET(hint_back, "hint_back");
-        UI_SET(hint_quit, "hint_quit");
-        UI_SET(hint_continue, "hint_continue");
         UI_SET(key_esc, "key_esc");
-        UI_SET(key_ctrl_q, "key_ctrl_q");
         UI_SET(pad_back, "pad_back");
-        UI_SET(pad_confirm, "pad_confirm");
         UI_SET(give_up_header_modern, "give_up_header_modern");
-        UI_SET(save_confirm_modern, "save_confirm_modern");
         UI_SET(quit_to_dos_prompt, "quit_to_dos_prompt");
         UI_SET(out_of_control,    "out_of_control");
         UI_SET(worldmap_hint_your_map,  "worldmap_hint_your_map");
@@ -1987,8 +1935,6 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
             UI_SET(menu_contract,  "contract");
             UI_SET(menu_puzzle,    "puzzle");
             UI_SET(menu_view_map,  "view_map");
-            UI_SET(menu_screens,   "screens");
-            UI_SET(menu_actions,   "actions");
             UI_SET(gm_title, "gm_title");
             UI_SET(gm_hero, "gm_hero");
             UI_SET(gm_world, "gm_world");
@@ -2135,7 +2081,6 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
     cJSON *jmisc = cJSON_GetObjectItem(root_strings, "ui");
     if (cJSON_IsObject(jmisc)) {
         cJSON *obj = jmisc;
-        UI_SET(empty_slot, "empty_slot");
         UI_SET(combat_spells_title,      "combat_spells_title");
         UI_SET(combat_spells_col_combat, "combat_spells_col_combat");
         UI_SET(combat_spells_prompt,     "combat_spells_prompt");
@@ -2161,8 +2106,6 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(own_castle_row_remove, "own_castle_row_remove");
         UI_SET(worldmap_row_your_map, "worldmap_row_your_map");
         UI_SET(worldmap_row_whole_map, "worldmap_row_whole_map");
-        UI_SET(class_select_load, "class_select_load");
-        UI_SET(class_select_arrows, "class_select_arrows");
         UI_SET(title_new_adventure, "title_new_adventure");
         UI_SET(title_load_adventure, "title_load_adventure");
         UI_SET(title_credits, "title_credits");
@@ -2170,12 +2113,6 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         copy_str(ui->title_intro, sizeof ui->title_intro, json_str(obj, "title_intro", ""));
         UI_SET(new_game_confirm, "new_game_confirm");
         UI_SET(hero_name_label, "hero_name_label");
-        UI_SET(combat_act_wait, "combat_act_wait");
-        UI_SET(combat_act_shoot, "combat_act_shoot");
-        UI_SET(combat_act_fly, "combat_act_fly");
-        UI_SET(combat_act_cast, "combat_act_cast");
-        UI_SET(combat_act_controls, "combat_act_controls");
-        UI_SET(combat_act_give_up, "combat_act_give_up");
         UI_SET(gate_title_town,          "gate_title_town");
         UI_SET(gate_title_castle,        "gate_title_castle");
         UI_SET(gate_footer_hint,         "gate_footer_hint");
@@ -2220,21 +2157,15 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
     cJSON *jdt = cJSON_GetObjectItem(root_strings, "dialog_titles");
     if (cJSON_IsObject(jdt)) {
         cJSON *obj = jdt;
-        UI_SET(dt_treasure,       "treasure");
         UI_SET(dt_teleport_cave,  "teleport_cave");
         UI_SET(dt_crystal_ball,   "crystal_ball");
         UI_SET(dt_foes,           "foes");
         UI_SET(dt_alcove_offer,   "alcove_offer");
         UI_SET(dt_alcove_result,  "alcove_result");
-        UI_SET(dt_castle_default, "castle_default");
-        UI_SET(dt_own_castle,     "own_castle");
         UI_SET(dt_search,         "search");
         UI_SET(dt_dismiss_army,   "dismiss_army");
         UI_SET(dt_dismiss_last,   "dismiss_last");
         UI_SET(dt_navigate,       "navigate");
-        UI_SET(dt_garrison_pick,  "garrison_pick");
-        UI_SET(dt_remove_pick,    "remove_pick");
-        UI_SET(dt_save_confirm,   "save_confirm");
         UI_SET(dt_lose_fallback,  "lose_fallback");
         UI_SET(dt_win_fallback,   "win_fallback");
         UI_SET(dt_combat_victory, "combat_victory");

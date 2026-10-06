@@ -124,12 +124,7 @@ typedef struct {
     // Decision payload (superset of pending.h scratch; only the fields the
     // flow needs are set where the flow opens).
     char dwelling_troop[32];
-    char dwelling_zone[24];
     int  dwelling_x, dwelling_y;
-    int  friendly_count;
-    char friendly_foe_id[40];
-    char nav_zones[5][32];
-    int  nav_count;
     char castle_id[24];
     char foe_id[32];
     int  foe_x, foe_y;
@@ -142,7 +137,6 @@ typedef struct {
     int  view_pop, view_cost, view_gold, view_cap;  // dwelling recruit numbers
     char view_record_key[24];     // VIEW_TOWN town record key
     int  view_boat_x, view_boat_y;// VIEW_TOWN boat spawn
-    bool view_won;                // VIEW_WIN/VIEW_LOSE outcome
 } PlayerRequest;
 
 // FIFO held inside Game: a ring over heap slots that doubles when full, so no
