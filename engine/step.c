@@ -368,14 +368,8 @@ bool GameStep(Game *game, Map *map, Fog *fog,
             goto after_interact;
         }
         if (ir.opened_dwelling) {
-            const char *kind = "plains";
-            switch (ir.dwelling_kind) {
-                case INTERACT_DWELLING_PLAINS:  kind = "plains";  break;
-                case INTERACT_DWELLING_FOREST:  kind = "forest";  break;
-                case INTERACT_DWELLING_HILLS:   kind = "hill";    break;
-                case INTERACT_DWELLING_DUNGEON: kind = "dungeon"; break;
-                default: break;
-            }
+            const char *kind = DwellingCatalogKind(ir.dwelling_kind);
+            if (!kind) kind = "plains";
             DwellingState *d = GameTouchDwelling(game, game->position.zone,
                                                  nx, ny, kind);
             const TroopDef *t = (d && d->troop_id[0])

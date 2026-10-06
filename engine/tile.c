@@ -70,3 +70,33 @@ const char *TerrainName(Terrain t) {
         default:               return "?";
     }
 }
+
+Interact DwellingInteractFromKind(const char *kind) {
+    if (!kind) return INTERACT_NONE;
+    if (strcmp(kind, "plains") == 0)  return INTERACT_DWELLING_PLAINS;
+    if (strcmp(kind, "forest") == 0)  return INTERACT_DWELLING_FOREST;
+    if (strcmp(kind, "hills") == 0 || strcmp(kind, "hill") == 0)
+                                      return INTERACT_DWELLING_HILLS;
+    if (strcmp(kind, "dungeon") == 0) return INTERACT_DWELLING_DUNGEON;
+    return INTERACT_NONE;
+}
+
+const char *DwellingCatalogKind(Interact i) {
+    switch (i) {
+        case INTERACT_DWELLING_PLAINS:  return "plains";
+        case INTERACT_DWELLING_FOREST:  return "forest";
+        case INTERACT_DWELLING_HILLS:   return "hill";
+        case INTERACT_DWELLING_DUNGEON: return "dungeon";
+        default:                        return NULL;
+    }
+}
+
+const char *DwellingArt(Interact i) {
+    switch (i) {
+        case INTERACT_DWELLING_PLAINS:  return "dwelling_plains";
+        case INTERACT_DWELLING_FOREST:  return "dwelling_forest";
+        case INTERACT_DWELLING_HILLS:   return "dwelling_hills";
+        case INTERACT_DWELLING_DUNGEON: return "dwelling_dungeon";
+        default:                        return NULL;
+    }
+}

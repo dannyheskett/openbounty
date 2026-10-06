@@ -387,18 +387,10 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, z->dwellings[i].x, z->dwellings[i].y);
         if (!t) continue;
         const char *k = z->dwellings[i].kind;
-        if      (strcmp(k, "plains")  == 0) {
-            t->interactive = INTERACT_DWELLING_PLAINS;
-            TileSetArt(map, t, "dwelling_plains");
-        } else if (strcmp(k, "forest")  == 0) {
-            t->interactive = INTERACT_DWELLING_FOREST;
-            TileSetArt(map, t, "dwelling_forest");
-        } else if (strcmp(k, "hills")   == 0) {
-            t->interactive = INTERACT_DWELLING_HILLS;
-            TileSetArt(map, t, "dwelling_hills");
-        } else if (strcmp(k, "dungeon") == 0) {
-            t->interactive = INTERACT_DWELLING_DUNGEON;
-            TileSetArt(map, t, "dwelling_dungeon");
+        Interact ik = DwellingInteractFromKind(k);
+        if (ik != INTERACT_NONE) {
+            t->interactive = ik;
+            TileSetArt(map, t, DwellingArt(ik));
         }
         TileSetId(map, t, z->dwellings[i].id);
     }
