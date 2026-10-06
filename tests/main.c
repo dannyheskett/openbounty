@@ -40,6 +40,8 @@ SUITE_EXTERN(unit_touch_regions_suite);
 SUITE_EXTERN(unit_layout_suite);
 SUITE_EXTERN(unit_legacy_freeze_suite);
 SUITE_EXTERN(unit_modern_layout_suite);
+SUITE_EXTERN(unit_map_camera_suite);
+SUITE_EXTERN(unit_goto_suite);
 SUITE_EXTERN(unit_present_mobile_suite);
 SUITE_EXTERN(unit_bfont_suite);
 SUITE_EXTERN(unit_select_suite);
@@ -61,11 +63,14 @@ SUITE_EXTERN(unit_spawn_calm_suite);
 SUITE_EXTERN(unit_scepter_zone_suite);
 SUITE_EXTERN(unit_map_clear_ground_suite);
 SUITE_EXTERN(unit_rome_salt_suite);
+SUITE_EXTERN(unit_intro_suite);
 SUITE_EXTERN(unit_castle_gate_report_suite);
 SUITE_EXTERN(unit_scepter_ground_suite);
+SUITE_EXTERN(unit_signs_suite);
 SUITE_EXTERN(unit_scepter_bridge_suite);
 SUITE_EXTERN(unit_combat_spells_suite);
 SUITE_EXTERN(unit_combat_ai_suite);
+SUITE_EXTERN(unit_field_obstacles_suite);
 
 // ---- regression ------------------------------------------------------------
 SUITE_EXTERN(regression_combat_digests_suite);
@@ -77,6 +82,9 @@ SUITE_EXTERN(e2e_game_flow_suite);
 SUITE_EXTERN(e2e_chest_suite);
 SUITE_EXTERN(e2e_contract_suite);
 SUITE_EXTERN(e2e_economy_suite);
+SUITE_EXTERN(e2e_foe_landmarks_suite);
+SUITE_EXTERN(e2e_magic_rules_suite);
+SUITE_EXTERN(e2e_goto_walk_suite);
 SUITE_EXTERN(e2e_score_suite);
 SUITE_EXTERN(e2e_combat_input_suite);
 SUITE_EXTERN(e2e_save_suite);
@@ -115,6 +123,8 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_layout_suite);
     RUN_SUITE(unit_legacy_freeze_suite);
     RUN_SUITE(unit_modern_layout_suite);
+    RUN_SUITE(unit_map_camera_suite);
+    RUN_SUITE(unit_goto_suite);
     RUN_SUITE(unit_present_mobile_suite);
     RUN_SUITE(unit_bfont_suite);
     RUN_SUITE(unit_select_suite);
@@ -136,11 +146,14 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_scepter_zone_suite);
     RUN_SUITE(unit_map_clear_ground_suite);
     RUN_SUITE(unit_rome_salt_suite);
+    RUN_SUITE(unit_intro_suite);
     RUN_SUITE(unit_castle_gate_report_suite);
     RUN_SUITE(unit_scepter_ground_suite);
+    RUN_SUITE(unit_signs_suite);
     RUN_SUITE(unit_scepter_bridge_suite);
     RUN_SUITE(unit_combat_spells_suite);
     RUN_SUITE(unit_combat_ai_suite);
+    RUN_SUITE(unit_field_obstacles_suite);
 
     // regression
     RUN_SUITE(regression_combat_digests_suite);
@@ -152,6 +165,9 @@ int main(int argc, char **argv) {
     RUN_SUITE(e2e_chest_suite);
     RUN_SUITE(e2e_contract_suite);
     RUN_SUITE(e2e_economy_suite);
+    RUN_SUITE(e2e_foe_landmarks_suite);
+    RUN_SUITE(e2e_magic_rules_suite);
+    RUN_SUITE(e2e_goto_walk_suite);
     RUN_SUITE(e2e_score_suite);
     RUN_SUITE(e2e_combat_input_suite);
     RUN_SUITE(e2e_save_suite);

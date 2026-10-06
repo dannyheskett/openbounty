@@ -2,6 +2,7 @@
 #include "gfx.h"
 #include "input_host.h"
 #include "startup.h"
+#include "intro.h"
 #include "touch.h"
 #include "uitouch.h"
 #include "layout.h"
@@ -455,10 +456,10 @@ static bool run_save_picker(RenderTexture2D *rt, const Sprites *sprites,
 }
 
 // ---------------------------------------------------------------------------
-// Title menu (modern), on the title art: New Game, Load Saved Game,
-// Credits, Exit. Sets out->action to STARTUP_NEW (go to class
-// select) or STARTUP_BACK (go to the save picker); Credits shows the credits
-// and comes back. Returns false on Exit, Escape or a closed window.
+// Title menu (modern), on the title art: Introduction, New Game, Load Saved
+// Game, Credits, Exit. Sets out->action to STARTUP_NEW (go to class select,
+// also once the Introduction ends) or STARTUP_BACK (go to the save picker);
+// Credits shows the credits and comes back. Returns false on Exit, Escape or a closed window.
 // ---------------------------------------------------------------------------
 
 static bool run_credits(RenderTexture2D *rt, const Resources *res,
@@ -491,31 +492,34 @@ static bool class_confirm_row(void *ctx, int i, char *label, char *right, int ca
     return true;
 }
 
-// The title menu's rows. No Exit on a phone: iOS has no notion of quitting an
-// app and Apple rejects a control that claims otherwise, and on Android the
+// The title menu's rows, built for the pack: Introduction first, only when it
+// has one (REQ-430u). No Exit on a phone: iOS has no notion of quitting an app
+// and Apple rejects a control that claims otherwise, and on Android the
 // system handles it. Everywhere else the row stays exactly where it was.
-#if defined(PLATFORM_IOS) || defined(PLATFORM_ANDROID)
-enum { ROW_NEW, ROW_LOAD, ROW_CREDITS, ROW_COUNT };
-#else
-enum { ROW_NEW, ROW_LOAD, ROW_CREDITS, ROW_EXIT, ROW_COUNT };
-#endif
+enum { ROW_NEW, ROW_LOAD, ROW_INTRO, ROW_CREDITS, ROW_EXIT, ROW_MAX };
 
-static void title_menu_labels(const ResUI *ui, const char *labels[ROW_COUNT]) {
-    labels[ROW_NEW]     = ui->title_new_adventure;
-    labels[ROW_LOAD]    = ui->title_load_adventure;
-    labels[ROW_CREDITS] = ui->title_credits;
+// Fill ids[] and labels[] with the rows in order; returns how many.
+static int title_menu_rows(const Resources *res, int ids[ROW_MAX], const char *labels[ROW_MAX]) {
+    const ResUI *ui = &res->ui;
+    int n = 0;
+    if (intro_available(res)) { ids[n] = ROW_INTRO; labels[n++] = ui->title_intro; }
+    ids[n] = ROW_NEW;  labels[n++] = ui->title_new_adventure;
+    ids[n] = ROW_LOAD; labels[n++] = ui->title_load_adventure;
+    ids[n] = ROW_CREDITS; labels[n++] = ui->title_credits;
 #if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID)
-    labels[ROW_EXIT]    = ui->menu_exit;
+    ids[n] = ROW_EXIT; labels[n++] = ui->menu_exit;
 #endif
+    return n;
 }
 
 static bool run_title_menu(const Resources *res, const Sprites *sprites,
                            RenderTexture2D *rt, StartupChoice *out) {
-    const char *labels[ROW_COUNT];
-    title_menu_labels(&res->ui, labels);
+    int ids[ROW_MAX];
+    const char *labels[ROW_MAX];
+    int rows = title_menu_rows(res, ids, labels);
 
     screen_open();
-    SelList l = { ROW_COUNT, 0 };
+    SelList l = { rows, 0 };
     bool playing = title_sequence_ok(sprites) && !s_title_played;
     double started = frame_host_time();
     RenderTexture2D menu_rt = { 0 };
@@ -549,7 +553,7 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
                 if (z > 1) gfx_zoom_begin((float)z);
                 page_frame_begin();
                 page_bare();
-                draw_title_menu(sprites, labels, ROW_COUNT, l.cursor, 0);
+                draw_title_menu(sprites, labels, rows, l.cursor, 0);
                 if (z > 1) gfx_zoom_end();
                 gfx_target_end();
             }
@@ -566,12 +570,17 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
         if (menu_rt.id) { gfx_target_free(menu_rt); menu_rt = (RenderTexture2D){ 0 }; }
         if (input_key_pressed(KEY_ESCAPE)) break;
         int row = -1;
-        if (sel_input(&l, TOUCH_LIST_STARTUP, 0, &row) == SEL_CONFIRM && row >= 0) {
+        if (sel_input(&l, TOUCH_LIST_STARTUP, 0, &row) == SEL_CONFIRM && row >= 0 && row < rows) {
             advance_input_frame();
             drain_char_queue();
-            switch (row) {
+            switch (ids[row]) {
             case ROW_NEW:  out->action = STARTUP_NEW;  return true;
             case ROW_LOAD: out->action = STARTUP_BACK; return true;
+            case ROW_INTRO:
+                // Played or skipped, the intro leads on to the class picker.
+                if (!run_intro(rt, res)) { out->action = STARTUP_QUIT; return false; }
+                out->action = STARTUP_NEW;
+                return true;
             case ROW_CREDITS:
                 if (!run_credits(rt, res, sprites)) { out->action = STARTUP_QUIT; return false; }
                 screen_open();
@@ -583,7 +592,7 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
         // The menu sits on the title page, over the lower half of the art.
         frame_begin(rt);
         draw_title_backdrop(sprites);
-        draw_title_menu(sprites, labels, ROW_COUNT, l.cursor, TOUCH_LIST_STARTUP);
+        draw_title_menu(sprites, labels, rows, l.cursor, TOUCH_LIST_STARTUP);
         frame_end(rt);
     }
     out->action = STARTUP_QUIT;
@@ -609,7 +618,7 @@ static void draw_class_select(const Resources *res, const Sprites *sprites,
     if (sprites && sprites->class_picker.id && CL_IS_MODERN) {
         // Modern: the carousel frame for the picked figure, pre-rendered
         // with the others dimmed and the figure ringed in gold
-        // (tools/classpicker.py); the whole painting before anyone is
+        // (tools/romeart.py classpicker); the whole painting before anyone is
         // picked. Full-bleed art, at the largest whole multiple.
         bool picked = class_cursor >= 0;
         bool carousel = picked && class_cursor < sprites->class_picker_selected_count &&
@@ -1469,12 +1478,12 @@ bool startup_flow(const Resources *res,
                           const Sprites   *sprites,
                           void            *chrome_target,
                           StartupChoice   *out,
-                          bool             skip_intro) {
+                          bool             skip_splashes) {
     RenderTexture2D *rt = (RenderTexture2D *)chrome_target;
     memset(out, 0, sizeof(*out));
 
     // Splash 1: publisher logo on black.
-    if (!skip_intro && sprites && !run_splash(rt, sprites->splash_logo,
+    if (!skip_splashes && sprites && !run_splash(rt, sprites->splash_logo,
                                (Color){ 0x00, 0x00, 0x00, 0xFF })) {
         out->action = STARTUP_QUIT;
         return false;
@@ -1482,7 +1491,7 @@ bool startup_flow(const Resources *res,
 
     // Splash 2: game title on black. Modern skips it: the title menu is
     // drawn on the title art.
-    if (!skip_intro && !CL_IS_MODERN && sprites && !run_splash(rt, sprites->splash_title,
+    if (!skip_splashes && !CL_IS_MODERN && sprites && !run_splash(rt, sprites->splash_title,
                                (Color){ 0x00, 0x00, 0x00, 0xFF })) {
         out->action = STARTUP_QUIT;
         return false;
@@ -1491,7 +1500,7 @@ bool startup_flow(const Resources *res,
     // Credits screen . Drawn over the
     // class-select cartoon so the picker is visible behind. Skipped
     // silently if the game pack doesn't define any credit lines.
-    if (!skip_intro && !CL_IS_MODERN && !run_credits(rt, res, sprites)) {
+    if (!skip_splashes && !CL_IS_MODERN && !run_credits(rt, res, sprites)) {
         out->action = STARTUP_QUIT;
         return false;
     }
@@ -1580,11 +1589,12 @@ bool startup_gallery_draw(StartupShot shot, const Resources *res,
         break;
     case STARTUP_SHOT_TITLE:
         if (CL_IS_MODERN) {
-            const char *labels[ROW_COUNT];
-            title_menu_labels(&res->ui, labels);
+            int ids[ROW_MAX];
+            const char *labels[ROW_MAX];
+            int rows = title_menu_rows(res, ids, labels);
             frame_begin(rt);
             draw_title_backdrop(sprites);
-            draw_title_menu(sprites, labels, ROW_COUNT, 0, TOUCH_LIST_STARTUP);
+            draw_title_menu(sprites, labels, rows, 0, TOUCH_LIST_STARTUP);
         } else {
             if (!sprites->splash_title.id) return false;
             frame_begin(rt);

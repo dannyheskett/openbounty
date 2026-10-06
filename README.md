@@ -111,7 +111,7 @@ shell has reached the platform only through five seams (`src/gfx.h`,
 ├── art/                      # Rome art sources: generation jobs, map sources,
 │                             #   terrain primitives, references
 ├── tests/                    # unit/, e2e/, regression/, autoplay/, library/
-├── third_party/              # cJSON, miniz, greatest, minih264, minimp4, stb,
+├── third_party/              # cJSON, miniz, greatest, minih264, minimp4, vo-aacenc, stb,
 │                             #   Liberation Sans; raylib-install*/ (built)
 ├── tools/                    # C pack extractor; Rome art and map tools (Python)
 ├── scripts/                  # raylib builds, store and release scripts
@@ -743,6 +743,7 @@ row or a tap (`docs/DESIGN-SPEC.md`).
 | `L` | Land (dismount) |
 | `D` | Dismiss army |
 | `N` | New continent (sail) |
+| `G` | Goto (modern): pick a seen tile on the world map, and travel there |
 
 ### Meta
 
@@ -870,12 +871,11 @@ Packing a loose asset tree into a `.openbounty` zip has been done by the
 engine binary itself: `./build/debug/openbounty --pack-dir <src> <out_zip>`.
 
 The game and its build have used no Python. The rest of `tools/` has been
-the Glory of Rome authoring tools, which the build never runs: `romeart.py`
-(tile compositing, the art record, the launcher icon); `mapbuild.py`,
-`mapcheck.py` and `maprender.py` (maps); `classpicker.py`, `splashlogo.py`,
-`splashtitle.py`, `siegewalls.py` and `siegeslice.py` (screen and combat
-art); `loopreview.py` (animation review); and the paid-API drivers
-`rdgen.py`, `pltileset.py` and `pltilespro.py`. `capture.sh` and `walkthrough.sh` have
+the Glory of Rome authoring tools, which the build never runs: `romeart.py`,
+the one art pipeline script (tile compositing, screen and combat art,
+animation review, the art record, the launcher icon, and the paid-API calls,
+which post only with `--run`); and `mapbuild.py`, `mapcheck.py` and
+`maprender.py` (maps). `capture.sh` and `walkthrough.sh` have
 driven a running window for screenshots; `detcheck.sh` has checked
 determinism.
 

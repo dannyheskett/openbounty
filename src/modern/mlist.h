@@ -41,6 +41,11 @@ int  ml_list_draw_ex(int x, int y, int w, int h, int count, int cursor,
 void ml_rows_draw(ML_Rect a, int n, int foot, int cursor, MlRowFn fn, void *ctx, int touch_list);
 // The height the rows above the foot scroll in.
 int  ml_rows_top_h(ML_Rect a, int foot);
+// `n` answers side by side in `a` (#140): equal columns a band apart, each a
+// row as ml_list_draw draws one -- lit at the cursor, its key at its right --
+// and each its own tap (touch_list row i). Left and Right move the cursor
+// (ml_list_input reads them as Up and Down).
+void ml_hrow_draw(ML_Rect a, int n, int cursor, MlRowFn fn, void *ctx, int touch_list);
 
 // ---- the one reader --------------------------------------------------------------
 
@@ -52,7 +57,8 @@ typedef struct {
     const char *const *keys;      // the key each row answers to ("A", "5"; NULL or "": none)
 } MlList;
 // One frame of a list's keys and taps. Up and Down (the keypad's 8 and 2
-// too) move the cursor, wrapping; Enter, the keypad's Enter or Space act on
+// too) move the cursor, wrapping, and so do Left and Right (4 and 6), for a
+// row of answers side by side; Enter, the keypad's Enter or Space act on
 // the cursor's row; a tap on a row puts the cursor there and acts on it; a
 // row's own key acts on it; Escape is Back. A row that cannot be chosen takes
 // the cursor but does not act. *row: the row acted on.

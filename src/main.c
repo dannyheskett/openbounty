@@ -72,6 +72,7 @@
 #include "combat_loop.h"
 #include <time.h>
 #include "views_render.h"
+#include "shell_goto.h"
 #include "views_render_impl.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -303,6 +304,7 @@ int shell_run_game(int argc, char **argv) {
     bool        movie_requested = false;
     const char *movie_path_arg  = NULL;
     const char *gallery_dir     = NULL;   // --gallery <dir>: capture every modern screen
+    const char *intro_movie     = NULL;   // --intro-movie <out.mp4>: the Introduction to video
     const char *puzzle_sweep_dir = NULL;  // --puzzle-sweep <dir>: the puzzle view of all 256 worlds
     // --window WxH / --touch: the geometry a device has, on this desk. The
     // window size drives everything (present_refit derives the buffer from
@@ -448,6 +450,8 @@ int shell_run_game(int argc, char **argv) {
             }
         } else if (strcmp(a, "--gallery") == 0 && i + 1 < argc) {
             gallery_dir = argv[++i];
+        } else if (strcmp(a, "--intro-movie") == 0 && i + 1 < argc) {
+            intro_movie = argv[++i];
         } else if (strcmp(a, "--puzzle-sweep") == 0 && i + 1 < argc) {
             puzzle_sweep_dir = argv[++i];
         } else if (strcmp(a, "--window") == 0 && i + 1 < argc) {
@@ -848,7 +852,7 @@ int shell_run_game(int argc, char **argv) {
     bool audio_started = false;
 title:;
     StartupChoice choice = { 0 };
-    if (demo_mode || autoplay_mode || gallery_dir || puzzle_sweep_dir) {
+    if (demo_mode || autoplay_mode || gallery_dir || puzzle_sweep_dir || intro_movie) {
         if (seed_index < 0)
             seed_index = autoplay_mode ? AUTOPLAY_DEFAULT_SEED_INDEX
                                        : DEMO_DEFAULT_SEED_INDEX;
@@ -1007,6 +1011,15 @@ title:;
     if (puzzle_sweep_dir) {
         // The puzzle view of every catalog world, then quit (#108).
         int rc = gallery_puzzle_sweep(&game, &map, &fog, &res, &sprites, &render_target, puzzle_sweep_dir);
+        gfx_target_free(render_target);
+        sprites_unload(&sprites);
+        frame_host_window_close();
+        resources_free(&res);
+        return rc;
+    }
+    if (intro_movie) {
+        // The Introduction rendered to a silent video, then quit (#154).
+        int rc = gallery_intro_movie(&res, &render_target, intro_movie);
         gfx_target_free(render_target);
         sprites_unload(&sprites);
         frame_host_window_close();
@@ -1580,7 +1593,7 @@ title:;
             // Enter, Space or a tap on it swaps the map.
             bool worldmap_row = false;
             bool has_orb = false;
-            bool wm_modern = CL_IS_MODERN && views_active() == VIEW_WORLDMAP && modern_worldmap_input(&game);
+            bool wm_modern = CL_IS_MODERN && views_active() == VIEW_WORLDMAP && modern_worldmap_input(&game, &map, &fog);
             if (wm_modern) {
                 // Modern: the places list owns the keys (src/modern/views_render.c).
             } else if (views_active() == VIEW_WORLDMAP) {
@@ -1714,11 +1727,26 @@ title:;
             InputAction ra = rail_tapped();
             if (ra == INPUT_ACTION_NONE) ra = hud_tapped();   // the other column
             if (ra != INPUT_ACTION_NONE) in.action = ra;
+            // Goto (#70): a walk under way takes one step a beat; any key or
+            // tap of the player's stops it, and does nothing else.
+            bool walking = false;
+            if (shell_goto_active()) {
+                if (in.action != INPUT_ACTION_NONE || in.dx || in.dy) {
+                    shell_goto_cancel();
+                    in = (InputState){ 0, 0, INPUT_ACTION_NONE };
+                } else {
+                    int gdx, gdy;
+                    if (shell_goto_next(&game, frame_host_time(), &gdx, &gdy)) {
+                        in.dx = gdx; in.dy = gdy;
+                        walking = true;
+                    }
+                }
+            }
             shell_dispatch_action(&sctx, &in);
             if (in.action == INPUT_ACTION_NONE && (in.dx || in.dy)) {
-                if (GameStep(&game, &map, &fog, &res, in.dx, in.dy)) {
-                    last_step_time = frame_host_time();
-                }
+                bool moved = GameStep(&game, &map, &fog, &res, in.dx, in.dy);
+                if (moved) last_step_time = frame_host_time();
+                if (walking) shell_goto_after_step(&game, moved);
             }
         }
 

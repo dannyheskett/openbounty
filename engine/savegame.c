@@ -220,6 +220,9 @@ SaveResult SaveGameRead(const char *path,
         GS_INT(steps_left_today, "steps_left_today");
         GS_INT(days_left, "days_left");
         GS_INT(last_commission, "last_commission");
+        GS_INT(last_week_on_hand, "last_week_on_hand");
+        GS_INT(last_week_army, "last_week_army");
+        GS_INT(last_week_boat, "last_week_boat");
         GS_INT(tributes, "tributes");
         #undef GS_INT
         cJSON *jkm = cJSON_GetObjectItem(js, "knows_magic");
@@ -297,6 +300,15 @@ SaveResult SaveGameRead(const char *path,
             if (!sd) continue;
             cJSON *c = cJSON_GetObjectItem(jsp, sd->id);
             if (cJSON_IsNumber(c)) g->spells.counts[i] = c->valueint;
+        }
+    }
+    cJSON *jlearned = cJSON_GetObjectItem(root, "spells_learned");
+    if (cJSON_IsArray(jlearned)) {
+        cJSON *it;
+        cJSON_ArrayForEach(it, jlearned) {
+            if (!cJSON_IsString(it)) continue;
+            int i = spell_index_by_id(it->valuestring);
+            if (i >= 0 && i < g->spells.count) g->spells.learned[i] = true;
         }
     }
 

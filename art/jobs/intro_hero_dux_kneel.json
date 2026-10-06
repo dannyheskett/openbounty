@@ -1,0 +1,21 @@
+{
+ "id": "intro_hero_dux_kneel",
+ "prompt": "lowering onto one knee with the back upright, ending kneeling on one knee, the head slightly bowed",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 48,
+ "height": 48,
+ "seed": 15711,
+ "frames_duration": 8,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/intro_hero_dux/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_pack_path": "art/intro/hero_dux_kneel_00..07.png",
+ "_note": "2026-10-04, Introduction (#154) scene 4: the Dux kneeling before Trajan at 48, animated from the standing still as the move down to the kneel; the intro plays it once and holds the last frame. run03 is installed."
+}

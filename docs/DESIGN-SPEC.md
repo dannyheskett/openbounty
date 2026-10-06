@@ -193,17 +193,19 @@ Source: `src/lattice.c` `cell_colour`, `build`, `tile`, `lattice_ground`.
 scissored (the scissor multiplied by the zoom), so no tile has spilled out.
 Source: `src/map_render.c` `map_render_draw`.
 
-**DSGN-0017. Whole and part tiles.** The hero's cell has been centred across
-the map, at `hx` = `CL_MAP_X` + (`CL_MAP_W` − `TW`) / 2, on row
-`hr` = (`CL_MAP_H` / 2) / `TH` counted from the map's top, so the rows have
-stood flush with the columns' tiles. Every cell the area has shown has been
+**DSGN-0017. Whole and part tiles.** Away from the world's edge the hero's
+cell has been centred across the map, at `hx` = `CL_MAP_X` + (`CL_MAP_W` −
+`TW`) / 2, on row `hr` = (`CL_MAP_H` / 2) / `TH` counted from the map's top,
+so the rows have stood flush with the columns' tiles. Every cell the area has shown has been
 drawn: part tiles at the left and right edges and a part row at the foot.
 Every cell has been drawn at `TW` × `TH`.
 Source: `src/map_render.c` `map_view`, `map_render_draw`.
 
-**DSGN-0018. Camera.** The camera has never clamped: the hero has always
-stood on that centre cell, and cells past the world's edge have not been
-drawn (dark).
+**DSGN-0018. Camera.** The camera has stopped at the world's edge, in
+pixels: where the centred camera would show past the map, the map's edge has
+stood on the map area's edge and the hero has walked off centre toward it, so
+the area has never shown past the world. Along an axis where the whole map is
+smaller than the area, the map has been centred in it, the rest dark.
 Source: `src/map_render.c` `map_view`, `map_render_hero_cell`.
 
 **DSGN-0019. Map contents.** Each seen cell has drawn its ground under any
@@ -212,7 +214,9 @@ declared variants, chosen per cell from the game's seed); then the idle
 boat, then the hero (the boat when sailing, the lead troop mirrored west when
 flying, rocking between frames 0 and 1 when still), then fog-edge strips:
 three strips black at alpha 128, 64 and 32, `TW` / 24 px wide on west and east
-edges and `TH` / 17 px on north and south. `map_render_cell` has been the one
+edges and `TH` / 17 px on north and south, on a seen cell's edges that face an
+unseen cell; past the world's edge has counted as seen, so the map's own edge
+has never faded. `map_render_cell` has been the one
 way a map cell has been drawn: the map, the gate's preview and the puzzle.
 Source: `src/map_render.c` `map_render_draw`, `map_render_cell`;
 `src/tilevar.c` `tilevar_art`, `tilevar_seed`; `src/shell_frame.c`
@@ -243,19 +247,21 @@ Source: `src/hud.c` `hud_column_finish`.
 
 **DSGN-0023. Left column.** The left column has held, top to bottom: Menu
 (`game.json:sprites.rail.menu`, the game menu), Map
-(`game.json:sprites.rail.map`, the world map), Army
-(`game.json:sprites.rail.army`, the army sheet), Search
-(`game.json:sprites.rail.search`, a search) and Puzzle (drawn by
-`hud_draw_puzzle_tile`, the puzzle). Each row has fired
-exactly the action its key has fired.
+(`game.json:sprites.rail.map`, the world map), Goto
+(`game.json:sprites.rail.goto`, the world map's Goto cursor, REQ-541; a pack
+without the icon has drawn the `rail_goto` string in yellow on a dark blue
+card), Army (`game.json:sprites.rail.army`, the army sheet) and Puzzle (drawn
+by `hud_draw_puzzle_tile`, the puzzle). Each row has fired
+exactly the action its key has fired; Search has kept its key and the game
+menu's World page.
 Source: `src/modern/rail.c` `ROWS`, `rail_draw`, `rail_tapped`;
 `src/shell_actions.c` `shell_dispatch_action`.
 
 **DSGN-0024. Right column.** The right column has held, top to bottom:
 Contract (the silhouette, overlaid by the active villain's animation or
-portrait; the contract), Siege (the silhouette, or its animation once siege
-weapons have been owned; the character sheet), Magic (the silhouette, or its
-animation once the zone's rites have been known; cast a spell), Gold (the
+portrait; the contract), Magic (the silhouette, or its animation once the
+zone's rites have been known; cast a spell), Siege (the silhouette, or its
+animation once siege weapons have been owned; the character sheet), Gold (the
 purse and the gold figure; the character sheet) and Days
 (`game.json:sprites.hud.days`, the sundial and the days figure; the character
 sheet). Animations have run at 2 frames a second of `ui_anim_time`, held at
@@ -403,8 +409,8 @@ Source: `src/modern/rail.c` `a_page_is_open`, `rail_draw`; `src/hud.c`
   page less 4 × `ring` and never taller than `in.h` − 4 × `ring`
   (`page_menu_h`).
 - A message: the smallest screen's map width less 4 × `ring` (`page_msg_w`),
-  as tall as what it has held.
-- `PAGE_MSG_LINES` 6, `PAGE_FOE_CARD_LINES` 5.
+  as tall as what it has held, up to its area's height less 4 × `ring`.
+- `PAGE_MSG_MAX_LINES` 40, `PAGE_FOE_CARD_LINES` 5.
 Source: `src/modern/page.h`; `src/modern/page.c` `page_ring`, `page_full_w`,
 `page_full_h`, `page_menu_w`, `page_menu_h`, `page_msg_w`.
 
@@ -613,17 +619,24 @@ shared one box, `page_msg_w` wide:
   `ml_list_height`(rows) when there have been rows.
 Source: `src/modern/page.c` `ask`, `title_lines`.
 
-**DSGN-0063. `page_message`.** A message's words have been paged
-`PAGE_MSG_LINES` lines at a time, the last line of a page with more to come
-ending "..". It has had one Continue row (`banners.castle_continue`), the row
+**DSGN-0063. `page_message`.** A message's words have been paged as many
+lines at a time as the box holds at its tallest: its area (the interior for
+the map's foot, the battlefield's `COMBAT_H` × `TH` for the field's) less
+4 × `ring`, 2 × `UK_INSET`, its title lines and its Continue row, divided by
+`L`, at most `PAGE_MSG_MAX_LINES` (`msg_lines`). The pager
+(`page_message_pages`, given the title and anchor) and the drawer have used
+that one count. The last line of a page with more to come has ended "..".
+A fixed 6 lines paged short notes for a line or two (#132). It has had one Continue row (`banners.castle_continue`), the row
 Escape has pressed; a tap anywhere has pressed Enter, and any key has turned
 its page or closed it. Without a row (the bridge, DSGN-0125) it has had no
 action of its own.
 Source: `src/modern/page.c` `page_message`, `page_message_pages`,
 `page_message_text_w`; `src/main.c` `main`.
 
-**DSGN-0064. `page_question`.** A question with two answers has shown at most
-12 lines of words under an optional title, the last marked when cut; a
+**DSGN-0064. `page_question`.** A question with two answers has shown as many
+lines of words as the box holds at its tallest with its two answers
+(`msg_lines`, as DSGN-0063) under an optional title, the last marked when
+cut; a
 question with only a title has shown the title as `WHITE` words. Its answers
 have been Yes and No, No the row Escape has pressed, and a tap outside it has
 pressed Escape.
@@ -641,8 +654,11 @@ step of it has been the one its kind has called for. Both have had the title
 strip, a rows column 16 × `GW` + 2 × `UK_INSET` wide at the left with a
 `UK_BAND` band beside it, and the words beside that, inset `UK_INSET`. One row
 has been a single action (a tap anywhere presses Enter); more rows a choice
-with Escape as the exit.
-Source: `src/modern/page.c` `page_place`, `page_person`.
+with Escape as the exit. A step that only answers -- one or two answers and
+no choice to scroll -- has had no column: its answers have stood side by side
+along the page's foot and its words the full width (DSGN-0069a, DSGN-0127,
+DSGN-0133; #140).
+Source: `src/modern/page.c` `page_place`, `page_person`, `foot_rows`.
 
 **DSGN-0067. The room (`page_place`).** The place itself: the backdrop band
 (DSGN-0059) under the strip, two tiles tall (2 × `TH`), trimmed from its top
@@ -669,6 +685,21 @@ said beside it in one column. Used for a town's services and each service, a
 question asked in a place, and every outcome.
 Source: `src/modern/page.c` `page_person`; `src/modern/overlay.c`
 `person_says`, `place_outcome`.
+
+**DSGN-0069a. The answer row.** A page that only answers (`page_person_row`,
+`page_place_row`, `page_scene`) has put its answers in one row along its
+foot, the page's full width, a `UK_BAND` band over it: equal columns a
+`UK_BAND` apart (the last taking the remainder), each drawn as a list row --
+lit at the cursor, its key at its right -- and each its own tap
+(`ml_hrow_draw`). Left and Right (keypad 4 and 6) have moved the cursor as
+Up and Down have, wrapping, on every list. Used for a question asked in a
+place and its result, every outcome (promotion, the audience's and the
+tribute's answers, a temple's or an alcove's lesson, troops joining), a note
+as a scene, and sailing. A town's services and their lists have kept the
+column (DSGN-0069).
+Source: `src/modern/page.c` `foot_rows`, `page_person_row`, `page_place_row`;
+`src/modern/mlist.c` `ml_hrow_draw`, `ml_list_input`; `src/modern/overlay.c`
+`place_outcome`, `modern_overlay_draw_sail`.
 
 **DSGN-0070. The foe (`page_foe`).** The foe's page has had the strip, the
 plains as a band min(`TH` + 2 × `UK_INSET`, the room left) tall and never
@@ -702,6 +733,18 @@ Source: `src/modern/page.c` `page_menu_body`.
 spells have been full pages with choices (`page_full_body`): the strip, their
 own body, and Escape as the exit.
 Source: `src/modern/page.c` `page_full_body`.
+
+**DSGN-0073a. The world map's Goto.** Opened for Goto (REQ-541), the world
+map has been titled with `goto_title` and zoomed three times round the
+cursor, the view following it; the cursor has been a ring one tile across,
+black, yellow and black, turned red and blinking for 0.6 s when an order was
+refused. A tap on the map has moved it there (`TOUCH_GRID_WORLDMAP`). The side
+column has kept where you and your boat are, then the cursor's tile
+(`goto_to`) and the route's length (`goto_today`, `goto_days`) or, in red,
+`goto_no_route`, then two rows: Go, and Cancel on the foot with its key; the
+orb's row has not been drawn.
+Source: `src/modern/views_render.c` `draw_worldmap`, `goto_input`,
+`goto_row_fn`.
 
 **DSGN-0074. Pages to read.** A sheet has been a full page (`page_sheet`)
 whose single action has been its close: Close in the strip (DSGN-0052) and a
@@ -863,7 +906,7 @@ Source: `src/modern/gamemenu.c` `modern_gamemenu_page`, `gm_load_page`;
 **DSGN-0090. Map keys.** On the map, A has opened the army sheet, C Controls,
 F flown, L landed, I the contract, M the world map, P the puzzle, S searched,
 U cast, V the character sheet, W ended the week, D dismissed, N set sail,
-5 and keypad 5 rested, O and Escape opened the game menu, Q opened it on the
+G opened Goto (REQ-541), 5 and keypad 5 rested, O and Escape opened the game menu, Q opened it on the
 Save page, and Ctrl+Q quit. Arrows, the keypad and Home, End, PgUp and PgDn
 have stepped once a press; Enter and Space have done nothing.
 Source: `src/input.c` `input_poll`, `poll_direction`;
@@ -916,8 +959,8 @@ Source: `src/modern/uikit.c` `uk_line_h`; `src/modern/mlist.c` `draw_row`;
 `draw_difficulty_modern`, `draw_name_modern`.
 
 **DSGN-0096. How much text a block has held.** A message's title has held at
-most 3 lines and a page of words `PAGE_MSG_LINES`; a question's words at most
-12 lines; a choice at most 2 lines of its row; a menu description 2 lines; the
+most 3 lines and a page of words what the map's height holds (DSGN-0063); a
+question's words the same less a second answer; a choice at most 2 lines of its row; a menu description 2 lines; the
 battle column's name 2 lines; a count question's words 3 lines; a formatted
 block has been paged when given a pager and has shown its first page
 otherwise. Past those limits the last line shown has ended "..".
@@ -1131,8 +1174,9 @@ The unit itself has been marked on the field: it alone has animated
 Under the grid, from `UK_BAND` below its foot band, the combat log has stood
 as cards, newest at the top: each a plate of `uk_fill` the column's width, a
 1 px edge, a 3 px bar down its left, its line wrapped inside (8 px in from
-the bar, 4 px from the right, 6 px above and below, at most 3 lines, the
-last cut with `..`), a `UK_BAND` of ground between cards. The newest has
+the bar, 4 px from the right, 6 px above and below, as many lines as it
+wraps to, none cut (#131), save the newest when even it has not fitted whole,
+cut to the room left with `..`), a `UK_BAND` of ground between cards. The newest has
 been lit, `uk_edge` for its edge and bar and `YELLOW` words; the rest have
 had `uk_edge_dim` and `WHITE`. As many cards have stood as the column has
 held whole; the oldest have gone first. The lines have been the engine's
@@ -1145,29 +1189,30 @@ and the column has been live, each command that could be pressed has shown
 its key in its tile's corner (DSGN-0028): `ui.key_esc`, S, W, F and U.
 Source: `src/combat_loop.c` `combat_column_draw`, `combat_panel_key`.
 
-**DSGN-0117. The combat log line.** Each new combat log line has been shown as
-a toast (DSGN-0068) on the battlefield's top edge for 2.0 s, the same as a
-toast on the map, and has stayed in the column's cards (DSGN-0115).
-Source: `src/combat_loop.c` `combat_present`; `src/ui.c` `toast_show`.
+**DSGN-0117. The combat log line.** A new combat log line has been the
+newest card in the column (DSGN-0115), lit; no toast has repeated it over the
+battlefield, which covered the field and said everything twice (#131).
+Source: `src/combat_loop.c` `combat_present`, `combat_log_cards`.
 
 **DSGN-0118. Combat menu.** The combat menu has been menu pages (DSGN-0071)
 with the hero's name at the strip's right:
-- Actions (`menu.items.gm_actions`): Unit >, Hero >, Game >, and Close on
-  the foot.
+- Actions (`menu.items.gm_actions`): Unit >, Hero >, Game >, then Close and
+  Give up (G) on the foot (#133).
 - Unit: Shoot (S), Wait (W), Fly (F), Cast a spell > (U), and Back on the
   foot, always in that order, greyed with their reasons
   (`banners.gmr_no_shots`, `gmr_adjacent`, `gmr_cannot_fly`, `gmr_no_magic`,
   `gmr_one_spell`).
 - Hero: Army (A), Character (V), and Back on the foot.
-- Game: Controls (C), then Back and Give up (G) on the foot.
+- Game: Controls (C), and Back on the foot.
 - Spells: the spells page (DSGN-0138) with the path as its title and Back as
   its exit.
 Source: `src/combat_loop.c` `combat_menu_page`, `combat_action_menu_draw`.
 
 **DSGN-0119. Opening the combat menu.** The combat menu has opened on its
-Unit page with the cursor on the first command the unit has been able to use:
-with Enter, keypad Enter, a tap on the active unit, Escape when nothing has
-been armed on the player's turn, or the Menu tile. U or the Cast tile has
+top page, Actions, with the cursor on Unit (#133): with a tap on the active
+unit, Escape when nothing has been armed on the player's turn, or the Menu
+tile. Enter has not opened it: Enter confirms a shot or a flight, and a
+second press opened the menu by accident (#134). U or the Cast tile has
 opened the spells page directly, on the first spell held. Every page has
 opened on its first row that could be chosen. Escape, or a tap outside the
 menu, has gone back one page, closing at the top.
@@ -1227,16 +1272,18 @@ Source: `src/modern/overlay.c` `draw_message`; `src/main.c` `main`.
 
 **DSGN-0126. A note with a face.** A note carrying a picture (a capture, the
 week's creature) has been the message box with the picture at its left
-(DSGN-0062).
+(DSGN-0062). Where learned spells renew (OPENBOUNTY-SPEC REQ-540), the
+week's creature note has named the renewed spell under it.
 Source: `src/modern/overlay.c` `draw_message`, `note_face`.
 
 **DSGN-0127. A note as a scene.** A note drawn as a scene (temporary death,
 a one-time vista, a refused gate) has been a room of its own
 (`page_scene`): the title strip, then the scene's art **whole**, never
 trimmed, at 3× (the largest whole scale the page's width holds), the column
-bars either side as in the room; under the band the one Continue row in the
-rows column and the words beside it, **paged** like the message box: as
-many lines to a page as the room under the band holds, the last line of a
+bars either side as in the room; under the band the words the page's full
+width and Continue along the foot (DSGN-0069a), the words **paged** like the
+message box: as many lines to a page as the room between the band and the
+answer row holds, the last line of a
 page ending `..` when more follow, and
 Continue turning the page until the last closes the note
 (`page_scene_pages` is the pager's count). Without its scene art it has been
@@ -1262,7 +1309,10 @@ opener has named (`prompt_set_choices`, `prompt_set_lead`), or else the
 answers themselves, 1 to N or A and B; nothing has been read out of the words.
 A treasure chest's rows have come from `banners.chest_gold_take` and
 `chest_gold_share`, its words from `chest_gold_found` and its title from
-`chest_gold_title` (all optional). Each row has shown its digit or letter
+`chest_gold_title` (all optional). Where the hero's zone names a
+`treasure_scene`, the chest has been a scene page instead (`page_scene` with
+two rows): the vista whole at 3×, the find's words the full width under it,
+and the two uses stacked the full width along the foot (#140). Each row has shown its digit or letter
 while keys have been shown; digits and keypad digits (A and B on a lettered
 question) have answered, and Escape has answered Cancel.
 Source: `src/prompt.c` `default_choices`, `prompt_set_choices`,
@@ -1300,8 +1350,10 @@ Source: `src/modern/overlay.c` `modern_overlay_draw_foe`, `foe_row`;
 **DSGN-0133. Sailing.** Sailing has been the room with the sail backdrop,
 titled `dialog_titles.navigate`, from the first list on: the provinces
 (`shell_navigate_choices`, each with its digit while keys have been shown)
-from the rows column's top and Cancel on its foot, then the confirmation
-(`banners.body_navigate_confirm`) with Yes and No on the foot. No has returned
+and Cancel side by side in the answer row (DSGN-0069a) under the backdrop at
+a scene note's scale, then the confirmation
+(`banners.body_navigate_confirm`) the full width over Yes and No in the same
+row (`page_place_row`). No has returned
 to the provinces, and Escape or Cancel on the provinces has ended the sail.
 Source: `src/shell_actions.c` `shell_dispatch_action`,
 `shell_navigate_choices`; `src/shell_promptdispatch.c`
@@ -1394,22 +1446,28 @@ Source: `src/modern/views_render.c` `draw_worldmap`,
 **DSGN-0138. The spells.** The spells page has been one full page on the map
 and in a fight (`modern_spells_draw`), with the hero's name at the strip's
 right:
-- Two columns of seven spells under their headings
-  (`spells_view.combat_col`, `spells_view.adventure_col`), each with the held
-  count at the right; a spell has been greyed where it could not be cast (the
-  other column, or none held).
+- Two tabs across the top, the combat spells and the adventure spells
+  (`spells_view.combat_col`, `spells_view.adventure_col`), the shown one in
+  gold and underlined, the other grey; under them one list of that tab's
+  seven spells across the page's width, each with the held count at the
+  right, as `held/limit` where each spell has its own limit
+  (`magic.max_per_spell`, OPENBOUNTY-SPEC REQ-321). The page has opened on
+  the list cast here: the combat spells in a fight, the adventure spells on
+  the map. A spell has been greyed where it could not be cast (the other
+  tab's, or none held).
 - Under them two lines saying what the spell under the cursor does, or why it
   cannot be cast here (`banners.gmr_spell_on_map`, `gmr_spell_in_fight`,
   `gmr_no_spell_held`).
 - The exit on the foot as row 14: Close on the map, Back in a fight.
 - The cursor has started on the first spell that could be cast. Up and Down
-  (keypad 8 and 2) have moved within a column and through the exit at either
-  end; Left and Right (keypad 4 and 6) have changed column; Enter, keypad
+  (keypad 8 and 2) have moved within the list and through the exit at either
+  end; Left and Right (keypad 4 and 6), or a tap on a tab, have shown the
+  combat or the adventure list, keeping the row; Enter, keypad
   Enter, Space or a tap has cast a spell that could be cast, or taken the
   exit; Escape has closed the page.
-Source: `src/modern/views_render.c` `modern_spells_draw`, `draw_spells`;
-`src/views.c` `views_spells_input`, `views_spells_first`,
-`views_spell_castable`.
+Source: `src/modern/views_render.c` `modern_spells_draw`, `spells_tab`,
+`draw_spells`; `src/views.c` `views_spells_input`, `views_spells_list`,
+`views_spells_first`, `views_spell_castable`.
 
 **DSGN-0139. The gate picker.** The gate picker has been a menu page with a
 body of its own (DSGN-0072), titled with the gate spell, with the hero's name
@@ -1530,8 +1588,9 @@ Source: `src/startup.c` `draw_title_sequence`, `draw_title_backdrop`,
 **DSGN-0148. Title menu.** The title menu has been its own page
 (`page_title_menu`): no title and no description, as wide as its widest label
 + 2 × `UK_INSET` + 4 × `GW`, centred:
-- New Game (`ui.title_new_adventure`), Load Saved Game
-  (`ui.title_load_adventure`), Credits (`ui.title_credits`) and, on desktop
+- Introduction (`ui.title_intro`, only when the pack has one, DSGN-0161;
+  it leads on to the class picker), New Game (`ui.title_new_adventure`),
+  Load Saved Game (`ui.title_load_adventure`), Credits (`ui.title_credits`) and, on desktop
   and web, Exit, the row Escape has pressed.
 - It has had no outside: a tap off it has done nothing.
 - Escape (Android Back) has quit.
@@ -1540,7 +1599,7 @@ Source: `src/startup.c` `draw_title_sequence`, `draw_title_backdrop`,
   (`OPENBOUNTY_VERSION`), on every platform, so a player on a phone can name
   the build they report (#127).
 Source: `src/modern/page.c` `page_title_menu`; `src/startup.c`
-`draw_title_menu`, `title_menu_labels`, `run_title_menu`.
+`draw_title_menu`, `title_menu_rows`, `run_title_menu`.
 
 **DSGN-0149. Load.** Load has been the in-game Load page (`gm_load_page`)
 titled `ui.title_load_adventure`: the five slots, empty ones greyed, then
@@ -1553,6 +1612,25 @@ Source: `src/startup.c` `load_page_build`, `load_page_cursor`,
 size (`page_sheet_small`) over the title art, titled `ui.title_credits` with
 Close, `WHITE` text, names indented 2 × `GW`; any key or tap has closed them.
 Source: `src/startup.c` `draw_credits`, `run_credits`.
+
+**DSGN-0161. Introduction.** The Introduction (OPENBOUNTY-SPEC REQ-430u) has
+been a film on black, with no frame, lattice or page (`page_bare`):
+- The picture: the script's frame (240 × 102 art pixels in Glory of Rome)
+  at the largest whole multiple that leaves room below for a caption band of
+  three lines + 2 × `UK_INSET`; picture and band centred together. On the
+  800 × 504 reference screen, 3× (720 × 306).
+- The band: black, the speaker's face loop at the left at the largest whole
+  multiple of its 96 px frame the room below the picture allows (no larger
+  than the picture's), `UK_INSET` in; hidden when it does not fit. The
+  caption has been typed on beside it in `uk_ink`, wrapped once over the
+  whole line so no word moves as it types; the face has talked at
+  `UK_FACE_FPS` while the line types and rested on its first frame after.
+- Cards: centred in the picture in `uk_ink`, a black shadow one pixel down
+  and right.
+- Pans and moves have been rounded to whole art pixels, as the title eagle
+  is; a dissolve has faded the beat in over the previous one's last frame; a
+  scene's fades have darkened the whole screen, eased.
+Source: `src/intro.c` `intro_layout`, `intro_draw`, `run_intro`.
 
 **DSGN-0151. Choosing a class.** Class select has been the class painting
 (DSGN-0108) with a caption (DSGN-0075) on the screen's foot, Back in its strip

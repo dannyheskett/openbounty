@@ -307,6 +307,9 @@ cJSON *state_build_snapshot(const Game *g,
         cJSON_AddBoolToObject  (s, "game_over", g->stats.game_over);
         cJSON_AddBoolToObject  (s, "won", g->stats.won);
         cJSON_AddNumberToObject(s, "last_commission", g->stats.last_commission);
+        cJSON_AddNumberToObject(s, "last_week_on_hand", g->stats.last_week_on_hand);
+        cJSON_AddNumberToObject(s, "last_week_army", g->stats.last_week_army);
+        cJSON_AddNumberToObject(s, "last_week_boat", g->stats.last_week_boat);
         if (g->res && g->res->economy.audiences) {
             cJSON_AddBoolToObject  (s, "blessed", g->stats.blessed);
             cJSON_AddNumberToObject(s, "tributes", g->stats.tributes);
@@ -358,6 +361,16 @@ cJSON *state_build_snapshot(const Game *g,
             cJSON_AddNumberToObject(sp, sd->id, g->spells.counts[i]);
         }
         cJSON_AddItemToObject(root, "spells", sp);
+        // The spells learned at a temple, only where they renew (#157).
+        if (g->res && g->res->economy.spell_weekly_renewal) {
+            cJSON *learned = cJSON_CreateArray();
+            for (int i = 0; i < g->spells.count; i++) {
+                const SpellDef *sd = spell_by_index(i);
+                if (sd && g->spells.learned[i])
+                    cJSON_AddItemToArray(learned, cJSON_CreateString(sd->id));
+            }
+            cJSON_AddItemToObject(root, "spells_learned", learned);
+        }
     }
 
     // ---- contract ----

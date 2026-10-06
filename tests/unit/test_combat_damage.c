@@ -186,7 +186,51 @@ TEST damage_seed_determinism(void) {
     PASS();
 }
 
+// One attack that kills nothing, and the retaliation that kills the attacker:
+// 1 peasant at 30 dragons.
+static void lone_peasant_attacks(Combat *c, Game *g) {
+    zero_combat(c);
+    c->heroes[0] = g;
+    combat_init_unit(&c->units[0][0], troop_idx("peasants"), 1);
+    c->units[0][0].x = 2; c->units[0][0].y = 2;
+    combat_init_unit(&c->units[1][0], troop_idx("dragons"), 30);
+    c->units[1][0].x = 3; c->units[1][0].y = 2;
+    combat_hit_unit(c, 0, 0, 1, 0, false);
+}
+
+// A pack that gives melee_no_kill logs every attack, a blow that kills
+// nothing too, and then the retaliation that answered it (#131); without it
+// only kills are logged, as the original (King's Bounty).
+TEST every_attack_is_logged_where_the_pack_asks(void) {
+    Resources *res = fx_load_resources();
+    ASSERT(res);
+    ASSERT(troop_idx("peasants") >= 0 && troop_idx("dragons") >= 0);
+    Game g; fx_init_game(&g, res, FIXTURE_SEED);
+    snprintf(res->combat_log.melee_hit, sizeof res->combat_log.melee_hit, "%%ATK%% attack %%TGT%%: %%COUNT%% die");
+    snprintf(res->combat_log.retaliate, sizeof res->combat_log.retaliate, "%%TGT%% strike back: %%COUNT%% die");
+
+    Combat c;
+    res->combat_log.melee_no_kill[0] = '\0';
+    lone_peasant_attacks(&c, &g);
+    ASSERT_EQ(0, c.log_count);                      // no kill, no line
+
+    snprintf(res->combat_log.melee_no_kill, sizeof res->combat_log.melee_no_kill,
+             "%%ATK%% attack %%TGT%%: none die");
+    lone_peasant_attacks(&c, &g);
+    ASSERT_EQ(2, c.log_count);
+    const TroopDef *p = troop_by_id("peasants"), *d = troop_by_id("dragons");
+    char want[96];
+    snprintf(want, sizeof want, "%s attack %s: none die", p->name, d->name);
+    ASSERT_STR_EQ(want, c.log_lines[0]);
+    snprintf(want, sizeof want, "%s strike back: 1 die", d->name);
+    ASSERT_STR_EQ(want, c.log_lines[1]);            // after the attack it answered
+    GameFree(&g);
+    resources_free(res); free(res);
+    PASS();
+}
+
 SUITE(unit_combat_damage_suite) {
+    RUN_TEST(every_attack_is_logged_where_the_pack_asks);
     RUN_TEST(damage_reduces_target_count);
     RUN_TEST(damage_sets_retaliation_flag);
     RUN_TEST(damage_external_spell_kills_count);

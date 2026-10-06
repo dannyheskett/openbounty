@@ -137,6 +137,7 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
         bool sailing = g->travel_mode == TRAVEL_BOAT;
         p->title = ui->gm_world;
         add(p, ui->gm_map,    bn->gmd_map,    NULL, "M", KEY_M, true);
+        if (bn->gm_goto[0]) add(p, bn->gm_goto, bn->gmd_goto, NULL, "G", KEY_G, true);
         add(p, ui->gm_cast,   bn->gmd_cast,   NULL, "U", KEY_U, true);
         add(p, ui->gm_search, bn->gmd_search, NULL, "S", KEY_S, true);
         if (flying) add(p, ui->gm_land, bn->gmd_land, NULL, "L", KEY_L, true);

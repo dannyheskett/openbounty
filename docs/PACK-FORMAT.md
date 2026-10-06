@@ -16,6 +16,7 @@ and community content without recompiling the engine.
 ```
 my-pack/
 ├── game.json          # All gameplay data + asset path manifest (required)
+├── intro.json         # The Introduction's script, named by game.json (optional, §2.4)
 ├── art/               # Sprites, tiles, fonts, UI chrome (PNG)
 ├── audio/             # Music + SFX (WAV / OGG)
 ├── maps/              # Zone tile-grid files (*.dat, ASCII)
@@ -38,7 +39,8 @@ All paths have been relative to the pack root. ✱ marks what a playable pack
 has supplied. The loader itself has refused only a manifest it cannot open or
 parse, a missing `render.mode`, a `font` block without a file or with a size
 outside 6..64, a tile size or buffer it cannot lay out, a villain with an
-invalid index, a bad `tuning.temp_death`, and missing string keys (§5); any
+invalid index, a bad `tuning.temp_death`, missing string keys (§5) and a
+malformed Introduction script (§2.4); any
 other absent block has parsed as empty or as its defaults.
 
 | Key | Type | Purpose |
@@ -52,10 +54,10 @@ other absent block has parsed as empty or as its defaults.
 | `time`        | object ✱ | Day/week/difficulty constants. |
 | `economy`     | object ✱ | Costs, chest tables, scoring. |
 | `tuning`      | object   | `instant_army_multiplier` (per rank), `search_cost_days`, and the temp-death army (`temp_death`: `{"troop": id, "count": n}`; defaults: the cheapest-recruit-cost troop, 20). |
-| `combat`      | object ✱ | Morale chart, number-name labels; `morale_as_army_view` (bool, default false): a unit's combat morale follows the army view's rule (REQ-271) instead of the behaviour ported from King's Bounty (REQ-385). Glory of Rome sets it; the King's Bounty pack omits it. |
+| `combat`      | object ✱ | Morale chart, number-name labels; `morale_as_army_view` (bool, default false): a unit's combat morale follows the army view's rule (REQ-271) instead of the behaviour ported from King's Bounty (REQ-385). Glory of Rome sets it; the King's Bounty pack omits it. `field_obstacle_chance` (int percent, 0–100, default 10): the chance that each cell of an open-field battle's middle three columns holds an obstacle; the default is King's Bounty's one in ten. Glory of Rome sets 12. |
 | `controls`    | object   | Settings-menu rows. |
 | `colors`      | object   | Difficulty-bar colors, minimap palette. |
-| `audio`       | object   | Music track list, SFX paths. |
+| `audio`       | object   | Music track list (`tracks.openworld`, `tracks.combat`, and `tracks.intro`, the Introduction's theme), SFX paths. |
 | `render`      | object ✱ | Screen geometry: `mode`, tile size, viewport, `ui_scale`, optional fixed buffer (see §2.1). |
 | `font`        | object   | A TrueType/OpenType font rasterised at load into the glyph cell (see §2.2). Absent: the bitmap strip in `sprites.font`. |
 | `sprites`     | object ✱ | Texture-atlas paths (see §4). |
@@ -67,15 +69,16 @@ other absent block has parsed as empty or as its defaults.
 | `classes`     | array  ✱ | Player-class catalog. Each: `id`, `name`, `portrait`, `starting_gold`, `starting_troops` (`id`, `count`), `ranks` (four, each `id`, `name`, `villains_needed`, `leadership`, `max_spells`, `spell_power`, `commission`, `knows_magic`, `instant_army`), and an optional `hero` block (`walk`, `idle`, `boat`, `tile`, `disgraced`; §4.1). OPENBOUNTY-SPEC §8. |
 | `castles`     | array  ✱ | Castle catalog. Each: `id`, `name`, `zone`, `x`, `y`, `difficulty_tier` (0..3), optional `footprint` (`3x2` or `1x1`, §6) and `art`; the King's castle carries `special` (`flow`, `dialog`, `audience`, `win_condition`, the `excluded_from_contract` / `_intel` / `_siege` flags and, for the modern screens, `portrait`, `figure`, `promotion`, `barracks_portrait`, `barracks_figure`, `greeter_figure` naming `portraits` ids). OPENBOUNTY-SPEC §17. |
 | `towns`       | array  ✱ | Town catalog. Each: `id`, `name`, `zone`, `x`, `y`, `gate` `{x, y}`, `boat` `{x, y}`, `intel_castle`, optional `intel_artifact` (the informant reports an artifact instead), optional `pinned_spell`, optional `art` and `backdrop` (§6), and the modern screen's `headman`, `informant`, `townhead` (`portraits` ids) and `invitations` (a `strings.town_invitations` block). OPENBOUNTY-SPEC §16. |
-| `zones`       | array  ✱ | Continent / map definitions. Each: `id`, `name`, `map`, `width`, `height`, `hero_spawn` `{x, y}`, optional `home_spawn` and `is_home` (exactly one zone), optional `magic_alcove`, `neighbors` (zone ids reachable by sea), `salt` (§6), and the object lists `towns`, `castles`, `signs`, `chests`, `artifacts`, `dwellings`, `wandering_armies`; a modern pack has added `events`, `arrivals`, `alcove_art`, `alcove_cost`, `army_art`, `field_grid`, `town_backdrop`, `tile_set`, `tile_set_arts` and the `boatmaster`, `pontifex`, `siegemaster` portrait ids (§6). OPENBOUNTY-SPEC §9–§10. |
+| `zones`       | array  ✱ | Continent / map definitions. Each: `id`, `name`, `map`, `width`, `height`, `hero_spawn` `{x, y}`, optional `home_spawn` and `is_home` (exactly one zone), optional `magic_alcove`, `neighbors` (zone ids reachable by sea), `salt` (§6), and the object lists `towns`, `castles`, `signs`, `chests`, `artifacts`, `dwellings`, `wandering_armies`; a modern pack has added `events`, `arrivals`, `alcove_art`, `alcove_cost`, `army_art`, `field_grid`, `town_backdrop`, `treasure_scene`, `tile_set`, `tile_set_arts` and the `boatmaster`, `pontifex`, `siegemaster` portrait ids (§6). OPENBOUNTY-SPEC §9–§10. |
 | `spawn`       | object   | Per-continent monster-spawn tables: `tier_chance_curve` (one threshold list per continent tier), `tier_troop_pool` (one troop list per dwelling kind, any length), the calm start `calm_radius` / `calm_max_slot` / `calm_max_stacks` (hostile foes within the radius of the zone's `hero_spawn` roll no pool slot above the max and no more stacks than the cap; radius 0 or absent disables it, REQ-283), and an optional `kind_chance_curve` (per kind, a curve set of its own or `null` to keep the tier curve; `glory-of-rome` uses it for its six-troop plains kind). |
 | `contract`    | object   | Contract cycle parameters. |
 | `audiences`   | object   | Modern home-castle audience pages (Promotion, Blessing, Tribute). |
-| `magic`       | object   | `rites_per_zone`: each zone's temple has taught spells only once that zone's rites are known (OPENBOUNTY-SPEC REQ-314a). |
+| `magic`       | object   | `rites_per_zone`: each zone's temple has taught spells only once that zone's rites are known (OPENBOUNTY-SPEC REQ-314a). `max_per_spell`: `max_spells` has capped each spell's charges, not all of them together, and no discard has been offered (REQ-321, REQ-540). `weekly_renewal`: each week end one spell learned at a temple has been filled to the limit (REQ-540). |
 | `foes`        | object   | `evade_needs_free_square`: Evade has been offered only with a free square beside the hero, the hero's own parked boat counting as one (REQ-430o). |
 | `portraits`   | array    | The people of the modern place screens: each an `id` and an `anim` list of frames, named by a town's `headman` / `informant` / `townhead`, a zone's `boatmaster` / `pontifex` / `siegemaster` and a castle's `special` block. |
 | `credits`     | object   | Credits-screen lines. |
 | `ending`      | object   | Victory cartoon parameters. |
+| `intro`       | string   | The Introduction's script file (§2.4). Absent: the pack has no Introduction and the title menu no row for it. |
 
 ### 2.1 `render`
 
@@ -157,6 +160,83 @@ words, `type` `"bool"` (On and Off) or `"numeric"` (0 to `range` − 1),
 the page. `audio` true has marked a sound setting, greyed when the machine has
 had no audio device.
 
+### 2.4 `intro`
+
+The Introduction has been an animated opening, played only from the modern
+title menu's Introduction row (OPENBOUNTY-SPEC REQ-430u). `game.json`'s
+`"intro"` has named its script, a file of its own because it is long and
+edited apart from the gameplay data:
+
+```json
+{
+  "version": 1, "frame": [240, 102], "fps": 6.67,
+  "type_cps": 28, "read_cps": 14, "min_hold": 2.0,
+  "scenes": [
+    { "id": "forum", "fade_in": 1.5, "fade_out": 1.0, "beats": [
+      { "backdrop": "art/ui/backdrop_town_italia.png", "say": "forum_1", "face": "informant_market",
+        "actors": [ { "portrait": "palace_usher", "at": [130, 6] } ] },
+      { "for_each": "villain", "count": 4, "backdrop": "%ZONE_SCENE%",
+        "actors": [ { "villain": "*", "at": [72, 3] } ], "say": "wanted", "face": "informant_market" }
+    ]}
+  ]
+}
+```
+
+- **Top level.** `frame` has been the picture window in art pixels (1..256 a
+  side; default 240×102, a backdrop's size). `fps` has been the default actor
+  frame rate. `type_cps` has been the caption's typing speed and `read_cps`
+  the reading speed that sizes its hold, never shorter than `min_hold`
+  seconds.
+- **Scenes** have played in order, each faded in from black over `fade_in`
+  seconds and out over `fade_out` (defaults 1.0), the fades inside the
+  scene's length. `id` has named the scene in logs and captures.
+- **Beats** have played end to end on one timeline. Each has had:
+  - `backdrop`: the picture behind the beat, or none for black;
+  - `pan`: `[[x0, y0], [x1, y1]]`, the frame window's top-left in the
+    backdrop moving across the beat (a backdrop larger than `frame` has been
+    needed to move);
+  - `ease`: `"linear"` (the default) or `"smooth"`, for the pan and the moves;
+  - `dissolve`: seconds of cross-fade from the previous beat (default 0, a cut);
+  - `actors`: sprites drawn in order, each with exactly one of `frames` (a
+    list of paths), `portrait` (a `portraits` id) or `villain` (a villain id,
+    or `"*"` on a `for_each` beat), plus `fps`, `at` and an optional `to`
+    (the sprite's top-left in backdrop pixels), `mirror`, `start` and `end`
+    (seconds into the beat the sprite is on screen, default the whole beat;
+    the move from `at` to `to` runs across them) and `loop` (default true;
+    false plays the frames once and holds the last, for a single action),
+    and `fade_in` / `fade_out` (seconds the sprite fades up after its
+    `start` and away before its `end`), and `crop` (`[x, y, w, h]`, the part
+    of each frame shown, for a portrait's head and shoulders);
+  - `weather`: `"rain"`, streaks drawn over the picture, and `flashes`: the
+    seconds into the beat of each lightning flash;
+  - `sounds`: sound effects, each a `file` (a .wav in the pack: iOS decodes
+    only WAV), `at` (seconds into the beat it starts, default 0) and `gain`
+    (0..1, default 1). Each has started as the timeline passed it, played to
+    its end across later beats, and stopped when the intro ended;
+  - `say`: a key in the strings' `intro` group, the caption typed on under
+    the picture, and `face`: a `portraits` id, the speaker's loop beside it;
+  - `card`: a key in the same group, text set in the middle of the picture;
+  - `duration`: seconds. Absent, a beat with a caption has lasted its typing
+    time plus its reading time; a beat with neither has been an error.
+- **`for_each: "villain"`** has repeated the beat once per villain in catalog
+  order, from catalog position `from` (default 0) for `count` villains
+  (default all). Its text and `backdrop` have taken `%NAME%`, `%ALIAS%` (from
+  `villain_descriptions`), `%REWARD%`, `%ZONE%` (the zone's name) and
+  `%ZONE_SCENE%` (the zone's `treasure_scene`). Every beat has taken
+  `%DAYS%`, the normal difficulty's day budget.
+
+The music has had no cues: `audio.tracks.intro` has started with the first
+beat and faded with the last scene. Sound effects have been cued per beat
+(`sounds`); like the theme, they have ignored the Sounds option.
+
+The loader has resolved the script at load, and refused the pack when a
+caption or card key was missing from `intro`, when `ui.title_intro` was missing, or
+when a beat named an unknown portrait or villain, gave an actor no source or
+two or a time on screen outside the beat, had neither `duration` nor
+`say`, named a weather other than rain, gave a sound no file, a start
+outside its beat or a gain outside 0..1, or the frame was out of range. Its
+art has been listed in the art manifest (§9) like every other path.
+
 ---
 
 ## 3. Conventions
@@ -194,14 +274,15 @@ The `sprites` block has pointed at PNG files. Each entry has been either:
 
 `sprites.rail` has named the tiles of the left column, each one map tile
 square, edge to edge, because the shell has drawn the joins between them
-(DESIGN-SPEC DSGN-0022, DSGN-0023): Menu, Map, Army and Search, then the
+(DESIGN-SPEC DSGN-0022, DSGN-0023): Menu, Map, Goto and Army, then the
 puzzle, which the shell has drawn from `sprites.hud.puzzle_grid` and
-`sprites.ui.puzzle_cover`. `cast` has been the Cast command's tile in a
-fight:
+`sprites.ui.puzzle_cover`. `goto` has been optional: without it the Goto tile
+has been the `rail_goto` string on a dark card. `cast` has been the Cast
+command's tile in a fight:
 
 ```json
 "rail": { "menu": "art/ui/rail_menu.png", "map": "art/ui/rail_map.png",
-          "army": "art/ui/rail_army.png", "search": "art/ui/rail_search.png",
+          "goto": "art/ui/rail_goto.png", "army": "art/ui/rail_army.png",
           "cast": "art/ui/rail_cast.png" }
 ```
 
@@ -374,6 +455,23 @@ A few keys have been optional, each read by modern screens only:
   had no title and its rows have been A and B.
 - `banners.gmr_spell_in_fight`, `gmr_spell_on_map`: why a spell cannot be
   cast here, on the spells page.
+- `banners.goto_title`, `goto_to`, `goto_today`, `goto_days`,
+  `goto_no_route`, `goto_go`, `goto_cancel`, `rail_goto`, `gm_goto` and
+  `gmd_goto`: Goto's page, its rows, the rail's label without an icon and the
+  game menu's row (OPENBOUNTY-SPEC REQ-541). Without `gm_goto` the game menu
+  has had no Goto row.
+- `ui.title_intro` and the `intro` group: the Introduction's title-menu row
+  and its captions (§2.4), required of a pack that names an `intro`.
+
+Three more have been optional in every mode, each for a pack rule that King's
+Bounty does not set:
+
+- `banners.week_troops_left` (`%TROOPS%`): the stacks that left unpaid
+  (`economy.unpaid_troops_leave`).
+- `banners.week_spell_renewed` (`%SPELL%`): the week's renewed spell, under
+  the week's creature (`magic.weekly_renewal`).
+- `banners.spell_combat_only` (`%SPELL%`): a combat spell chosen on the map
+  (`magic.max_per_spell`); absent, `spell_unavailable`.
 
 A class's description on the class picker has been
 `banners.class_desc_<the class's id>`.
@@ -451,7 +549,7 @@ shipped 36 cells at 32).
 **Field grid.** `sprites.ui.field_grid` has named a path prefix for the
 ground of an open-field fight, one file per board cell:
 `<prefix>_<x>_<y>.png` for `x` in `0..5` and `y` in `0..4` (30 files), a
-6 × 5 picture cut into 96 px cells (`tools/siegeslice.py --field` takes the
+6 × 5 picture cut into 96 px cells (`romeart.py siegeslice --field` takes the
 largest 6:5 rectangle of content centred in a picture, so a meadow painted on
 white keeps its white out, scales it to 576 × 480 and cuts it). A zone has
 been able to declare its
@@ -512,6 +610,10 @@ exactly the listed files, and kept the master set for everything else.
 **Town backdrops.** A zone has been able to declare `"town_backdrop"`, and a
 town its own `"backdrop"`, both 240x102. A town's own has won, then its
 zone's, then the pack's `sprites.ui.town_backdrop`.
+
+**Treasure vistas.** A zone has been able to declare `"treasure_scene"`, a
+240x102 vista the chest's gold-or-leadership choice has stood under while the
+hero is in that zone (#140); a zone without one has kept the menu page.
 
 **A gate that demands one arm.** A static `wandering_armies` entry has been
 able to carry `"requires_troop"` (a troop id), `"scene"` (240x102) and

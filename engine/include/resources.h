@@ -16,7 +16,7 @@
 #define RES_ID_LEN            32
 #define RES_NAME_LEN          48
 #define RES_SIGN_TITLE_LEN    64
-#define RES_SIGN_BODY_LEN    128
+#define RES_SIGN_BODY_LEN    256   // Rome's longest is 147 (#135)
 #define RES_PATH_LEN         128
 // Indexed by raw map byte, so the table spans the whole byte range: a map
 // file's code can be any of 256 values and always indexes this table. It was
@@ -126,6 +126,14 @@ typedef struct {
     // teaches that zone's rites, and its towns sell spells only to a hero who
     // has them. Off by default, so a pack that does not ask keeps one magic.
     bool rites_per_zone;
+    // game.json "magic.max_per_spell": max_spells caps the charges of each
+    // spell, not of all spells together (GameSpellRoom), and a combat spell
+    // chosen on the map is not offered for discard. Off by default (#157).
+    bool spell_limit_per_spell;
+    // game.json "magic.weekly_renewal": each week end one spell the hero has
+    // learned at a temple is filled to the limit (GamePickRenewedSpell). Off
+    // by default (#157).
+    bool spell_weekly_renewal;
     // game.json "foes.evade_needs_free_square": a hostile foe can be evaded
     // only while a square around the hero is free (GameFoeCanEvade). Off by
     // default, so a pack that does not ask keeps the free decline.
@@ -137,6 +145,10 @@ typedef struct {
     int  tribute_cost;              // gold per tribute; any number of times
     int  tribute_leadership_pct;
     int  tribute_magic_pct;         // spell power and spell capacity each
+    // game.json "economy.unpaid_troops_leave": at the week's end a stack the
+    // wallet cannot pay leaves the army, as the original's manual says
+    // (#141). Off by default: King's Bounty keeps openkb's free army.
+    bool unpaid_troops_leave;
     int boat_cost_normal;
     int boat_cost_cheap;
     int siege_cost;
@@ -461,6 +473,71 @@ typedef struct {
     char (*anim)[CAT_PATH_LEN];     // heap, anim_count frames
 } ResPortrait;
 
+// ---- Introduction (game.json "intro" -> the pack's script file) -----------
+//
+// The animated opening, played only from the modern title menu. The script
+// is pure data (PACK-FORMAT section 2.4); resources_load resolves it to a flat list
+// of beats on one timeline, so the shell only ever asks "what plays at t".
+// Positions are backdrop art pixels; every table is heap, sized from the
+// script.
+
+typedef struct { int x, y; } ResIntroPt;
+
+typedef struct {
+    int    frame_count;
+    char (*frames)[RES_PATH_LEN];   // heap; portrait/villain ids resolved to paths
+    double fps;
+    ResIntroPt at, to;              // sprite top-left, in backdrop pixels
+    bool   mirror;
+    double start, end;              // seconds into the beat it is on screen;
+                                    // the move runs across them
+    bool   loop;                    // false: the frames play once and hold the last
+    double fade_in, fade_out;       // seconds it fades up after start / away before end
+    int    crop_x, crop_y, crop_w, crop_h;   // the part of each frame shown (w 0 = all)
+} ResIntroActor;
+
+typedef struct {
+    char   path[RES_PATH_LEN];      // a .wav in the pack
+    double at;                      // seconds into the beat it starts
+    double gain;                    // 0..1
+} ResIntroSound;
+
+typedef struct {
+    double start, dur;              // seconds on the intro timeline
+    int    scene;                   // index into ResIntro.scenes
+    char   backdrop[RES_PATH_LEN];  // "" = black
+    ResIntroPt pan_from, pan_to;    // the frame window's top-left in the backdrop
+    bool   smooth;                  // eased pan and moves (else linear)
+    double dissolve;                // seconds to cross-fade from the previous beat
+    int    actor_count;
+    ResIntroActor *actors;          // heap, drawn in order
+    char  *caption;                 // heap, the line under the picture; NULL = none
+    char  *card;                    // heap, text centred in the picture; NULL = none
+    int    face_count;
+    char (*face)[RES_PATH_LEN];     // heap, the speaker's talking loop
+    bool   rain;                    // "weather": "rain", streaks drawn over the picture
+    int    flash_count;
+    double *flashes;                // heap, seconds into the beat of each lightning flash
+    int    sound_count;
+    ResIntroSound *sounds;          // heap, sound effects started as the timeline passes them
+} ResIntroBeat;
+
+typedef struct {
+    char   id[RES_ID_LEN];
+    double start, dur, fade_in, fade_out;
+    int    first_beat, beat_count;
+} ResIntroScene;
+
+typedef struct {
+    int    frame_w, frame_h;        // the picture window, art pixels
+    double type_cps;                // caption typing speed, characters a second
+    int    scene_count;
+    ResIntroScene *scenes;          // heap
+    int    beat_count;
+    ResIntroBeat  *beats;           // heap, flat, in play order
+    double total;                   // seconds; 0 = the pack has no intro
+} ResIntro;
+
 typedef struct {
     char id[RES_ID_LEN];
     char text[RES_DOCK_TEXT_LEN];
@@ -525,6 +602,18 @@ typedef struct {
     char worldmap_boat[RES_BANNER_LEN];
     char worldmap_boat_elsewhere[RES_BANNER_LEN];
     char worldmap_no_boat[RES_BANNER_LEN];
+    // Goto (#70), modern, optional: the world map's Goto page and its rows,
+    // the game menu's row, and the rail's label when the pack has no icon.
+    char goto_title[RES_BANNER_LEN];
+    char goto_to[RES_BANNER_LEN];        // %X%, %Y%: the cursor's tile
+    char goto_today[RES_BANNER_LEN];
+    char goto_days[RES_BANNER_LEN];      // %DAYS%, %S%
+    char goto_no_route[RES_BANNER_LEN];
+    char goto_go[RES_BANNER_LEN];
+    char goto_cancel[RES_BANNER_LEN];
+    char gm_goto[RES_BANNER_LEN];
+    char gmd_goto[RES_BANNER_LEN];
+    char rail_goto[RES_BANNER_LEN];
     char spell_bridge_prompt_modern[RES_BANNER_LEN];
     char save_done_title[RES_BANNER_LEN];
     char save_done[RES_BANNER_LEN];
@@ -551,6 +640,8 @@ typedef struct {
     char town_intel_unavailable[RES_BANNER_LEN];
     char town_intel_castle_under[RES_BANNER_LEN];// %NAME%
     char town_intel_owner_rule[RES_BANNER_LEN];  // %OWNER%
+    char signpost_header[RES_BANNER_LEN];        // %TITLE%; optional: a sign's title as the header (#135)
+    char castle_gate_owner[RES_BANNER_LEN];      // %OWNER%; optional: the gate's opening line (#139)
     char town_intel_owner_none[RES_BANNER_LEN];
     char town_intel_owner_player[RES_BANNER_LEN];
     char town_intel_owner_king[RES_BANNER_LEN];
@@ -804,6 +895,8 @@ typedef struct {
     char budget_boat[RES_BANNER_LEN];
     char budget_army[RES_BANNER_LEN];
     char budget_balance[RES_BANNER_LEN];
+    char week_troops_left[RES_BANNER_LEN];   // %TROOPS%; optional (#141)
+    char week_spell_renewed[RES_BANNER_LEN]; // %SPELL%; optional (#157)
 
     // Status bar (chrome.c). Substitutions: %DAYS%, %STEPS%.
     char status_days_left[RES_BANNER_LEN];
@@ -840,6 +933,7 @@ typedef struct {
     char no_troops_to_garrison[RES_BANNER_LEN];
     char castle_garrison_empty[RES_BANNER_LEN];
     char spell_unavailable[RES_BANNER_LEN];
+    char spell_combat_only[RES_BANNER_LEN];  // %SPELL%; optional (#157)
     char spell_not_known[RES_BANNER_LEN];
     char spell_unknown[RES_BANNER_LEN];
     char combat_victory_named[RES_BANNER_LEN];   // %NAME% %TARGET% %GOLD%
@@ -857,6 +951,11 @@ typedef struct {
     char retaliate[RES_BANNER_LEN];          // %TGT% %COUNT%
     char ranged_hit[RES_BANNER_LEN];         // %ATK% %TGT% %COUNT%
     char ranged_no_effect[RES_BANNER_LEN];   // %ATK% %TGT%
+    // Optional (#131): a melee attack that kills nothing. A pack that gives
+    // it logs every attack -- ranged ones that kill nothing as
+    // ranged_no_effect -- and every retaliation that kills (retaliate);
+    // without it only kills are logged, as the original.
+    char melee_no_kill[RES_BANNER_LEN];      // %ATK% %TGT%
     char no_effect_msg[RES_BANNER_LEN];      // (no tokens)
     char fly[RES_BANNER_LEN];                // %TROOP%
     char move[RES_BANNER_LEN];               // %TROOP%
@@ -1141,6 +1240,7 @@ typedef struct {
     char title_new_adventure[RES_UI_LABEL_LEN];
     char title_load_adventure[RES_UI_LABEL_LEN];
     char title_credits[RES_UI_LABEL_LEN];
+    char title_intro[RES_UI_LABEL_LEN];      // "" unless the pack has an intro
     char new_game_confirm[RES_UI_LABEL_LEN * 2];
     char hero_name_label[RES_UI_LABEL_LEN];
     char combat_act_wait[RES_UI_LABEL_LEN];
@@ -1292,6 +1392,9 @@ typedef struct {
     // This zone's town-screen backdrop; empty falls back to the pack's
     // sprites.ui.town_backdrop (REQ-221d).
     char town_backdrop[RES_PATH_LEN];
+    // This zone's treasure-cache vista, for the chest's gold-or-leadership
+    // choice (#140); empty: the choice is a menu page.
+    char treasure_scene[RES_PATH_LEN];
     char tile_set[RES_ID_LEN];
     // Optional overrides ("tile_set_arts"): when listed, only these art names
     // come from the zone's folder and every other name from the master
@@ -1421,6 +1524,10 @@ typedef struct {
     // false = the behaviour ported from King's Bounty (REQ-385), kept for
     // the legacy pack. Glory of Rome sets it (2026-09-27, #75).
     bool morale_as_army_view;
+    // combat.field_obstacle_chance: the percent chance that each cell of an
+    // open-field battle's middle columns holds an obstacle. Absent = 10, King's
+    // Bounty's one in ten, drawn exactly as the original draws it.
+    int field_obstacle_chance;
 
     // Fuzzy-number labels for intelligence / enemy-sight text
     // .
@@ -1582,7 +1689,7 @@ typedef struct {
         char rail_menu[RES_PATH_LEN];
         char rail_map[RES_PATH_LEN];
         char rail_army[RES_PATH_LEN];
-        char rail_search[RES_PATH_LEN];
+        char rail_goto[RES_PATH_LEN];      // optional: the Goto tile (#70)
         char rail_cast[RES_PATH_LEN];
         // The combat command panel's tiles; Cast reuses the rail's lituus.
         char combat_shoot[RES_PATH_LEN];
@@ -1606,7 +1713,7 @@ typedef struct {
         char class_picker[RES_PATH_LEN];     // 288x184 A-D class portrait image
         char class_highlight[RES_PATH_LEN];  // 42x44 cursor glow for class picker
         // Modern class select: the picker with one figure picked out, per class
-        // in catalog order (tools/classpicker.py).
+        // in catalog order (tools/romeart.py classpicker).
         int  class_picker_selected_count;
         char (*class_picker_selected)[RES_PATH_LEN];   // heap, one per class
         // Palette colour name (e.g. "YELLOW") for the frame the shell draws
@@ -1642,6 +1749,7 @@ typedef struct {
     struct {
         char openworld_path[RES_PATH_LEN];
         char combat_path[RES_PATH_LEN];
+        char intro_path[RES_PATH_LEN];       // the Introduction's theme, or ""
         char tune_walk[RES_PATH_LEN];
         char tune_bump[RES_PATH_LEN];
         char tune_chest[RES_PATH_LEN];
@@ -1653,6 +1761,12 @@ typedef struct {
     // here (and printed) and makes resources_load() hard-fail. Never a silent
     // fallback.
     int  strings_missing;
+
+    // The Introduction (game.json "intro"); total 0 when the pack has none.
+    // A script that names an unknown id or has a malformed beat counts in
+    // intro_errors and, like a missing string, refuses the load.
+    ResIntro intro;
+    int      intro_errors;
 
 } Resources;
 
@@ -1699,6 +1813,11 @@ bool resources_tile_from_set(const Resources *res, const char *set, const char *
 // "arrivals" entry for that origin, else its hero_spawn.
 void resources_zone_arrival(const ResZone *z, const char *from, int *x, int *y);
 void resources_art_list_free(ResArtList *list);
+
+// Whether the pack has an Introduction, and the beat playing at `t` seconds
+// into it (NULL before 0 or from `total` on).
+bool resources_has_intro(const Resources *r);
+const ResIntroBeat *resources_intro_beat_at(const ResIntro *in, double t);
 // Override the locale used for the next resources_load. Strings load from
 // strings/<lang>.json in the pack; a locale file that is absent falls back to
 // the pack's base locale (world.language). Pass NULL or "" to clear the

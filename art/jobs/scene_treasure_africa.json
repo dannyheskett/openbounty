@@ -1,0 +1,17 @@
+{
+ "id": "scene_treasure_africa",
+ "prompt": "a hidden treasure cache uncovered in the sand among red sandstone rocks at the foot of a lone date palm, a half-buried wooden chest burst open with Roman gold coins and silver vessels spilling out, deep blue sky, long purple shadows, rich warm late-afternoon light, rolling orange dunes beyond, no people",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 7905,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/scenes/treasure_africa.png",
+ "_note": "The treasure-cache vista for the chest's gold-or-leadership choice in Africa (2026-10-02). Same engine and size as every vista (rd_pro__default, 240x102, opaque). Rerun 2026-10-02: the first (seed 7903) came back flat, 50 colours; red rock, blue sky and purple shadows asked for to widen the palette."
+}

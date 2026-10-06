@@ -152,16 +152,17 @@ void hud_column_finish(int x, int y, int w, int h, int tiles) {
 }
 
 // Each panel stands for a screen, so each panel opens it: the same rule the
-// rail on the other side follows, and the same list order the sidebar draws.
+// rail on the other side follows, and the same list order the modern column
+// draws -- the three that open the Character page side by side.
 static const InputAction HUD_ACTIONS[5] = {
     INPUT_ACTION_VIEW_CONTRACT,     // the villain's face
-    INPUT_ACTION_VIEW_CHARACTER,    // siege weapons are reported there
     INPUT_ACTION_CAST_SPELL,        // the magic star
+    INPUT_ACTION_VIEW_CHARACTER,    // siege weapons are reported there
     INPUT_ACTION_VIEW_CHARACTER,    // the purse
     INPUT_ACTION_VIEW_CHARACTER,    // days remaining
 };
 // The key each panel's screen answers to (src/input.c).
-static const char *const HUD_KEYS[5] = { "I", "V", "U", "V", "V" };
+static const char *const HUD_KEYS[5] = { "I", "U", "V", "V", "V" };
 
 InputAction hud_tapped(void) {
     if (!CL_IS_MODERN) return INPUT_ACTION_NONE;
@@ -216,13 +217,14 @@ void hud_draw(const Game *g, const Sprites *s) {
         return;
     }
 
-    // Modern: contract, siege, magic, gold and the days, one column. The
-    // puzzle is the left column's last tile (src/modern/rail.c). A page of its
-    // own owns every tap while it is up.
+    // Modern: contract, magic, siege, gold and the days, one column; the last
+    // three open the Character page, so they stand together. The puzzle is
+    // the left column's last tile (src/modern/rail.c). A page of its own owns
+    // every tap while it is up.
     bool page = views_active() != VIEW_NONE || dialog_is_active() || prompt_is_active();
     contract_tile(g, s, x, y + 0 * CL_TILE_H, false);
-    siege_tile(g, s, x, y + 1 * CL_TILE_H, false);
-    magic_tile(g, s, x, y + 2 * CL_TILE_H, false);
+    magic_tile(g, s, x, y + 1 * CL_TILE_H, false);
+    siege_tile(g, s, x, y + 2 * CL_TILE_H, false);
     gold_tile(g, s, x, y + 3 * CL_TILE_H, false);
     days_tile(g, s, x, y + 4 * CL_TILE_H);
     hud_column_finish(x, y, CL_SIDEBAR_W, CL_SIDEBAR_H, 5);

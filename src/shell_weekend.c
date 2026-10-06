@@ -13,19 +13,30 @@
 #include "layout.h"
 #include "player_io.h"
 
-// End-of-week budget screen displays per-troop cost
-// as count * full recruit_cost and sums those for the "Army" total --
-// even though the actual gold deducted is /10. We match that display
-// semantic for parity. The real deduction happens in game.c end_day's
-// week boundary and uses /10.
-static int army_upkeep(const Game *g) {
-    int total = 0;
+// The stacks the week could not pay, named in a list: "A", "A and B",
+// "A, B and C" (the pack's own and-word is not needed: the template carries
+// the sentence, the list only the names).
+static bool troops_left(const Game *g, char *out, size_t cap) {
+    const char *names[GAME_ARMY_SLOTS];
+    int n = 0;
     for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
-        if (!g->army[i].id[0] || g->army[i].count == 0) continue;
-        const TroopDef *t = troop_by_id(g->army[i].id);
-        if (t) total += g->army[i].count * t->recruit_cost;
+        const ArmyStack *u = &g->stats.last_week_left[i];
+        if (!u->id[0] || u->count <= 0) continue;
+        const TroopDef *t = troop_by_id(u->id);
+        names[n++] = t ? t->name : u->id;
     }
-    return total;
+    out[0] = '\0';
+    size_t o = 0;
+    for (int i = 0; i < n && o + 1 < cap; i++) {
+        const char *sep = i == 0 ? "" : (i == n - 1 ? " and " : ", ");
+        o += (size_t)snprintf(out + o, cap - o, "%s%s", sep, names[i]);
+    }
+    return n > 0;
+}
+
+static void week_end_done(void) {
+    pending_week_phase = WK_PHASE_NONE;
+    pending_week_paid  = 0;
 }
 
 bool pump_week_end_dialog(const Game *g) {
@@ -37,7 +48,7 @@ bool pump_week_end_dialog(const Game *g) {
         const TroopDef *t = troop_by_index(pending_astrology_troop_idx);
         const char *creature = t->name;
         const ResBanners *bn = &g->res->banners;
-        char header[64], body[320], wbuf[16];
+        char header[64], body[448], wbuf[16];
         snprintf(wbuf, sizeof wbuf, "%d", pending_week_id);
         ResTemplateVar hvars[] = { { "WEEK", wbuf } };
         resources_format_template(header, sizeof header,
@@ -45,6 +56,15 @@ bool pump_week_end_dialog(const Game *g) {
         ResTemplateVar bvars[] = { { "TROOP", creature } };
         resources_format_template(body, sizeof body,
                                   bn->astrology_body, bvars, 1);
+        // Where learned spells renew, the week's one is named under it (#157).
+        const SpellDef *rs = spell_by_index(pending_renewed_spell_idx);
+        if (rs && bn->week_spell_renewed[0]) {
+            char line[160];
+            ResTemplateVar svars[] = { { "SPELL", rs->name } };
+            resources_format_template(line, sizeof line, bn->week_spell_renewed, svars, 1);
+            size_t used = strlen(body);
+            snprintf(body + used, sizeof body - used, "\n\n%s", line);
+        }
         if (CL_IS_MODERN) player_io_note_face((Game *)g, header, body, REQ_FACE_TROOP, t->index);
         else              player_io_note((Game *)g, header, body);
         pending_week_phase = WK_PHASE_BUDGET;
@@ -52,16 +72,11 @@ bool pump_week_end_dialog(const Game *g) {
     }
 
     if (pending_week_phase == WK_PHASE_BUDGET) {
-        int upkeep_display = army_upkeep(g);   // full cost; shown as "Army"
-        int boat = g->boat.has_boat ? GameBoatCost(g) : 0;
-        // Reconstruct gold-on-hand *before* this week's deductions using
-        // the REAL deduction (recruit_cost/10), since that's what game.c
-        // end_day actually spent. The dialog is internally inconsistent
-        // (shows full-cost Army total but deducted /10); we preserve the
-        // "On Hand" math that reflects reality.
-        int upkeep_real = upkeep_display / 10;
-        int on_hand = g->stats.gold - pending_week_paid + upkeep_real + boat;
-        if (on_hand < 0) on_hand = 0;
+        // The figures end_day recorded as it charged the week (OPENKB-SPEC
+        // section 16.7), so On Hand + Payment - Boat - Army = Balance even
+        // when the gold floor cut the upkeep short or the boat was repossessed.
+        // openkb's screen showed full recruit cost here; the charge is a tenth.
+        int on_hand = g->stats.last_week_on_hand;
 
         // End-of-week budget screen. 28-column
         // bottom frame, two columns:
@@ -83,12 +98,12 @@ bool pump_week_end_dialog(const Game *g) {
             bn->budget_army,
             bn->budget_balance,
         };
-        int         left_values[5] = { on_hand, pending_week_paid, boat,
-                                       upkeep_display, g->stats.gold };
+        int         left_values[5] = { on_hand, g->stats.last_commission,
+                                       g->stats.last_week_boat,
+                                       g->stats.last_week_army, g->stats.gold };
 
         // Right column: up to 5 non-empty army stacks (break on
-        // the first empty slot). Cost = count * recruit_cost (full price,
-        // not the upkeep-adjusted /10 -- full recruit price).
+        // the first empty slot), each at its weekly upkeep.
         char rtroop[5][16] = { {0} };
         int  rcost[5] = { 0 };
         int  rn = 0;
@@ -101,7 +116,7 @@ bool pump_week_end_dialog(const Game *g) {
                 rtroop[rn][k] = t->name[k]; k++;
             }
             rtroop[rn][k] = '\0';
-            rcost[rn] = g->army[i].count * t->recruit_cost;
+            rcost[rn] = GameStackWeeklyUpkeep(t->id, g->army[i].count);
             rn++;
         }
 
@@ -132,8 +147,7 @@ bool pump_week_end_dialog(const Game *g) {
                 if (bo >= (int)sizeof(body)) { bo = (int)sizeof(body) - 1; break; }
             }
             player_io_note((Game *)g, header, body);
-            pending_week_phase = WK_PHASE_NONE;
-            pending_week_paid  = 0;
+            pending_week_phase = WK_PHASE_LEFT;
             return true;
         }
         for (int i = 0; i < 5; i++) {
@@ -154,8 +168,22 @@ bool pump_week_end_dialog(const Game *g) {
                            "%-13s %s\n", left, right);
         }
         player_io_note((Game *)g, header, body);
-        pending_week_phase = WK_PHASE_NONE;
-        pending_week_paid  = 0;
+        pending_week_phase = WK_PHASE_LEFT;
+        return true;
+    }
+
+    if (pending_week_phase == WK_PHASE_LEFT) {
+        // The troops the week could not pay and that left (#141), named
+        // after the budget that shows what was paid.
+        char names[160], body[320];
+        if (!g->res->banners.week_troops_left[0] || !troops_left(g, names, sizeof names)) {
+            week_end_done();
+            return false;
+        }
+        ResTemplateVar vars[] = { { "TROOPS", names } };
+        resources_format_template(body, sizeof body, g->res->banners.week_troops_left, vars, 1);
+        player_io_note((Game *)g, "", body);
+        week_end_done();
         return true;
     }
 

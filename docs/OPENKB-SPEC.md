@@ -5008,6 +5008,16 @@ Full end-of-week processing:
    Per-slot cost = `numbers[i] * recruit_cost / 10`. Wait for any
    key (`KB_Pause`).
 
+   openkb's own screen differs from this: it prints `numbers[i] *
+   recruit_cost` at full price on each troop row and sums those for
+   Army (game.c:3753), while `end_week` charges a tenth (play.c:1025).
+   Its 2014 fix ("Correct weekly budget calculation and display")
+   changed the charge but not the screen. The figures above follow the
+   original manual, which calls the Army line "money paid out to
+   troops", and openkb's army view, whose `G-Cost` is `recruit_cost /
+   10 * numbers[i]` (game.c:1905). On Hand is the gold before the
+   commission (`on_hand = game->gold` ahead of `end_week`).
+
 ### 16.8 Weekend handling in adventure_loop
 
 When end_day returns 1 (week ended), `weekend = 1`. The adventure
@@ -5120,6 +5130,11 @@ gp/week.
 If gold drops to 0, the remaining upkeep is silently skipped
 (no army loss); the player keeps the army for free until they
 spend more gold.
+
+The original's manual says otherwise: "If you do not have enough to pay a
+troop, it leaves your army." King's Bounty keeps openkb's free army; Glory of
+Rome follows the manual (`economy.unpaid_troops_leave`, OPENBOUNTY-SPEC
+REQ-264a).
 
 ### 16.14 Mid-week save
 

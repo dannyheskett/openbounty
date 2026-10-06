@@ -23,6 +23,7 @@
 //   D        - dismiss_army
 //   O        - options_menu  (the keybind reference screen)
 //   N        - new_continent (sail across)
+//   G        - goto (modern): pick a tile on the world map, travel there
 //
 // Arrow keys + numpad 1-9 + Home/End/PgUp/PgDn -- one-step movement.
 
@@ -49,6 +50,7 @@ typedef enum {
     INPUT_ACTION_SAVE_QUIT,
     INPUT_ACTION_FAST_QUIT,
     INPUT_ACTION_REST,          // numpad 5: rest one day in place
+    INPUT_ACTION_GOTO,          // modern G: pick a tile on the world map, travel there
 } InputAction;
 
 typedef struct {

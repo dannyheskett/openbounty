@@ -120,6 +120,7 @@ void schedule_week_end(const Game *g, int commission_paid) {
     // in game.c end_day (GameApplyAstrology). This keeps the displayed
     // creature in sync with the dwelling repopulation that actually ran.
     pending_astrology_troop_idx = g->stats.last_astrology_troop;
+    pending_renewed_spell_idx = g->stats.last_renewed_spell;
 }
 
 // Open the friendly-foe accept flow .

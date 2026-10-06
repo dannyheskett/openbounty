@@ -186,7 +186,8 @@ flagged (§38).
 - **REQ-030.** `third_party/` has vendored: cJSON (`cjson/`, JSON parse),
   miniz (`miniz/`, ZIP read/write for `.openbounty` packs), greatest
   (`greatest/`, single-header test framework), minih264 + minimp4
-  (`--movie` MP4 encoder/muxer), stb (`stb/`: `stb_image`, `stb_truetype` and
+  (`--movie` MP4 encoder/muxer), vo-aacenc (`vo-aacenc/`, the AAC encoder
+  of `--intro-movie`'s sound track, Apache 2.0), stb (`stb/`: `stb_image`, `stb_truetype` and
   `stb_vorbis`, the iOS backend's image, font and music decoders), Liberation
   Sans (`fonts/`, the pack picker's face, compiled in as `src/font_sans.inc`)
   and `emsdk/`, the place for a local Emscripten checkout (CI installs its
@@ -279,7 +280,7 @@ flagged (§38).
   `prompt`, `select`, `textsel`, `text`, `input`, `touch`, `uitouch`, `startup`,
   `end_cartoon`, `pack_select`, `assets`, `audio`, `screenshot`, `sprites`,
   `tile_cache`, `tilevar`, `palette`, `bfont`, `layout`, `present`,
-  `safe_area`, `recorder`, `encode_dialog`, `encode_mp4*`; the raylib side of
+  `safe_area`, `recorder`, `encode_dialog`, `encode_mp4*`, `intro_mix`; the raylib side of
   the platform seams (`gfx_raylib`, `frame_host`, `input_host`,
   `audio_raylib`, `font_raylib`); and `plat_android` / `plat_ios`. The
   subdirectories have held the modern draw layer and screens (`src/modern/`),
@@ -536,8 +537,10 @@ flagged (§38).
 - **REQ-146.** `ArmyStack` has held `id[32]` (troop id; empty = empty slot)
   and `count`. `Unit` (used inside garrisons and foe rows) has held `id[24]`
   and `count`.
-- **REQ-147.** `Spellbook` has held `count` and `counts` (heap), parallel to
-  the spell catalog. `GameKnownSpells` has summed them.
+- **REQ-147.** `Spellbook` has held `count`, `counts` and `learned` (heap),
+  parallel to the spell catalog. `GameKnownSpells` has summed the counts;
+  `GameSpellRoom` has answered how many more of one spell the hero can hold
+  (REQ-321).
 - **REQ-148.** `Contract` has held `active_id[24]` (current contract, empty =
   none), `cycle` (heap, `cycle_count` entries; length from
   `res->contract.cycle_length`), `last_contract` (last slot issued),
@@ -622,8 +625,9 @@ flagged (§38).
 - **REQ-162.** **STARTUP** (`src/startup.c`). Legacy: publisher splash, title
   splash, then the credits when the pack supplies any, each 2.5 s or any key.
   Modern: the publisher splash, then the title menu of `DESIGN-SPEC.md`
-  DSGN-0146 to DSGN-0148 (New Game, Load Saved Game, Credits and, on desktop
-  and web, Exit).
+  DSGN-0146 to DSGN-0148 (Introduction first when the pack has one
+  (REQ-430u), New Game, Load Saved Game, Credits and, on desktop and web,
+  Exit).
 - **REQ-163.** **CLASS SELECT**. Legacy: four classes on `A`/`B`/`C`/`D`, `L`
   for Load, `Esc` to quit. Modern: the class painting, Left/Right or a tap
   picking a figure and Continue confirming (REQ-532); `Esc` has returned to
@@ -956,6 +960,12 @@ flagged (§38).
   has given each continent its own town street and kept the original picture
   for Roma alone; `kings-bounty` has declared neither and drawn the shared
   one.
+- **REQ-221e.** **Treasure vistas per continent.** The chest's
+  gold-or-leadership choice has been a scene page under the hero's zone's
+  `treasure_scene` when the zone names one (`treasure_scene`,
+  `src/modern/prompt.c`; DESIGN-SPEC DSGN-0129), and the menu page otherwise.
+  The vistas have been listed in the art manifest. `glory-of-rome` has given
+  each continent its own (#140); `kings-bounty` has declared none.
 - **REQ-221c.** **Sailing has been a scene, with a confirmation.** When a
   pack ships `sprites.ui.sail_backdrop` and the string
   `body_navigate_confirm`, the modern shell has drawn the sail-to decision,
@@ -1057,8 +1067,8 @@ flagged (§38).
   `glory-of-rome` has shipped one per zone, thirty 96 px cells cut from the
   largest centred 6:5 rectangle of content in one picture, scaled to
   576 × 480 (`art/fields/italia_calm.png`, the supplied painting
-  `art/fields/italia.png` calmed by `tools/fieldcalm.py`, then
-  `tools/siegeslice.py --field`; Galliae, Africa and Oriens from windows
+  `art/fields/italia.png` calmed by `romeart.py fieldcalm`, then
+  `romeart.py siegeslice --field`; Galliae, Africa and Oriens from windows
   of that calmed painting, flipped and colour-graded by
   `romeart.py fieldgrade`, 2026-09-28, #64);
   `kings-bounty` has declared none.
@@ -1430,9 +1440,30 @@ flagged (§38).
   (legacy) or the game menu (modern), `P` view puzzle, `Q` save-and-quit,
   `Ctrl+Q` fast quit, `S` search, `U` cast spell, `V` view character, `W` end
   week, `Numpad 5` (and, in modern mode, the number-row `5`) rest one day,
+  `G` Goto (modern only, REQ-541),
   `Esc` close overlay (and, in modern mode with nothing open, the game
   menu). Cheats have been reached only through the Debug page, with
   `--debug` (§31).
+- **REQ-541.** **Goto (#70, modern only).** `G`, the Goto tile on the left
+  rail or the game menu's World page has opened the world map with a tile
+  cursor on the hero (`modern_worldmap_goto_open`,
+  `src/modern/views_render.c`): the arrows and the keypad have moved it a
+  tile, a tap on the map has put it there, and the side column has said the
+  cursor's tile and how long the route takes, or that there is none. Enter
+  or Go has given the order; Escape or Cancel has left. The route has been
+  `GamePlanGoto` (`engine/goto.c`): the cheapest in the current province
+  over tiles the player has seen, a step costing 1 and a desert step the rest
+  of a day; no object on the way (the target may be one); on foot it has
+  walked, the boat parked in this province has been the only way onto the
+  water, land beyond it a landing; in flight it has flown straight. A tile
+  unseen, the hero's own or with no route has refused the order, the
+  cursor's ring flashing red. An order has been walked by
+  `src/shell_goto.c`, one ordinary `GameStep` every 0.15 s, so foes, days,
+  fog and recordings have seen plain steps; the walk has ended with the
+  route, or as soon as a step failed or moved the hero off it, anything
+  waited on the player (a message, a question, a screen, a flow, the week's
+  end), the province changed, or the player pressed a key or tapped. A walk
+  has never been saved, and King's Bounty has had none of it.
 
 ### 12.2 Gamepad mapping
 
@@ -1506,6 +1537,14 @@ flagged (§38).
 - **REQ-264.** At each week boundary, each non-empty slot has paid `upkeep =
   count * (recruit_cost / 10)` gold (integer division), deducted after
   commission is credited.
+- **REQ-264a.** In a pack that sets `economy.unpaid_troops_leave` (Glory of
+  Rome, #141), the week has paid the stacks in slot order, each in full or
+  not at all, from the gold after the commission; a stack it could not pay
+  has left the army (recorded in `last_week_left`), and the stacks after it
+  have still been paid if they could be, then the army has closed up
+  (`GameCompactArmy`). The army may be left empty. King's Bounty has kept
+  openkb's rule: the whole upkeep charged, the gold floor taking any
+  shortfall, every troop staying (OPENKB-SPEC §16.13).
 
 ---
 
@@ -1630,7 +1669,9 @@ flagged (§38).
   the attack/recruit flow. Foe motion has not consumed the hero's day budget
   and has stopped at impassable terrain. A static guardian has never moved;
   a foe has never stepped onto another foe, onto desert, a bridge, a town or
-  any other interactive tile, or into the approach of a castle gate; and a
+  any other interactive tile, onto a zone event's tile (a landmark such as
+  Galliae's Temple of Ocean, which its leaving would repaint as plain
+  ground), or into the approach of a castle gate; and a
   flying hero's tile has been skipped outside oracle mode. A hostile foe that lands on the hero
   has opened the same Fight/Evade decision as stepping onto it, and declining
   has bounced back the same way (REQ-246): the hero returns to the tile,
@@ -1638,6 +1679,10 @@ flagged (§38).
   shared the hero's tile, is stamped where it stands so it is drawn
   (`flow_apply_evade_bounce`; openKB `game.c`: `walk = !attack_foe(game)`
   swaps the hero back to `last_x, last_y`).
+  On a step that opened a gold chest, the chest's gold-or-leadership question
+  has come first: the foe's has been held (`pending_foe_held`) and raised
+  once the chest was answered, with the same bounce-back, so the chest's gold
+  has not been lost to the foe's question (#136).
 
 ---
 
@@ -1719,11 +1764,15 @@ flagged (§38).
   Yes has entered combat, No has bounced back. Any visit has set a villain
   castle `known`, so the town contract scenes and the Contract view have
   named it from then on. A pack that sets `world.castle_gate_report` (Glory
-  of Rome, #71) has told the hero what the gate sees, the town informant's
-  report (`GameCastleReport`: whose rule, then each stack in vague words):
-  without siege weapons in a message box headed "Castle <name>" before the
-  bounce, and with them above the siege question (`castle_siege_ask`) in
-  place of the plain prompt. A combat win has set
+  of Rome, #71) has told the hero what the gate sees, the report in its gate
+  form (`GameCastleGateReport`: whose rule, opening with `castle_gate_owner`
+  "Under <owner>'s rule." so the castle is not named again under its title,
+  then each troop in vague words, stacks of one troop on one line with their
+  counts summed, #139): without siege weapons in a message box headed
+  "Castle <name>" before the bounce, and with them above the siege question
+  (`castle_siege_ask`) in place of the plain prompt. In such a pack the town
+  informant's report (`GameCastleReport`) merges stacks the same way; King's
+  Bounty lists every slot, as the original did. A combat win has set
   `owner_kind = CASTLE_OWNER_PLAYER`; a villain-castle win has additionally
   fulfilled the contract (§21.3).
 - **REQ-304.** **Own Castle** (`src/screens/own_castle.c`) has shown the
@@ -1800,12 +1849,29 @@ flagged (§38).
 ### 19.2 Counts, storage, buying
 
 - **REQ-321.** `Game.spells.counts` has held one count per spell.
-  `GameKnownSpells` has summed them; `max_spells` has capped purchases;
-  casting has decremented, buying incremented. Spells have been bought at the
+  `GameKnownSpells` has summed them; `max_spells` has capped purchases
+  through `GameSpellRoom`: every charge held counts against it, or, with
+  `game.json` `magic.max_per_spell` true (`glory-of-rome`), only that
+  spell's own, so the hero can hold `max_spells` of each spell. Under that
+  key a chest's new spell has given no more charges than there is room for.
+  Casting has decremented, buying incremented. Spells have been bought at the
   town menu (§16) for the spell's `cost`. Buying has not required
   `knows_magic` (OpenKB-faithful) except under rites per zone (REQ-314a);
   casting has. The gold check has been strict: a purchase fails when `gold <=
   cost`.
+- **REQ-540.** **Learned spells and their weekly renewal (#157).** A spell
+  bought at a temple has been learned (`Spellbook.learned`); a chest's
+  charges have not taught it. With `game.json` `magic.weekly_renewal` true
+  (`glory-of-rome`), each week end has renewed one learned spell
+  (`GamePickRenewedSpell`): the `(h >> 8) mod n`-th of the `n` learned
+  spells, `h` being `(seed XOR week_id XOR 0x5bd1e995)` taken through the
+  astrology's step (REQ-370) twice, so a reload renews the same one, and
+  none when nothing is learned. `GameRenewSpell` has filled it to
+  `max_spells`, keeping charges already above. The save has carried the
+  learned spells as `spells_learned` (spell ids) only under the key, so
+  King's Bounty saves have not changed. With `magic.max_per_spell` a combat
+  spell chosen on the map has only been noted (`spell_combat_only`): a
+  discard would free nothing, so none has been offered.
 
 ### 19.3 Adventure spell effects
 
@@ -1979,7 +2045,12 @@ flagged (§38).
   2↔3); stepping on one has teleported to its pair (an odd telecave is a
   one-way dead-end). **Signposts**: each sign tile has carried per-tile
   `sign_title` / `sign_body` shown in a dialog; there has been no global sign
-  index.
+  index. A sign has held a 63-character title and a 255-character body
+  (`RES_SIGN_TITLE_LEN`, `RES_SIGN_BODY_LEN`); a longer one has been cut
+  with a warning at load (#135). A pack that gives `signpost_header` (Glory
+  of Rome: "%TITLE%") has headed the dialog with the sign's title, so its
+  body (`signpost_with_body`) carries the words alone; without it the title
+  has been the body's first line, as the original.
 
 ---
 
@@ -1999,11 +2070,15 @@ flagged (§38).
 - **REQ-361.** End-of-week processing has run in this order (`engine/game.c`
   day/week rollover): (1) `time_stop = 0`; (2) `leadership_current =
   leadership_base`; (3) `astrology = GamePickAstrologyCreature(week_id)`;
-  (4) `gold += commission_weekly`, `last_commission = commission_weekly`;
-  (5) `gold -= sum(slot.count * (recruit_cost / 10))`; (6) if `boat.has_boat`,
-  `gold -= GameBoatCost`, repossessing the boat on shortfall; (7) `gold =
-  max(0, gold)`; (8) astrology effects (§24), with empty player castles
-  retaken (REQ-302) after the dwellings and before castle and foe growth.
+  (4) `last_week_on_hand = gold`, `gold += commission_weekly`,
+  `last_commission = commission_weekly`; (5) `gold -= sum(slot.count *
+  (recruit_cost / 10))`, with `last_week_army` the part of it the wallet
+  covered (`min(upkeep, gold)`), or, under REQ-264a, the stacks paid and
+  the rest gone; (6) if `boat.has_boat`, `gold -=
+  GameBoatCost` and `last_week_boat` = that fare, repossessing the boat on
+  shortfall with `last_week_boat = 0`; (7) `gold = max(0, gold)`; (8) astrology effects (§24), with the
+  week's learned spell renewed (REQ-540) after the dwellings, then empty
+  player castles retaken (REQ-302) before castle and foe growth.
 
 ---
 
@@ -2031,9 +2106,16 @@ flagged (§38).
 
 - **REQ-372.** After processing, a two-phase dialog sequence has been queued
   (`src/shell_weekend.c`): **Phase 1 (Astrology)** has shown the new week's
-  creature; **Phase 2 (Budget)** has shown gold on hand, commission paid, boat
-  cost (if any), per-troop upkeep, and the final balance. Any key has
-  dismissed it.
+  creature, and under REQ-540 the renewed spell beneath it
+  (`week_spell_renewed`); **Phase 2 (Budget)** has shown what the week did, from the
+  figures REQ-361 records: On Hand (`last_week_on_hand`), Payment
+  (`last_commission`), Boat (`last_week_boat`), Army (`last_week_army`) and
+  Balance (`gold`), so On Hand + Payment - Boat - Army = Balance. Each troop
+  row has shown that stack's weekly upkeep, `GameStackWeeklyUpkeep`, the same
+  figure as the army view's cost; openkb's full recruit price there was not
+  kept (OPENKB-SPEC §16.7). Any key has dismissed it. Under REQ-264a, when
+  stacks left, **Phase 3** has named them (`week_troops_left`, "Unpaid, the
+  <troops> leave your service.").
 
 ---
 
@@ -2056,7 +2138,11 @@ golden-digest regression tests have pinned the formulas.
   is a static guardian in modern mode, which has fielded all five
   (`full_band`). Two modes: **field** (`COMBAT_MODE_FOE`, open field, scattered
   obstacles) and **castle** (`COMBAT_MODE_CASTLE`, siege layout with walls).
-  The player has started one troop per row (slot i → column 0, row i). The
+  The player has started one troop per row (slot i → column 0, row i). In
+  the field each cell of columns 1–3 has held an obstacle (code 1..3, drawn
+  at random) at the pack's `combat.field_obstacle_chance` percent: absent,
+  King's Bounty's one in ten, drawn exactly as the original draws it, so
+  its random stream is unchanged; Glory of Rome sets 12. The
   obstacle map (`omap`) has used codes 1..3 for field obstacles and 5..10 for
   castle walls (0 = open); the unit map (`umap`) has held packed unit ids
   (1-based; 0 = empty). Both maps have been sized `[H+1][W+1]` for off-by-one
@@ -2209,6 +2295,14 @@ golden-digest regression tests have pinned the formulas.
   then "<actor> vs <target> killing N". In modern the lines have also stood
   as cards in the battle column, newest first, as many as the column has
   held (`DESIGN-SPEC.md` DSGN-0115).
+- **REQ-392a.** A pack that gives the optional `combat_log.melee_no_kill`
+  (Glory of Rome, #131) has logged every troop attack: one that killed
+  nothing as `melee_no_kill` or, ranged, `ranged_no_effect`, and, after the
+  attack's own line, a retaliation that killed as `retaliate`
+  (`Combat.retaliation_kills`). Without it only kills have been logged, as
+  the original. Rome's lines have shared one form: "<attacker> attack
+  <target>: N die", "<attacker> shoot <target>: N die" (or "none die"),
+  "<target> strike back: N die".
 - **REQ-393.** **Win** (`result = 1`): all defenders dead; spoils =
   `sum(troop.spoils * 5 * count)` over killed enemies credited to gold;
   survivors written back to `g->army` with `GameCompactArmy`. **Loss / flee**
@@ -2385,6 +2479,20 @@ golden-digest regression tests have pinned the formulas.
   engine has substituted a documented default. The engine has carried no text
   of its own: a pack missing any required string key has been refused at load,
   with every missing key printed.
+- **REQ-538.** A pack's Introduction (#154) has been a script file named by
+  `game.json:intro` (PACK-FORMAT §2.4), resolved at load by
+  `engine/resources.c parse_intro` into `Resources.intro`: a flat list of
+  beats laid end to end on one timeline, each with its backdrop, pan, actors
+  (portrait and villain ids resolved to frame lists), caption and card text
+  (keys in the strings' `intro` group, `%TOKEN%`s filled) and speaker's face.
+  A `for_each: "villain"` beat has become one beat per villain in catalog
+  order, so the wanted notices have followed the villain catalog. A missing
+  caption or card key or `ui.title_intro` has counted as a missing string; an unknown
+  id, an actor with no source or two, a beat with no length or a frame
+  outside 1..256 has counted in `intro_errors`; either has refused the load.
+  The intro's art has been listed in `resources_art_manifest`.
+  `resources_intro_beat_at` has answered which beat plays at a time. A pack
+  without `intro` has had none (`resources_has_intro` false).
 
 ### 28.2 Asset loading
 
@@ -2422,8 +2530,10 @@ every menu; this section has held the rules.
   not a fixed size: the scale and the map's growth have followed REQ-528. The
   hero's cell has been centred across the map on the row that holds the
   map's middle, the rows standing flush with the columns' tiles; every cell
-  the map shows has been drawn, part cells at its edges and foot included,
-  and the camera has never clamped (`map_view`, `src/map_render.c`).
+  the map shows has been drawn, part cells at its edges and foot included;
+  and the camera has stopped at the world's edge, the hero walking off
+  centre toward it, so the map has never shown past the world, a map smaller
+  than the area centred in it (`map_view`, `src/map_render.c`).
 - **REQ-430b.** **Code-drawn chrome.** A modern pack without
   `sprites.ui.chrome_overworld` has had the gold lattice (`src/lattice.c`): a
   cross-hatch pattern built once as a texture at `ui_scale` and tiled from the
@@ -2623,6 +2733,21 @@ every menu; this section has held the rules.
   skipped to the end; the sequence has played once per run, and the credits,
   the load picker and a return to the title have shown the finished screen.
   Without all three the title has been `splash_title`, still.
+- **REQ-430u.** **Introduction (modern).** A pack with an intro (REQ-538)
+  has had an Introduction row first on the title menu, above New Game,
+  labelled `ui.title_intro`; it has never played by itself.
+  Choosing it has played the script end to end (`src/intro.c run_intro`) as
+  a film: each beat's backdrop through its moving frame window and its
+  actors' loops at a whole multiple, a black caption band below with the
+  speaker's face loop beside the caption typed on, cards centred in the
+  picture, dissolves between beats and each scene faded up from black and
+  down to it (DSGN-0161). Every frame has been a pure function of the time
+  into the intro. Any key or tap has ended it, as at the end of its last
+  beat, and gone on to the class picker as New Game does, nothing pressed
+  carrying over; there
+  has been no key for the next scene, the theme being one track timed to the
+  whole intro. The intro's textures have loaded on entry and been freed on
+  exit.
 - **REQ-430q.** **Blessing and Tribute (modern home castle).** With
   `game.json` `audiences`, `GameSeekBlessing` has granted once, when every
   artifact is found (enemies left or not), leadership +
@@ -2751,6 +2876,20 @@ every menu; this section has held the rules.
   (`ios/audio_ios.mm`) there. Track and SFX paths have come from
   `game.json:audio`. Volume, ducking, and the sound on/off option have been
   handled shell-side; the engine has only emitted tune/sfx events.
+- **REQ-539.** The Introduction's theme (`game.json:audio.tracks.intro`) has
+  loaded when the intro begins and been freed when it ends
+  (`audio_intro_begin` / `audio_intro_end`), since iOS decodes a whole track
+  into memory. The intro has opened the device itself, the title running
+  before the game's own `audio_init`. The theme has played from the top
+  whatever the Music option, which has not yet been chosen at the title, at
+  the master volume, and faded with the last scene. A pack without one, or a
+  device answering more than 1.5 s late, has left the intro silent rather
+  than out of step. Ending it has restored the track that played before.
+  The intro's sound effects (a beat's `sounds`, PACK-FORMAT §2.4) have started
+  as the timeline passed them (`audio_intro_sound`), at their gain times
+  the master volume and the closing fade, whatever the Sounds option; each
+  .wav has loaded the first time it was asked for and been freed, and so
+  stopped, when the intro ended.
 
 ---
 
@@ -2807,9 +2946,9 @@ every menu; this section has held the rules.
   the 2x floor.
 
 - **REQ-533.** **The two columns have been one tile wide and always there.**
-  The left column has held Menu, Map, Army, Search and Puzzle
-  (`src/modern/rail.c`), the right column Contract, Siege, Magic, Gold and
-  Days (`src/hud.c`); each tile has fired the action its key fires
+  The left column has held Menu, Map, Goto, Army and Puzzle
+  (`src/modern/rail.c`), the right column Contract, Magic, Siege, Gold and
+  Days (`src/hud.c`), the three that open the character sheet together; each tile has fired the action its key fires
   (`shell_dispatch_action`). On the map both have shown at every size and on
   every device, both have run the full height of the map, and neither has
   shown a key or registered a tap while a page is open. A battle has replaced
@@ -2919,13 +3058,17 @@ every menu; this section has held the rules.
   `src/shell_earlyexit.c`): `--version`/`-v`, `--help`/`-h`, `--fullscreen`,
   `--pack <name|path>`, `--lang <code>`, `--save-dir <dir>`, `--seed N`
   (catalog world `0`–`255`, REQ-166), `--movie [<path>]`, `--debug` (the
-  Debug page, §31), `--gallery <dir>` (every modern screen to PNG, with the
-  tap check), `--window WxH` (the window at a device's size) and `--touch`
+  Debug page, §31), `--gallery <dir>` (every screen to PNG, with the tap check:
+  modern's rows and buttons, legacy's letter keys and the prompt that asks for
+  its answer bar), `--window WxH` (the window at a device's size) and `--touch`
   (a touch device), `--demo` (the human-like agent, `DEMO-SPEC.md`),
   `--autoplay`
   (the winnability oracle, `AUTOPLAY-SPECS.md`) with its modifiers
   `--autoplay-hero=<class>`, `--autoplay-level=<easy|normal|hard|impossible>`
-  and `--autoplay-speed=<slow|normal|fast>`, `--validate-pack [LO [HI]]` (the
+  and `--autoplay-speed=<slow|normal|fast>`, `--intro-movie <out.mp4>` (the
+  Introduction rendered offline at 15 frames a second, with its sound,
+  and its cue sheet printed: each scene's start and length, REQ-430u, REQ-490),
+  `--validate-pack [LO [HI]]` (the
   pack-author winnability report), `--headless` (modifier for the agent
   modes), `--verbose` (agent diagnostics), `--extract`, `--out-dir <dir>`
   (modifier for `--extract`), `--pack-dir <src> <dst>`. Normal play has taken
@@ -2972,7 +3115,15 @@ every menu; this section has held the rules.
   `/tmp/openbounty-movie-<pid>`; at shutdown an "Encoding…" dialog has run the muxer and the temp
   frames have been deleted, so the file exists only after a clean shutdown.
   With no path argument, output has gone to
-  `<user-data>/movie-<timestamp>.mp4`.
+  `<user-data>/movie-<timestamp>.mp4`. Gameplay recordings have been
+  silent. `--intro-movie` has carried the Introduction's sound on a second
+  track (`src/intro_mix.c`): the theme from the top and each beat's sounds
+  at their cues, mixed at full master volume with the player's own levels
+  and closing fade (`audio_intro_levels`, `intro_sound_gain`), a sound cued
+  again while it plays starting over as in the game; mono 44.1 kHz,
+  encoded AAC-LC at 128 kb/s by vo-aacenc (`src/encode_mp4_aac.c`), its
+  first 1600 samples (the encoder's and decoder's delay) dropped so the
+  sound lines up with the first frame.
 - **REQ-491.** There has been no scripted-input harness: `src/frame_host.c`
   and `src/input_host.c` have been the window and input seams (REQ-442), and
   the gameplay tests have driven the engine directly. The engine's JSON state

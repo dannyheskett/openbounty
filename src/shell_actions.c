@@ -15,6 +15,7 @@
 #include "ui.h"
 #include "views.h"
 #include "modern/gamemenu.h"
+#include "views_render_impl.h"
 
 void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
     Game            *g  = ctx->game;
@@ -28,6 +29,9 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
     case INPUT_ACTION_VIEW_CONTRACT:   views_set(VIEW_CONTRACT);  break;
     case INPUT_ACTION_VIEW_PUZZLE:     views_set(VIEW_PUZZLE);    break;
     case INPUT_ACTION_VIEW_MAP:        views_set(VIEW_WORLDMAP);  break;
+    case INPUT_ACTION_GOTO:            // modern: the world map with the Goto cursor
+        if (CL_IS_MODERN) { views_set(VIEW_WORLDMAP); modern_worldmap_goto_open(g); }
+        break;
     case INPUT_ACTION_CAST_SPELL:
         // no_spell_banner pops if the player doesn't know magic yet.
         // Substitute the alcove location from data so the banner stays

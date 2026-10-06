@@ -283,25 +283,28 @@ static bool s_act_open_on_enabled;
 void combat_gallery_menu(bool open) {
     s_act_open = open;
     s_act_page[0] = CM_ROOT; s_act_cursor[0] = 0;
-    s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
-    s_act_depth = open ? 2 : 0;
-    s_act_open_on_enabled = open;   // as combat_menu_open: on the first usable command
+    s_act_depth = open ? 1 : 0;     // as combat_menu_open: on its top page
+    s_act_open_on_enabled = open;
 }
 
 // --gallery: the menu opened on its Cast page (Actions > Unit > Spells).
 void combat_gallery_cast_page(void) {
     combat_gallery_menu(true);
+    s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
     s_act_page[2] = CM_CAST; s_act_cursor[2] = 0;
     s_act_depth = 3;
     s_act_open_on_enabled = true;   // as the Cast row opens it: on the first spell held
 }
 
+// The menu opens on its top page, where Give up stands beside Close (#133):
+// opened a page down, on Unit, the way to Give up was Back, Game, Give up,
+// and a player could not find it. The unit's commands are on the column's
+// tiles beside the field and their keys.
 static void combat_menu_open(void) {
     s_act_open = true;
     s_act_page[0] = CM_ROOT; s_act_cursor[0] = 0;
-    s_act_page[1] = CM_UNIT; s_act_cursor[1] = 0;
-    s_act_depth = 2;
-    s_act_open_on_enabled = true;   // the rows never move; the cursor may
+    s_act_depth = 1;
+    s_act_open_on_enabled = true;
 }
 
 static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) {
@@ -316,7 +319,8 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         ROW(ui->gm_hero, bn->gmd_combat_army, "", GM_ACT_PAGE + CM_HERO, true);
         ROW(ui->gm_game, bn->gmd_controls, "", GM_ACT_PAGE + CM_GAME, true);
         ROW(ui->gm_close, bn->gmd_back, "", GM_ACT_BACK, true);
-        p->foot = 1;
+        ROW(ui->gm_give_up, bn->gmd_give_up, "G", KEY_G, true);   // last, like Exit
+        p->foot = 2;
         break;
     case CM_UNIT: {
         const CombatUnit *u = (c->unit_id >= 0) ? &c->units[c->side][c->unit_id] : NULL;
@@ -358,8 +362,7 @@ static void combat_menu_page(const Combat *c, const Game *g, int id, GmPage *p) 
         p->title = ui->gm_game;
         ROW(ui->gm_controls, bn->gmd_controls, "C", KEY_C, true);
         ROW(ui->gm_back, bn->gmd_back_up, "", GM_ACT_BACK, true);
-        ROW(ui->gm_give_up, bn->gmd_give_up, "G", KEY_G, true);   // last, like Exit
-        p->foot = 2;
+        p->foot = 1;
         break;
     }
     #undef ROW
@@ -478,16 +481,23 @@ static void combat_log_cards(const Combat *c, ML_Rect col, int y) {
     for (int i = c->log_count - 1, k = 0; i >= 0; i--, k++) {
         const char *line = c->log_lines[i];
         if (!line[0]) continue;
+        // A card as tall as its line wraps to, so no line is cut (#131);
+        // only the newest, if even it cannot stand whole, is cut to the room
+        // left, so the column never goes blank.
         int n = uk_lines(line, tw);
         if (n < 1) n = 1;
-        if (n > 3) n = 3;
         int h = 2 * pad + n * uk_line_h();
-        if (y + h > bottom) break;
+        if (y + h > bottom) {
+            int room = (bottom - y - 2 * pad) / uk_line_h();
+            if (k > 0 || room < 1) break;
+            n = room;
+            h = 2 * pad + n * uk_line_h();
+        }
         bool lit = (k == 0);
         gfx_rect(col.x, y, col.w, h, uk_fill());
         gfx_rect_lines(col.x, y, col.w, h, lit ? uk_edge() : uk_edge_dim());
         gfx_rect(col.x + 1, y + 1, bar, h - 2, lit ? uk_edge() : uk_edge_dim());
-        uk_lines_draw(line, tx, y + pad, tw, 3, lit ? PAL_CLR(YELLOW) : PAL_CLR(WHITE));
+        uk_lines_draw(line, tx, y + pad, tw, n, lit ? PAL_CLR(YELLOW) : PAL_CLR(WHITE));
         y += h + UK_BAND;
     }
 }
@@ -638,13 +648,12 @@ static int combat_player_action_full(Combat *c, const Game *g,
                          CL_COMBAT_X + au->x * CL_COMBAT_CELL_W,
                          CL_COMBAT_Y + au->y * CL_COMBAT_CELL_H,
                          CL_COMBAT_CELL_W, CL_COMBAT_CELL_H,
-                         CL_IS_MODERN ? KEY_ENTER : 0);
+                         CL_IS_MODERN ? KEY_ESCAPE : 0);
     }
-    if (CL_IS_MODERN &&
-        (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER))) {
-        combat_menu_open();
-        return 0;
-    }
+    // Enter does not open the menu (#134): it confirms a shot or a flight,
+    // and a second Enter just after one opened the menu on the next unit's
+    // turn. Escape and the Menu tile open it; a tap on the active unit
+    // presses Escape (above), which RunCombat reads as opening it.
     int dx, dy;
     if (combat_read_dir(&dx, &dy)) {
         if (c->unit_id < 0) return 0;
@@ -757,13 +766,8 @@ static void combat_present(const Combat *c, const Game *g, const Map *m, const F
                     !prompt_is_active() && !dialog_is_active() &&
                     !c->picker_active && c->cast_phase == COMBAT_CAST_NONE;
         combat_column_draw(c, g, sprites, pc.column, live);
-        // What just happened: a toast on the field's top edge, as a toast is
-        // on the map, for as long.
-        static char s_said[COMBAT_BANNER_LEN];
-        if (strcmp(s_said, c->banner) != 0) {
-            snprintf(s_said, sizeof s_said, "%s", c->banner);
-            if (c->banner[0]) toast_show(c->banner);
-        }
+        // What just happened is the newest card in the column's log, lit;
+        // no toast repeats it over the field (#131).
         // Then the pages, in the one order the map has too: the menu, an open
         // view, the question, the message, and the toast last.
         if (s_act_open && views_active() == VIEW_NONE) combat_action_menu_draw(c, g);

@@ -381,6 +381,11 @@ static void fill_sign(cJSON *j, void *dst) {
     copy_str(s->id,    sizeof(s->id),    json_str(j, "id", ""));
     copy_str(s->title, sizeof(s->title), json_str(j, "title", ""));
     copy_str(s->body,  sizeof(s->body),  json_str(j, "body", ""));
+    // A sign longer than its field was cut silently (#135): say so.
+    const char *t = json_str(j, "title", ""), *b = json_str(j, "body", "");
+    if (strlen(t) >= sizeof(s->title) || strlen(b) >= sizeof(s->body))
+        fprintf(stdout, "resources: sign '%s' cut to %zu/%zu characters\n",
+                s->id, sizeof(s->title) - 1, sizeof(s->body) - 1);
 }
 // Zone towns are resolved to indices into the authoritative res->towns[]
 // catalog in parse_zones; see resolve_zone_town_idx.
@@ -474,6 +479,8 @@ static void parse_zones(Resources *res, cJSON *arr) {
         }
         copy_str(z->town_backdrop, sizeof(z->town_backdrop),
                  json_str(it, "town_backdrop", ""));
+        copy_str(z->treasure_scene, sizeof(z->treasure_scene),
+                 json_str(it, "treasure_scene", ""));
         copy_str(z->tile_set, sizeof(z->tile_set), json_str(it, "tile_set", ""));
         {
             cJSON *ov = cJSON_GetObjectItem(it, "tile_set_arts");
@@ -1235,8 +1242,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(rail, "map", ""));
         copy_str(res->sprites.rail_army,   sizeof(res->sprites.rail_army),
                  json_str(rail, "army", ""));
-        copy_str(res->sprites.rail_search, sizeof(res->sprites.rail_search),
-                 json_str(rail, "search", ""));
+        copy_str(res->sprites.rail_goto,   sizeof(res->sprites.rail_goto),
+                 json_str(rail, "goto", ""));
         copy_str(res->sprites.rail_cast,   sizeof(res->sprites.rail_cast),
                  json_str(rail, "cast", ""));
     }
@@ -1261,6 +1268,8 @@ static void parse_audio(Resources *res, cJSON *obj) {
                  json_str(tracks, "openworld", ""));
         copy_str(res->audio.combat_path, sizeof(res->audio.combat_path),
                  json_str(tracks, "combat", ""));
+        copy_str(res->audio.intro_path, sizeof(res->audio.intro_path),
+                 json_str(tracks, "intro", ""));
     }
     cJSON *tunes = cJSON_GetObjectItem(obj, "tunes");
     if (cJSON_IsObject(tunes)) {
@@ -1291,8 +1300,12 @@ static void parse_combat(Resources *res, cJSON *obj) {
             res->morale_chart[i][j] = 'N';
     res->number_name_count = 0;
     res->morale_as_army_view = false;
+    res->field_obstacle_chance = 10;
     if (!cJSON_IsObject(obj)) return;
     res->morale_as_army_view = cJSON_IsTrue(cJSON_GetObjectItem(obj, "morale_as_army_view"));
+    cJSON *foc = cJSON_GetObjectItem(obj, "field_obstacle_chance");
+    if (cJSON_IsNumber(foc) && foc->valueint >= 0 && foc->valueint <= 100)
+        res->field_obstacle_chance = foc->valueint;
 
     cJSON *mc = cJSON_GetObjectItem(obj, "morale_chart");
     if (cJSON_IsArray(mc)) {
@@ -1486,6 +1499,16 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER_OPT(chest_gold_take,  "chest_gold_take");
     SET_BANNER_OPT(chest_gold_share, "chest_gold_share");
     SET_BANNER_OPT(gmr_spell_in_fight, "gmr_spell_in_fight");
+    SET_BANNER_OPT(goto_title, "goto_title");
+    SET_BANNER_OPT(goto_to, "goto_to");
+    SET_BANNER_OPT(goto_today, "goto_today");
+    SET_BANNER_OPT(goto_days, "goto_days");
+    SET_BANNER_OPT(goto_no_route, "goto_no_route");
+    SET_BANNER_OPT(goto_go, "goto_go");
+    SET_BANNER_OPT(goto_cancel, "goto_cancel");
+    SET_BANNER_OPT(gm_goto, "gm_goto");
+    SET_BANNER_OPT(gmd_goto, "gmd_goto");
+    SET_BANNER_OPT(rail_goto, "rail_goto");
     SET_BANNER_OPT(gmr_spell_on_map,   "gmr_spell_on_map");
     #undef SET_BANNER_OPT
     SET_BANNER(chest_commission,  "chest_commission");
@@ -1525,6 +1548,14 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(town_intel_unavailable,  "town_intel_unavailable");
     SET_BANNER(town_intel_castle_under, "town_intel_castle_under");
     SET_BANNER(town_intel_owner_rule,   "town_intel_owner_rule");
+    {   // Optional: a sign's title as the message's header (#135).
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "signpost_header", NULL) : NULL;
+        copy_str(b->signpost_header, sizeof(b->signpost_header), s ? s : "");
+    }
+    {   // Optional: a pack that reports at the castle gate (#139).
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "castle_gate_owner", NULL) : NULL;
+        copy_str(b->castle_gate_owner, sizeof(b->castle_gate_owner), s ? s : "");
+    }
     SET_BANNER(town_intel_owner_none,   "town_intel_owner_none");
     SET_BANNER(town_intel_owner_player, "town_intel_owner_player");
     SET_BANNER(town_intel_owner_king,   "town_intel_owner_king");
@@ -1746,6 +1777,16 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER(budget_boat,                    "budget_boat");
     SET_BANNER(budget_army,                    "budget_army");
     SET_BANNER(budget_balance,                 "budget_balance");
+    {   // Optional: a pack whose unpaid troops leave (#141).
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "week_troops_left", NULL) : NULL;
+        copy_str(b->week_troops_left, sizeof(b->week_troops_left), s ? s : "");
+    }
+    {   // Optional: a pack whose learned spells renew each week (#157).
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "week_spell_renewed", NULL) : NULL;
+        copy_str(b->week_spell_renewed, sizeof(b->week_spell_renewed), s ? s : "");
+        s = cJSON_IsObject(obj) ? json_str(obj, "spell_combat_only", NULL) : NULL;
+        copy_str(b->spell_combat_only, sizeof(b->spell_combat_only), s ? s : "");
+    }
     SET_BANNER(status_days_left,               "status_days_left");
     SET_BANNER(status_time_stop,               "status_time_stop");
     SET_BANNER(status_days_left_modern,        "status_days_left_modern");
@@ -1797,6 +1838,10 @@ static void parse_combat_log(ResCombatLog *cl, cJSON *obj, Resources *res) {
     SET_CL(retaliate,        "retaliate");
     SET_CL(ranged_hit,       "ranged_hit");
     SET_CL(ranged_no_effect, "ranged_no_effect");
+    {   // Optional (#131).
+        const char *s = cJSON_IsObject(obj) ? json_str(obj, "melee_no_kill", NULL) : NULL;
+        copy_str(cl->melee_no_kill, sizeof(cl->melee_no_kill), s ? s : "");
+    }
     SET_CL(no_effect_msg,    "no_effect_msg");
     SET_CL(fly,              "fly");
     SET_CL(move,             "move");
@@ -2113,6 +2158,8 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(title_new_adventure, "title_new_adventure");
         UI_SET(title_load_adventure, "title_load_adventure");
         UI_SET(title_credits, "title_credits");
+        // Optional: required only of a pack with an intro (parse_intro checks).
+        copy_str(ui->title_intro, sizeof ui->title_intro, json_str(obj, "title_intro", ""));
         UI_SET(new_game_confirm, "new_game_confirm");
         UI_SET(hero_name_label, "hero_name_label");
         UI_SET(combat_act_wait, "combat_act_wait");
@@ -2421,6 +2468,364 @@ static cJSON *load_locale_strings(const char *lang, const char *base) {
     return j;
 }
 
+// ---- Introduction (game.json "intro") --------------------------------------
+//
+// The pack's opening cinematic, a separate script file named by game.json
+// (PACK-FORMAT section 2.4). Resolved here to a flat list of beats on one timeline:
+// caption keys to text (strings/<lang>.json "intro"), portrait and villain ids
+// to frame lists, and each "for_each": "villain" beat to one beat per villain
+// (catalog order, optionally "from" a position for "count" villains).
+// Runs after parse_strings, while the strings JSON is still open.
+
+#define INTRO_TEXT_MAX 2048
+#define INTRO_FRAME_MAX 256   // RD Pro's largest side; nothing wider is authored
+
+static double json_num(const cJSON *obj, const char *key, double fallback) {
+    cJSON *v = obj ? cJSON_GetObjectItem(obj, key) : NULL;
+    return cJSON_IsNumber(v) ? v->valuedouble : fallback;
+}
+
+static ResIntroPt json_pt(const cJSON *v, ResIntroPt fallback) {
+    if (cJSON_GetArraySize(v) != 2) return fallback;
+    cJSON *x = cJSON_GetArrayItem(v, 0), *y = cJSON_GetArrayItem(v, 1);
+    if (!cJSON_IsNumber(x) || !cJSON_IsNumber(y)) return fallback;
+    return (ResIntroPt){ x->valueint, y->valueint };
+}
+
+// A villain's wanted-poster frames as a heap list: the declared anim, else the
+// <portrait-stem>_NN siblings the shell derives (kings-bounty's addressing).
+static int villain_frame_paths(const VillainDef *v, char (**out)[RES_PATH_LEN]) {
+    int n = v->anim_count > 0 ? v->anim_count : OB_ANIM_FRAMES_DEFAULT;
+    *out = calloc((size_t)n, sizeof **out);
+    if (!*out) return 0;
+    if (v->anim_count > 0) {
+        for (int f = 0; f < n; f++) copy_str((*out)[f], RES_PATH_LEN, v->anim[f]);
+        return n;
+    }
+    char stem[RES_PATH_LEN];
+    copy_str(stem, sizeof stem, v->portrait);
+    size_t sl = strlen(stem);
+    if (sl >= 7 && stem[sl - 7] == '_' && stem[sl - 4] == '.') stem[sl - 7] = '\0';
+    else if (sl >= 4 && stem[sl - 4] == '.') stem[sl - 4] = '\0';
+    for (int f = 0; f < n; f++) snprintf((*out)[f], RES_PATH_LEN, "%s_%02d.png", stem, f);
+    return n;
+}
+
+static int intro_villain_index(const Resources *res, const char *id) {
+    for (int i = 0; id && i < res->villains_count; i++)
+        if (strcmp(res->villains[i].id, id) == 0) return i;
+    return -1;
+}
+
+// Copy a portrait's loop into a heap list; false when the id is unknown.
+static bool intro_portrait_frames(const Resources *res, const char *id,
+                                  char (**out)[RES_PATH_LEN], int *count) {
+    int pi = resources_portrait_index(res, id);
+    if (pi < 0 || res->portraits[pi].anim_count <= 0) return false;
+    const ResPortrait *p = &res->portraits[pi];
+    *out = calloc((size_t)p->anim_count, sizeof **out);
+    if (!*out) return false;
+    for (int f = 0; f < p->anim_count; f++) copy_str((*out)[f], RES_PATH_LEN, p->anim[f]);
+    *count = p->anim_count;
+    return true;
+}
+
+// The %TOKEN%s a beat may use: %DAYS% (normal difficulty's day budget)
+// everywhere, and the villain's own on a for_each villain beat.
+typedef struct {
+    char reward[16], days[16];
+    ResTemplateVar vars[6];
+    int n;
+} IntroVars;
+
+static void intro_vars_for(const Resources *res, int vi, IntroVars *iv) {
+    iv->n = 0;
+    snprintf(iv->days, sizeof iv->days, "%d", res->time.days_per_difficulty[1]);
+    iv->vars[iv->n++] = (ResTemplateVar){ "DAYS", iv->days };
+    if (vi < 0) return;
+    const VillainDef *v = &res->villains[vi];
+    const ResVillainDesc *d = resources_villain_desc(res, v->id);
+    const ResZone *z = NULL;
+    for (int i = 0; i < res->zone_count; i++)
+        if (strcmp(res->zones[i].id, v->zone) == 0) z = &res->zones[i];
+    snprintf(iv->reward, sizeof iv->reward, "%d", v->reward);
+    iv->vars[iv->n++] = (ResTemplateVar){ "NAME", v->name };
+    iv->vars[iv->n++] = (ResTemplateVar){ "ALIAS", d ? d->alias : "" };
+    iv->vars[iv->n++] = (ResTemplateVar){ "REWARD", iv->reward };
+    iv->vars[iv->n++] = (ResTemplateVar){ "ZONE", z ? z->name : "" };
+    iv->vars[iv->n++] = (ResTemplateVar){ "ZONE_SCENE", z ? z->treasure_scene : "" };
+}
+
+// A caption/card key resolved against strings "intro", filled, heap-copied.
+static char *intro_text(Resources *res, const cJSON *jstr, const char *key,
+                        const IntroVars *iv, int beat_no) {
+    const char *src = cJSON_IsObject(jstr) ? json_str(jstr, key, NULL) : NULL;
+    if (!src) {
+        fprintf(stdout, "resources: pack missing string key 'intro.%s' (intro beat %d)\n",
+                key, beat_no);
+        res->strings_missing++;
+        return NULL;
+    }
+    char buf[INTRO_TEXT_MAX];
+    resources_format_template(buf, sizeof buf, src, iv->vars, iv->n);
+    size_t len = strlen(buf) + 1;
+    char *out = malloc(len);
+    if (out) memcpy(out, buf, len);
+    return out;
+}
+
+static void intro_error(Resources *res, int beat_no, const char *what) {
+    fprintf(stdout, "resources: intro beat %d: %s\n", beat_no, what);
+    res->intro_errors++;
+}
+
+// Fill one beat from its JSON, as villain `vi` (-1 unless for_each).
+static void intro_fill_beat(Resources *res, ResIntroBeat *b, const cJSON *jb,
+                            const cJSON *jstr, int vi, int beat_no,
+                            double type_cps, double read_cps, double min_hold) {
+    IntroVars iv;
+    intro_vars_for(res, vi, &iv);
+
+    char path[RES_PATH_LEN];
+    resources_format_template(path, sizeof path, json_str(jb, "backdrop", ""), iv.vars, iv.n);
+    copy_str(b->backdrop, sizeof b->backdrop, path);
+    cJSON *pan = cJSON_GetObjectItem(jb, "pan");
+    if (cJSON_GetArraySize(pan) == 2) {
+        b->pan_from = json_pt(cJSON_GetArrayItem(pan, 0), b->pan_from);
+        b->pan_to   = json_pt(cJSON_GetArrayItem(pan, 1), b->pan_from);
+    }
+    b->smooth   = strcmp(json_str(jb, "ease", "linear"), "smooth") == 0;
+    b->dissolve = json_num(jb, "dissolve", 0);
+
+    cJSON *ja = cJSON_GetObjectItem(jb, "actors");
+    int na = cJSON_IsArray(ja) ? cJSON_GetArraySize(ja) : 0;
+    if (na > 0 && (b->actors = calloc((size_t)na, sizeof *b->actors)) != NULL) {
+        cJSON *a;
+        cJSON_ArrayForEach(a, ja) {
+            ResIntroActor *act = &b->actors[b->actor_count++];
+            cJSON *jf = cJSON_GetObjectItem(a, "frames");
+            const char *pid = json_str(a, "portrait", NULL);
+            const char *vid = json_str(a, "villain", NULL);
+            int sources = (jf != NULL) + (pid != NULL) + (vid != NULL);
+            if (sources != 1) { intro_error(res, beat_no, "an actor needs exactly one of frames, portrait, villain"); continue; }
+            if (jf) {
+                parse_path_list(jf, &act->frames, &act->frame_count);
+                if (act->frame_count == 0) intro_error(res, beat_no, "an actor's frames list is empty");
+            } else if (pid) {
+                if (!intro_portrait_frames(res, pid, &act->frames, &act->frame_count))
+                    intro_error(res, beat_no, "an actor names an unknown portrait");
+            } else {
+                int v = strcmp(vid, "*") == 0 ? vi : intro_villain_index(res, vid);
+                if (v < 0) intro_error(res, beat_no, "an actor names an unknown villain");
+                else act->frame_count = villain_frame_paths(&res->villains[v], &act->frames);
+            }
+            act->fps    = json_num(a, "fps", 6.67);
+            act->at     = json_pt(cJSON_GetObjectItem(a, "at"), (ResIntroPt){ 0, 0 });
+            act->to     = json_pt(cJSON_GetObjectItem(a, "to"), act->at);
+            act->mirror = cJSON_IsTrue(cJSON_GetObjectItem(a, "mirror"));
+            act->loop   = !cJSON_IsFalse(cJSON_GetObjectItem(a, "loop"));
+            act->start  = json_num(a, "start", 0);
+            act->end    = json_num(a, "end", -1);   // -1: to the beat's end (set below)
+            act->fade_in  = json_num(a, "fade_in", 0);
+            act->fade_out = json_num(a, "fade_out", 0);
+            cJSON *jc = cJSON_GetObjectItem(a, "crop");
+            if (cJSON_GetArraySize(jc) == 4) {
+                act->crop_x = cJSON_GetArrayItem(jc, 0)->valueint;
+                act->crop_y = cJSON_GetArrayItem(jc, 1)->valueint;
+                act->crop_w = cJSON_GetArrayItem(jc, 2)->valueint;
+                act->crop_h = cJSON_GetArrayItem(jc, 3)->valueint;
+                if (act->crop_w <= 0 || act->crop_h <= 0 || act->crop_x < 0 || act->crop_y < 0)
+                    intro_error(res, beat_no, "an actor's crop must be [x, y, w, h], w and h positive");
+            }
+        }
+    }
+
+    const char *say  = json_str(jb, "say", NULL);
+    const char *card = json_str(jb, "card", NULL);
+    if (say)  b->caption = intro_text(res, jstr, say, &iv, beat_no);
+    if (card) b->card    = intro_text(res, jstr, card, &iv, beat_no);
+    const char *face = json_str(jb, "face", NULL);
+    if (face && !intro_portrait_frames(res, face, &b->face, &b->face_count))
+        intro_error(res, beat_no, "the face names an unknown portrait");
+
+    const char *weather = json_str(jb, "weather", NULL);
+    if (weather && strcmp(weather, "rain") == 0) b->rain = true;
+    else if (weather) intro_error(res, beat_no, "weather must be \"rain\"");
+    cJSON *jfl = cJSON_GetObjectItem(jb, "flashes");
+    int nfl = cJSON_IsArray(jfl) ? cJSON_GetArraySize(jfl) : 0;
+    if (nfl > 0 && (b->flashes = calloc((size_t)nfl, sizeof *b->flashes)) != NULL) {
+        cJSON *f;
+        cJSON_ArrayForEach(f, jfl) if (cJSON_IsNumber(f)) b->flashes[b->flash_count++] = f->valuedouble;
+    }
+    cJSON *jsn = cJSON_GetObjectItem(jb, "sounds");
+    if (jsn && !cJSON_IsArray(jsn)) intro_error(res, beat_no, "sounds must be a list");
+    int nsn = cJSON_IsArray(jsn) ? cJSON_GetArraySize(jsn) : 0;
+    if (nsn > 0 && (b->sounds = calloc((size_t)nsn, sizeof *b->sounds)) != NULL) {
+        cJSON *s;
+        cJSON_ArrayForEach(s, jsn) {
+            ResIntroSound *snd = &b->sounds[b->sound_count++];
+            copy_str(snd->path, sizeof snd->path, json_str(s, "file", ""));
+            snd->at   = json_num(s, "at", 0);
+            snd->gain = json_num(s, "gain", 1);
+            if (!snd->path[0]) intro_error(res, beat_no, "a sound needs a file");
+            if (snd->gain < 0 || snd->gain > 1) intro_error(res, beat_no, "a sound's gain must be 0..1");
+        }
+    }
+
+    cJSON *jd = cJSON_GetObjectItem(jb, "duration");
+    if (cJSON_IsNumber(jd)) {
+        b->dur = jd->valuedouble;
+    } else if (say) {
+        // Typed on, then held long enough to read (and never less than min_hold).
+        double len = b->caption ? (double)strlen(b->caption) : 0;
+        double hold = len / read_cps;
+        b->dur = len / type_cps + (hold > min_hold ? hold : min_hold);
+    } else {
+        intro_error(res, beat_no, "a beat needs a duration or a caption");
+    }
+    if (b->dur <= 0 && cJSON_IsNumber(jd)) intro_error(res, beat_no, "a beat's duration must be positive");
+
+    // An actor's time on screen lies within the beat.
+    for (int i = 0; i < b->actor_count; i++) {
+        ResIntroActor *act = &b->actors[i];
+        if (act->end < 0) act->end = b->dur;
+        if (act->start < 0 || act->end <= act->start || act->start >= b->dur)
+            intro_error(res, beat_no, "an actor's start and end must lie within the beat, start before end");
+    }
+    for (int i = 0; i < b->sound_count; i++)
+        if (b->sounds[i].at < 0 || b->sounds[i].at >= b->dur)
+            intro_error(res, beat_no, "a sound must start within the beat");
+}
+
+// A for_each beat's villains: catalog positions [from, from + count), clamped.
+static void intro_villain_range(const Resources *res, const cJSON *jb, int *v0, int *v1) {
+    int from  = json_int(jb, "from", 0);
+    int count = json_int(jb, "count", res->villains_count);
+    if (from < 0) from = 0;
+    if (from > res->villains_count) from = res->villains_count;
+    if (count < 0) count = 0;
+    *v0 = from;
+    *v1 = from + count < res->villains_count ? from + count : res->villains_count;
+}
+
+static void parse_intro(Resources *res, const cJSON *jpath, const cJSON *strings_root) {
+    if (!cJSON_IsString(jpath) || !jpath->valuestring[0]) return;   // no intro
+    char *txt = slurp(jpath->valuestring);
+    cJSON *root = txt ? cJSON_Parse(txt) : NULL;
+    free(txt);
+    if (!root) {
+        fprintf(stdout, "resources: intro '%s': cannot read or parse\n", jpath->valuestring);
+        res->intro_errors++;
+        return;
+    }
+    if (!res->ui.title_intro[0]) {
+        fprintf(stdout, "resources: pack missing string key 'ui.title_intro' (it has an intro)\n");
+        res->strings_missing++;
+    }
+    const cJSON *jstr = cJSON_GetObjectItem(strings_root, "intro");
+    ResIntro *in = &res->intro;
+    ResIntroPt frame = json_pt(cJSON_GetObjectItem(root, "frame"), (ResIntroPt){ 240, 102 });
+    in->frame_w = frame.x;
+    in->frame_h = frame.y;
+    if (frame.x <= 0 || frame.y <= 0 || frame.x > INTRO_FRAME_MAX || frame.y > INTRO_FRAME_MAX)
+        intro_error(res, 0, "frame must be 1..256 a side");
+    in->type_cps = json_num(root, "type_cps", 28);
+    double read_cps = json_num(root, "read_cps", 14);
+    double min_hold = json_num(root, "min_hold", 2.0);
+    if (in->type_cps <= 0 || read_cps <= 0) intro_error(res, 0, "type_cps and read_cps must be positive");
+    if (in->type_cps <= 0) in->type_cps = 28;
+    if (read_cps <= 0) read_cps = 14;
+
+    // Pass 1: count. A for_each beat is one beat per villain from "from" on.
+    cJSON *jscenes = cJSON_GetObjectItem(root, "scenes");
+    int nscenes = cJSON_IsArray(jscenes) ? cJSON_GetArraySize(jscenes) : 0;
+    int nbeats = 0;
+    cJSON *js, *jb;
+    cJSON_ArrayForEach(js, jscenes) {
+        cJSON_ArrayForEach(jb, cJSON_GetObjectItem(js, "beats")) {
+            const char *fe = json_str(jb, "for_each", NULL);
+            if (!fe) { nbeats++; continue; }
+            int v0, v1;
+            intro_villain_range(res, jb, &v0, &v1);
+            if (strcmp(fe, "villain") != 0) intro_error(res, nbeats + 1, "for_each must be \"villain\"");
+            else nbeats += v1 - v0;
+        }
+    }
+    if (nscenes == 0 || nbeats == 0) {
+        intro_error(res, 0, "the intro has no scenes or no beats");
+        cJSON_Delete(root);
+        return;
+    }
+    if (!RES_TABLE_ALLOC(in->scenes, in->scene_count, nscenes) ||
+        !RES_TABLE_ALLOC(in->beats, in->beat_count, nbeats)) {
+        cJSON_Delete(root);
+        return;
+    }
+
+    // Pass 2: fill, laying every beat end to end on one timeline.
+    double t = 0;
+    cJSON_ArrayForEach(js, jscenes) {
+        ResIntroScene *sc = &in->scenes[in->scene_count];
+        copy_str(sc->id, sizeof sc->id, json_str(js, "id", ""));
+        sc->fade_in    = json_num(js, "fade_in", 1.0);
+        sc->fade_out   = json_num(js, "fade_out", 1.0);
+        sc->start      = t;
+        sc->first_beat = in->beat_count;
+        cJSON_ArrayForEach(jb, cJSON_GetObjectItem(js, "beats")) {
+            const char *fe = json_str(jb, "for_each", NULL);
+            int v0 = -1, v1 = 0;          // one pass, as no villain
+            if (fe) {
+                if (strcmp(fe, "villain") != 0) continue;
+                intro_villain_range(res, jb, &v0, &v1);
+            }
+            for (int vi = v0; (fe ? vi < v1 : vi == v0) && in->beat_count < nbeats; vi++) {
+                ResIntroBeat *b = &in->beats[in->beat_count++];
+                b->scene = in->scene_count;
+                intro_fill_beat(res, b, jb, jstr, fe ? vi : -1, in->beat_count,
+                                in->type_cps, read_cps, min_hold);
+                b->start = t;
+                t += b->dur > 0 ? b->dur : 0;
+            }
+        }
+        sc->beat_count = in->beat_count - sc->first_beat;
+        sc->dur = t - sc->start;
+        if (sc->beat_count == 0) intro_error(res, 0, "a scene has no beats");
+        if (sc->fade_in + sc->fade_out > sc->dur) intro_error(res, 0, "a scene's fades are longer than the scene");
+        in->scene_count++;
+    }
+    in->total = t;
+    cJSON_Delete(root);
+}
+
+static void intro_free(ResIntro *in) {
+    for (int i = 0; in->beats && i < in->beat_count; i++) {
+        ResIntroBeat *b = &in->beats[i];
+        for (int a = 0; b->actors && a < b->actor_count; a++) free(b->actors[a].frames);
+        free(b->actors);
+        free(b->face);
+        free(b->caption);
+        free(b->card);
+        free(b->flashes);
+        free(b->sounds);
+    }
+    free(in->beats);
+    free(in->scenes);
+    memset(in, 0, sizeof *in);
+}
+
+bool resources_has_intro(const Resources *r) {
+    return r && r->intro.beat_count > 0 && r->intro.total > 0;
+}
+
+const ResIntroBeat *resources_intro_beat_at(const ResIntro *in, double t) {
+    if (!in || t < 0 || t >= in->total) return NULL;
+    for (int i = 0; i < in->beat_count; i++) {
+        const ResIntroBeat *b = &in->beats[i];
+        if (t < b->start + b->dur) return b;
+    }
+    return NULL;
+}
+
 bool resources_load(Resources *res, const char *manifest_path) {
     memset(res, 0, sizeof(*res));
 
@@ -2484,6 +2889,10 @@ bool resources_load(Resources *res, const char *manifest_path) {
         cJSON *jmg = cJSON_GetObjectItem(root, "magic");
         cJSON *jrp = cJSON_IsObject(jmg) ? cJSON_GetObjectItem(jmg, "rites_per_zone") : NULL;
         res->economy.rites_per_zone = cJSON_IsTrue(jrp);
+        res->economy.spell_limit_per_spell =
+            cJSON_IsObject(jmg) && cJSON_IsTrue(cJSON_GetObjectItem(jmg, "max_per_spell"));
+        res->economy.spell_weekly_renewal =
+            cJSON_IsObject(jmg) && cJSON_IsTrue(cJSON_GetObjectItem(jmg, "weekly_renewal"));
         cJSON *jfo = cJSON_GetObjectItem(root, "foes");
         cJSON *jev = cJSON_IsObject(jfo) ? cJSON_GetObjectItem(jfo, "evade_needs_free_square") : NULL;
         res->economy.evade_needs_free_square = cJSON_IsTrue(jev);
@@ -2497,6 +2906,7 @@ bool resources_load(Resources *res, const char *manifest_path) {
     res->economy.boat_cost_normal = json_int(jec, "boat_cost_normal", 500);
     res->economy.boat_cost_cheap  = json_int(jec, "boat_cost_cheap",  100);
     res->economy.siege_cost       = json_int(jec, "siege_cost",      3000);
+    res->economy.unpaid_troops_leave = cJSON_IsTrue(cJSON_GetObjectItem(jec, "unpaid_troops_leave"));
 
     // Chest curves and value ranges --  defaults so
     // omitting the JSON block still produces parity-correct rolls.
@@ -2932,6 +3342,8 @@ bool resources_load(Resources *res, const char *manifest_path) {
         cJSON *strings_root = load_locale_strings(lang, base);
         if (!strings_root) res->strings_missing++;   // forces the hard-fail below
         parse_strings(res, strings_root);            // NULL-safe: records misses
+        // The Introduction needs the villains, portraits and strings above.
+        parse_intro(res, cJSON_GetObjectItem(root, "intro"), strings_root);
         cJSON_Delete(strings_root);
     }
     parse_ending(res,      cJSON_GetObjectItem(root, "ending"));
@@ -2950,6 +3362,12 @@ bool resources_load(Resources *res, const char *manifest_path) {
         return false;
     }
 
+    if (res->intro_errors > 0) {
+        fprintf(stdout, "resources: the pack's intro script has %d error(s); "
+                "refusing to load.\n", res->intro_errors);
+        return false;
+    }
+
     g_resources = res;    // publish to table lookups
     return true;
 }
@@ -2958,6 +3376,7 @@ void resources_free(Resources *res) {
     if (g_resources == res) g_resources = NULL;
     // Heap-owned tables, each sized from the pack.
     if (res) {
+        intro_free(&res->intro);
         for (int i = 0; res->portraits && i < res->portrait_count; i++) free(res->portraits[i].anim);
         free(res->portraits);
         res->portraits = NULL;
@@ -3347,6 +3766,8 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
     // A zone's own town backdrop, and a town's own (REQ-221d).
     for (int i = 0; i < res->zone_count; i++)
         art_add(out, cap, &n, res->zones[i].town_backdrop);
+    for (int i = 0; i < res->zone_count; i++)
+        art_add(out, cap, &n, res->zones[i].treasure_scene);
     for (int i = 0; i < res->town_count; i++)
         art_add(out, cap, &n, res->towns[i].backdrop);
     art_add(out, cap, &n, res->sprites.palace_welcome);
@@ -3393,7 +3814,7 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
     art_add(out, cap, &n, res->sprites.rail_menu);
     art_add(out, cap, &n, res->sprites.rail_map);
     art_add(out, cap, &n, res->sprites.rail_army);
-    art_add(out, cap, &n, res->sprites.rail_search);
+    art_add(out, cap, &n, res->sprites.rail_goto);
     art_add(out, cap, &n, res->sprites.rail_cast);
     art_add(out, cap, &n, res->sprites.combat_shoot);
     art_add(out, cap, &n, res->sprites.combat_wait);
@@ -3444,23 +3865,21 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
     for (int i = 0; i < res->villains_count; i++) {
         const VillainDef *v = &res->villains[i];
         art_add(out, cap, &n, v->portrait);
-        if (v->anim_count > 0) {
-            for (int f = 0; f < v->anim_count; f++)
-                art_add(out, cap, &n, v->anim[f]);
-            continue;
-        }
-        // No declared array: the shell derives <portrait-stem>_NN.png
-        // siblings. Mirror that here so the manifest is complete either way.
-        char stem[RES_PATH_LEN];
-        copy_str(stem, sizeof stem, v->portrait);
-        size_t sl = strlen(stem);
-        if (sl >= 7 && stem[sl - 7] == '_' && stem[sl - 4] == '.') stem[sl - 7] = '\0';
-        else if (sl >= 4 && stem[sl - 4] == '.') stem[sl - 4] = '\0';
-        for (int f = 0; f < OB_ANIM_FRAMES_DEFAULT; f++) {
-            char p[RES_PATH_LEN];
-            snprintf(p, sizeof p, "%s_%02d.png", stem, f);
-            art_add(out, cap, &n, p);
-        }
+        // Declared frames, else the <portrait-stem>_NN siblings the shell derives.
+        char (*frames)[RES_PATH_LEN] = NULL;
+        int nf = villain_frame_paths(v, &frames);
+        for (int f = 0; f < nf; f++) art_add(out, cap, &n, frames[f]);
+        free(frames);
+    }
+
+    // The Introduction's backdrops, actors and speakers' faces.
+    for (int i = 0; i < res->intro.beat_count; i++) {
+        const ResIntroBeat *b = &res->intro.beats[i];
+        art_add(out, cap, &n, b->backdrop);
+        for (int a = 0; a < b->actor_count; a++)
+            for (int f = 0; f < b->actors[a].frame_count; f++)
+                art_add(out, cap, &n, b->actors[a].frames[f]);
+        for (int f = 0; f < b->face_count; f++) art_add(out, cap, &n, b->face[f]);
     }
 
     for (int i = 0; i < res->artifacts_count; i++)

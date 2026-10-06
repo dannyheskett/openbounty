@@ -34,6 +34,9 @@
 #include "input_host.h"
 #include "views_render.h"
 #include "resources.h"
+#include "goto.h"
+#include "shell_goto.h"
+#include "input.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -609,8 +612,90 @@ static bool worldmap_orb_row(void *ctx, int i, char *label, char *right, int cap
     return true;
 }
 
-bool modern_worldmap_input(const Game *g) {
-    if (views_active() != VIEW_WORLDMAP || !g || !g->res) { s_wm_open = false; return false; }
+// Goto (#70): the same page with a tile cursor in place of the places list.
+// The route to the cursor is planned when the cursor or the hero moves, so
+// the page can say how long it takes (or that there is none) before the order.
+static bool     s_goto;
+static int      s_goto_x, s_goto_y;              // the cursor's tile
+static double   s_goto_flash;                    // the refused ring until then
+static int      s_goto_cam_x, s_goto_cam_y;      // the view the last frame drew
+static struct { bool valid, ok; int x, y, hx, hy, mode; char zone[24]; GotoPath p; } s_route;
+
+void modern_worldmap_goto_open(const Game *g) {
+    s_goto = true;
+    s_goto_x = g ? g->position.x : 0;
+    s_goto_y = g ? g->position.y : 0;
+    s_goto_flash = 0;
+    s_route.valid = false;
+}
+
+void modern_worldmap_goto_gallery(int x, int y, bool refused) {
+    s_goto = true;
+    s_wm_open = true;
+    s_goto_x = x; s_goto_y = y;
+    s_goto_flash = refused ? ui_anim_time() + 3600.0 : 0;
+    s_route.valid = false;
+}
+
+static const GotoPath *goto_route(const Game *g, const Map *m, const Fog *f) {
+    int mode = g->character.mount == MOUNT_FLY ? 2 : g->travel_mode == TRAVEL_BOAT ? 1 : 0;
+    if (!s_route.valid || s_route.x != s_goto_x || s_route.y != s_goto_y ||
+        s_route.hx != g->position.x || s_route.hy != g->position.y || s_route.mode != mode ||
+        strcmp(s_route.zone, g->position.zone) != 0) {
+        s_route.ok = GamePlanGoto(g, m, f, g->res, s_goto_x, s_goto_y, &s_route.p);
+        s_route.x = s_goto_x; s_route.y = s_goto_y;
+        s_route.hx = g->position.x; s_route.hy = g->position.y;
+        s_route.mode = mode;
+        snprintf(s_route.zone, sizeof s_route.zone, "%s", g->position.zone);
+        s_route.valid = true;
+    }
+    return s_route.ok ? &s_route.p : NULL;
+}
+
+static void goto_leave(void) {
+    s_goto = false;
+    s_wm_open = false;
+    views_dismiss();
+}
+
+// The Goto page's keys: the arrows move the cursor a tile (8-way on the
+// keypad), a tap on the map puts it there; Enter or Go gives the order, which
+// a tile with no route refuses with a red ring; Escape or Cancel leaves.
+static bool goto_input(const Game *g, const Map *m, const Fog *f) {
+    int cx, cy;
+    if (touch_tapped_cell(TOUCH_GRID_WORLDMAP, &cx, &cy)) {
+        s_goto_x = s_goto_cam_x + cx;
+        s_goto_y = s_goto_cam_y + cy;
+    }
+    int row = touch_tapped_row(TOUCH_LIST_MENU);
+    InputState in = input_poll();
+    if (in.dx || in.dy) {
+        s_goto_x += in.dx;
+        s_goto_y += in.dy;
+    }
+    if (m) {
+        if (s_goto_x < 0) s_goto_x = 0;
+        if (s_goto_y < 0) s_goto_y = 0;
+        if (s_goto_x >= m->width)  s_goto_x = m->width - 1;
+        if (s_goto_y >= m->height) s_goto_y = m->height - 1;
+    }
+    if (row == 1 || input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
+        goto_leave();
+        return true;
+    }
+    if (row == 0 || input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+        input_key_pressed(KEY_SPACE)) {
+        const GotoPath *p = m && f ? goto_route(g, m, f) : NULL;
+        if (!p) { s_goto_flash = ui_anim_time() + 0.6; return true; }
+        shell_goto_start(g, p);
+        goto_leave();
+    }
+    return true;
+}
+
+bool modern_worldmap_input(const Game *g, const Map *m, const Fog *f) {
+    if (views_active() != VIEW_WORLDMAP || !g || !g->res) { s_wm_open = false; s_goto = false; return false; }
+    if (s_goto) { s_wm_open = true; return goto_input(g, m, f); }
     if (!s_wm_open) { s_wm_open = true; s_wm_cursor = 0; }
     WmPlace places[64];
     int n = worldmap_places(g, places, 64) + 2;       // All, the places, Close
@@ -629,11 +714,21 @@ bool modern_worldmap_input(const Game *g) {
     return true;     // the view holds the keys; Escape or Close leaves
 }
 
+// Goto's two rows: Go, then Cancel on the foot.
+static bool goto_row_fn(void *ctx, int i, char *label, char *right, int cap) {
+    const Game *g = (const Game *)ctx;
+    right[0] = '\0';
+    snprintf(label, (size_t)cap, "%s", i == 0 ? g->res->banners.goto_go : g->res->banners.goto_cancel);
+    if (i == 1) ml_exit_hint(right);
+    return true;
+}
+
 static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     const ResBanners *bn = &g->res->banners;
     const Resources *r = g->res;
     const ResZone *z = resources_zone_by_id(r, g->position.zone);
-    const ML_Rect page = page_full_body((z && z->name[0]) ? z->name : g->position.zone, NULL);
+    const char *zname = (z && z->name[0]) ? z->name : g->position.zone;
+    const ML_Rect page = page_full_body(s_goto && bn->goto_title[0] ? bn->goto_title : zname, NULL);
     if (!m || m->width <= 0 || m->height <= 0) return;
     bool orb = worldmap_has_orb(g);
     bool reveal_all = orb && views_render_worldmap_whole();
@@ -651,13 +746,14 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     int pix = (avail_w / m->width < avail_h / m->height) ? avail_w / m->width : avail_h / m->height;
     if (pix < 1) pix = 1;
     int cam_x = 0, cam_y = 0, cols = m->width, rows = m->height;
-    const WmPlace *sel = (cursor > 0 && cursor <= np) ? &places[cursor - 1] : NULL;
-    if (sel) {
+    const WmPlace *sel = (!s_goto && cursor > 0 && cursor <= np) ? &places[cursor - 1] : NULL;
+    if (sel || s_goto) {
+        int fx = s_goto ? s_goto_x : sel->x, fy = s_goto ? s_goto_y : sel->y;
         pix *= 3;
         cols = avail_w / pix; rows = avail_h / pix;
         if (cols > m->width) cols = m->width;
         if (rows > m->height) rows = m->height;
-        cam_x = sel->x - cols / 2; cam_y = sel->y - rows / 2;
+        cam_x = fx - cols / 2; cam_y = fy - rows / 2;
         if (cam_x > m->width - cols) cam_x = m->width - cols;
         if (cam_y > m->height - rows) cam_y = m->height - rows;
         if (cam_x < 0) cam_x = 0;
@@ -667,6 +763,10 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     int gx = page.x + (map_w - grid_w) / 2;
     int gy = page.y + (page.h - grid_h) / 2;
     gfx_rect(gx, gy, grid_w, grid_h, PAL_CLR(BLACK));
+    if (s_goto) {                              // a tap on the map moves the cursor
+        s_goto_cam_x = cam_x; s_goto_cam_y = cam_y;
+        ui_grid(gx, gy, grid_w, grid_h, pix, pix, TOUCH_GRID_WORLDMAP);
+    }
     const ResColors *mm_col = &g->res->colors;
     for (int y = 0; y < rows; y++) {
         for (int x = 0; x < cols; x++) {
@@ -701,6 +801,17 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
         for (int t = 0; t < 3; t++)
             gfx_rect_lines(rx - pix - t, ry - pix - t, 3 * pix + 2 * t, 3 * pix + 2 * t,
                            t == 1 ? PAL_CLR(YELLOW) : PAL_CLR(BLACK));
+    }
+    // Goto's cursor: a ring round one tile, red and blinking while an order
+    // to a tile with no route is refused.
+    if (s_goto && IN_VIEW(s_goto_x, s_goto_y)) {
+        int rx = gx + (s_goto_x - cam_x) * pix, ry = gy + (s_goto_y - cam_y) * pix;
+        bool refused = ui_anim_time() < s_goto_flash;
+        Color ring = refused ? ((unsigned)(ui_anim_time() * 8.0) & 1 ? PAL_CLR(RED) : PAL_CLR(BLACK))
+                             : PAL_CLR(YELLOW);
+        for (int t = 0; t < 3; t++)
+            gfx_rect_lines(rx - 1 - t, ry - 1 - t, pix + 2 + 2 * t, pix + 2 + 2 * t,
+                           t == 1 ? ring : PAL_CLR(BLACK));
     }
     // The boat, and the hero blinking, always.
     if (g->boat.has_boat && strcmp(g->boat.zone, g->position.zone) == 0 && IN_VIEW(g->boat.x, g->boat.y))
@@ -740,13 +851,40 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
     ty += lh + UK_INSET;
     lattice_band_h(px, ty - UK_BAND, pw, UK_BAND);
     int foot = page.y + page.h;
-    if (orb) {
+    if (orb && !s_goto) {
         // The orb's row stands over the places' foot.
         int oy = foot - ml_list_height(1) - UK_BAND - ml_list_height(1);
         ml_list_draw(px, oy, pw, ml_list_height(1), 1, -1, worldmap_orb_row, (void *)g,
                      TOUCH_LIST_PROMPT, uk_ink());
         lattice_band_h(px, oy - UK_BAND, pw, UK_BAND);
         foot = oy - UK_BAND;
+    }
+    if (s_goto) {
+        // Goto: where the cursor is, how long the route takes or that there
+        // is none, then Go and Cancel.
+        const GotoPath *route = goto_route(g, m, f);
+        snprintf(xb, sizeof xb, "%d", s_goto_x);
+        snprintf(yb, sizeof yb, "%d", s_goto_y);
+        ResTemplateVar tv[] = { { "X", xb }, { "Y", yb } };
+        resources_format_template(line, sizeof line, bn->goto_to, tv, 2);
+        uk_line(line, px + UK_INSET, ty, pw - 2 * UK_INSET, PAL_CLR(WHITE));
+        ty += lh;
+        if (!route) {
+            snprintf(line, sizeof line, "%s", bn->goto_no_route);
+        } else if (route->days == 0) {
+            snprintf(line, sizeof line, "%s", bn->goto_today);
+        } else {
+            char db[12];
+            snprintf(db, sizeof db, "%d", route->days);
+            ResTemplateVar dv[] = { { "DAYS", db }, { "S", route->days == 1 ? "" : "s" } };
+            resources_format_template(line, sizeof line, bn->goto_days, dv, 2);
+        }
+        uk_line(line, px + UK_INSET, ty, pw - 2 * UK_INSET, route ? PAL_CLR(WHITE) : PAL_CLR(RED));
+        ty += lh + UK_INSET;
+        lattice_band_h(px, ty - UK_BAND, pw, UK_BAND);
+        ML_Rect gl = { px, ty, pw, page.y + page.h - ty };
+        ml_rows_draw(gl, 2, 1, 0, goto_row_fn, (void *)g, TOUCH_LIST_MENU);
+        return;
     }
     WmRows wr = { g, places, np };
     ML_Rect list = { px, ty, pw, page.y + page.h - ty };
@@ -763,7 +901,7 @@ static void draw_worldmap(const Game *g, const Map *m, const Fog *f) {
 }
 
 // --gallery: the list's cursor.
-void modern_worldmap_gallery(int cursor) { s_wm_open = true; s_wm_cursor = cursor; }
+void modern_worldmap_gallery(int cursor) { s_wm_open = true; s_wm_cursor = cursor; s_goto = false; }
 
 // ---------------------------------------------------------------------------
 //  THE SPELLS -- one page on the map and in a fight
@@ -771,13 +909,16 @@ void modern_worldmap_gallery(int cursor) { s_wm_open = true; s_wm_cursor = curso
 
 typedef struct { const Game *g; bool combat; } SpellsCtx;
 
-// A spell's row: its name, the charges held at the right; it can be chosen
-// where it can be cast.
+// A spell's row: its name, the charges held at the right (against the limit
+// where each spell has its own); it can be chosen where it can be cast.
 static bool spell_row(void *ctx, int i, char *label, char *right, int cap) {
     const SpellsCtx *c = (const SpellsCtx *)ctx;
     const SpellDef *sp = spell_by_index(i);
     snprintf(label, (size_t)cap, "%s", sp ? sp->name : "");
-    snprintf(right, 48, "%d", c->g->spells.counts[i]);
+    if (c->g->res && c->g->res->economy.spell_limit_per_spell)
+        snprintf(right, 48, "%d/%d", c->g->spells.counts[i], c->g->stats.max_spells);
+    else
+        snprintf(right, 48, "%d", c->g->spells.counts[i]);
     return views_spell_castable(c->g, c->combat, i);
 }
 
@@ -790,31 +931,42 @@ static bool exit_row(void *ctx, int i, char *label, char *right, int cap) {
     return true;
 }
 
+// One tab: its name, gold and underlined when its list is shown, grey when
+// not; a tap shows its list (row 15 + list of TOUCH_LIST_SPELLS).
+static void spells_tab(const char *name, int x, int y, int w, int h, bool shown, int list) {
+    int tw = bfont_text_width(name);
+    uk_line(name, x + (w - tw) / 2, y + (h - BFONT_GLYPH_H) / 2, w - 2 * UK_INSET,
+            shown ? PAL_CLR(YELLOW) : PAL_CLR(DGREY));
+    if (shown) gfx_rect(x + UK_INSET, y + h - 3, w - 2 * UK_INSET, 2, PAL_CLR(YELLOW));
+    ui_tile_row(x, y, w, h, TOUCH_LIST_SPELLS, VIEWS_SPELLS_TAB_ROW + list);
+}
+
 void modern_spells_draw(const Game *g, bool combat, int cur, const char *title, const char *right,
                         const char *exit_label) {
-    // The two columns under their headings, what the spell under the cursor
-    // does -- or why it cannot be cast here -- under them, and the exit on
-    // the foot. Columns longer than their space scroll.
+    // Two tabs, the combat spells and the adventure spells, over the one list
+    // shown -- the one cast here when the page opens -- what the spell under
+    // the cursor does, or why it cannot be cast here, under it, and the exit
+    // on the foot. A list longer than its space scrolls.
     const ResUI *ui = &g->res->ui;
     const ResBanners *bn = &g->res->banners;
     const int lh = uk_line_h();
     const ML_Rect r = page_full_body(title, right);
+    int list = views_spells_list(cur);
     int half = (r.w - UK_BAND) / 2;
-    int hy = r.y + UK_INSET;
-    uk_line(ui->sv_combat_col, r.x + UK_INSET, hy, half - 2 * UK_INSET, PAL_CLR(YELLOW));
-    uk_line(ui->sv_adventure_col, r.x + half + UK_BAND + UK_INSET, hy, half - 2 * UK_INSET, PAL_CLR(YELLOW));
-    int row_y = hy + lh + UK_INSET / 2;
+    int tab_h = lh + UK_INSET;
+    spells_tab(ui->sv_combat_col, r.x, r.y, half, tab_h, list == 0, 0);
+    lattice_band_v(r.x + half, r.y, UK_BAND, tab_h);
+    spells_tab(ui->sv_adventure_col, r.x + half + UK_BAND, r.y, r.w - half - UK_BAND, tab_h, list == 1, 1);
+    lattice_band_h(r.x, r.y + tab_h, r.w, UK_BAND);
+    int row_y = r.y + tab_h + UK_BAND;
     int exit_y = r.y + r.h - ml_list_height(1);
     const int desc_lines = 2;
     int desc_h = UK_BAND + 2 * UK_INSET + desc_lines * lh;
     int rows_h = exit_y - UK_BAND - desc_h - row_y;
     SpellsCtx c = { g, combat };
-    ml_list_draw_ex(r.x, row_y, half, rows_h, 7, cur < 7 ? cur : -1,
-                    spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), 0);
-    lattice_band_v(r.x + half, r.y, UK_BAND, row_y + rows_h - r.y);
-    ml_list_draw_ex(r.x + half + UK_BAND, row_y, r.w - half - UK_BAND, rows_h, 7,
-                    cur >= 7 && cur < 14 ? cur - 7 : -1,
-                    spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), 7);
+    int base = list * 7;
+    ml_list_draw_ex(r.x, row_y, r.w, rows_h, 7, cur >= base && cur < base + 7 ? cur - base : -1,
+                    spell_row, &c, TOUCH_LIST_SPELLS, uk_ink(), base);
     int fy = row_y + rows_h;
     lattice_band_h(r.x, fy, r.w, UK_BAND);
     // What the spell does: the pack's one-line brief, else its description,

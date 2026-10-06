@@ -220,6 +220,9 @@ void sprites_load(Sprites *s, const Resources *res) {
         s->zone_town_backdrop_count = s->zone_town_backdrop ? nz : 0;
         for (int i = 0; i < s->zone_town_backdrop_count; i++)
             s->zone_town_backdrop[i] = load_rel(res->zones[i].town_backdrop);
+        s->zone_treasure_scene = nz ? calloc((size_t)nz, sizeof *s->zone_treasure_scene) : NULL;
+        for (int i = 0; s->zone_treasure_scene && i < s->zone_town_backdrop_count; i++)
+            s->zone_treasure_scene[i] = load_rel(res->zones[i].treasure_scene);
         int nt = res->town_count;
         s->town_backdrop_own = nt ? calloc((size_t)nt, sizeof *s->town_backdrop_own) : NULL;
         s->town_backdrop_count = s->town_backdrop_own ? nt : 0;
@@ -251,7 +254,7 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->rail_menu               = load_rel(res->sprites.rail_menu);
     s->rail_map                = load_rel(res->sprites.rail_map);
     s->rail_army               = load_rel(res->sprites.rail_army);
-    s->rail_search             = load_rel(res->sprites.rail_search);
+    s->rail_goto               = load_rel(res->sprites.rail_goto);
     s->rail_cast               = load_rel(res->sprites.rail_cast);
     s->combat_shoot            = load_rel(res->sprites.combat_shoot);
     s->combat_wait             = load_rel(res->sprites.combat_wait);
@@ -386,6 +389,9 @@ void sprites_unload(Sprites *s) {
     gfx_texture_free(s->dungeon_backdrop);
     gfx_texture_free(s->alcove_backdrop);
     gfx_texture_free(s->sail_backdrop);
+    for (int i = 0; s->zone_treasure_scene && i < s->zone_town_backdrop_count; i++)
+        gfx_texture_free(s->zone_treasure_scene[i]);
+    free(s->zone_treasure_scene); s->zone_treasure_scene = NULL;
     for (int i = 0; i < s->zone_town_backdrop_count; i++) gfx_texture_free(s->zone_town_backdrop[i]);
     free(s->zone_town_backdrop); s->zone_town_backdrop = NULL; s->zone_town_backdrop_count = 0;
     for (int i = 0; i < s->town_backdrop_count; i++) gfx_texture_free(s->town_backdrop_own[i]);
@@ -406,7 +412,7 @@ void sprites_unload(Sprites *s) {
     gfx_texture_free(s->rail_menu);
     gfx_texture_free(s->rail_map);
     gfx_texture_free(s->rail_army);
-    gfx_texture_free(s->rail_search);
+    gfx_texture_free(s->rail_goto);
     gfx_texture_free(s->rail_cast);
     gfx_texture_free(s->combat_shoot);
     gfx_texture_free(s->combat_wait);

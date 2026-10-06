@@ -26,6 +26,13 @@ bool pending_foe_bounce = false;
 int  pending_foe_back_x = -1, pending_foe_back_y = -1;
 int  pending_foe_back_travel = 0;
 int  pending_foe_back_boat_x = -1, pending_foe_back_boat_y = -1;
+bool pending_foe_held = false;
+bool pending_foe_held_friendly = false;
+char pending_foe_held_id[32] = "";
+int  pending_foe_held_x = -1, pending_foe_held_y = -1;
+int  pending_foe_held_back_x = -1, pending_foe_held_back_y = -1;
+int  pending_foe_held_back_travel = 0;
+int  pending_foe_held_back_boat_x = -1, pending_foe_held_back_boat_y = -1;
 
 int  pending_chest_gold       = 0;
 int  pending_chest_leadership = 0;
@@ -36,6 +43,7 @@ WeekPhase pending_week_phase = WK_PHASE_NONE;
 int       pending_week_id    = 0;
 int       pending_week_paid  = 0;
 int       pending_astrology_troop_idx = 0;
+int       pending_renewed_spell_idx = -1;
 
 void pending_reset(void) {
     pending_flow = FLOW_NONE;
@@ -56,6 +64,9 @@ void pending_reset(void) {
     pending_foe_back_x = pending_foe_back_y = -1;
     pending_foe_back_travel = 0;
     pending_foe_back_boat_x = pending_foe_back_boat_y = -1;
+    pending_foe_held = false;
+    pending_foe_held_friendly = false;
+    pending_foe_held_id[0] = '\0';
     pending_chest_gold = 0;
     pending_chest_leadership = 0;
     pending_discard_spell_idx = -1;
@@ -63,4 +74,5 @@ void pending_reset(void) {
     pending_week_id = 0;
     pending_week_paid = 0;
     pending_astrology_troop_idx = 0;
+    pending_renewed_spell_idx = -1;
 }

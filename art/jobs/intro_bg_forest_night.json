@@ -1,0 +1,17 @@
+{
+ "id": "intro_bg_forest_night",
+ "prompt": "a dark rain-soaked northern forest at night, huge black oak trees and ferns, an open muddy clearing in the foreground across the whole width, cold blue moonlight through the branches, mist between the trunks, no people anywhere, empty",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 15501,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/intro/bg_forest_night.png",
+ "_note": "2026-10-03, Introduction (#154) scene 1: the night forest where the legion marches, empty of people, with the engine's rain over it; the backdrop route (rd_pro__default, 240x102). run01 is installed."
+}

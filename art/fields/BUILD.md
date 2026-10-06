@@ -8,7 +8,7 @@ One picture per continent, cut into the 30 open-field cells of
 painting with its boulders, ferns, clover, moss and earth patches painted
 out from its own grass:
 
-    python3 tools/fieldcalm.py art/fields/italia.png build/art/field_calm italia --level strong --fill patchmatch
+    python3 tools/romeart.py fieldcalm art/fields/italia.png build/art/field_calm italia --level strong --fill patchmatch
 
 (`build/art/field_calm/inpainted.png` copied here; the fill is not
 deterministic, so the calmed file kept here is the one that shipped.)
@@ -28,4 +28,4 @@ Italia's centred one and from each other.
 
 Cells, for any zone:
 
-    python3 tools/siegeslice.py art/fields/<zone>.png assets/glory-of-rome/art/combat/field --field <zone>
+    python3 tools/romeart.py siegeslice art/fields/<zone>.png assets/glory-of-rome/art/combat/field --field <zone>

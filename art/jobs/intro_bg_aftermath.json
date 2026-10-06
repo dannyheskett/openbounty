@@ -1,0 +1,17 @@
+{
+ "id": "intro_bg_aftermath",
+ "prompt": "a dark rainy forest clearing at night after a lost battle, many fallen Roman legionaries lying still in the mud in the distance, dropped red shields, broken spears and a fallen standard among them, tall dark pines all around, the muddy ground filling the lower half, no one standing",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 15620,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/intro/bg_aftermath.png",
+ "_note": "2026-10-04, Introduction (#154) scene 1's second shot: the dead of the legion in the distance after the battle, no one standing; the backdrop route. run01 is installed."
+}

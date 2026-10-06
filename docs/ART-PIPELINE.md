@@ -5,6 +5,11 @@ in **`docs/ROME-ART.md`**, generated from `art/jobs/*.json` by
 `tools/romeart.py prompts`. This file has been the *routes* (which engine,
 which settings, and why); that file has been the *record*.
 
+Every step has run through one script, `tools/romeart.py` (#143): generation,
+compositing, review and the record. Its paid commands (`rdgen run`,
+`pltileset`, `pltilespro`, `sprites`) have been the only ones to reach the
+network, and each has posted only when given `--run`.
+
 A troop has been two calls: the still, then its animation. `ROME-ART.md` has
 held the prompt for each artwork; this file has been how to run them.
 
@@ -42,7 +47,7 @@ The prompt has been the subject only.
 ```
 
 ```
-python3 tools/rdgen.py run art/jobs/velites.json
+python3 tools/romeart.py rdgen run art/jobs/velites.json --run
 ```
 
 Describe a neutral stance with the weapon at rest, not the action: "a javelin
@@ -103,7 +108,7 @@ The response has been a sheet of frame cells; `rdgen` has derived the grid
 from the image and written `frame_00.png` onward. When the job is padded to
 128 for motion room (`pad_to`), the frames have come back 128x128 and gone
 down to 96x96 through the API's k-centroid tool,
-`/edit/tools/k_centroid_downscale` (`rdgen.k_centroid`, free, area-weighted),
+`/edit/tools/k_centroid_downscale` (`romeart.py rdgen`'s `k_centroid`, free, area-weighted),
 not a local resample and not a crop. The tool has flattened the frame onto
 white, so the alpha has been put back from the 128 frame's own mask,
 area-averaged to 96 and thresholded at half. Watch the animation, then:
@@ -196,6 +201,14 @@ generated from.
   (`rd_pro__topdown`), no background removal, no water in the picture: the
   original tile has had none, and a transparent deck over water has not come
   back usable.
+- **River bridges** (`bridge_river_ew`, `bridge_river_ns`) — not generated.
+  `tools/romeart.py bridge <tiles-dir> <out>` has built them from a set's
+  installed `road_*`, `river_*` and `grass` tiles: the road's own pixels laid
+  across the river piece, so the deck joins the road by construction; over
+  the water a straight deck between two 5 px parapets (the road's stone mixed
+  40/60 with pale travertine, a dark outer line, a joint every 8 px); and the
+  deck's shadow on the water, 3 px at 0.6. Style `c` has been installed in
+  every province (2026-10-02); `zone` runs it as its sixth step.
 - **Terrain edges** — not generated. `tools/romeart.py edges` has
   composited each from the installed base and grass tiles: the original
   48x34 edge tile under `art/reference/edges/` has been read as a shape (each
@@ -256,7 +269,7 @@ generated from.
   picture edge to edge, no frame, no border". The one allowed edge treatment
   has been a villain portrait's flat colour bar, and only when it is
   identical on all eight frames of that villain.
-- **Combat set** (`art/combat/*`) — not generated. `tools/siegewalls.py` has
+- **Combat set** (`art/combat/*`) — not generated. `romeart.py siegewalls` has
   remade the original 48x34 pieces at 96: each original pixel classified
   into a material, the map scaled to the cell, and every material re-rendered
   at pixel scale (three-tone brick courses over a grout, two-tone merlons over
@@ -275,11 +288,11 @@ generated from.
   only style that has drawn a true overhead plan; `rd_plus__environment` has
   composed a perspective scene every time) at 384, first from a prompt to get
   the castle, then **img2img** on the 6x6 board composed from the sliced
-  pieces (`tools/siegeslice.py` recipe mode, the band included, k-centroid to
+  pieces (`romeart.py siegeslice` recipe mode, the band included, k-centroid to
   384x384, `strength` 0.55) so the layout has been fixed by the source and the
   engine has repainted one continuous field over it
   (`art/jobs/siege_scene_grass_a.json`, returned at 192). Then
-  `tools/siegeslice.py --grid` has written the 36 cells untouched at 32; the
+  `romeart.py siegeslice --grid` has written the 36 cells untouched at 32; the
   shell has scaled each to the 96 cell. Why not pieces: a per-code piece
   repeats in every cell of its code, so a gatehouse, two different broken
   ends and a moat under the bottom wall only have not been drawable that way.
@@ -287,7 +300,7 @@ generated from.
   the ground of an open fight, one picture per continent (a zone's
   `field_grid`, REQ-165e). Italia's has come from a supplied 1254 x 1254
   picture kept at `art/fields/italia.png`, a light meadow painted on white,
-  calmed first by `tools/fieldcalm.py --level strong` into
+  calmed first by `romeart.py fieldcalm --level strong` into
   `art/fields/italia_calm.png`: colour and size thresholds have masked the
   boulders, small rocks, ferns, dark clumps, clover rosettes, pale moss and
   brown earth patches, and G'MIC's patch-based inpainting has filled them
@@ -295,7 +308,7 @@ generated from.
   mottling stay and nothing large distracts from the troops. That is
   preparation of a supplied source, not post-processing of generated
   terrain; the fill is not deterministic, so the calmed picture that shipped
-  is kept beside the source. `tools/siegeslice.py --field` has then taken
+  is kept beside the source. `romeart.py siegeslice --field` has then taken
   the largest 6:5 rectangle of content centred in it (726 x 605, the white
   kept out), scaled it to 576 x 480 with Lanczos and cut the thirty cells.
   Generating this ground has been tried and rejected (2026-09-27): Retro
@@ -319,7 +332,7 @@ generated from.
   derived one with no other change.
 - **The title screen** (`art/ui/splash_title.png`, 256x164) — the eagle has
   been generated (screen route, no border); the words have been drawn by
-  `tools/splashtitle.py` from C059 Bold, gold with dark shading, title above
+  `romeart.py splashtitle` from C059 Bold, gold with dark shading, title above
   the eagle and subtitle across the pole, for the same reason as the
   publisher splash: generated lettering has garbled.
 - **The publisher splash** (`art/ui/splash_logo.png`, 320x84, transparent) —
@@ -328,7 +341,7 @@ generated from.
   original logo's red shading offset below and right; only the 44x44 emblem
   has been generated (`rd_pro__default`, `remove_bg`, magenta named in the
   prompt) and pasted where the original's globe sits; coins and sparkles have
-  been drawn. The composition has been `tools/splashlogo.py`. The emblem has
+  been drawn. The composition has been `romeart.py splashlogo`. The emblem has
   been a Mediterranean globe in a laurel wreath, not an eagle, which reads as
   a Reich eagle.
 - **An archer** (Sagittarii) — the still has had to name the string: Silvani's
@@ -349,6 +362,36 @@ generated from.
   offset for every frame of a set so the loop does not jitter. Animate the
   scaled still at 96 with no padding; the padded 128 route has shrunk a
   figure to three quarters.
+- **The Introduction** (#154, `art/intro/`, the jobs `art/jobs/intro_*.json`)
+  — backgrounds, sprites and text, the way the 80s and 90s intros were built.
+  Every set is a 240x102 backdrop on the screen route with "no people" in
+  the prompt, except the Curia, whose senators are painted on their benches;
+  the existing `backdrop_palace_welcome` and the four province vistas
+  (`scenes/treasure_*`, under the province cards) have been reused. Trajan has sat on
+  a curule stool, not a throne: the audience hall's dais (`bg_hall`) and the
+  close shot's (`bg_throne_close`) have been painted bare and empty. Figures have been made on the
+  figure route and animated with `custom_action`, alpha kept. The troop
+  style has refused any canvas under 64 (`invalid_style_dimensions`, no
+  charge), so a small figure has been generated at 64 and animated at its
+  final size: `custom_action` has redrawn the still at the output canvas
+  (32 to 256), a 64 still animated at 56 standing about 51 px tall. That is
+  how the crier (56), the four heroes, the legion and Trajan on his stool
+  (48) have been made without scaling; both palace shots have used the same
+  48 px Trajan, so he is to scale with the dais, and the Curia has his
+  Audience figure (`emperor_traianus_figure`) animated again at 64. The tribesman has appeared
+  only where he attacks the eagle bearer. The heroes on foot have been prompted from their class
+  portraits; a kneel animated straight from a standing still has come back
+  as the move down, not a held loop, so it has played once and held its
+  last frame. Their turn to face the camera has been animated from the last
+  frame of the walk, so the walk runs straight into it. Props
+  (the plinth, the hourglass) have been
+  `rd_pro__default` cut-outs, magenta named and removed. The crier's face
+  has been the villain portrait route (128, cropped to 96). Only frame 00 of
+  the crowd loop has been installed, at Dan's order: the engine draws it still, as
+  cropped columns at staggered heights. Rain and lightning have been drawn
+  by the engine, not painted. The theme has been synthesised by
+  `romeart.py introtheme`, and every sound effect has been a CC0
+  recording from Freesound, trimmed and made mono WAV (`assets/glory-of-rome/audio/CREDITS.txt`).
 - **Recolouring** — when a set reads fine but its colours vanish against the
   grass, recolour the approved frames locally in HSV rather than
   regenerating: every opaque pixel except the pale highlights takes the new
@@ -377,7 +420,7 @@ curl -H "X-RD-Token: $(cat ~/.config/retrodiffusion/token)" \
 | screen-shaped art | `rd_pro__default` | design size (portraits x2) | 12 to 256 |
 
 Check the selector before promising a size. The cost check has not validated
-size: `rdgen cost` (and the `check_cost` call inside `run`) has accepted and
+size: `romeart.py rdgen cost` (and the `check_cost` call inside `run`) has accepted and
 priced an oversize request, and the task has then failed at inference with
 `inference_failed`, "Unable to run inference.", and no charge (480x204 on
 `rd_pro__default`, for one). Only two styles have reached 512
@@ -390,9 +433,16 @@ changed look against its neighbours.
 ## Running rdgen
 
 ```
-python3 tools/rdgen.py run       art/jobs/<id>.json
-python3 tools/rdgen.py reprocess art/jobs/<id>.json     # re-cut and re-check, no new call
+python3 tools/romeart.py rdgen cost      art/jobs/<id>.json        # the price, nothing submitted
+python3 tools/romeart.py rdgen run       art/jobs/<id>.json        # the price again; still nothing submitted
+python3 tools/romeart.py rdgen run       art/jobs/<id>.json --run  # submitted and charged
+python3 tools/romeart.py rdgen reprocess art/jobs/<id>.json        # re-cut and re-check, no new generation
 ```
+
+- Nothing has been charged without `--run` (#143): `run` alone has quoted the
+  cost and stopped, and only `run --run` has made a run directory.
+- `reprocess` has made no generation call; a job that is not `raw_only` and
+  not at its target size has still called the free `k_centroid` downscale.
 
 - Every call has gone through rdgen, so the request has been saved beside the
   result.
@@ -413,13 +463,16 @@ python3 tools/rdgen.py reprocess art/jobs/<id>.json     # re-cut and re-check, n
 Retro Diffusion has made every figure, object and screen in the pack. It has
 not made the **terrain** that one surface fades into another over. That has
 come from PixelLab, and the two have been separate routes with separate
-tokens and separate drivers. One engine per kind of art has still held: RD
+tokens and separate commands. One engine per kind of art has still held: RD
 has owned sprites and screens, PixelLab has owned terrain sets.
 
 ```
-python3 tools/pltileset.py  build/art/<id> art/jobs/<id>.json   # create-tileset
-python3 tools/pltilespro.py ...                                 # Tiles Pro sets
+python3 tools/romeart.py pltileset  build/art/<id> art/jobs/<id>.json --run   # create-tileset
+python3 tools/romeart.py pltilespro art/jobs/<id>.json build/art/<id> --run   # Tiles Pro sets
 ```
+
+- Without `--run` each has printed the request it would post and the balance,
+  and posted nothing; PixelLab has quoted no price before a call.
 
 - Token from `~/.config/pixellab/token`. No environment variables.
 - A `create-tileset` job has named a **lower** terrain and an **upper** one

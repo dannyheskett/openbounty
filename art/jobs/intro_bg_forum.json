@@ -1,0 +1,17 @@
+{
+ "id": "intro_bg_forum",
+ "prompt": "the Forum of ancient Rome in bright morning light, a raised stone speaker's platform with bronze ship prows on its front at the centre, marble temples with tall columns behind it, a wide paved square in the foreground, no people anywhere, empty",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 15521,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/intro/bg_forum.png",
+ "_note": "2026-10-03, Introduction (#154) scenes 2, 3 and 5: the Forum with the rostra, empty of people; the backdrop route. The crier, his plinth and the crowd are sprites over it. run01 is installed."
+}

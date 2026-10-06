@@ -12,7 +12,7 @@ The player has been a Roman general holding an imperial commission. The
 Emperor has charged him with hunting down the enemies of Rome, one bounty at a
 time, and with recovering a thing more important than any of them: the **lost
 Aquila**, the golden eagle standard of a legion destroyed on the frontier,
-buried where it fell and never recovered.
+carried off from the field where it fell and never recovered.
 
 The setting has been **mythic Rome**, not documentary Rome. Jupiter's
 lightning has been real, the dead have walked, and the Sibyl's prophecies have
@@ -188,10 +188,11 @@ the top tier and the last sieges were easy; a castle left empty and retaken
 (REQ-302) refills at the same tier.
 
 A castle gate has reported on its castle (`world.castle_gate_report`, #71):
-without siege engines the hero learns whose rule it is under and what holds
-it in vague words, the town informant's report, before turning back; with
-them the same report stands above "Lay siege?". King's Bounty keeps the
-original's silent bounce.
+without siege engines the hero learns whose rule it is under ("Under
+Catiline's rule.", the castle already named in the title) and what holds it
+in vague words, each troop once, before turning back; with them the same
+report stands above "Lay siege?" (#139). King's Bounty keeps the original's
+silent bounce.
 
 **The pacing lever has been catalog order.** The contract cycle has been
 seeded with the *first five villains in catalog order*, and `max_contract`
@@ -276,6 +277,9 @@ The Senatus Consultum has not been salted: the chest at the end of Sardinia's
 guarded trail has pinned it (`"artifact"` on a zone chest, PACK-FORMAT), so
 the three guardians on that road have always kept an artifact, not a purse.
 The Sibylline Fragment has been pinned too since 2026-09-27, in the mountain cove (#66), so Italia's salt has scattered no artifact of its own.
+The Scutum of Aeneas has been pinned at the end of the Thracian road in
+Oriens, behind `guardian_thrace` (#66), so Oriens' salt has scattered only the
+Corona Triumphalis.
 
 ---
 
@@ -283,6 +287,21 @@ The Sibylline Fragment has been pinned too since 2026-09-27, in the mountain cov
 
 Fourteen, seven combat and seven adventure, keeping every engine effect and
 cost unchanged. Mythic Rome has covered all fourteen without a single fudge.
+
+Magic has had three rules of its own (`magic` in `game.json`, OPENBOUNTY-SPEC
+REQ-321, REQ-540):
+
+- **A limit for each spell** (`max_per_spell`): the spell capacity has been
+  the most charges the hero can carry of each spell, so a temple has refused
+  a sale only when that spell is full.
+- **Weekly renewal** (`weekly_renewal`): a spell bought at a temple has been
+  learned, and each week end one learned spell, drawn like the week's
+  creature, has been filled to the limit, named under the creature ("The
+  Augurs renew your %SPELL% spells."). A chest's spells have been charges
+  only, never learned.
+- **No discarding:** with a limit for each spell a discard has freed
+  nothing, so a combat spell chosen on the map has only said it is cast in
+  battle.
 
 **Combat (7)**
 
@@ -400,7 +419,7 @@ Rome has supplied this tier natively; none of it has been borrowed fantasy.
 | 21 | vampires | **Striges** | 5/30/1, `FLY\|LEECH\|UNDEAD` | Screech-owl blood-drinkers — a genuine Roman vampire, and `FLY\|LEECH` is the myth verbatim |
 | 23 | demons | **Empusae** | 6/50/1, `FLY\|SCYTHE` | Shape-shifting devourers in Hecate's service |
 
-### 7.6 Two consequences worth noting
+### 7.6 Consequences worth noting
 
 **Dwelling names.** The engine's `dwelling` field has stayed
 `plains` / `forest` / `hill` / `dungeon` / `castle` — those have been matched
@@ -413,6 +432,12 @@ recruited at the Emperor's seat and has had no dwelling screen.
 to E, which is all the morale chart reads; the game has shown no label for
 them. Baleares, human slingers, have sat in group D with wolves and dragons,
 and Gigantes in group C with allied peoples.
+
+**Field obstacles.** An open-field battle has stamped an obstacle (rubble, a
+bramble or a broken wall) in each cell of the middle three columns at 12%
+(`combat.field_obstacle_chance`), a little above King's Bounty's one in ten:
+about 1.8 a battle instead of one and a half, and a field with none in about
+one battle in seven instead of one in five (#64).
 
 ---
 
@@ -635,6 +660,19 @@ has held the bridge at Zeugma (Mesopotamia and Ctesiphon beyond the
 Euphrates), and `guardian_armenia` the one pass in the mountain ring round
 Armenia (Artaxata inside it, behind a Pontic coast of mountain). Neither
 region has had a coast a boat can land on.
+
+**The Thracian road** (#66: sailing had had little purpose in Oriens). Thrace,
+in the map's north-west corner across the strait from Nicomedia, has been
+reachable only by boat: a coast of rock all round with one beach at (1,3), the
+only Thracian cell a boat can land on. From the beach a one-cell road has wound
+north, east along the map's top edge, down, and back west, its segments kept
+apart by single walls of rock so that it cannot be cut across.
+`guardian_thrace` (Gigantes, Antaei, Striges, Praetoriani and Furiae, the
+strongest guardian in the province) has held its turn at (8,1), and the chest
+at its end, (3,2), has pinned the Scutum of Aeneas. A sign at the foot of the
+road and another by Nicomedia have said that a war band holds it. `check` has
+shown the chest unreachable on foot and with the guardian standing, reachable
+by boat once it is beaten, with every town and castle reached as before.
 
 ### 10.6.2 The checker
 

@@ -13,6 +13,8 @@
 #include "hud.h"
 #include "modern/page.h"
 #include "resources.h"
+#include "palette.h"
+#include "bfont.h"
 
 // Rail order, top to bottom. Every action is an existing case in
 // shell_dispatch_action, so the rail adds no game logic of its own; each row
@@ -27,13 +29,13 @@ typedef struct {
 static Texture2D art_menu  (const Sprites *s) { return s->rail_menu;   }
 static Texture2D art_map   (const Sprites *s) { return s->rail_map;    }
 static Texture2D art_army  (const Sprites *s) { return s->rail_army;   }
-static Texture2D art_search(const Sprites *s) { return s->rail_search; }
+static Texture2D art_goto  (const Sprites *s) { return s->rail_goto;   }
 
 static const RailRow ROWS[] = {
     { art_menu,   INPUT_ACTION_GAME_MENU,   NULL },
     { art_map,    INPUT_ACTION_VIEW_MAP,    "M"  },
+    { art_goto,   INPUT_ACTION_GOTO,        "G"  },   // Goto (#70)
     { art_army,   INPUT_ACTION_VIEW_ARMY,   "A"  },
-    { art_search, INPUT_ACTION_SEARCH,      "S"  },
     { NULL,       INPUT_ACTION_VIEW_PUZZLE, "P"  },   // the puzzle, drawn by the HUD's code
 };
 #define RAIL_ROWS ((int)(sizeof ROWS / sizeof ROWS[0]))
@@ -58,6 +60,12 @@ void rail_draw(const Game *g, const Sprites *s) {
                 Rectangle src = { 0, 0, (float)t.width, (float)t.height };
                 Rectangle dst = { (float)x, (float)ty, (float)CL_RAIL_W, (float)CL_TILE_H };
                 gfx_texture_draw(t, src, dst, WHITE);
+            } else if (ROWS[i].action == INPUT_ACTION_GOTO && res) {
+                // A pack without the Goto icon: its name on a dark card.
+                gfx_rect(x, ty, CL_RAIL_W, CL_TILE_H, PAL_CLR(DBLUE));
+                Vector2 tm = bfont_measure(res->banners.rail_goto);
+                bfont_draw(res->banners.rail_goto, x + (CL_RAIL_W - (int)tm.x) / 2,
+                           ty + (CL_TILE_H - (int)tm.y) / 2, PAL_CLR(YELLOW));
             }
         } else {
             hud_draw_puzzle_tile(g, s, x, ty, false);

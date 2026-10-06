@@ -345,6 +345,102 @@ TEST empty_player_castle_is_retaken_at_week_end(void) {
     PASS();
 }
 
+// The week's end records what it charged, so the budget screen adds up:
+// On Hand + Payment - Boat - Army = Balance, with each stack at a tenth of
+// its recruit cost rounded down per unit (issue #130, OPENKB-SPEC 16.7).
+TEST week_end_records_what_it_charged(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    // A troop whose cost is not a multiple of 10, where dividing the army's
+    // total by ten would disagree with the per-stack charge.
+    const TroopDef *odd = NULL;
+    for (int i = 0; i < troops_count() && !odd; i++) {
+        const TroopDef *t = troop_by_index(i);
+        if (t && t->recruit_cost > 10 && t->recruit_cost % 10) odd = t;
+    }
+    ASSERT(odd);
+    memset(g->army, 0, sizeof g->army);
+    snprintf(g->army[0].id, sizeof g->army[0].id, "%s", odd->id);
+    g->army[0].count = 30;
+    g->boat.has_boat = false;
+    int upkeep = 30 * (odd->recruit_cost / 10);
+    ASSERT_EQ(upkeep, GameArmyWeeklyUpkeep(g));
+
+    g->stats.gold = 2000;
+    int paid = 0;
+    GameSpendWeek(g, &paid);
+    ASSERT_EQ(2000, g->stats.last_week_on_hand);
+    ASSERT_EQ(upkeep, g->stats.last_week_army);
+    ASSERT_EQ(0, g->stats.last_week_boat);
+    ASSERT_EQ(g->stats.last_week_on_hand + g->stats.last_commission
+              - g->stats.last_week_boat - g->stats.last_week_army,
+              g->stats.gold);
+
+    // A wallet short of the upkeep pays what it holds, and still adds up.
+    g->army[0].count = 30000;
+    g->stats.gold = 0;
+    GameSpendWeek(g, &paid);
+    ASSERT_EQ(0, g->stats.gold);
+    ASSERT_EQ(g->stats.last_commission, g->stats.last_week_army);
+    ASSERT_EQ(g->stats.last_week_on_hand + g->stats.last_commission
+              - g->stats.last_week_boat - g->stats.last_week_army,
+              g->stats.gold);
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
+// Where unpaid troops leave (#141), the week pays stacks in slot order, each
+// in full or not at all; a stack it cannot pay leaves, the rest close up, and
+// the week's prediction (GameWeeklyNetGold) matches what it did. Without the
+// pack setting (King's Bounty) the army stays and the gold floor takes the
+// shortfall, as openkb.
+TEST unpaid_troops_leave_where_the_pack_says(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    const TroopDef *dear = NULL, *cheap = NULL;
+    for (int i = 0; i < troops_count(); i++) {
+        const TroopDef *t = troop_by_index(i);
+        if (!t || t->recruit_cost < 10) continue;
+        if (!dear || t->recruit_cost > dear->recruit_cost) dear = t;
+        if (!cheap || t->recruit_cost < cheap->recruit_cost) cheap = t;
+    }
+    ASSERT(dear && cheap && dear != cheap);
+    g->boat.has_boat = false;
+    g->stats.commission_weekly = 100;
+    for (int pass = 0; pass < 2; pass++) {
+        bool leave = pass == 1;
+        res->economy.unpaid_troops_leave = leave;
+        memset(g->army, 0, sizeof g->army);
+        snprintf(g->army[0].id, sizeof g->army[0].id, "%s", dear->id);
+        g->army[0].count = 1000;                       // far past the wallet
+        snprintf(g->army[1].id, sizeof g->army[1].id, "%s", cheap->id);
+        g->army[1].count = 10;
+        int cheap_cost = GameStackWeeklyUpkeep(cheap->id, 10);
+        g->stats.gold = 500;
+        ASSERT(cheap_cost <= 600);
+        int predicted = GameWeeklyNetGold(g);
+        int before = g->stats.gold, paid = 0;
+        GameSpendWeek(g, &paid);
+        if (leave) {
+            ASSERT_STR_EQ(cheap->id, g->army[0].id);  // the dear stack went; the cheap closed up
+            ASSERT_EQ(10, g->army[0].count);
+            ASSERT_EQ('\0', g->army[1].id[0]);
+            ASSERT_STR_EQ(dear->id, g->stats.last_week_left[0].id);
+            ASSERT_EQ(1000, g->stats.last_week_left[0].count);
+            ASSERT_EQ(cheap_cost, g->stats.last_week_army);
+            ASSERT_EQ(before + predicted, g->stats.gold);
+        } else {
+            ASSERT_STR_EQ(dear->id, g->army[0].id);   // everyone stays, the floor takes it
+            ASSERT_EQ(0, g->stats.gold);
+            ASSERT_EQ('\0', g->stats.last_week_left[0].id[0]);
+        }
+        ASSERT_EQ(g->stats.last_week_on_hand + g->stats.last_commission
+                  - g->stats.last_week_boat - g->stats.last_week_army, g->stats.gold);
+    }
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 SUITE(e2e_economy_suite) {
     RUN_TEST(rent_boat_deducts_gold_and_places);
     RUN_TEST(rent_boat_refuses_when_gold_equals_cost);
@@ -362,4 +458,6 @@ SUITE(e2e_economy_suite) {
     RUN_TEST(compact_army_zero_count_treated_as_empty);
     RUN_TEST(compact_army_already_dense_unchanged);
     RUN_TEST(empty_player_castle_is_retaken_at_week_end);
+    RUN_TEST(week_end_records_what_it_charged);
+    RUN_TEST(unpaid_troops_leave_where_the_pack_says);
 }

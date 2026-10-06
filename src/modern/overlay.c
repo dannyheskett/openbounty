@@ -132,7 +132,8 @@ int modern_overlay_dialog_page_count(void) {
     // other note is the message box, paged.
     if (dialog_kind() == PIO_NOTE_SCENE && note_scene_texture().id)
         return page_scene_pages(dialog_body_text());
-    return page_message_pages(dialog_body_text(), note_face().id != 0);
+    PageAnchor at = dialog_kind() == PIO_NOTE_OVER_FIELD ? PAGE_FIELD_FOOT : PAGE_MAP_FOOT;
+    return page_message_pages(dialog_header_text(), dialog_body_text(), note_face().id != 0, at);
 }
 
 static void draw_message(void);
@@ -184,10 +185,10 @@ static void draw_note_scene(void) {
     const char *title = (hdr && hdr[0]) ? hdr : "";
     for (int i = 0; !title[0] && i < res->castle_count; i++)
         if (resources_castle_is_home(&res->castles[i])) title = res->castles[i].name;
-    PagePlace P = page_scene(title, NULL, scene, dialog_body_text(), dialog_page_current());
+    PagePlace P = page_scene(title, NULL, scene, dialog_body_text(), dialog_page_current(), 1);
     // Continue is the page's one action: a tap anywhere is it.
     UkRows rows = { { res->banners.castle_continue }, { true }, 1 };
-    ml_rows_draw(P.rows, 1, 1, 0, uk_rows_fn, &rows, 0);
+    ml_hrow_draw(P.rows, 1, 0, uk_rows_fn, &rows, 0);
 }
 
 // A person speaking in a place: their face at 2x in the words' place with
@@ -203,9 +204,9 @@ static void person_says(const PagePlace *P, Texture2D face, const UkDoc *d) {
 static void place_outcome(const char *title, const char *right, Texture2D bd, Texture2D face,
                           const UkDoc *d, const char *cont_label) {
     (void)bd;
-    PagePlace P = page_person(title, right, 1);
+    PagePlace P = page_person_row(title, right, 1);
     UkRows cont = { { cont_label }, { true }, 1 };
-    ml_rows_draw(P.rows, 1, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
+    ml_hrow_draw(P.rows, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
     person_says(&P, face, d);
 }
 
@@ -373,14 +374,16 @@ static void compose_service(const Game *g, TownList list, UkDoc *d) {
             const char *lore = resources_spell_lore(res, sp->id);
             if (!lore || !lore[0]) lore = sp->description;
             if (lore && lore[0]) { uk_doc_gap(d); uk_doc_add(d, lore, PAL_CLR(WHITE)); }
-            int left = g->stats.max_spells - GameKnownSpells(g);
+            int left = GameSpellRoom(g, sp->index);
             if (left <= 0) {
-                resources_format_template(buf, sizeof buf, bn->town_spell_at_cap, NULL, 0);
+                ResTemplateVar vars[] = { { "SPELL", sp->name } };
+                resources_format_template(buf, sizeof buf, bn->town_spell_at_cap, vars, 1);
             } else {
                 char lbuf[16];
                 snprintf(lbuf, sizeof lbuf, "%d", left);
-                ResTemplateVar vars[] = { { "LEFT", lbuf }, { "S", left == 1 ? "" : "s" } };
-                resources_format_template(buf, sizeof buf, bn->town_spell_can_learn, vars, 2);
+                ResTemplateVar vars[] = { { "LEFT", lbuf }, { "S", left == 1 ? "" : "s" },
+                                          { "SPELL", sp->name } };
+                resources_format_template(buf, sizeof buf, bn->town_spell_can_learn, vars, 3);
             }
             uk_doc_gap(d);
             uk_doc_add(d, buf, PAL_CLR(WHITE));
@@ -558,13 +561,14 @@ void modern_overlay_draw_town(const Game *g, const Sprites *s) {
     // action; anything else is a choice. Information has Back alone.
     int first_row = (!asking && !result && list == TOWN_LIST_INFO) ? rows - 1 : 0;
     int n_rows = asking ? 2 : result ? 1 : rows - first_row;
-    PagePlace P = page_person(t2, gold, n_rows);
+    // A question or a result only answers: its answers side by side along
+    // the foot (#140). A list keeps its column.
+    PagePlace P = (asking || result) ? page_person_row(t2, gold, n_rows) : page_person(t2, gold, n_rows);
     if (asking) {
-        // The question's answers stand on the column's foot.
-        ml_rows_draw(P.rows, 2, 2, pv->yn_cursor, yes_no_rows, (void *)res, TOUCH_LIST_PROMPT);
+        ml_hrow_draw(P.rows, 2, pv->yn_cursor, yes_no_rows, (void *)res, TOUCH_LIST_PROMPT);
     } else if (result) {
         UkRows cont = { { bn->castle_continue }, { true }, 1 };
-        ml_rows_draw(P.rows, 1, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
+        ml_hrow_draw(P.rows, 1, 0, uk_rows_fn, &cont, TOUCH_LIST_PROMPT);
     } else {
         // A list from the column's top, Back on its foot.
         TownRowsCtx rc = { g, menu };
@@ -866,8 +870,8 @@ void modern_overlay_draw_castle(const Game *g, const Sprites *s) {
             // The tribute's question: the Emperor asking it.
             UkDoc qd = { 0 };
             uk_doc_add(&qd, pv->body, PAL_CLR(WHITE));
-            PagePlace P = page_person(title, gold, 2);
-            ml_rows_draw(P.rows, 2, 2, pv->yn_cursor, yes_no_rows, (void *)res, TOUCH_LIST_PROMPT);
+            PagePlace P = page_person_row(title, gold, 2);
+            ml_hrow_draw(P.rows, 2, pv->yn_cursor, yes_no_rows, (void *)res, TOUCH_LIST_PROMPT);
             person_says(&P, keeper, &qd);
             return;
         }
@@ -1123,14 +1127,13 @@ void modern_overlay_draw_sail(const Game *g, const Sprites *s) {
     int rows = picking ? pv->choice_n + 1 : 2;   // the provinces and Cancel, or Yes and No
     const char *title = pv && pv->header && pv->header[0] ? pv->header : g->res->ui.dt_navigate;
     const char *words = picking ? pv->lead : (pv ? pv->body : NULL);
-    PagePlace P = page_place(title, NULL, s ? s->sail_backdrop : (Texture2D){ 0 }, rows);
+    PagePlace P = page_place_row(title, NULL, s ? s->sail_backdrop : (Texture2D){ 0 });
     if (words) uk_flow(P.words.x, P.words.y, P.words.w, P.words.x, 0, P.words.y + P.words.h,
                        words, PAL_CLR(WHITE));
     SailRows sr = { pv, g->res };
     int cursor = picking ? pv->choice_cursor : (pv ? pv->yn_cursor : 0);
-    // The provinces from the column's top, Cancel on its foot; Yes and No
-    // together on the foot.
-    ml_rows_draw(P.rows, rows, picking ? 1 : 2, cursor, sail_row, &sr, TOUCH_LIST_PROMPT);
+    // The provinces and Cancel, or Yes and No, side by side along the foot (#140).
+    ml_hrow_draw(P.rows, rows, cursor, sail_row, &sr, TOUCH_LIST_PROMPT);
 }
 
 // ---------------------------------------------------------------------------

@@ -77,6 +77,7 @@ static void game_free_tables(Game *g) {
     free(g->towns);
     free(g->castles);
     free(g->spells.counts);
+    free(g->spells.learned);
     free(g->artifacts.found);
     free(g->contract.cycle);
     free(g->contract.villains_caught);
@@ -118,6 +119,7 @@ bool GameAlloc(Game *g) {
     g->castles = table_alloc(g->castle_count, sizeof *g->castles, &ok);
     g->spells.count   = spells_count();
     g->spells.counts  = table_alloc(g->spells.count, sizeof *g->spells.counts, &ok);
+    g->spells.learned = table_alloc(g->spells.count, sizeof *g->spells.learned, &ok);
     g->artifacts.count = artifacts_count();
     g->artifacts.found = table_alloc(g->artifacts.count, sizeof *g->artifacts.found, &ok);
     g->contract.cycle_count = cyc;
@@ -197,6 +199,7 @@ bool GameCopy(Game *dst, const Game *src) {
     memcpy(dst, src, sizeof *dst);
     dst->towns = keep.towns;               dst->castles = keep.castles;
     dst->spells.counts = keep.spells.counts;
+    dst->spells.learned = keep.spells.learned;
     dst->artifacts.found = keep.artifacts.found;
     dst->contract.cycle = keep.contract.cycle;
     dst->contract.villains_caught = keep.contract.villains_caught;
@@ -216,6 +219,7 @@ bool GameCopy(Game *dst, const Game *src) {
     COPY_TABLE(dst->towns, src->towns, keep.town_count, src->town_count);
     COPY_TABLE(dst->castles, src->castles, keep.castle_count, src->castle_count);
     COPY_TABLE(dst->spells.counts, src->spells.counts, keep.spells.count, src->spells.count);
+    COPY_TABLE(dst->spells.learned, src->spells.learned, keep.spells.count, src->spells.count);
     COPY_TABLE(dst->artifacts.found, src->artifacts.found, keep.artifacts.count, src->artifacts.count);
     COPY_TABLE(dst->contract.cycle, src->contract.cycle, keep.contract.cycle_count, src->contract.cycle_count);
     COPY_TABLE(dst->contract.villains_caught, src->contract.villains_caught,
@@ -310,6 +314,7 @@ uint32_t GameFingerprint(const Game *g, uint32_t h) {
     h = FNV_TABLE(h, g->towns, g->town_count);
     h = FNV_TABLE(h, g->castles, g->castle_count);
     h = FNV_TABLE(h, g->spells.counts, g->spells.count);
+    h = FNV_TABLE(h, g->spells.learned, g->spells.count);
     h = FNV_TABLE(h, g->artifacts.found, g->artifacts.count);
     h = FNV_TABLE(h, g->contract.cycle, g->contract.cycle_count);
     h = FNV_TABLE(h, g->contract.villains_caught, g->contract.villain_count);
@@ -459,6 +464,8 @@ void GameInitSeeded(Game *g, const char *name, int pclass, int difficulty,
     g->stats.days_left = g->res ? g->res->time.days_per_difficulty[di] : 900;
     g->stats.steps_left_today = g->res ? g->res->time.day_steps : 40;
     g->stats.last_commission = 0;
+    g->stats.last_renewed_spell = -1;
+    g->stats.last_week_on_hand = g->stats.last_week_army = g->stats.last_week_boat = 0;
 
     // Step 4: Starting position (home continent, home_spawn). Look for
     // the zone flagged is_home; fall back to world.starting_zone +
@@ -1363,9 +1370,28 @@ int GameArmyWeeklyUpkeep(const Game *g) {
     return upkeep;
 }
 
+// What the week-end takes for the army from a wallet of `gold` (after the
+// commission). Where unpaid troops leave (#141), each stack in slot order is
+// paid in full or not at all, and `left` (may be NULL) marks the slots that
+// go; otherwise the whole upkeep is charged and the gold floor absorbs any
+// shortfall.
+static int week_army_charge(const Game *g, int gold, bool left[GAME_ARMY_SLOTS]) {
+    if (left) for (int i = 0; i < GAME_ARMY_SLOTS; i++) left[i] = false;
+    if (!g->res || !g->res->economy.unpaid_troops_leave) return GameArmyWeeklyUpkeep(g);
+    int paid = 0;
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+        int cost = GameStackWeeklyUpkeep(g->army[i].id, g->army[i].count);
+        if (!g->army[i].id[0] || g->army[i].count <= 0) continue;
+        if (cost <= gold - paid) paid += cost;
+        else if (left) left[i] = true;
+    }
+    return paid;
+}
+
 int GameWeeklyNetGold(const Game *g) {
     if (!g) return 0;
-    int net = g->stats.commission_weekly - GameArmyWeeklyUpkeep(g);
+    int wallet = g->stats.gold + g->stats.commission_weekly;
+    int net = g->stats.commission_weekly - week_army_charge(g, wallet > 0 ? wallet : 0, NULL);
     if (g->boat.has_boat) {
         // Mirror end_day's order exactly: commission and upkeep land BEFORE
         // the fare check, so affordability is judged on the post-credit
@@ -1429,15 +1455,34 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         int astrology = GamePickAstrologyCreature(g, week_id);
         g->stats.last_astrology_troop = astrology;
 
+        g->stats.last_week_on_hand = g->stats.gold;
         g->stats.gold += g->stats.commission_weekly;
         g->stats.last_commission = g->stats.commission_weekly;
 
-        g->stats.gold -= GameArmyWeeklyUpkeep(g);
+        // The gold floor below means a short wallet pays only what it holds;
+        // where unpaid troops leave, the stacks it cannot pay go instead.
+        int wallet = g->stats.gold > 0 ? g->stats.gold : 0;
+        bool left[GAME_ARMY_SLOTS];
+        int upkeep = week_army_charge(g, wallet, left);
+        memset(g->stats.last_week_left, 0, sizeof g->stats.last_week_left);
+        bool any_left = false;
+        for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
+            if (!left[i]) continue;
+            g->stats.last_week_left[i] = g->army[i];
+            g->army[i].id[0] = '\0';
+            g->army[i].count = 0;
+            any_left = true;
+        }
+        if (any_left) GameCompactArmy(g);
+        g->stats.last_week_army = upkeep < wallet ? upkeep : wallet;
+        g->stats.last_week_boat = 0;
+        g->stats.gold -= upkeep;
 
         if (g->boat.has_boat) {
             int boat_cost = GameBoatCost(g);
             if (g->stats.gold >= boat_cost) {
                 g->stats.gold -= boat_cost;
+                g->stats.last_week_boat = boat_cost;
             } else {
                 // Can't afford boat -- it's repossessed.
                 g->boat.has_boat = false;
@@ -1450,6 +1495,10 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         // Astrology: full repopulate of matching dwellings; grow others;
         // ghosts -> peasants when creature == peasants.
         GameApplyAstrology(g, astrology);
+
+        // Where the pack renews magic, one learned spell is filled (#157).
+        g->stats.last_renewed_spell = GamePickRenewedSpell(g, week_id);
+        GameRenewSpell(g, g->stats.last_renewed_spell);
 
         // A castle the hero left without a garrison falls back to the
         // monsters (OPENKB-SPEC section 16.11): a fresh monster garrison at the
@@ -1793,6 +1842,13 @@ int GameKnownSpells(const Game *g) {
     return total;
 }
 
+int GameSpellRoom(const Game *g, int spell_idx) {
+    if (!g || spell_idx < 0 || spell_idx >= g->spells.count) return 0;
+    bool per_spell = g->res && g->res->economy.spell_limit_per_spell;
+    int room = g->stats.max_spells - (per_spell ? g->spells.counts[spell_idx] : GameKnownSpells(g));
+    return room > 0 ? room : 0;
+}
+
 int GameBoatCost(const Game *g) {
     if (GameHasPower(g, ARTIFACT_POWER_CHEAPER_BOATS))
         return g->res->economy.boat_cost_cheap;
@@ -1919,9 +1975,10 @@ SpellBuyResult GameBuySpell(Game *g, const char *town_id) {
     if (!sp) return SPELL_BUY_NO_SPELL;
     if (g->res && g->res->economy.rites_per_zone && !GameTownHasRites(g, town_id))
         return SPELL_BUY_NO_RITES;
-    if (GameKnownSpells(g) >= g->stats.max_spells) return SPELL_BUY_AT_CAP;
+    if (GameSpellRoom(g, sp->index) <= 0) return SPELL_BUY_AT_CAP;
     if (g->stats.gold <= sp->cost) return SPELL_BUY_NO_GOLD;  // KB: <= fails
     g->spells.counts[sp->index]++;
+    g->spells.learned[sp->index] = true;   // a temple teaches it (#157)
     g->stats.gold -= sp->cost;
     return SPELL_BUY_OK;
 }
@@ -2416,6 +2473,12 @@ ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
         }
         int spell_type = (int)(chest_rand(g, x, y, 4) % (unsigned)sc);
         int spell_num  = (int)(chest_rand(g, x, y, 5) % (unsigned)(zi + 1)) + 1;
+        // Charges, not learning: only a temple teaches a spell (#157). Where
+        // each spell is capped, the chest gives no more than there is room for.
+        if (g->res && g->res->economy.spell_limit_per_spell) {
+            int room = GameSpellRoom(g, spell_type);
+            if (spell_num > room) spell_num = room;
+        }
         g->spells.counts[spell_type] += spell_num;
         const SpellDef *sp = spell_by_index(spell_type);
         char cbuf[16];
@@ -2845,6 +2908,26 @@ int GamePickAstrologyCreature(const Game *g, int week_id) {
     return idx;
 }
 
+int GamePickRenewedSpell(const Game *g, int week_id) {
+    if (!g || !g->res || !g->res->economy.spell_weekly_renewal) return -1;
+    int n = 0;
+    for (int i = 0; i < g->spells.count; i++) n += g->spells.learned[i];
+    if (n == 0) return -1;
+    // The astrology's seed and week, on a draw of its own.
+    unsigned h = ((unsigned)g->seed ^ (unsigned)week_id) ^ 0x5bd1e995u;
+    h = h * 1664525u + 1013904223u;
+    h = h * 1664525u + 1013904223u;
+    int k = (int)((h >> 8) % (unsigned)n);
+    for (int i = 0; i < g->spells.count; i++)
+        if (g->spells.learned[i] && k-- == 0) return i;
+    return -1;
+}
+
+void GameRenewSpell(Game *g, int idx) {
+    if (!g || idx < 0 || idx >= g->spells.count) return;
+    if (g->spells.counts[idx] < g->stats.max_spells) g->spells.counts[idx] = g->stats.max_spells;
+}
+
 const char *GameApplyAstrology(Game *g, int troop_idx) {
     if (!g) return "";
     const TroopDef *at = troop_by_index(troop_idx);
@@ -3188,7 +3271,10 @@ static void report_append(char *buf, size_t cap, size_t *off, const char *frag) 
     *off += (size_t)n;
 }
 
-bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+// at_gate: the castle names itself in the page's title, so the report opens
+// with castle_gate_owner ("Under %OWNER%'s rule.") instead of naming it.
+static bool castle_report(const Game *g, const char *castle_id, char *out, size_t cap,
+                          bool at_gate) {
     if (!out || cap == 0) return false;
     out[0] = '\0';
     if (!g || !g->res || !castle_id) return false;
@@ -3201,7 +3287,8 @@ bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t ca
     size_t off = 0;
     char tmp[256];
     buf[0] = '\0';
-    {
+    bool short_form = at_gate && bn->castle_gate_owner[0];
+    if (!short_form) {
         ResTemplateVar vars[] = { { "NAME", rc->name[0] ? rc->name : cr->id } };
         resources_format_template(tmp, sizeof tmp, bn->town_intel_castle_under, vars, 1);
         report_append(buf, sizeof buf, &off, tmp);
@@ -3219,13 +3306,31 @@ bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t ca
     }
     {
         ResTemplateVar vars[] = { { "OWNER", owner } };
-        resources_format_template(tmp, sizeof tmp, bn->town_intel_owner_rule, vars, 1);
+        resources_format_template(tmp, sizeof tmp,
+                                  short_form ? bn->castle_gate_owner : bn->town_intel_owner_rule,
+                                  vars, 1);
         report_append(buf, sizeof buf, &off, tmp);
     }
-    int stacks_shown = 0;
-    for (int i = 0; i < GAME_ARMY_SLOTS && off + 1 < sizeof(buf); i++) {
+    // A pack that reports at the gate (#71) gives each troop one line, its
+    // stacks' counts summed (#139); the original listed every slot, so two
+    // stacks of one troop read twice, and King's Bounty keeps that.
+    Unit lines[GAME_ARMY_SLOTS];
+    int n_lines = 0;
+    bool merge = g->res->world.castle_gate_report;
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) {
         const Unit *u = &cr->garrison[i];
         if (!u->id[0] || u->count == 0) continue;
+        int k = 0;
+        if (merge)
+            while (k < n_lines && strcmp(lines[k].id, u->id) != 0) k++;
+        else
+            k = n_lines;
+        if (k == n_lines) lines[n_lines++] = *u;
+        else              lines[k].count += u->count;
+    }
+    int stacks_shown = 0;
+    for (int i = 0; i < n_lines && off + 1 < sizeof(buf); i++) {
+        const Unit *u = &lines[i];
         const TroopDef *t = troop_by_id(u->id);
         const char *tname = (t && t->name[0]) ? t->name : u->id;
         const char *count_label = GameNumberName(g, u->count);
@@ -3251,6 +3356,14 @@ bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t ca
     }
     snprintf(out, cap, "%s", buf);
     return true;
+}
+
+bool GameCastleReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+    return castle_report(g, castle_id, out, cap, false);
+}
+
+bool GameCastleGateReport(const Game *g, const char *castle_id, char *out, size_t cap) {
+    return castle_report(g, castle_id, out, cap, true);
 }
 
 CastleRecord *GameFindCastle(Game *g, const char *castle_id) {
@@ -3366,6 +3479,16 @@ static bool foe_can_stand(const Map *map, int x, int y) {
     return true;
 }
 
+// A zone event's tile (a vista such as Galliae's Temple of Ocean) is a
+// landmark, not open grass: a foe standing there would hide it, and its
+// leaving would repaint the cell as plain ground (MapClearInteractive).
+static bool foe_on_event_tile(const Game *g, const char *zone, int x, int y) {
+    const ResZone *z = (g && g->res) ? resources_zone_by_id(g->res, zone) : NULL;
+    for (int k = 0; z && k < z->event_count; k++)
+        if (z->events[k].x == x && z->events[k].y == y) return true;
+    return false;
+}
+
 // Authoritative occupancy: does any LIVE foe other than `except_idx`, in `zone`,
 // sit at (x,y)? Stamp-independent -- the map's INTERACT_FOE overlay can momentarily
 // disagree with real foe positions, so the anti-stacking gate consults g->foes[]
@@ -3472,6 +3595,8 @@ int GameFoesFollow(Game *g, Map *map) {
                 // step on and trigger combat, which let a foe on adjacent
                 // grass reach a hero standing anywhere at all.
                 if (!is_center && !foe_can_stand(map, nx, ny))
+                    continue;
+                if (!is_center && foe_on_event_tile(g, f->zone, nx, ny))
                     continue;
                 // Anti-stacking, stamp-independent: never target a tile another
                 // live foe already holds (two foes may never share a spot). The

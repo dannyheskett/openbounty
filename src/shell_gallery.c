@@ -37,6 +37,9 @@
 #include "present.h"
 #include "modern/page.h"
 #include "shell_actions.h"
+#include "intro.h"
+#include "encode_mp4.h"
+#include "intro_mix.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,8 +49,11 @@
 #ifdef _WIN32
 #include <direct.h>
 #define MKDIR(p) _mkdir(p)
+#define RMDIR(p) _rmdir(p)
 #else
+#include <unistd.h>
 #define MKDIR(p) mkdir((p), 0755)
+#define RMDIR(p) rmdir(p)
 #endif
 
 // A few lines of log for the battle column's cards, through the pack's own
@@ -70,6 +76,12 @@ static void gallery_combat_log(Combat *c, const Game *g) {
     combat_log_template(c, cl->fly, v5, 1);
     ResTemplateVar v6[] = { { "COUNT", "12" }, { "TROOP", a2->name } };
     combat_log_template(c, cl->cloned, v6, 2);
+    // The newest cards: a volley that only wounds, then a blow and the
+    // retaliation that answered it (#131).
+    ResTemplateVar v7[] = { { "ATK", f1->name }, { "TGT", a0->name } };
+    combat_log_template(c, cl->ranged_no_effect, v7, 2);
+    combat_log_template(c, cl->melee_hit, v1, 3);
+    combat_log_template(c, cl->retaliate, v2, 2);
 }
 
 void combat_gallery_menu(bool open);
@@ -81,6 +93,15 @@ static void cpy(char *d, size_t n, const char *src) {
     size_t i = 0;
     for (; src && src[i] && i + 1 < n; i++) d[i] = src[i];
     d[i] = '\0';
+}
+
+// The week-end figures end_day would record for the current army and gold,
+// so a budget shot adds up: On Hand + Payment - Army = Balance.
+static void week_figures(Game *g, int commission) {
+    g->stats.last_commission = commission;
+    g->stats.last_week_army  = GameArmyWeeklyUpkeep(g);
+    g->stats.last_week_boat  = 0;
+    g->stats.last_week_on_hand = g->stats.gold - commission + g->stats.last_week_army;
 }
 
 typedef struct {
@@ -231,6 +252,14 @@ int gallery_puzzle_sweep(Game *g, Map *m, Fog *f, const Resources *res, const Sp
 // nothing of the step before it still registered. Checked on the regions the
 // last captured frame registered (touch_last_*). A failure is printed and makes
 // the gallery exit non-zero.
+//
+// Each mode is checked against what it registers. Modern draws its answers as
+// rows and buttons. Legacy draws the DOS screens: a town's rows are its letter
+// keys, and a question is answered on the window-pixel answer bar (or digit
+// pad) that the prompt's update asks for by its kind (src/prompt.c
+// prompt_update), so legacy checks the prompt's kind; a result closes on any
+// key or tap from its update, so legacy checks that nothing drawn under it
+// still takes the tap.
 
 static int s_tap_fails;
 
@@ -283,18 +312,54 @@ static void tap_gone(const char *shot_name, int list, int row) {
     }
 }
 
-// A Yes/No step in place of `parent`'s rows.
+// The open prompt is of `kind` (prompt_kind_str): legacy's answer to it is the
+// bar or pad prompt_update asks for that kind.
+static void tap_prompt_kind(const char *shot_name, const char *kind) {
+    char what[96];
+    s_tap_checks++;
+    if (strcmp(prompt_kind_str(), kind) != 0) {
+        snprintf(what, sizeof what, "the open prompt is \"%s\", not \"%s\"", prompt_kind_str(), kind);
+        tap_fail(shot_name, what);
+    }
+}
+
+// A Yes/No step in place of `parent`'s rows. Legacy: a yes/no prompt, answered
+// on its bar; the rows under it stay registered but never read a tap, because
+// an open prompt takes the frame (src/main.c prompt_dispatch_tick).
 static void tap_yes_no(const char *shot_name, int parent) {
+    if (!CL_IS_MODERN) { tap_prompt_kind(shot_name, "yes_no"); return; }
     tap_row(shot_name, TOUCH_LIST_PROMPT, 0);
     tap_row(shot_name, TOUCH_LIST_PROMPT, 1);
     if (parent) tap_gone(shot_name, parent, 0);
 }
 
-// A result with one Continue in place of `parent`'s rows.
+// A result with one Continue in place of `parent`'s rows. Legacy: no question
+// is open and no letter key of the screen under it is registered, so a tap
+// reaches the update's any-key dismissal.
 static void tap_continue(const char *shot_name, int parent) {
+    if (!CL_IS_MODERN) {
+        tap_prompt_kind(shot_name, "none");
+        for (int k = KEY_A; k <= KEY_E; k++) {
+            char what[96];
+            s_tap_checks++;
+            if (touch_last_key_rect(k, NULL, NULL, NULL, NULL)) {
+                snprintf(what, sizeof what, "the key %d button is still tappable", k);
+                tap_fail(shot_name, what);
+            }
+        }
+        return;
+    }
     tap_row(shot_name, TOUCH_LIST_PROMPT, 0);
     tap_gone(shot_name, TOUCH_LIST_PROMPT, 1);
     if (parent) tap_gone(shot_name, parent, 0);
+}
+
+// A how-many step. Modern: its Yes/No rows, and the stepper's Up and Down when
+// `stepper`. Legacy: a number entry, answered on the digit pad.
+static void tap_number(const char *shot_name, bool stepper) {
+    if (!CL_IS_MODERN) { tap_prompt_kind(shot_name, "text"); return; }
+    tap_yes_no(shot_name, 0);
+    if (stepper) { tap_key(shot_name, KEY_UP); tap_key(shot_name, KEY_DOWN); }
 }
 
 static const ResTown *first_town_in(const Resources *r, const char *zone) {
@@ -373,6 +438,25 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         }
     }
 
+    // ---- the Introduction: the first, middle and last beat of each scene ----
+    if (intro_available(res)) {
+        const ResIntro *in = &res->intro;
+        for (int sc = 0; sc < in->scene_count; sc++) {
+            const ResIntroScene *S = &in->scenes[sc];
+            int pick[3] = { 0, S->beat_count / 2, S->beat_count - 1 };
+            for (int k = 0; k < 3; k++) {
+                if (k > 0 && pick[k] == pick[k - 1]) continue;
+                const ResIntroBeat *b = &in->beats[S->first_beat + pick[k]];
+                char nm[96];
+                snprintf(nm, sizeof nm, "00j_intro_%s_%02d", S->id, pick[k] + 1);
+                // Late in the beat: the caption typed, the move under way.
+                intro_gallery_draw(rt, res, b->start + 0.85 * b->dur);
+                save_target(&G, nm);
+            }
+        }
+        intro_release();
+    }
+
     // ---- the map and its panels ----------------------------------------------
     reset(&G); shot(&G, "01_map");
     {
@@ -388,6 +472,19 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         g->stats.time_stop = 12;
         reset(&G); shot(&G, "01c_map_time_stop");
         g->stats.time_stop = keep;
+    }
+    if (CL_IS_MODERN) {
+        // The world's corner: the camera stops there, so the map fills the
+        // pane with no dark band past the edge and no fade along it (#161).
+        int kx = g->position.x, ky = g->position.y;
+        TravelMode km = g->travel_mode;
+        g->position.x = 0; g->position.y = 0;
+        const Tile *t = MapGetTile(m, 0, 0);
+        if (t && t->terrain == TERRAIN_WATER) g->travel_mode = TRAVEL_BOAT;
+        FogRevealRect(f, m, 0, 0, 12, 8);
+        reset(&G); shot(&G, "01d_map_edge");
+        g->position.x = kx; g->position.y = ky;
+        g->travel_mode = km;
     }
     reset(&G);
     {
@@ -434,6 +531,23 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     shot(&G, "04b_message_artifact");
     reset(&G); resources_format_template(tb, sizeof tb, bn->no_spell_banner, vars, 6);
     open_dialog(NULL, tb); shot(&G, "05_message_long");
+    {
+        // A road sign, worded as the map words it (adventure.c): the pack's
+        // longest, so a cut or a title run into the body shows (#135).
+        const ResSign *ls = NULL;
+        for (int zi = 0; zi < g->res->zone_count; zi++)
+            for (int i = 0; i < g->res->zones[zi].sign_count; i++) {
+                const ResSign *sg = &g->res->zones[zi].signs[i];
+                if (!ls || strlen(sg->body) > strlen(ls->body)) ls = sg;
+            }
+        if (ls) {
+            char sh[128] = "", sb[512];
+            ResTemplateVar sv[] = { { "TITLE", ls->title }, { "BODY", ls->body } };
+            if (bn->signpost_header[0]) resources_format_template(sh, sizeof sh, bn->signpost_header, sv, 1);
+            resources_format_template(sb, sizeof sb, bn->signpost_with_body, sv, 2);
+            reset(&G); open_dialog(sh[0] ? sh : NULL, sb); shot(&G, "05b_message_sign");
+        }
+    }
     reset(&G); resources_format_template(tb, sizeof tb, bn->body_search, vars, 6);
     prompt_yes_no_open(ui->dt_search, tb);
     shot(&G, "06_question_yes_no");
@@ -446,7 +560,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             if (g->castles[i].owner_kind == CASTLE_OWNER_VILLAIN)
                 gc = resources_castle_by_id(g->res, g->castles[i].id);
         char rb[PLAYER_IO_BODY_CAP], hb[128], qb[PLAYER_IO_BODY_CAP + RES_BANNER_LEN + 2];
-        if (gc && GameCastleReport(g, gc->id, rb, sizeof rb)) {
+        if (gc && GameCastleGateReport(g, gc->id, rb, sizeof rb)) {
             ResTemplateVar cv[] = { { "NAME", gc->name } };
             resources_format_template(hb, sizeof hb, bn->castle_header, cv, 1);
             reset(&G); open_dialog(hb, rb); shot(&G, "06c_castle_gate_report");
@@ -479,9 +593,11 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     pending_week_phase = WK_PHASE_ASTROLOGY;
     pending_week_id = 3;
     pending_astrology_troop_idx = 6;
+    pending_renewed_spell_idx = 8;   // shown where the pack renews spells (#157)
     pump_week_end_dialog(g); shell_pump_note(g);
     shot(&G, "09a_week_end_astrology");
     reset(&G);
+    week_figures(g, 1000);
     pending_week_phase = WK_PHASE_BUDGET;
     pump_week_end_dialog(g); shell_pump_note(g);
     shot(&G, "09b_week_end_budget");
@@ -490,13 +606,28 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         Game keep = { 0 };
         GameCopy(&keep, g);
         g->stats.gold = 279635;
-        pending_week_paid = 1000;
         for (int i = 0; i < GAME_ARMY_SLOTS; i++)
             if (g->army[i].id[0] && g->army[i].count > 0) g->army[i].count *= 40;
+        week_figures(g, 1000);
         reset(&G);
         pending_week_phase = WK_PHASE_BUDGET;
         pump_week_end_dialog(g); shell_pump_note(g);
         shot(&G, "09b2_week_end_budget_large");
+        GameCopy(g, &keep);
+        GameFree(&keep);
+    }
+    {
+        // Where unpaid troops leave (#141): the note after the budget naming
+        // the stacks the week could not pay.
+        Game keep = { 0 };
+        GameCopy(&keep, g);
+        memset(g->stats.last_week_left, 0, sizeof g->stats.last_week_left);
+        for (int i = 0, n = 0; i < GAME_ARMY_SLOTS && n < 2; i++)
+            if (g->army[i].id[0] && g->army[i].count > 0) g->stats.last_week_left[n++] = g->army[i];
+        reset(&G);
+        pending_week_phase = WK_PHASE_LEFT;
+        pump_week_end_dialog(g); shell_pump_note(g);
+        shot(&G, "09b3_week_end_troops_left");
         GameCopy(g, &keep);
         GameFree(&keep);
     }
@@ -645,7 +776,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         if (CL_IS_MODERN) { tap_row("10_menu_top", TOUCH_LIST_MENU, 3); tap_row("10_menu_top", TOUCH_LIST_MENU, 4); }
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p2, 4); shot(&G, "11_menu_hero");
         if (CL_IS_MODERN) tap_row("11_menu_hero", TOUCH_LIST_MENU, 5);
-        reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p3, 6); shot(&G, "12_menu_world_greyed");
+        reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p3, 7); shot(&G, "12_menu_world_greyed");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(2, p4, 0); shot(&G, "13_menu_game");
         reset(&G); views_set(VIEW_MENU); modern_gamemenu_gallery(3, p5, 0); shot(&G, "14_menu_save_slots");
         // Exit is a root row, so its question is asked on the root page.
@@ -719,13 +850,33 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         if (!views_render_worldmap_whole()) views_render_worldmap_toggle_hero_only();
         reset(&G); views_set(VIEW_WORLDMAP); modern_worldmap_gallery(0); shot(&G, "24_worldmap");
         reset(&G); views_set(VIEW_WORLDMAP); modern_worldmap_gallery(1); shot(&G, "24b_worldmap_place");
+        views_render_worldmap_toggle_hero_only();
+        // Goto (#70): the cursor on a seen tile near the hero, then refused
+        // on unexplored ground with the red ring. Go and Cancel are its rows.
+        if (CL_IS_MODERN) {
+            reset(&G); views_set(VIEW_WORLDMAP);
+            modern_worldmap_goto_gallery(g->position.x + 3, g->position.y + 1, false);
+            shot(&G, "24c_worldmap_goto");
+            tap_row("24c_worldmap_goto", TOUCH_LIST_MENU, 0);
+            tap_row("24c_worldmap_goto", TOUCH_LIST_MENU, 1);
+            reset(&G); views_set(VIEW_WORLDMAP);
+            modern_worldmap_goto_gallery(0, 0, true);
+            shot(&G, "24d_worldmap_goto_refused");
+        }
         modern_worldmap_gallery(0);
         views_render_worldmap_toggle_hero_only();
         g->world.orbs_found[zi] = keep_orb;
         g->boat.has_boat = keep_boat;
     }
     reset(&G); views_set(VIEW_SPELLS); views_spells_set_mode(true); shot(&G, "25_spells");
-    if (CL_IS_MODERN) tap_row("25_spells", TOUCH_LIST_SPELLS, 14);
+    if (CL_IS_MODERN) {
+        tap_row("25_spells", TOUCH_LIST_SPELLS, 14);
+        tap_row("25_spells", TOUCH_LIST_SPELLS, VIEWS_SPELLS_TAB_ROW);
+        // The other tab on the map: the combat list, greyed.
+        reset(&G); views_set(VIEW_SPELLS); views_spells_set_mode(true);
+        views_spells_set_cursor(0);
+        shot(&G, "25b_spells_other_tab");
+    }
     reset(&G);
     {
         GateDestination d[6];
@@ -755,8 +906,13 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             reset(&G); views_set(VIEW_TOWN); views_gallery_town(g, T[i].row, 0, NULL, false);
             shot(&G, T[i].name);
             if (strcmp(T[i].name, "30b_town_services") == 0 || strcmp(T[i].name, "35_town_siege") == 0) {
-                tap_row(T[i].name, TOUCH_LIST_TOWN, 0);
-                tap_row(T[i].name, TOUCH_LIST_TOWN, 1);
+                if (CL_IS_MODERN) {
+                    tap_row(T[i].name, TOUCH_LIST_TOWN, 0);
+                    tap_row(T[i].name, TOUCH_LIST_TOWN, 1);
+                } else {                              // legacy rows answer to their letters
+                    tap_key(T[i].name, KEY_A);
+                    tap_key(T[i].name, KEY_B);
+                }
                 tap_gone(T[i].name, TOUCH_LIST_PROMPT, 0);
             }
         }
@@ -802,11 +958,14 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     if (home) {
         cpy(g->position.home_castle, sizeof g->position.home_castle, home->id);
         modern_castle_open(g, true, home->id);
+        // The castle's steps are modern_castle_gallery's: legacy draws its own
+        // castle menu for every one of them, so their tap checks are modern's.
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_MENU, 0, 0, 0); shot(&G, "40_home_castle");
         if (CL_IS_MODERN) tap_row("40_home_castle", TOUCH_LIST_CASTLE, 2);
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 0, 0); shot(&G, "41_castle_recruit");
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 4, 0, 0); shot(&G, "42_castle_recruit_greyed");
-        reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 18, 30); shot(&G, "43_castle_how_many"); tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("43_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("43_castle_how_many", KEY_UP); tap_key("43_castle_how_many", KEY_DOWN);
+        reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_RECRUIT, 1, 18, 30); shot(&G, "43_castle_how_many");
+        if (CL_IS_MODERN) { tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("43_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("43_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("43_castle_how_many", KEY_UP); tap_key("43_castle_how_many", KEY_DOWN); }
         reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 0, 0, 0); shot(&G, "44_castle_audience");
         // Tribute asks first: the question over the Audience scene.
         {
@@ -825,13 +984,13 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             GameAudienceOutcome o = GameAudienceWithKing(g, &needed);
             modern_castle_gallery_audience((int)o + 1, needed, 0);
         }
-        shot(&G, "44b_castle_audience_answer"); tap_continue("44b_castle_audience_answer", TOUCH_LIST_CASTLE);
+        shot(&G, "44b_castle_audience_answer"); if (CL_IS_MODERN) tap_continue("44b_castle_audience_answer", TOUCH_LIST_CASTLE);
         modern_castle_gallery_audience(0, 0, 0);
         {
             GameAudienceGain gain = { 0 };
             gain.leadership = 25; gain.spell_power = 1; gain.max_spells = 1;
             reset(&G); views_set(VIEW_HOME_CASTLE); modern_castle_gallery(MC_AUDIENCE, 2, 0, 0);
-            modern_castle_gallery_answer(MC_AUD_TRIBUTE, 1, gain); shot(&G, "44c_castle_tribute_answer"); tap_continue("44c_castle_tribute_answer", TOUCH_LIST_CASTLE);
+            modern_castle_gallery_answer(MC_AUD_TRIBUTE, 1, gain); shot(&G, "44c_castle_tribute_answer"); if (CL_IS_MODERN) tap_continue("44c_castle_tribute_answer", TOUCH_LIST_CASTLE);
             GameAudienceGain none = { 0 };
             modern_castle_gallery_answer(MC_AUD_PROMOTION, 0, none);
         }
@@ -840,7 +999,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
             g->character.cls.rank_index = 1;
             reset(&G); views_set(VIEW_HOME_CASTLE);
             modern_castle_gallery_audience(GAME_AUDIENCE_PROMOTED + 1, 0, 1);
-            modern_castle_gallery(MC_PROMOTION, 0, 0, 0); shot(&G, "45_castle_promotion"); tap_row("45_castle_promotion", TOUCH_LIST_PROMPT, 0);
+            modern_castle_gallery(MC_PROMOTION, 0, 0, 0); shot(&G, "45_castle_promotion"); if (CL_IS_MODERN) tap_row("45_castle_promotion", TOUCH_LIST_PROMPT, 0);
             g->character.cls.rank_index = keep;
         }
         g->position.home_castle[0] = '\0';
@@ -858,7 +1017,8 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_MENU, 0, 0, 0); shot(&G, "46_own_castle");
         reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_GARRISON, 0, 0, 0); shot(&G, "47_own_castle_garrison");
         reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_WITHDRAW, 0, 0, 0); shot(&G, "48_own_castle_withdraw");
-        reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_WITHDRAW, 0, 30, 30); shot(&G, "49_own_castle_how_many"); tap_row("49_own_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("49_own_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("49_own_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("49_own_castle_how_many", KEY_UP); tap_key("49_own_castle_how_many", KEY_DOWN);
+        reset(&G); views_set(VIEW_OWN_CASTLE); modern_castle_gallery(MC_WITHDRAW, 0, 30, 30); shot(&G, "49_own_castle_how_many");
+        if (CL_IS_MODERN) { tap_row("49_own_castle_how_many", TOUCH_LIST_CASTLE, 0); tap_row("49_own_castle_how_many", TOUCH_LIST_CASTLE, 1); tap_gone("49_own_castle_how_many", TOUCH_LIST_CASTLE, 2); tap_key("49_own_castle_how_many", KEY_UP); tap_key("49_own_castle_how_many", KEY_DOWN); }
         g->position.own_castle[0] = '\0';
     }
 
@@ -899,9 +1059,9 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         g->player_io.count = 0;
         pending_flow = FLOW_RECRUIT;
         prompt_text_input_open(t->name, "", 4, 24); prompt_set_req_kind(PIO_ASK_NUMBER_IN_PLACE);
-        shot(&G, "62_dwelling"); tap_yes_no("62_dwelling", 0);
+        shot(&G, "62_dwelling"); tap_number("62_dwelling", false);
         prompt_gallery_step_open(true);
-        shot(&G, "63_dwelling_how_many"); tap_yes_no("63_dwelling_how_many", 0); tap_key("63_dwelling_how_many", KEY_UP); tap_key("63_dwelling_how_many", KEY_DOWN);
+        shot(&G, "63_dwelling_how_many"); tap_number("63_dwelling_how_many", true);
         reset(&G); views_set(VIEW_DWELLING);
         loc_deal_begin(g); g->stats.gold -= 600; loc_deal_done(g, 20, t->id); g->stats.gold += 600;
         shot(&G, "64_dwelling_result"); tap_continue("64_dwelling_result", 0);
@@ -1026,4 +1186,68 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
     fprintf(stdout, "[tapcheck] %d checks, %d failed\n", s_tap_checks, s_tap_fails);
     ui_anim_freeze(false);
     return s_tap_fails ? 1 : 0;
+}
+
+// --intro-movie <out.mp4>: the Introduction rendered offline at a fixed frame
+// rate (no input) and encoded with the recorder's encoder, its sound mixed
+// as the player plays it (intro_mix_pcm), for review; prints the cue sheet,
+// each scene's start and length, which is the composer's brief.
+#define INTRO_MOVIE_FPS 15
+#define INTRO_MOVIE_RATE 44100   // the sound track's sample rate
+int gallery_intro_movie(const Resources *res, RenderTexture2D *rt, const char *out_mp4) {
+    if (!intro_available(res)) {
+        fprintf(stdout, "[intro-movie] this pack has no Introduction\n");
+        return 2;
+    }
+    const ResIntro *in = &res->intro;
+    fprintf(stdout, "[intro-movie] cue sheet (%d scenes, %.1f s):\n", in->scene_count, in->total);
+    for (int i = 0; i < in->scene_count; i++)
+        fprintf(stdout, "  %-10s %6.1f s  +%5.1f s  (%d beats)\n", in->scenes[i].id,
+                in->scenes[i].start, in->scenes[i].dur, in->scenes[i].beat_count);
+
+    char dir[1100];
+    snprintf(dir, sizeof dir, "%s.frames", out_mp4);
+    MKDIR(dir);
+    char mpath[1200];
+    snprintf(mpath, sizeof mpath, "%s/manifest.ndjson", dir);
+    FILE *mf = fopen(mpath, "w");
+    if (!mf) { fprintf(stdout, "[intro-movie] cannot write %s\n", mpath); return 1; }
+    int frames = (int)(in->total * INTRO_MOVIE_FPS);
+    for (int i = 0; i <= frames; i++) {
+        intro_gallery_draw(rt, res, (double)i / INTRO_MOVIE_FPS);
+        Image img = LoadImageFromTexture(rt->texture);
+        ImageFlipVertical(&img);
+        char name[64], path[1300];
+        snprintf(name, sizeof name, "tick_%06d.qoi", i);   // QOI: quick to write
+        snprintf(path, sizeof path, "%s/%s", dir, name);
+        ExportImage(img, path);
+        UnloadImage(img);
+        fprintf(mf, "{\"seq\":%d,\"ms\":%lld,\"png\":\"%s\"}\n", i + 1,
+                (long long)i * 1000 / INTRO_MOVIE_FPS, name);
+        if (i % (INTRO_MOVIE_FPS * 10) == 0)
+            fprintf(stdout, "[intro-movie] %d / %d frames\n", i, frames);
+    }
+    fclose(mf);
+    intro_release();
+
+    // The sound: the theme and the beats' sounds as the player mixes them.
+    size_t snd_frames = 0;
+    short *pcm = intro_mix_pcm(res, INTRO_MOVIE_RATE, &snd_frames);
+    EncodeAudio snd = { pcm, snd_frames, INTRO_MOVIE_RATE, 1 };
+    char err[256] = "";
+    bool sound = pcm != NULL;
+    bool ok = mp4_encode_dir_av(dir, out_mp4, sound ? &snd : NULL, NULL, NULL, err, sizeof err);
+    free(pcm);
+    // The frames were only the encoder's input.
+    for (int i = 0; i <= frames; i++) {
+        char path[1300];
+        snprintf(path, sizeof path, "%s/tick_%06d.qoi", dir, i);
+        remove(path);
+    }
+    remove(mpath);
+    RMDIR(dir);
+    if (!ok) { fprintf(stdout, "[intro-movie] encode failed: %s\n", err); return 1; }
+    fprintf(stdout, "[intro-movie] wrote %s (%s)\n", out_mp4,
+            sound ? "with its sound" : "silent: the intro has no sound");
+    return 0;
 }

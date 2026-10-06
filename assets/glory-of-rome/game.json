@@ -41,7 +41,9 @@
 		}
 	},
 	"magic":	{
-		"rites_per_zone":	true
+		"rites_per_zone":	true,
+		"max_per_spell":	true,
+		"weekly_renewal":	true
 	},
 	"foes":	{
 		"evade_needs_free_square":	true
@@ -57,6 +59,7 @@
 		"boat_cost_cheap":	100,
 		"boat_cost_normal":	500,
 		"siege_cost":	3000,
+		"unpaid_troops_leave":	true,
 		"chest":	{
 			"chance_gold":	[61, 66, 76, 71],
 			"chance_commission":	[81, 86, 86, 81],
@@ -84,6 +87,7 @@
 	},
 	"combat":	{
 		"morale_as_army_view":	true,
+		"field_obstacle_chance":	12,
 		"morale_chart":	[["N", "N", "N", "N", "N"], ["N", "N", "N", "N", "N"], ["N", "N", "H", "N", "N"], ["L", "N", "L", "H", "N"], ["L", "L", "L", "N", "N"]],
 		"number_names":	[{
 				"min":	500,
@@ -111,6 +115,7 @@
 			"map":	"maps/italia.dat",
 			"field_grid":	"art/combat/field/italia",
 			"town_backdrop":	"art/ui/backdrop_town_italia.png",
+			"treasure_scene":	"art/scenes/treasure_italia.png",
 			"army_art":	"wandering_army_italia",
 			"width":	64,
 			"height":	128,
@@ -720,6 +725,7 @@
 						}]
 				}],
 			"town_backdrop":	"art/ui/backdrop_town_galliae.png",
+			"treasure_scene":	"art/scenes/treasure_galliae.png",
 			"tile_set":	"galliae",
 			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06", "grass_07", "grass_08", "grass_09", "grass_10", "grass_variant", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_w", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18"],
 			"army_art":	"wandering_army_galliae",
@@ -1077,6 +1083,7 @@
 						}]
 				}],
 			"town_backdrop":	"art/ui/backdrop_town_africa.png",
+			"treasure_scene":	"art/scenes/treasure_africa.png",
 			"tile_set":	"africa",
 			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_01", "desert_edge_02", "desert_edge_03", "desert_edge_04", "desert_edge_05", "desert_edge_06", "desert_edge_07", "desert_edge_08", "desert_edge_09", "desert_edge_10", "desert_edge_11", "desert_edge_12", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06", "grass_07", "grass_08", "grass_09", "grass_10", "grass_variant", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_w", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18"],
 			"army_art":	"wandering_army_africa",
@@ -1422,6 +1429,7 @@
 			"map":	"maps/oriens.dat",
 			"field_grid":	"art/combat/field/oriens",
 			"town_backdrop":	"art/ui/backdrop_town_oriens.png",
+			"treasure_scene":	"art/scenes/treasure_oriens.png",
 			"tile_set":	"oriens",
 			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_01", "desert_edge_02", "desert_edge_03", "desert_edge_04", "desert_edge_05", "desert_edge_06", "desert_edge_07", "desert_edge_08", "desert_edge_09", "desert_edge_10", "desert_edge_11", "desert_edge_12", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06", "grass_07", "grass_08", "grass_09", "grass_10", "grass_variant", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_w", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18"],
 			"army_art":	"wandering_army_oriens",
@@ -1507,6 +1515,12 @@
 					"x":	25,
 					"y":	23
 				}, {
+					"id":	"chest_thrace_road",
+					"x":	3,
+					"y":	2,
+					"fixed":	true,
+					"artifact":	"shield"
+				}, {
 					"id":	"chest_18",
 					"x":	36,
 					"y":	43
@@ -1589,6 +1603,18 @@
 					"id":	"sign_oriens_5",
 					"title":	"Armenia",
 					"body":	"Kings of Armenia take their crowns from Roma or from Parthia, whichever army is nearer."
+				}, {
+					"x":	13,
+					"y":	4,
+					"id":	"sign_oriens_6",
+					"title":	"Across the Strait",
+					"body":	"Thrace lies across the water. Its shore is rock but for one beach, and a war band holds the road beyond it."
+				}, {
+					"x":	1,
+					"y":	2,
+					"id":	"sign_oriens_7",
+					"title":	"The Thracian Road",
+					"body":	"A war band holds this road. What it guards lies at the end."
 				}],
 			"dwellings":	[{
 					"id":	"apamea",
@@ -1692,6 +1718,27 @@
 						}, {
 							"troop":	"ogres",
 							"count":	6
+						}]
+				}, {
+					"x":	8,
+					"y":	1,
+					"id":	"guardian_thrace",
+					"static":	true,
+					"army":	[{
+							"troop":	"giants",
+							"count":	8
+						}, {
+							"troop":	"trolls",
+							"count":	10
+						}, {
+							"troop":	"vampires",
+							"count":	8
+						}, {
+							"troop":	"knights",
+							"count":	10
+						}, {
+							"troop":	"archmages",
+							"count":	8
 						}]
 				}, {
 					"x":	4,
@@ -1847,6 +1894,9 @@
 		}, {
 			"id":	"praefectus_castrorum_figure",
 			"anim":	["art/ui/praefectus_castrorum_figure_00.png", "art/ui/praefectus_castrorum_figure_01.png", "art/ui/praefectus_castrorum_figure_02.png", "art/ui/praefectus_castrorum_figure_03.png", "art/ui/praefectus_castrorum_figure_04.png", "art/ui/praefectus_castrorum_figure_05.png", "art/ui/praefectus_castrorum_figure_06.png", "art/ui/praefectus_castrorum_figure_07.png"]
+		}, {
+			"id":	"intro_crier",
+			"anim":	["art/portraits/intro_crier_00.png", "art/portraits/intro_crier_01.png", "art/portraits/intro_crier_02.png", "art/portraits/intro_crier_03.png", "art/portraits/intro_crier_04.png", "art/portraits/intro_crier_05.png", "art/portraits/intro_crier_06.png", "art/portraits/intro_crier_07.png"]
 		}, {
 			"id":	"promotion_rank_1",
 			"anim":	["art/ui/promotion_rank_1.png"]
@@ -4669,8 +4719,8 @@
 		"rail":	{
 			"menu":	"art/ui/rail_menu.png",
 			"map":	"art/ui/rail_map.png",
+			"goto":	"art/ui/rail_goto.png",
 			"army":	"art/ui/rail_army.png",
-			"search":	"art/ui/rail_search.png",
 			"cast":	"art/ui/rail_cast.png"
 		},
 		"combat_panel":	{
@@ -4720,10 +4770,12 @@
 			}],
 		"copyright":	["King's Bounty copyright 1990", "New World Computing, Inc"]
 	},
+	"intro":	"intro.json",
 	"audio":	{
 		"tracks":	{
 			"openworld":	"audio/openworld.ogg",
-			"combat":	"audio/combat.ogg"
+			"combat":	"audio/combat.ogg",
+			"intro":	"audio/intro_theme.ogg"
 		},
 		"tunes":	{
 			"walk":	"audio/tune_walk.wav",
