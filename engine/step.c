@@ -37,6 +37,498 @@ static void gate_report(const Game *g, const Resources *res, const char *castle_
     snprintf(body, bcap, "%s", report);
 }
 
+// ---- What the hero meets on the tile ----------------------------------------
+// One handler per kind adventure_handle_interact reports. Each may set
+// ir->bounce_back; GameStep undoes the move after them when one does.
+
+static void step_sign(Game *game, InteractResult *ir) {
+    // Sign-post text composed Game-free by adventure_handle_interact;
+    // raise it through the uniform queue.
+    player_io_note(game, ir->dialog_header[0] ? ir->dialog_header : NULL,
+                   ir->dialog_body);
+}
+
+static void step_town(Game *game, const Resources *res, InteractResult *ir) {
+    // The hero is now AT this town: town transaction cores key off this.
+    // Set before GameTouchTown so any town action this step is legal.
+    snprintf(game->position.in_town, sizeof game->position.in_town,
+             "%s", ir->town_id);
+    GameTouchTown(game, ir->town_id);
+    // Look up by id -- the stepped-onto tile may be the town's
+    // gate coords, not its home (x,y), so coord-keyed lookup can
+    // miss. ir->town_id comes from the map tile metadata (which
+    // was stamped from the ResTown record), so it's authoritative.
+    const ResTown *rt = resources_town_by_id(res, ir->town_id);
+    const char *disp = (rt && rt->name[0]) ? rt->name : ir->town_id;
+    views_open_town(disp, ir->town_id, ir->town_boat_x, ir->town_boat_y);
+    // Raise the TOWN view through the queue (replace=true: VIEW_TOWN
+    // resets the shell stack). views_open_town set the town context
+    // statics above.
+    {
+        PlayerRequest *r = player_io_screen(game, VIEW_TOWN,
+                                            /*replace=*/true, NULL, NULL);
+        if (r) {
+            snprintf(r->view_record_key, sizeof r->view_record_key,
+                     "%s", ir->town_id);
+            r->view_boat_x = ir->town_boat_x;
+            r->view_boat_y = ir->town_boat_y;
+        }
+    }
+}
+
+static void step_artifact(Game *game, Map *map, const Resources *res,
+                          InteractResult *ir, int nx, int ny) {
+    const ArtifactDef *a = artifact_by_index(ir->artifact_idx);
+    if (a && GameClaimArtifact(game, ir->artifact_idx)) {
+        MapClearInteractive(map, nx, ny);
+        GameAddConsumed(game, game->position.zone, nx, ny);
+        // The header names what you found; the body is the artifact's
+        // own flavour from the pack, then the map-piece footer. Both
+        // come from the pack's strings -- a Roman artifact must not
+        // talk about a scepter.
+        char header[256], body_a[512];
+        ResTemplateVar av[] = { { "ARTIFACT", a->name } };
+        resources_format_template(header, sizeof header,
+                                  res->banners.artifact_found, av, 1);
+        snprintf(body_a, sizeof body_a, "%s%s%s",
+                 a->effect[0] ? a->effect : "", a->effect[0] ? "\n\n" : "",
+                 res->banners.artifact_map_piece);
+        player_io_note(game, header, body_a);
+    }
+}
+
+static void step_castle(Game *game, const Resources *res, InteractResult *ir) {
+    // Mark visited on any castle entry -- audience, own, or
+    // hostile -- so the Castle Gate spell can list it. Per
+    // OpenKB spec section 15: castle_visited[i] is set on first
+    // visit regardless of outcome.
+    CastleRecord *cr_mut = GameFindCastle(game, ir->castle_id);
+    if (cr_mut) cr_mut->visited = true;
+    // Standing at an enemy's gate tells you whose castle it is: the
+    // castle's location is known from then on, as Augury reveals it.
+    if (cr_mut && cr_mut->owner_kind == CASTLE_OWNER_VILLAIN)
+        cr_mut->known = true;
+    const CastleRecord *cr = GameFindCastleConst(game, ir->castle_id);
+    const ResCastle *rc = resources_castle_by_id(res, ir->castle_id);
+    char header[64];
+    char body[768];
+    bool audience = resources_castle_is_home(rc);
+
+    if (audience) {
+        size_t k = 0;
+        while (k + 1 < sizeof(pending_castle_id) && ir->castle_id[k]) {
+            pending_castle_id[k] = ir->castle_id[k]; k++;
+        }
+        pending_castle_id[k] = '\0';
+        // The hero is now AT the home castle: GameBuyTroop keys home-pool
+        // recruiting off this marker. Set before the bounce-back so a recruit
+        // this step is legal (mirrors the in_town set on the town path).
+        snprintf(game->position.home_castle,
+                 sizeof game->position.home_castle, "%s", ir->castle_id);
+        screen_home_castle_open(game);
+        header[0] = '\0';
+        body[0]   = '\0';
+    } else if (cr && cr->owner_kind == CASTLE_OWNER_PLAYER) {
+        // The hero is AT this owned castle: garrison/ungarrison key off this
+        // marker. Set before the bounce-back so the own-castle screen's
+        // transactions this step are legal (mirrors the in_town set).
+        snprintf(game->position.own_castle,
+                 sizeof game->position.own_castle, "%s", ir->castle_id);
+        screen_own_castle_open(game, ir->castle_id);
+        header[0] = '\0';
+        body[0]   = '\0';
+    } else if (cr && cr->owner_kind == CASTLE_OWNER_MONSTERS &&
+               !game->stats.siege_weapons) {
+        // Original DOS KB: stepping onto a hostile castle gate
+        // without siege weapons silently bounces the hero back.
+        // The bounce_back flag is already set by adventure.c.
+        // openkb left this unenforced (spec section 34.14); we restore
+        // the original behavior so castles actually gate the
+        // purchase. A pack with world.castle_gate_report tells the
+        // hero whose castle it is and what holds it instead (#71).
+        gate_report(game, res, ir->castle_id, rc, header, sizeof header,
+                    body, sizeof body, NULL);
+    } else if (cr && cr->owner_kind == CASTLE_OWNER_MONSTERS) {
+        size_t k = 0;
+        while (k + 1 < sizeof(pending_castle_id) && ir->castle_id[k]) {
+            pending_castle_id[k] = ir->castle_id[k]; k++;
+        }
+        pending_castle_id[k] = '\0';
+        // Siege prompt (OPENKB-SPEC section 24.16): name the occupant and ask
+        // the SINGLE yes/no question -- "Lay Siege". The defending
+        // garrison is NOT listed here (that is the separate "gather
+        // information" screen, section 24.18); listing it under a y/n prompt is
+        // what made the question read as the bogus "Garrison? (y/n)".
+        // The "(y/n)?" prompt chrome is drawn by prompt_draw() itself
+        // (the PK_YES_NO hint line); baking it into the body too is what
+        // produced the doubled "(y/n)?" -- so the body ends at the verb.
+        // The question alone: the Yes/No rows are the buttons, so no
+        // hand-centred "Lay Siege" is baked into the words.
+        char prompt_body[PLAYER_IO_BODY_CAP];
+        snprintf(prompt_body, sizeof prompt_body, "%s",
+                 res->banners.castle_siege_monsters);
+        // The gate report, the question under it (#71).
+        char ph[8];
+        gate_report(game, res, ir->castle_id, rc, ph, sizeof ph,
+                    prompt_body, sizeof prompt_body,
+                    res->banners.castle_siege_ask);
+        char prompt_header[64];
+        ResTemplateVar cv[] = { { "NAME", rc && rc->name[0] ? rc->name : ir->castle_id } };
+        resources_format_template(prompt_header, sizeof prompt_header,
+                                  res->banners.castle_header, cv, 1);
+        pending_flow = FLOW_SIEGE_MONSTER;
+        player_io_ask(game, FLOW_SIEGE_MONSTER, REQ_PROMPT_YES_NO,
+                      prompt_header, prompt_body);
+        header[0] = '\0';
+        body[0]   = '\0';
+    } else if (cr && cr->owner_kind == CASTLE_OWNER_VILLAIN &&
+               !game->stats.siege_weapons) {
+        // See CASTLE_OWNER_MONSTERS branch above -- silent
+        // bounce-back without siege weapons (DOS KB faithful), or
+        // the gate report (#71).
+        gate_report(game, res, ir->castle_id, rc, header, sizeof header,
+                    body, sizeof body, NULL);
+    } else if (cr && cr->owner_kind == CASTLE_OWNER_VILLAIN) {
+        const VillainDef *v = villain_by_id(cr->villain_id);
+        size_t k = 0;
+        while (k + 1 < sizeof(pending_castle_id) && ir->castle_id[k]) {
+            pending_castle_id[k] = ir->castle_id[k]; k++;
+        }
+        pending_castle_id[k] = '\0';
+        // Siege prompt (OPENKB-SPEC section 24.17): name the villain and ask
+        // "Lay Siege" -- no garrison listing (see the monster branch
+        // above; the listing is the section 24.18 gather-info screen). The
+        // "(y/n)?" is drawn by the prompt chrome, not baked in here (see
+        // the monster branch -- baking it in doubled the hint).
+        char prompt_body[PLAYER_IO_BODY_CAP];
+        snprintf(prompt_body, sizeof(prompt_body),
+            "%s and\n"
+            "army occupy this castle.\n\n\n"
+            "                Lay Siege",
+            v ? v->name : cr->villain_id);
+        // The gate report, the question under it (#71).
+        char ph[8];
+        gate_report(game, res, ir->castle_id, rc, ph, sizeof ph,
+                    prompt_body, sizeof prompt_body,
+                    res->banners.castle_siege_ask);
+        char prompt_header[64];
+        snprintf(prompt_header, sizeof(prompt_header), "Castle %s",
+                 rc && rc->name[0] ? rc->name : ir->castle_id);
+        pending_flow = FLOW_SIEGE_VILLAIN;
+        player_io_ask(game, FLOW_SIEGE_VILLAIN, REQ_PROMPT_YES_NO,
+                      prompt_header, prompt_body);
+        header[0] = '\0';
+        body[0]   = '\0';
+    } else {
+        header[0] = '\0';      // the line stands on its own
+        snprintf(body, sizeof(body), "%s", res->banners.castle_uncharted);
+    }
+    if (header[0] || body[0]) {
+        player_io_note(game, header, body);
+    }
+}
+
+static void step_alcove(Game *game, const Resources *res) {
+    // One magic, or with rites per zone this zone's rites.
+    const ResZone *az = resources_zone_by_id(res, game->position.zone);
+    const char *azname = (az && az->name[0]) ? az->name : game->position.zone;
+    if (!GameHasRites(game, game->position.zone)) {
+        char body[256], cbuf[16];
+        snprintf(cbuf, sizeof cbuf, "%d", GameAlcoveCost(game, game->position.zone));
+        ResTemplateVar vars[] = { { "COST", cbuf }, { "ZONE", azname } };
+        resources_format_template(body, sizeof body,
+                                  res->banners.alcove_offer,
+                                  vars, 2);
+        screen_alcove_open(game);
+        pending_flow = FLOW_ALCOVE;
+        // The temple screen is open behind it, so it asks there.
+        player_io_ask_in_place(game, FLOW_ALCOVE, REQ_PROMPT_YES_NO,
+                               res->ui.dt_alcove_offer, body);
+    } else {
+        char body[RES_BANNER_LEN];
+        ResTemplateVar vars[] = { { "ZONE", azname } };
+        resources_format_template(body, sizeof body,
+                                  res->banners.alcove_already,
+                                  vars, 1);
+        // With rites per zone the temple screen opens behind the words.
+        if (res->economy.rites_per_zone) {
+            screen_alcove_open(game);
+            player_io_note_in_place(game, NULL, body);
+        } else {
+            player_io_note(game, NULL, body);
+        }
+    }
+}
+
+static void step_dwelling(Game *game, const Resources *res, InteractResult *ir,
+                          int nx, int ny) {
+    const char *kind = DwellingCatalogKind(ir->dwelling_kind);
+    if (!kind) kind = "plains";
+    DwellingState *d = GameTouchDwelling(game, game->position.zone,
+                                         nx, ny, kind);
+    const TroopDef *t = (d && d->troop_id[0])
+        ? troop_by_id(d->troop_id) : NULL;
+    // The hero is now ON this dwelling tile: GameBuyTroop keys the dwelling
+    // recruit off this marker (troop id + tile). Set whenever the dwelling
+    // offers a troop; the count cap is enforced by the guard / flow_apply.
+    if (t) {
+        snprintf(game->position.dwelling_troop,
+                 sizeof game->position.dwelling_troop, "%s", t->id);
+        game->position.dwelling_x = nx;
+        game->position.dwelling_y = ny;
+    }
+    if (t && d && d->count > 0) {
+        {
+            size_t k = 0;
+            while (k + 1 < sizeof(pending_dwelling_troop) && t->id[k]) {
+                pending_dwelling_troop[k] = t->id[k]; k++;
+            }
+            pending_dwelling_troop[k] = '\0';
+        }
+        {
+            size_t k = 0;
+            while (k + 1 < sizeof(pending_dwelling_zone) &&
+                   game->position.zone[k]) {
+                pending_dwelling_zone[k] = game->position.zone[k]; k++;
+            }
+            pending_dwelling_zone[k] = '\0';
+        }
+        pending_dwelling_x = nx;
+        pending_dwelling_y = ny;
+        int max = GameMaxRecruitable(game, t->id);
+        if (max < 0) max = 0;
+        int affordable = (t->recruit_cost > 0)
+            ? (game->stats.gold / t->recruit_cost) : 0;
+        int cap = (max < affordable) ? max : affordable;
+        if (cap > d->count) cap = d->count;
+        char header[48];
+        char body[192];
+        snprintf(header, sizeof(header), "%s", t->name);
+        char cnt_buf[16], cost_buf[16], gold_buf[16], cap_buf[16];
+        snprintf(cnt_buf,  sizeof cnt_buf,  "%d", d->count);
+        snprintf(cost_buf, sizeof cost_buf, "%d", t->recruit_cost);
+        snprintf(gold_buf, sizeof gold_buf, "%d", game->stats.gold);
+        snprintf(cap_buf,  sizeof cap_buf,  "%d", cap);
+        ResTemplateVar vars[] = {
+            { "COUNT", cnt_buf },
+            { "TROOP", t->name },
+            { "COST",  cost_buf },
+            { "GOLD",  gold_buf },
+            { "CAP",   cap_buf },
+        };
+        resources_format_template(body, sizeof body,
+                                  res->banners.dwelling_recruit_prompt,
+                                  vars, 5);
+        DwellingKind dk = DWELLING_KIND_PLAINS;
+        switch (ir->dwelling_kind) {
+            case INTERACT_DWELLING_PLAINS:  dk = DWELLING_KIND_PLAINS;  break;
+            case INTERACT_DWELLING_FOREST:  dk = DWELLING_KIND_FOREST;  break;
+            case INTERACT_DWELLING_HILLS:   dk = DWELLING_KIND_HILL;    break;
+            case INTERACT_DWELLING_DUNGEON: dk = DWELLING_KIND_DUNGEON; break;
+            default: break;
+        }
+        screen_dwelling_open(game, dk, t->id,
+                             d->count, t->recruit_cost,
+                             game->stats.gold, cap);
+        pending_flow = FLOW_RECRUIT;
+        // The dwelling screen is open: it asks how many there.
+        player_io_ask_number_in_place(game, FLOW_RECRUIT, header, body,
+                                      4, cap > 0 ? cap : 0);
+    } else if (t) {
+        char msg[RES_BANNER_LEN];
+        resources_format_template(msg, sizeof msg,
+                                  res->banners.dwelling_none_this_week,
+                                  NULL, 0);
+        player_io_note(game, NULL, msg);
+    } else {
+        char msg[RES_BANNER_LEN];
+        resources_format_template(msg, sizeof msg,
+                                  res->banners.dwelling_empty,
+                                  NULL, 0);
+        player_io_note(game, NULL, msg);
+    }
+}
+
+static void step_chest(Game *game, Map *map, const Resources *res, int nx, int ny) {
+    audio_play_tune(AUDIO_TUNE_CHEST);
+    int zone_index = 0;
+    if (res) {
+        for (int i = 0; i < res->zone_count; i++) {
+            if (strcmp(res->zones[i].id, game->position.zone) == 0) {
+                zone_index = i;
+                break;
+            }
+        }
+    }
+    char body[320];
+    ChestPending cp = { 0, 0 };
+    ChestOutcome outcome = GameRollChest(game, zone_index, nx, ny,
+                                         body, sizeof(body), &cp);
+
+    MapClearInteractive(map, nx, ny);
+    GameAddConsumed(game, game->position.zone, nx, ny);
+
+    if (outcome == CHEST_OUTCOME_GOLD && cp.pending_gold > 0) {
+        pending_chest_gold       = cp.pending_gold;
+        pending_chest_leadership = cp.pending_leadership;
+        pending_flow = FLOW_CHEST_CHOICE;
+        player_io_ask(game, FLOW_CHEST_CHOICE, REQ_PROMPT_AB, "", body);
+    } else {
+        player_io_note(game, NULL, body);
+    }
+}
+
+static void step_telecave(Game *game, Map *map, Fog *fog,
+                          const Resources *res, int nx, int ny) {
+    int found_self = -1;
+    int pair_target = -1;
+    int seq = 0;
+    int self_seq = -1;
+    for (int i = 0; i < game->placement_count; i++) {
+        const SaltedPlacement *p = &game->placements[i];
+        if (strcmp(p->zone, game->position.zone) != 0) continue;
+        if (p->kind != INTERACT_TELECAVE) continue;
+        if (p->x == nx && p->y == ny) {
+            found_self = i;
+            self_seq = seq;
+        }
+        seq++;
+    }
+    if (found_self >= 0 && self_seq >= 0) {
+        int target_seq = (self_seq % 2 == 0)
+            ? self_seq + 1 : self_seq - 1;
+        int s = 0;
+        for (int i = 0; i < game->placement_count; i++) {
+            const SaltedPlacement *p = &game->placements[i];
+            if (strcmp(p->zone, game->position.zone) != 0) continue;
+            if (p->kind != INTERACT_TELECAVE) continue;
+            if (s == target_seq) { pair_target = i; break; }
+            s++;
+        }
+    }
+    char tmsg[RES_BANNER_LEN];
+    if (pair_target >= 0) {
+        const SaltedPlacement *dst = &game->placements[pair_target];
+        game->position.x = dst->x;
+        game->position.y = dst->y;
+        game->position.last_x = dst->x;
+        game->position.last_y = dst->y;
+        FogRevealFor(res, fog, map, dst->x, dst->y);
+        resources_format_template(tmsg, sizeof tmsg,
+                                  res->banners.telecave_teleport,
+                                  NULL, 0);
+        player_io_note(game, res->ui.dt_teleport_cave, tmsg);
+    } else {
+        resources_format_template(tmsg, sizeof tmsg,
+                                  res->banners.telecave_inert,
+                                  NULL, 0);
+        player_io_note(game, res->ui.dt_teleport_cave, tmsg);
+    }
+}
+
+static void step_navmap(Game *game, Map *map, const Resources *res,
+                        InteractResult *ir, int nx, int ny) {
+    int target_zone = -1;
+    const char *p = ir->navmap_id;
+    const char *digit = p;
+    while (*digit && (*digit < '0' || *digit > '9')) digit++;
+    if (*digit) target_zone = atoi(digit);
+    int cur_zone = -1;
+    for (int i = 0; i < res->zone_count; i++) {
+        if (strcmp(res->zones[i].id, game->position.zone) == 0) {
+            cur_zone = i;
+            break;
+        }
+    }
+    // Fall back to "first undiscovered zone" when the id names no
+    // usable target: out of range, the current zone, or a zone that is
+    // ALREADY discovered. The already-discovered case matters: salted
+    // navmap ids restart at navmap_0 in every zone, so without it a
+    // navmap found on a later continent re-names the home zone and is
+    // consumed as a no-op, leaving the remaining zones undiscoverable.
+    if (target_zone < 0 || target_zone >= res->zone_count ||
+        target_zone == cur_zone ||
+        game->world.zones_discovered[target_zone]) {
+        target_zone = -1;
+        for (int i = 0; i < res->zone_count; i++) {
+            if (i != cur_zone && !game->world.zones_discovered[i]) {
+                target_zone = i;
+                break;
+            }
+        }
+    }
+    char body[128];
+    if (target_zone >= 0 && target_zone < game->world.zone_count) {
+        game->world.zones_discovered[target_zone] = true;
+        MapClearInteractive(map, nx, ny);
+        GameAddConsumed(game, game->position.zone, nx, ny);
+        const char *zn = res->zones[target_zone].name[0]
+            ? res->zones[target_zone].name
+            : res->zones[target_zone].id;
+        ResTemplateVar vars[] = { { "ZONE", zn } };
+        resources_format_template(body, sizeof body,
+                                  res->banners.navmap_pickup,
+                                  vars, 1);
+        player_io_note(game, NULL, body);
+    } else {
+        // All zones already discovered: consume the navmap
+        // silently. No port-authored fallback dialog.
+        MapClearInteractive(map, nx, ny);
+        GameAddConsumed(game, game->position.zone, nx, ny);
+    }
+}
+
+static void step_orb(Game *game, Map *map, const Resources *res, int nx, int ny) {
+    int zone_index = -1;
+    for (int i = 0; i < res->zone_count; i++) {
+        if (strcmp(res->zones[i].id, game->position.zone) == 0) {
+            zone_index = i;
+            break;
+        }
+    }
+    if (zone_index >= 0 && zone_index < game->world.zone_count) {
+        game->world.orbs_found[zone_index] = true;
+    }
+    MapClearInteractive(map, nx, ny);
+    GameAddConsumed(game, game->position.zone, nx, ny);
+    char body[128];
+    int zi = (zone_index >= 0) ? zone_index : 0;
+    ResTemplateVar vars[] = { { "ZONE", res->zones[zi].name } };
+    resources_format_template(body, sizeof body,
+                              res->banners.crystal_ball_pickup,
+                              vars, 1);
+    player_io_note(game, res->ui.dt_crystal_ball, body);
+}
+
+static void step_foe(Game *game, Map *map, const Resources *res,
+                     InteractResult *ir, int nx, int ny) {
+    const FoeState *f = GameFindFoeConst(game, ir->foe_id);
+    bool friendly = (f && f->friendly);
+    if (friendly) {
+        start_foe_friendly_flow(game, map, res, ir->foe_id, nx, ny);
+    } else if (GameFoeBarsHero(game, f)) {
+        // The gate holds: without the arm it demands, there is no
+        // fight to offer, only the way back.
+        const TroopDef *need = troop_by_id(f->requires_troop);
+        char msg[RES_BANNER_LEN];
+        ResTemplateVar v[] = { { "TROOP", need ? need->name : f->requires_troop } };
+        resources_format_template(msg, sizeof msg,
+                                  res->banners.foe_requires_troop, v, 1);
+        // With a picture the pack gave it, the refusal is a scene.
+        if (f->scene_index >= 0)
+            player_io_note_scene_event(game,
+                                       f->scene_title[0] ? f->scene_title
+                                                         : res->ui.dt_foes,
+                                       msg, f->scene_index);
+        else
+            player_io_note(game, NULL, msg);
+        ir->bounce_back = true;
+    } else {
+        start_foe_hostile_flow(game, ir->foe_id, nx, ny);
+        ir->bounce_back = true;
+    }
+}
+
 bool GameStep(Game *game, Map *map, Fog *fog,
               const Resources *res, int dx, int dy) {
     if (dx == 0 && dy == 0) return false;
@@ -145,487 +637,21 @@ bool GameStep(Game *game, Map *map, Fog *fog,
     // The hero passes over castles/towns/signs without triggering them.
     if (!flying && nt->interactive != INTERACT_NONE) {
         InteractResult ir = adventure_handle_interact(map, nt, game->position.zone);
-        if (ir.opened_dialog) {
-            // Sign-post text composed Game-free by adventure_handle_interact;
-            // raise it through the uniform queue.
-            player_io_note(game, ir.dialog_header[0] ? ir.dialog_header : NULL,
-                           ir.dialog_body);
-        }
-        if (ir.entered_town) {
-            // The hero is now AT this town: town transaction cores key off this.
-            // Set before GameTouchTown so any town action this step is legal.
-            snprintf(game->position.in_town, sizeof game->position.in_town,
-                     "%s", ir.town_id);
-            GameTouchTown(game, ir.town_id);
-            // Look up by id -- the stepped-onto tile may be the town's
-            // gate coords, not its home (x,y), so coord-keyed lookup can
-            // miss. ir.town_id comes from the map tile metadata (which
-            // was stamped from the ResTown record), so it's authoritative.
-            const ResTown *rt = resources_town_by_id(res, ir.town_id);
-            const char *disp = (rt && rt->name[0]) ? rt->name : ir.town_id;
-            views_open_town(disp, ir.town_id, ir.town_boat_x, ir.town_boat_y);
-            // Raise the TOWN view through the queue (replace=true: VIEW_TOWN
-            // resets the shell stack). views_open_town set the town context
-            // statics above.
-            {
-                PlayerRequest *r = player_io_screen(game, VIEW_TOWN,
-                                                    /*replace=*/true, NULL, NULL);
-                if (r) {
-                    snprintf(r->view_record_key, sizeof r->view_record_key,
-                             "%s", ir.town_id);
-                    r->view_boat_x = ir.town_boat_x;
-                    r->view_boat_y = ir.town_boat_y;
-                }
-            }
-        }
-        if (ir.artifact_idx >= 0) {
-            const ArtifactDef *a = artifact_by_index(ir.artifact_idx);
-            if (a && GameClaimArtifact(game, ir.artifact_idx)) {
-                MapClearInteractive(map, nx, ny);
-                GameAddConsumed(game, game->position.zone, nx, ny);
-                // The header names what you found; the body is the artifact's
-                // own flavour from the pack, then the map-piece footer. Both
-                // come from the pack's strings -- a Roman artifact must not
-                // talk about a scepter.
-                char header[256], body_a[512];
-                ResTemplateVar av[] = { { "ARTIFACT", a->name } };
-                resources_format_template(header, sizeof header,
-                                          res->banners.artifact_found, av, 1);
-                snprintf(body_a, sizeof body_a, "%s%s%s",
-                         a->effect[0] ? a->effect : "", a->effect[0] ? "\n\n" : "",
-                         res->banners.artifact_map_piece);
-                player_io_note(game, header, body_a);
-            }
-        }
-        if (ir.opened_castle) {
-            // Mark visited on any castle entry -- audience, own, or
-            // hostile -- so the Castle Gate spell can list it. Per
-            // OpenKB spec section 15: castle_visited[i] is set on first
-            // visit regardless of outcome.
-            CastleRecord *cr_mut = GameFindCastle(game, ir.castle_id);
-            if (cr_mut) cr_mut->visited = true;
-            // Standing at an enemy's gate tells you whose castle it is: the
-            // castle's location is known from then on, as Augury reveals it.
-            if (cr_mut && cr_mut->owner_kind == CASTLE_OWNER_VILLAIN)
-                cr_mut->known = true;
-            const CastleRecord *cr = GameFindCastleConst(game, ir.castle_id);
-            const ResCastle *rc = resources_castle_by_id(res, ir.castle_id);
-            char header[64];
-            char body[768];
-            bool audience = resources_castle_is_home(rc);
-
-            if (audience) {
-                size_t k = 0;
-                while (k + 1 < sizeof(pending_castle_id) && ir.castle_id[k]) {
-                    pending_castle_id[k] = ir.castle_id[k]; k++;
-                }
-                pending_castle_id[k] = '\0';
-                // The hero is now AT the home castle: GameBuyTroop keys home-pool
-                // recruiting off this marker. Set before the bounce-back so a recruit
-                // this step is legal (mirrors the in_town set on the town path).
-                snprintf(game->position.home_castle,
-                         sizeof game->position.home_castle, "%s", ir.castle_id);
-                screen_home_castle_open(game);
-                header[0] = '\0';
-                body[0]   = '\0';
-            } else if (cr && cr->owner_kind == CASTLE_OWNER_PLAYER) {
-                // The hero is AT this owned castle: garrison/ungarrison key off this
-                // marker. Set before the bounce-back so the own-castle screen's
-                // transactions this step are legal (mirrors the in_town set).
-                snprintf(game->position.own_castle,
-                         sizeof game->position.own_castle, "%s", ir.castle_id);
-                screen_own_castle_open(game, ir.castle_id);
-                header[0] = '\0';
-                body[0]   = '\0';
-            } else if (cr && cr->owner_kind == CASTLE_OWNER_MONSTERS &&
-                       !game->stats.siege_weapons) {
-                // Original DOS KB: stepping onto a hostile castle gate
-                // without siege weapons silently bounces the hero back.
-                // The bounce_back flag is already set by adventure.c.
-                // openkb left this unenforced (spec section 34.14); we restore
-                // the original behavior so castles actually gate the
-                // purchase. A pack with world.castle_gate_report tells the
-                // hero whose castle it is and what holds it instead (#71).
-                gate_report(game, res, ir.castle_id, rc, header, sizeof header,
-                            body, sizeof body, NULL);
-            } else if (cr && cr->owner_kind == CASTLE_OWNER_MONSTERS) {
-                size_t k = 0;
-                while (k + 1 < sizeof(pending_castle_id) && ir.castle_id[k]) {
-                    pending_castle_id[k] = ir.castle_id[k]; k++;
-                }
-                pending_castle_id[k] = '\0';
-                // Siege prompt (OPENKB-SPEC section 24.16): name the occupant and ask
-                // the SINGLE yes/no question -- "Lay Siege". The defending
-                // garrison is NOT listed here (that is the separate "gather
-                // information" screen, section 24.18); listing it under a y/n prompt is
-                // what made the question read as the bogus "Garrison? (y/n)".
-                // The "(y/n)?" prompt chrome is drawn by prompt_draw() itself
-                // (the PK_YES_NO hint line); baking it into the body too is what
-                // produced the doubled "(y/n)?" -- so the body ends at the verb.
-                // The question alone: the Yes/No rows are the buttons, so no
-                // hand-centred "Lay Siege" is baked into the words.
-                char prompt_body[PLAYER_IO_BODY_CAP];
-                snprintf(prompt_body, sizeof prompt_body, "%s",
-                         res->banners.castle_siege_monsters);
-                // The gate report, the question under it (#71).
-                char ph[8];
-                gate_report(game, res, ir.castle_id, rc, ph, sizeof ph,
-                            prompt_body, sizeof prompt_body,
-                            res->banners.castle_siege_ask);
-                char prompt_header[64];
-                ResTemplateVar cv[] = { { "NAME", rc && rc->name[0] ? rc->name : ir.castle_id } };
-                resources_format_template(prompt_header, sizeof prompt_header,
-                                          res->banners.castle_header, cv, 1);
-                pending_flow = FLOW_SIEGE_MONSTER;
-                player_io_ask(game, FLOW_SIEGE_MONSTER, REQ_PROMPT_YES_NO,
-                              prompt_header, prompt_body);
-                header[0] = '\0';
-                body[0]   = '\0';
-            } else if (cr && cr->owner_kind == CASTLE_OWNER_VILLAIN &&
-                       !game->stats.siege_weapons) {
-                // See CASTLE_OWNER_MONSTERS branch above -- silent
-                // bounce-back without siege weapons (DOS KB faithful), or
-                // the gate report (#71).
-                gate_report(game, res, ir.castle_id, rc, header, sizeof header,
-                            body, sizeof body, NULL);
-            } else if (cr && cr->owner_kind == CASTLE_OWNER_VILLAIN) {
-                const VillainDef *v = villain_by_id(cr->villain_id);
-                size_t k = 0;
-                while (k + 1 < sizeof(pending_castle_id) && ir.castle_id[k]) {
-                    pending_castle_id[k] = ir.castle_id[k]; k++;
-                }
-                pending_castle_id[k] = '\0';
-                // Siege prompt (OPENKB-SPEC section 24.17): name the villain and ask
-                // "Lay Siege" -- no garrison listing (see the monster branch
-                // above; the listing is the section 24.18 gather-info screen). The
-                // "(y/n)?" is drawn by the prompt chrome, not baked in here (see
-                // the monster branch -- baking it in doubled the hint).
-                char prompt_body[PLAYER_IO_BODY_CAP];
-                snprintf(prompt_body, sizeof(prompt_body),
-                    "%s and\n"
-                    "army occupy this castle.\n\n\n"
-                    "                Lay Siege",
-                    v ? v->name : cr->villain_id);
-                // The gate report, the question under it (#71).
-                char ph[8];
-                gate_report(game, res, ir.castle_id, rc, ph, sizeof ph,
-                            prompt_body, sizeof prompt_body,
-                            res->banners.castle_siege_ask);
-                char prompt_header[64];
-                snprintf(prompt_header, sizeof(prompt_header), "Castle %s",
-                         rc && rc->name[0] ? rc->name : ir.castle_id);
-                pending_flow = FLOW_SIEGE_VILLAIN;
-                player_io_ask(game, FLOW_SIEGE_VILLAIN, REQ_PROMPT_YES_NO,
-                              prompt_header, prompt_body);
-                header[0] = '\0';
-                body[0]   = '\0';
-            } else {
-                header[0] = '\0';      // the line stands on its own
-                snprintf(body, sizeof(body), "%s", res->banners.castle_uncharted);
-            }
-            if (header[0] || body[0]) {
-                player_io_note(game, header, body);
-            }
-        }
+        if (ir.opened_dialog) step_sign(game, &ir);
+        if (ir.entered_town) step_town(game, res, &ir);
+        if (ir.artifact_idx >= 0) step_artifact(game, map, res, &ir, nx, ny);
+        if (ir.opened_castle) step_castle(game, res, &ir);
         if (ir.opened_alcove) {
-            // One magic, or with rites per zone this zone's rites.
-            const ResZone *az = resources_zone_by_id(res, game->position.zone);
-            const char *azname = (az && az->name[0]) ? az->name : game->position.zone;
-            if (!GameHasRites(game, game->position.zone)) {
-                char body[256], cbuf[16];
-                snprintf(cbuf, sizeof cbuf, "%d", GameAlcoveCost(game, game->position.zone));
-                ResTemplateVar vars[] = { { "COST", cbuf }, { "ZONE", azname } };
-                resources_format_template(body, sizeof body,
-                                          res->banners.alcove_offer,
-                                          vars, 2);
-                screen_alcove_open(game);
-                pending_flow = FLOW_ALCOVE;
-                // The temple screen is open behind it, so it asks there.
-                player_io_ask_in_place(game, FLOW_ALCOVE, REQ_PROMPT_YES_NO,
-                                       res->ui.dt_alcove_offer, body);
-            } else {
-                char body[RES_BANNER_LEN];
-                ResTemplateVar vars[] = { { "ZONE", azname } };
-                resources_format_template(body, sizeof body,
-                                          res->banners.alcove_already,
-                                          vars, 1);
-                // With rites per zone the temple screen opens behind the words.
-                if (res->economy.rites_per_zone) {
-                    screen_alcove_open(game);
-                    player_io_note_in_place(game, NULL, body);
-                } else {
-                    player_io_note(game, NULL, body);
-                }
-            }
-            if (ir.bounce_back) {
-                game->position.x = prev_x;
-                game->position.y = prev_y;
-                game->travel_mode = prev_travel_mode;
-                game->boat.x = prev_boat_x;
-                game->boat.y = prev_boat_y;
-                bounced = true;
-            }
+            // The temple answers alone: nothing else on its tile is handled.
+            step_alcove(game, res);
             goto after_interact;
         }
-        if (ir.opened_dwelling) {
-            const char *kind = DwellingCatalogKind(ir.dwelling_kind);
-            if (!kind) kind = "plains";
-            DwellingState *d = GameTouchDwelling(game, game->position.zone,
-                                                 nx, ny, kind);
-            const TroopDef *t = (d && d->troop_id[0])
-                ? troop_by_id(d->troop_id) : NULL;
-            // The hero is now ON this dwelling tile: GameBuyTroop keys the dwelling
-            // recruit off this marker (troop id + tile). Set whenever the dwelling
-            // offers a troop; the count cap is enforced by the guard / flow_apply.
-            if (t) {
-                snprintf(game->position.dwelling_troop,
-                         sizeof game->position.dwelling_troop, "%s", t->id);
-                game->position.dwelling_x = nx;
-                game->position.dwelling_y = ny;
-            }
-            if (t && d && d->count > 0) {
-                {
-                    size_t k = 0;
-                    while (k + 1 < sizeof(pending_dwelling_troop) && t->id[k]) {
-                        pending_dwelling_troop[k] = t->id[k]; k++;
-                    }
-                    pending_dwelling_troop[k] = '\0';
-                }
-                {
-                    size_t k = 0;
-                    while (k + 1 < sizeof(pending_dwelling_zone) &&
-                           game->position.zone[k]) {
-                        pending_dwelling_zone[k] = game->position.zone[k]; k++;
-                    }
-                    pending_dwelling_zone[k] = '\0';
-                }
-                pending_dwelling_x = nx;
-                pending_dwelling_y = ny;
-                int max = GameMaxRecruitable(game, t->id);
-                if (max < 0) max = 0;
-                int affordable = (t->recruit_cost > 0)
-                    ? (game->stats.gold / t->recruit_cost) : 0;
-                int cap = (max < affordable) ? max : affordable;
-                if (cap > d->count) cap = d->count;
-                char header[48];
-                char body[192];
-                snprintf(header, sizeof(header), "%s", t->name);
-                char cnt_buf[16], cost_buf[16], gold_buf[16], cap_buf[16];
-                snprintf(cnt_buf,  sizeof cnt_buf,  "%d", d->count);
-                snprintf(cost_buf, sizeof cost_buf, "%d", t->recruit_cost);
-                snprintf(gold_buf, sizeof gold_buf, "%d", game->stats.gold);
-                snprintf(cap_buf,  sizeof cap_buf,  "%d", cap);
-                ResTemplateVar vars[] = {
-                    { "COUNT", cnt_buf },
-                    { "TROOP", t->name },
-                    { "COST",  cost_buf },
-                    { "GOLD",  gold_buf },
-                    { "CAP",   cap_buf },
-                };
-                resources_format_template(body, sizeof body,
-                                          res->banners.dwelling_recruit_prompt,
-                                          vars, 5);
-                DwellingKind dk = DWELLING_KIND_PLAINS;
-                switch (ir.dwelling_kind) {
-                    case INTERACT_DWELLING_PLAINS:  dk = DWELLING_KIND_PLAINS;  break;
-                    case INTERACT_DWELLING_FOREST:  dk = DWELLING_KIND_FOREST;  break;
-                    case INTERACT_DWELLING_HILLS:   dk = DWELLING_KIND_HILL;    break;
-                    case INTERACT_DWELLING_DUNGEON: dk = DWELLING_KIND_DUNGEON; break;
-                    default: break;
-                }
-                screen_dwelling_open(game, dk, t->id,
-                                     d->count, t->recruit_cost,
-                                     game->stats.gold, cap);
-                pending_flow = FLOW_RECRUIT;
-                // The dwelling screen is open: it asks how many there.
-                player_io_ask_number_in_place(game, FLOW_RECRUIT, header, body,
-                                              4, cap > 0 ? cap : 0);
-            } else if (t) {
-                char msg[RES_BANNER_LEN];
-                resources_format_template(msg, sizeof msg,
-                                          res->banners.dwelling_none_this_week,
-                                          NULL, 0);
-                player_io_note(game, NULL, msg);
-            } else {
-                char msg[RES_BANNER_LEN];
-                resources_format_template(msg, sizeof msg,
-                                          res->banners.dwelling_empty,
-                                          NULL, 0);
-                player_io_note(game, NULL, msg);
-            }
-        }
-        if (ir.opened_chest) {
-            audio_play_tune(AUDIO_TUNE_CHEST);
-            int zone_index = 0;
-            if (res) {
-                for (int i = 0; i < res->zone_count; i++) {
-                    if (strcmp(res->zones[i].id, game->position.zone) == 0) {
-                        zone_index = i;
-                        break;
-                    }
-                }
-            }
-            char body[320];
-            ChestPending cp = { 0, 0 };
-            ChestOutcome outcome = GameRollChest(game, zone_index, nx, ny,
-                                                 body, sizeof(body), &cp);
-
-            MapClearInteractive(map, nx, ny);
-            GameAddConsumed(game, game->position.zone, nx, ny);
-
-            if (outcome == CHEST_OUTCOME_GOLD && cp.pending_gold > 0) {
-                pending_chest_gold       = cp.pending_gold;
-                pending_chest_leadership = cp.pending_leadership;
-                pending_flow = FLOW_CHEST_CHOICE;
-                player_io_ask(game, FLOW_CHEST_CHOICE, REQ_PROMPT_AB, "", body);
-            } else {
-                player_io_note(game, NULL, body);
-            }
-        }
-        if (ir.opened_telecave) {
-            int found_self = -1;
-            int pair_target = -1;
-            int seq = 0;
-            int self_seq = -1;
-            for (int i = 0; i < game->placement_count; i++) {
-                const SaltedPlacement *p = &game->placements[i];
-                if (strcmp(p->zone, game->position.zone) != 0) continue;
-                if (p->kind != INTERACT_TELECAVE) continue;
-                if (p->x == nx && p->y == ny) {
-                    found_self = i;
-                    self_seq = seq;
-                }
-                seq++;
-            }
-            if (found_self >= 0 && self_seq >= 0) {
-                int target_seq = (self_seq % 2 == 0)
-                    ? self_seq + 1 : self_seq - 1;
-                int s = 0;
-                for (int i = 0; i < game->placement_count; i++) {
-                    const SaltedPlacement *p = &game->placements[i];
-                    if (strcmp(p->zone, game->position.zone) != 0) continue;
-                    if (p->kind != INTERACT_TELECAVE) continue;
-                    if (s == target_seq) { pair_target = i; break; }
-                    s++;
-                }
-            }
-            char tmsg[RES_BANNER_LEN];
-            if (pair_target >= 0) {
-                const SaltedPlacement *dst = &game->placements[pair_target];
-                game->position.x = dst->x;
-                game->position.y = dst->y;
-                game->position.last_x = dst->x;
-                game->position.last_y = dst->y;
-                FogRevealFor(res, fog, map, dst->x, dst->y);
-                resources_format_template(tmsg, sizeof tmsg,
-                                          res->banners.telecave_teleport,
-                                          NULL, 0);
-                player_io_note(game, res->ui.dt_teleport_cave, tmsg);
-            } else {
-                resources_format_template(tmsg, sizeof tmsg,
-                                          res->banners.telecave_inert,
-                                          NULL, 0);
-                player_io_note(game, res->ui.dt_teleport_cave, tmsg);
-            }
-        }
-        if (ir.opened_navmap) {
-            int target_zone = -1;
-            const char *p = ir.navmap_id;
-            const char *digit = p;
-            while (*digit && (*digit < '0' || *digit > '9')) digit++;
-            if (*digit) target_zone = atoi(digit);
-            int cur_zone = -1;
-            for (int i = 0; i < res->zone_count; i++) {
-                if (strcmp(res->zones[i].id, game->position.zone) == 0) {
-                    cur_zone = i;
-                    break;
-                }
-            }
-            // Fall back to "first undiscovered zone" when the id names no
-            // usable target: out of range, the current zone, or a zone that is
-            // ALREADY discovered. The already-discovered case matters: salted
-            // navmap ids restart at navmap_0 in every zone, so without it a
-            // navmap found on a later continent re-names the home zone and is
-            // consumed as a no-op, leaving the remaining zones undiscoverable.
-            if (target_zone < 0 || target_zone >= res->zone_count ||
-                target_zone == cur_zone ||
-                game->world.zones_discovered[target_zone]) {
-                target_zone = -1;
-                for (int i = 0; i < res->zone_count; i++) {
-                    if (i != cur_zone && !game->world.zones_discovered[i]) {
-                        target_zone = i;
-                        break;
-                    }
-                }
-            }
-            char body[128];
-            if (target_zone >= 0 && target_zone < game->world.zone_count) {
-                game->world.zones_discovered[target_zone] = true;
-                MapClearInteractive(map, nx, ny);
-                GameAddConsumed(game, game->position.zone, nx, ny);
-                const char *zn = res->zones[target_zone].name[0]
-                    ? res->zones[target_zone].name
-                    : res->zones[target_zone].id;
-                ResTemplateVar vars[] = { { "ZONE", zn } };
-                resources_format_template(body, sizeof body,
-                                          res->banners.navmap_pickup,
-                                          vars, 1);
-                player_io_note(game, NULL, body);
-            } else {
-                // All zones already discovered: consume the navmap
-                // silently. No port-authored fallback dialog.
-                MapClearInteractive(map, nx, ny);
-                GameAddConsumed(game, game->position.zone, nx, ny);
-            }
-        }
-        if (ir.opened_orb) {
-            int zone_index = -1;
-            for (int i = 0; i < res->zone_count; i++) {
-                if (strcmp(res->zones[i].id, game->position.zone) == 0) {
-                    zone_index = i;
-                    break;
-                }
-            }
-            if (zone_index >= 0 && zone_index < game->world.zone_count) {
-                game->world.orbs_found[zone_index] = true;
-            }
-            MapClearInteractive(map, nx, ny);
-            GameAddConsumed(game, game->position.zone, nx, ny);
-            char body[128];
-            int zi = (zone_index >= 0) ? zone_index : 0;
-            ResTemplateVar vars[] = { { "ZONE", res->zones[zi].name } };
-            resources_format_template(body, sizeof body,
-                                      res->banners.crystal_ball_pickup,
-                                      vars, 1);
-            player_io_note(game, res->ui.dt_crystal_ball, body);
-        }
-        if (ir.opened_foe) {
-            const FoeState *f = GameFindFoeConst(game, ir.foe_id);
-            bool friendly = (f && f->friendly);
-            if (friendly) {
-                start_foe_friendly_flow(game, map, res, ir.foe_id, nx, ny);
-            } else if (GameFoeBarsHero(game, f)) {
-                // The gate holds: without the arm it demands, there is no
-                // fight to offer, only the way back.
-                const TroopDef *need = troop_by_id(f->requires_troop);
-                char msg[RES_BANNER_LEN];
-                ResTemplateVar v[] = { { "TROOP", need ? need->name : f->requires_troop } };
-                resources_format_template(msg, sizeof msg,
-                                          res->banners.foe_requires_troop, v, 1);
-                // With a picture the pack gave it, the refusal is a scene.
-                if (f->scene_index >= 0)
-                    player_io_note_scene_event(game,
-                                               f->scene_title[0] ? f->scene_title
-                                                                 : res->ui.dt_foes,
-                                               msg, f->scene_index);
-                else
-                    player_io_note(game, NULL, msg);
-                ir.bounce_back = true;
-            } else {
-                start_foe_hostile_flow(game, ir.foe_id, nx, ny);
-                ir.bounce_back = true;
-            }
-        }
+        if (ir.opened_dwelling) step_dwelling(game, res, &ir, nx, ny);
+        if (ir.opened_chest) step_chest(game, map, res, nx, ny);
+        if (ir.opened_telecave) step_telecave(game, map, fog, res, nx, ny);
+        if (ir.opened_navmap) step_navmap(game, map, res, &ir, nx, ny);
+        if (ir.opened_orb) step_orb(game, map, res, nx, ny);
+        if (ir.opened_foe) step_foe(game, map, res, &ir, nx, ny);
         after_interact:
         if (ir.bounce_back) {
             game->position.x = prev_x;
