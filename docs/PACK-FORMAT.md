@@ -565,12 +565,10 @@ keys, tokens and grammatical positions of substitutions.
 The engine has carried no text of its own: a pack missing any required key
 has been refused at load, with every missing key printed.
 
-The `banners` and `combat_log` groups have been checked key by key even when
-the group is absent. The other groups of required keys (`ui`, `menu` with
-its `items`, `stats`, `army_view`, `morale`, `startup`, `controls`,
-`prompts`, `toasts`, `contract_view`, `spells_view`, `dialog_titles`) have
-been checked only when the group is present: an absent group has loaded
-with its strings empty.
+The groups of required keys (`banners`, `combat_log`, `ui`, `menu` with its
+`items`, `stats`, `army_view`, `morale`, `startup`, `controls`, `prompts`,
+`toasts`, `contract_view`, `spells_view`, `dialog_titles`) have been required
+too: a pack missing one has been refused, the group named.
 
 These tables have been optional; an absent one, or an absent entry, has
 left that text empty or let the screen fall back:

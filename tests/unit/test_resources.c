@@ -275,9 +275,51 @@ TEST catalog_index_must_be_its_position(void) {
     PASS();
 }
 
+// A strings group the pack must have is refused when absent, like a key.
+TEST a_missing_strings_group_is_refused(void) {
+    const char *dir = "build/ob_nogroup_pack";
+    char cmd[512];
+    snprintf(cmd, sizeof cmd, "rm -rf %s && mkdir -p %s/strings && cp tests/fixtures/animpack/game.json %s/",
+             dir, dir, dir);
+    ASSERT_EQ(0, system(cmd));
+    FILE *f = fopen("tests/fixtures/animpack/strings/en.json", "rb");
+    ASSERT(f);
+    fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
+    char *txt = malloc((size_t)len + 1);
+    ASSERT(txt);
+    ASSERT_EQ((size_t)len, fread(txt, 1, (size_t)len, f));
+    txt[len] = '\0';
+    fclose(f);
+    cJSON *root = cJSON_Parse(txt);
+    free(txt);
+    ASSERT(root);
+    cJSON_DeleteItemFromObject(root, "stats");
+    char *out = cJSON_Print(root);
+    cJSON_Delete(root);
+    ASSERT(out);
+    FILE *o = fopen("build/ob_nogroup_pack/strings/en.json", "wb");
+    ASSERT(o);
+    fputs(out, o);
+    fclose(o);
+    free(out);
+
+    Pack *p = pack_open(dir);
+    ASSERT(p);
+    pack_stack_push(p);
+    Resources *r = calloc(1, sizeof *r);
+    ASSERT(r);
+    bool ok = resources_load(r, "game.json");
+    resources_free(r);
+    free(r);
+    pack_stack_pop();
+    ASSERT_FALSE(ok);
+    PASS();
+}
+
 SUITE(unit_resources_suite) {
     RUN_TEST(catalog_has_no_troop_limit);
     RUN_TEST(catalog_index_must_be_its_position);
+    RUN_TEST(a_missing_strings_group_is_refused);
     RUN_TEST(spawn_five_troop_pool_walks_as_before);
     RUN_TEST(spawn_six_troop_pool_uses_its_own_curve);
     RUN_TEST(tile_code_key_names_a_byte);
