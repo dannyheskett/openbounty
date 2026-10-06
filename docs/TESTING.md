@@ -56,15 +56,18 @@ change that has moved a legacy pixel has failed there.
 
 ## Continuous integration
 
-Every pull request to `staging` or `main` has run `.github/workflows/ci.yml`:
+Every pull request to `staging` or `main`, and every push to `staging`, has
+run `.github/workflows/ci.yml`:
 
 - **linux:** `make test`, `make all release`, the Glory of Rome package with
-  its pack check, and the store-listing check.
+  its pack check, the store-listing check, the docs' link check
+  (`scripts/check_doc_links.py`), and `tools/mapbuild.py check` and
+  `tools/mapcheck.py` on every Glory of Rome zone.
 - **windows**, **mac**, **web:** the cross-compiled, universal and WebAssembly
   builds.
 - **android:** the APK, its contents checked, started on an emulator.
-- **ios:** the Simulator app, installed, started and screenshotted on a
-  booted Simulator.
+- **ios:** the Simulator app, installed and started on a booted Simulator;
+  the check has failed unless the app is still running 30 seconds later.
 
 with the **guard** check from `.github/workflows/attribution-guard.yml` on
 the push and on the pull request: eight checks in all, each of which has had

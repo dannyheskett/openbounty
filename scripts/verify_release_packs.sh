@@ -19,6 +19,7 @@
 set -u
 DIR="${1:-dist}"
 fail=0
+checked=0
 
 list() {
     case "$1" in
@@ -30,6 +31,7 @@ list() {
 
 for f in "$DIR"/*.tar.gz "$DIR"/*.zip; do
     [ -e "$f" ] || continue
+    checked=$((checked + 1))
     name=$(basename "$f")
     if ! listing=$(list "$f" 2>/dev/null); then
         echo "FAIL: cannot read $name"; fail=1; continue
@@ -61,4 +63,8 @@ for f in "$DIR"/*.tar.gz "$DIR"/*.zip; do
             fi ;;
     esac
 done
+# Nothing to check is a failure too: an empty directory proves nothing.
+if [ "$checked" -eq 0 ]; then
+    echo "FAIL: no archives in $DIR"; fail=1
+fi
 exit $fail

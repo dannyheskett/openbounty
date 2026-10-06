@@ -488,6 +488,8 @@ def check(pack, zid, path):
     codes = {c: v for c, v in g["tile_codes"].items()}
     for ev in z.get("events", []):
         for fx in ev.get("effects", []):
+            if "tile" not in fx:      # a reveal, which changes no tile
+                continue
             code = codes.get(fx["tile"])
             if code:
                 fired[fx["y"]][fx["x"]] = ("river" if code.get("terrain") == "river"
