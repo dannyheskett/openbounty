@@ -48,7 +48,7 @@ and failing that has picked a window-capable ES2 configuration by hand.
 | `android/res/mipmap-*/ic_launcher.png` + `android:icon` in the manifest | Play | the launcher icon |
 | `android/play-assets/icon-512.png` | Play | 512x512, 32-bit, no transparency |
 | `android/play-assets/feature-graphic-1024x500.png` | Play | 1024x500 |
-| `ios/app-store-assets/screenshots/iphone-6.9/` | Apple | landscape; the 6.9" slot has taken 2868x1320 or 2796x1290 (the five here are 2796x1290). `xcrun simctl io <udid> screenshot` on a Simulator of that size has captured the real app, so no image has been scaled or composited to hit a store's size. |
+| `ios/app-store-assets/screenshots/iphone-6.9/` | Apple | landscape; the 6.9" slot has taken 2868x1320 or 2796x1290 (the five here have been 2796x1290). `xcrun simctl io <udid> screenshot` on a Simulator of that size has captured the real app, so no image has been scaled or composited to hit a store's size. |
 | `ios/app-store-assets/screenshots/ipad-13/` | Apple | 2732x2048 landscape; required while `UIDeviceFamily` has included iPad |
 | `android/play-assets/screenshots/` | Play | landscape, at least 1080 on the long edge |
 
@@ -66,7 +66,7 @@ stores have wanted it at a public URL.
   been in `LISTING.md`.
 
 **Secrets** — `docs/RELEASE-PROCESS.md` has listed them by name and said what
-each one unlocks. `ios/app-store-assets/TESTFLIGHT.md` has been the
+each one has unlocked. `ios/app-store-assets/TESTFLIGHT.md` has been the
 step-by-step for creating them without a Mac.
 
 ---
@@ -76,7 +76,7 @@ step-by-step for creating them without a Mac.
 | Script | What it has done |
 |---|---|
 | `scripts/store_listing.py` | parsed both LISTING.md files, enforced each store's length limits, and banned a listing that names another store or the original game. CI has run `--check` on every PR. |
-| `scripts/asc_setup.py` | one-time Apple setup, one subcommand each: `bundle-id` registered the App ID; `profile --cert-sha1 SHA1 --out FILE` created (or reused) the App Store provisioning profile bound to the team certificate; `app-info [--privacy-url URL]` set category, content rights, age rating, privacy-policy URL, support/marketing URLs, a free price, and availability in every territory except mainland China. Each has taken `--dry-run`. |
+| `scripts/asc_setup.py` | one-time Apple setup, one subcommand each: `bundle-id` has registered the App ID; `profile --cert-sha1 SHA1 --out FILE` has created (or reused) the App Store provisioning profile bound to the team certificate; `app-info [--privacy-url URL]` has set category, content rights, age rating, privacy-policy URL, support/marketing URLs, a free price, and availability in every territory except mainland China. Each has taken `--dry-run`. |
 | `scripts/asc_release.py` | `status` (the current version, its state and builds); `listing [--skip-if-busy]` (text + screenshots); `release --build N [--submit] [--phased] [--whats-new TEXT] [--skip-if-busy]` (the build attached to version `1.0.N`, sent to App Review with `--submit`, released in phases with `--phased`). `--skip-if-busy` has exited 0 when no version is free to write onto; `listing` and `release` have taken `--dry-run`. |
 | `scripts/asc_next_build.py` | printed the next build number App Store Connect has not seen, so branch and release builds have never collided. |
 | `scripts/testflight_notes.py` | waited out Apple's processing window and written "What to Test" onto the build TestFlight has just received. |

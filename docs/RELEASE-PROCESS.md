@@ -20,12 +20,12 @@ to `main` has been the release. Nothing has been pushed to `main` directly.
 pull request has pushed its merge commit to `main`, and that push has run the
 release workflow, which has picked the next `N`, built every target, and
 published. The `main` ruleset has refused direct pushes, so that merge has been
-the only way anything reaches `main`. Promotions that change only docs have
+the only way anything has reached `main`. Promotions that have changed only docs have
 been skipped via `paths-ignore`. The workflow has also been runnable by hand
 from the **Actions** tab → **release** → **Run workflow**, which is what you
-want to retry a release that failed for a reason outside the code (see §4); a
-hand run has defaulted to `dry_run`, which builds and verifies everything and
-tags and publishes nothing.
+want to retry a release that has failed for a reason outside the code (see §4); a
+hand run has defaulted to `dry_run`, which has built and verified everything
+and tagged and published nothing.
 
 The workflow has:
    - computed the next number `N` (max existing `release-N` tag + 1),
@@ -42,7 +42,7 @@ The version baked into the binary has been reported as `openbounty build N`
 by `--version`.
 
 > **Note:** there has been no `VERSION` file and no `git tag` step on your
-> part. The workflow has created the tag *after* all builds succeed (see
+> part. The workflow has created the tag *after* all builds have succeeded (see
 > §2), so a failed build has left `N` unused and the next run has reused it.
 
 ---
@@ -58,7 +58,7 @@ practice, the merge of a `staging` -> `main` pull request) and by
   reached the tag/publish step.
 - **prepare**: has computed the next release number `N` from the existing
   `release-*` tags, and captured the triggering commit SHA up front (so a
-  mid-build merge to `main` can't change what gets tagged).
+  mid-build merge to `main` has never changed what has been tagged).
 - **linux + windows builds** (Ubuntu 22.04): has rebuilt raylib from source
   against the runner's glibc, run `make test` (the full suite, unit, e2e,
   autoplay, and the combat-formula regression digests), built the Linux
@@ -71,38 +71,41 @@ practice, the merge of a `staging` -> `main` pull request) and by
   the pack rule.
 - **web (WASM) build** (Ubuntu): has set up emsdk, built raylib for both Linux
   and web, built both wasm bundles and packaged `dist-web`. It has needed the
-  *Linux* toolchain as well as emsdk because the wasm target depends on the
-  asset pack, and the native binary is what zips that pack.
+  *Linux* toolchain as well as emsdk because the wasm target has depended on the
+  asset pack, and the native binary has been what has zipped that pack.
 - **iOS build** (macOS 26): has built raylib for macOS and the pack tool
-  first -- the .app embeds the Glory of Rome pack and the native binary is
-  what zips that pack -- then packaged the device `.ipa`. Unsigned when the
-  Apple secrets are absent; App Store-signed when they are present, in a
-  throwaway keychain, with the entitlements the Makefile writes and the icon
-  compiled into `Assets.car`. The build number has been the larger of `N` and
+  first -- the .app has embedded the Glory of Rome pack and the native binary
+  has been what has zipped that pack -- then packaged the device `.ipa`. The
+  `.ipa` has been unsigned when the Apple secrets have been absent, and
+  App Store-signed when they have been present, in a throwaway keychain, with
+  the entitlements the Makefile has written and the icon compiled into
+  `Assets.car`. The build number has been the larger of `N` and
   the next number App Store Connect has not seen (`scripts/asc_next_build.py`),
-  so a branch build on TestFlight never collides with it. The signed path has
-  then verified the bundle is App Store-shaped before it is uploaded
-  anywhere.
+  so a branch build on TestFlight has never collided with it. The signed path
+  has then verified the bundle has been App Store-shaped before it has been
+  uploaded anywhere.
 - **android build** (Ubuntu): has installed the NDK, build-tools and platform,
-  built raylib for `arm64-v8a` and the Linux toolchain (the APK embeds the
-  Glory of Rome pack, and the native binary is what zips that pack), then
+  built raylib for `arm64-v8a` and the Linux toolchain (the APK has embedded
+  the Glory of Rome pack, and the native binary has been what has zipped that
+  pack), then
   packaged a debug-signed sideload **APK** and -- only when all four
-  `PLAY_*` signing secrets are present -- an upload-signed **AAB**. Mobile has
-  been Glory of Rome only; the job has asserted no King's Bounty pack is
+  `PLAY_*` signing secrets have been present -- an upload-signed **AAB**. Mobile has
+  been Glory of Rome only; the job has asserted no King's Bounty pack has been
   inside either artifact.
 - **publish** (Ubuntu): has downloaded all build artifacts, created the
   `release-N` **tag at the triggering SHA**, and published the GitHub Release
   with auto-generated notes and the archives attached.
 - **publish-play** (Ubuntu): has pushed the AAB to Play's **internal** track,
   gated on `publish` having succeeded and on `dry_run` being false, and
-  skipped entirely when `PLAY_SERVICE_ACCOUNT_JSON` is absent. The package
+  skipped entirely when `PLAY_SERVICE_ACCOUNT_JSON` has been absent. The package
   name has been `com.danheskett.gloryofrome` -- the app, not the repository.
 - **publish-testflight** (macOS 26): has validated the `.ipa` with
   `altool --validate-app` and then uploaded it to App Store Connect, where it
-  appears in TestFlight after Apple's 5-15 minute processing. Gated the same
-  way as `publish-play`: on `publish` having succeeded, on `dry_run` being
-  false, and skipped when the `ASC_*` secrets are missing or the `.ipa` is
-  unsigned. Validation has run first because it names the rejection reason
+  has appeared in TestFlight after Apple's 5-15 minute processing. It has been
+  gated the same way as `publish-play`: on `publish` having succeeded, on
+  `dry_run` being false, and skipped when the `ASC_*` secrets have been missing
+  or the `.ipa` has been unsigned. Validation has run first because it has
+  named the rejection reason
   without consuming the build number.
 - **testflight-notes** (Ubuntu): has written the "What to Test" note onto the
   uploaded build (`scripts/testflight_notes.py`), waiting up to 90 minutes
@@ -111,15 +114,15 @@ practice, the merge of a `staging` -> `main` pull request) and by
 - **submit-appstore** (Ubuntu): has sent the build to App Review, and has run
   only on a hand run with `submit_for_review` ticked.
 
-Tagging has happened in the publish job, after every build job succeeds. If
-any build fails, no tag has been created and `N` has been reused next time.
+Tagging has happened in the publish job, after every build job has succeeded. If
+any build has failed, no tag has been created and `N` has been reused next time.
 
 Each desktop archive has contained: the binary, `README.txt` (rendered from
 `dist/README.txt.in` with the build number substituted), `LICENSE`, and
 `NOTICES.md`; a `gloryofrome-*` archive has also carried
 `assets/glory-of-rome.openbounty`. No desktop archive has carried King's
-Bounty's pack: desktop users supply their own by running `./openbounty
---extract` in the directory that holds `KB.EXE`.
+Bounty's pack: desktop users have supplied their own by running
+`./openbounty --extract` in the directory that has held `KB.EXE`.
 
 Each web archive has embedded its game's pack inside `openbounty.data`,
 since it must carry a pack to run at all: `openbounty-*-web-wasm.zip` King's
@@ -128,7 +131,7 @@ Bounty, `gloryofrome-*-web-wasm.zip` Glory of Rome. The site
 `/dist/openbounty/` and `/dist/gloryofrome/`.
 
 The Android and iOS artifacts have carried `glory-of-rome.openbounty` inside
-them, which is ours to distribute. Their own guards have checked the opposite
+them, which has been ours to distribute. Their own guards have checked the opposite
 thing -- that the King's Bounty pack is *not* in there.
 
 **Secrets the Android path has needed**: `PLAY_UPLOAD_KEYSTORE` (base64 of
@@ -141,8 +144,8 @@ sideload APK and simply skipped the bundle and the upload.
 
 `.github/workflows/testflight.yml`, run by hand from the branch you are on,
 has built and signed that branch, asked App Store Connect for the next free
-build number (`scripts/asc_next_build.py`, so branch builds never collide
-with release builds), uploaded, and written a "What to Test" note naming the
+build number (`scripts/asc_next_build.py`, so branch builds have never
+collided with release builds), uploaded, and written a "What to Test" note naming the
 branch and commit. Nothing has been tagged and no GitHub Release has been
 made.
 
@@ -165,12 +168,12 @@ Each merge to `main` has produced one `release-N` with all of these:
 
 | Artifact | What it has been |
 |---|---|
-| `openbounty-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **OpenBounty** -- the engine alone. Plays King's Bounty from a pack the player builds from their own `KB.EXE` (`openbounty --extract`). Contains no pack. |
-| `gloryofrome-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **Glory of Rome** -- the same binary with `assets/glory-of-rome.openbounty` beside it, where pack discovery already looks, so it starts with no flags. |
+| `openbounty-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **OpenBounty** -- the engine alone. It has played King's Bounty from a pack the player has built from their own `KB.EXE` (`openbounty --extract`), and has contained no pack. |
+| `gloryofrome-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **Glory of Rome** -- the same binary with `assets/glory-of-rome.openbounty` beside it, where pack discovery has looked, so it has started with no flags. |
 | `openbounty-build-<N>-web-wasm.zip` | The King's Bounty browser build (its pack embedded in `openbounty.data`), served at danheskett.com/dist/openbounty/. |
 | `gloryofrome-build-<N>-web-wasm.zip` | The Glory of Rome browser build (its pack embedded in `openbounty.data`), served at danheskett.com/dist/gloryofrome/. |
 | `gloryofrome-build-<N>-ios-arm64.ipa` | The App Store-signed iOS app, uploaded to TestFlight. |
-| `gloryofrome-build-<N>-android-arm64.apk`, `gloryofrome-build-<N>-android.aab` | The Android sideload APK and the upload-signed Play bundle, pushed to Play's internal track when `PLAY_SERVICE_ACCOUNT_JSON` exists. |
+| `gloryofrome-build-<N>-android-arm64.apk`, `gloryofrome-build-<N>-android.aab` | The Android sideload APK and the upload-signed Play bundle, pushed to Play's internal track when `PLAY_SERVICE_ACCOUNT_JSON` has existed. |
 
 `scripts/verify_release_packs.sh` has enforced the pack rule on every
 archive in each build job: no pack in an `openbounty-*` desktop archive,
@@ -189,19 +192,20 @@ run the full test suite (`make test`), built the dev and release binaries
 rule, and validated the store listings (`scripts/store_listing.py --check`).
 Windows, macOS, web, iOS and Android jobs have run a cross-compile /
 universal / wasm / Simulator / APK smoke build as cheap insurance that the
-other targets still build before a release is cut. The Android job has also
-unzipped the APK it built and asserted it carries the pack, the `.so` and
+other targets have still built before a release has been cut. The Android
+job has also unzipped the APK it has built and asserted it has carried the
+pack, the `.so` and
 `classes.dex`, and no King's Bounty pack.
 
-CI has run on doc-only pull requests too; the release workflow is the one
-that has skipped them (`paths-ignore`).
+CI has run on doc-only pull requests too; the release workflow has been the
+one that has skipped them (`paths-ignore`).
 
 CI has run on pull requests into `staging` and into `main` alike, so a
-promotion has been tested as a pull request before its merge reaches `main`.
+promotion has been tested as a pull request before its merge has reached `main`.
 The `staging` -> `main` pull request has also had to pass the **from staging**
 check (`.github/workflows/promotion.yml`): the `main` ruleset has required it,
-because GitHub has no setting that limits a pull request's source branch. The
-push that a merge makes to `main` has not run CI again; it has gone to the
+because GitHub has had no setting that has limited a pull request's source
+branch. The push that a merge has made to `main` has not run CI again; it has gone to the
 release workflow, which has run the same test suite before publishing
 anything.
 
@@ -209,15 +213,15 @@ anything.
 
 ## 4. Recovering from a failed release
 
-Because the tag has been created **last** (only after all builds succeed), a
+Because the tag has been created **last** (only after all builds have succeeded), a
 failed build has left no tag and no release, and the same `N` has been
-reused by the next run. If the failure was outside the code (a runner, an
+reused by the next run. If the failure has been outside the code (a runner, an
 expired secret, a store outage), re-run the workflow by hand with `dry_run`
-off; it builds `main`'s tip. If the code needs a fix, land it on `staging`
+off; it has built `main`'s tip. If the code needs a fix, land it on `staging`
 through a pull request and promote again with a new `staging` -> `main` pull
 request; `main` has taken no direct push.
 
-If a run failed *after* the publish job partially created the tag or
+If a run has failed *after* the publish job has partially created the tag or
 release:
 
 ```sh
@@ -238,11 +242,11 @@ with a new `staging` -> `main` pull request, as above.
 
 The build number has come from the **`release-*` git tags**: the Makefile has
 derived `RELEASE_VERSION` as the highest `release-N` tag number, falling
-back to `0` when there are no tags (a fresh checkout), and
+back to `0` when there have been no tags (a fresh checkout), and
 `OPENBOUNTY_VERSION` has defaulted to it. The release workflow has passed the
 computed `N` explicitly via `RELEASE_VERSION=N` on every `make` invocation,
 so the binary has been stamped with the release number even before the tag
-exists.
+has existed.
 
 The number has been embedded into every binary at compile time (into
 `build/version.h`) and exposed via:
@@ -252,7 +256,7 @@ The number has been embedded into every binary at compile time (into
 ```
 
 To override locally for testing, pass either variable on the make command
-line, the first being the form the release workflow uses:
+line, the first being the form the release workflow has used:
 
 ```sh
 make RELEASE_VERSION=99
@@ -263,7 +267,7 @@ make RELEASE_VERSION=99
 
 ## 6. Local builds
 
-The same Makefile targets the workflow uses have been available locally:
+The same Makefile targets the workflow has used have been available locally:
 
 ```sh
 make                  # debug build (build/debug/openbounty), compile only

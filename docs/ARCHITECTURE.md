@@ -23,13 +23,13 @@ covered the engine library in detail, `OPENBOUNTY-SPEC.md` every rule, and
   `libobengine.a` with cJSON and miniz inside, and has linked with only
   `-lm -lpthread`. It has included nothing from `src/`, `demo/` or
   `autoplay/`; the library-boundary check in `make all` has failed the build
-  when it does.
+  whenever it has.
 - **Shell** (`src/`): everything a player sees and touches. It has reached
   the platform only through five seams (`src/gfx.h`, `src/frame_host.h`,
   `src/input_host.h`, `src/audio_backend.h`, `src/font_backend.h`): raylib
   has implemented them on desktop, web and Android, and `ios/` natively on
   iOS (`IOS-BACKEND.md`).
-- **Demo** (`demo/`) and **autoplay** (`autoplay/`): two players that drive
+- **Demo** (`demo/`) and **autoplay** (`autoplay/`): two players that have driven
   the engine without the shell's UI. Each has included only engine headers,
   and neither has included the other. The shell has reached each through one
   adapter file.
@@ -40,8 +40,8 @@ covered the engine library in detail, `OPENBOUNTY-SPEC.md` every rule, and
 
 1. The shell has read input (`src/input.c`) and turned a move into
    `GameStep`.
-2. `GameStep` has moved the hero, revealed the fog, handled what stands on
-   the tile (`engine/adventure.c` classifies it), moved the foes and ticked
+2. `GameStep` has moved the hero, revealed the fog, handled what has stood
+   on the tile (`engine/adventure.c` has classified it), moved the foes and ticked
    the day.
 3. Anything the player must see or answer has been raised on the
    **player-IO queue** (`engine/include/player_io.h`), a FIFO inside the
@@ -75,8 +75,9 @@ from the pack.
 - **Two presentations:** `render.mode` has chosen the presentation, `legacy`
   (King's Bounty's 320×200 screens, reproduced exactly) or `modern` (Glory
   of Rome's). The shell has read it through `CL_IS_MODERN` (`src/layout.h`).
-  It has chosen how the game looks, never its rules: every gameplay
-  difference between the packs has been a `game.json` key the engine reads.
+  It has chosen how the game has looked, never its rules: every gameplay
+  difference between the packs has been a `game.json` key the engine has
+  read.
 - **The legacy freeze:** the legacy presentation has been finished, and
   `tests/unit/test_legacy_freeze.c` has pinned its geometry and logic.
 
@@ -94,7 +95,7 @@ autoplay has predicted a fight on a copy of the world and then won it live.
 `SaveGameWrite` and `SaveGameRead` (`engine/savegame.c`, the writer in
 `engine/state_serialize.c`) have stored the `Game` and the fog as JSON; the
 map has been reloaded from the pack. `OPENBOUNTY-SPEC.md` §27 has given the
-schema and when `SAVE_VERSION` changes.
+schema and when `SAVE_VERSION` has changed.
 
 ## Where the rest has lived
 

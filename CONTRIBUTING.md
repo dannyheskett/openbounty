@@ -1,6 +1,6 @@
 # Contributing to openbounty
 
-openbounty is a C99 engine with two packs: `assets/kings-bounty`, a
+openbounty has been a C99 engine with two packs: `assets/kings-bounty`, a
 reproduction of King's Bounty (1990), and `assets/glory-of-rome`, The Glory of
 Rome. `docs/ARCHITECTURE.md` has given the overview, `docs/README.md` the map
 of every doc, and `docs/GLOSSARY.md` the terms.
@@ -31,18 +31,18 @@ make && make test                  # the game, its packs and the tests
   before a merge. Pull requests have been squash-merged.
 - A release has been the `staging` → `main` pull request, made by the
   maintainer (`docs/RELEASE-PROCESS.md`). An issue has been closed when its
-  fix ships in a release, not when it merges.
+  fix has shipped in a release, not when it has merged.
 
 ## Code
 
 - Match the file you are in: its naming, its comment density, its idiom.
   `-Wall -Wextra` has had to stay clean.
-- **The engine has stayed pure.** Nothing in `engine/` includes raylib or
+- **The engine has stayed pure.** Nothing in `engine/` has included raylib or
   anything from `src/`, `demo/` or `autoplay/` (`engine/README.md`, Rules for
-  engine code). State and rules belong in the engine; drawing and input
-  belong in the shell.
-- **Rules come from the pack.** A gameplay difference between the packs has
-  been a `game.json` key the engine reads, documented in
+  engine code). State and rules have belonged in the engine; drawing and
+  input have belonged in the shell.
+- **Rules have come from the pack.** A gameplay difference between the packs has
+  been a `game.json` key the engine has read, documented in
   `docs/PACK-FORMAT.md`, with the King's Bounty behaviour as its default.
   `CL_IS_MODERN` has chosen how the game looks, never how it plays.
 - **The legacy presentation has been frozen.** King's Bounty's screens have
@@ -55,15 +55,15 @@ make && make test                  # the game, its packs and the tests
 ## Docs
 
 The docs have described the code as it stands, so the same text has stayed
-true however it was arrived at:
+true however it has been arrived at:
 
 - **Current state only**, in the perfect tense: "The loader has read `x`;
   absent, it has defaulted to 10."
 - **No history, status or plans:** no dates, no "now", "new", "since",
   "used to", no to-do lists or wishlists. Git and the issues have held the
-  history. A bare issue tag such as `(#157)` has marked where a rule came
-  from.
-- **One home for each fact.** A table that lives in a spec has been
+  history. A bare issue tag such as `(#157)` has marked where a rule has
+  come from.
+- **One home for each fact.** A table that has lived in a spec has been
   referred to, not copied; the flag list has been checked against README §3
   and `OPENBOUNTY-SPEC.md` REQ-480 by `tests/unit/test_cli_flags.c`.
 - A change to a rule, a pack key, a flag or the save format has updated its

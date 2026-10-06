@@ -26,7 +26,7 @@ scratch files under `build/`.
 | Autoplay | `tests/autoplay/` | `autoplay_` | The oracle's snapshot, rollback and recording plumbing. |
 
 `tests/unit/test_legacy_freeze.c` has pinned the legacy presentation: a
-change that moves a legacy pixel has failed there.
+change that has moved a legacy pixel has failed there.
 
 ## Adding a test
 
@@ -41,7 +41,7 @@ change that moves a legacy pixel has failed there.
    Tests on Glory of Rome have opened `assets/glory-of-rome` with
    `pack_open` and `pack_stack_push`, and popped it before any assert can
    fail.
-4. A test that writes a file has written it under `build/` and removed it.
+4. A test writing a file has written it under `build/` and removed it.
 
 ## Before a pull request
 
@@ -49,7 +49,7 @@ change that moves a legacy pixel has failed there.
 |---|---|
 | Any | `make`, `make test` |
 | Gameplay rules | Autoplay on a few worlds of each pack: `./build/release/openbounty --pack <pack> --autoplay --headless --seed N` (exit 0 = solved); for a wider sweep, `--validate-pack LO HI` |
-| Glory of Rome screens | `make release`, then `./build/release/openbounty --pack glory-of-rome --gallery <dir>`: every screen to PNG, with the tap check (`[tapcheck] FAIL` fails the run) |
+| Glory of Rome screens | `make release`, then `./build/release/openbounty --pack glory-of-rome --gallery <dir>`: every screen to PNG, with the tap check (`[tapcheck] FAIL` has failed the run) |
 | King's Bounty screens | The same gallery with `--pack kings-bounty`, and `test_legacy_freeze` |
 | A Rome map | `python3 tools/mapbuild.py check <pack-dir> <zone-id> <map.dat>` and `python3 tools/mapcheck.py <pack-dir> <map.dat>` |
 | The save format | The round-trip suites and the golden fixture (`OPENBOUNTY-SPEC.md` §27) |

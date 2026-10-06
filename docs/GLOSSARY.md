@@ -18,8 +18,8 @@ The words the code and the docs have used, in alphabetical order.
 | **Gallery** | `--gallery <dir>`: every screen drawn to a PNG, each one checked for its taps. |
 | **Garrison** | The troops holding a castle, or a foe's own army. |
 | **Guardian** | A zone army with `static`: it has never moved, its fight has been forced, and with `combat.guardian_full_band` it has fielded all five stacks. |
-| **Legacy** | The presentation that reproduces King's Bounty's DOS screens (`render.mode` `legacy`); finished and pinned by `test_legacy_freeze`. |
-| **Leadership** | How many hit points of troops the hero has been able to control; it has capped recruiting and decided which stacks stay under control. |
+| **Legacy** | The presentation that has reproduced King's Bounty's DOS screens (`render.mode` `legacy`); finished and pinned by `test_legacy_freeze`. |
+| **Leadership** | How many hit points of troops the hero has been able to control; it has capped recruiting and decided which stacks have stayed under control. |
 | **Modern** | Glory of Rome's presentation (`render.mode` `modern`): larger tiles, a rail, touch and pages. `CL_IS_MODERN` in the shell. |
 | **Pack** | A game's content: `game.json`, strings, art, audio and maps, as a directory or a `.openbounty` zip (`PACK-FORMAT.md`). |
 | **Pack stack** | The open packs, read top-down: a file in a higher pack has won (`pack_stack_read`). |
