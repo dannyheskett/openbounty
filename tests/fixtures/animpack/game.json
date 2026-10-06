@@ -102,8 +102,6 @@
  "world": {
   "language": "en",
   "starting_zone": "z",
-  "zone_noun": "zone",
-  "zone_noun_plural": "zones",
   "default_name": "Hero"
  },
  "render": {

@@ -51,7 +51,7 @@ its defaults.
 | `pack_kind`   | string   | `"base"` or `"mod"`. Informational. |
 | `title`       | string   | Window title. |
 | `version`     | int      | Pack schema version (`1`). |
-| `world`       | object ✱ | Global world keys: four required strings, the base locale, the option defaults and two flags (§2.5). |
+| `world`       | object ✱ | Global world keys: two required strings, the base locale, the option defaults and two flags (§2.5). |
 | `time`        | object ✱ | Day/week/difficulty constants (§2.6). |
 | `economy`     | object ✱ | Costs, chest tables, scoring (§2.6). |
 | `tuning`      | object   | `instant_army_multiplier` (up to four ints, per rank; default `[3, 2, 1, 1]`), `search_cost_days` (default 10), and the temp-death army (`temp_death`: `{"troop": id, "count": n}`; defaults: the cheapest-recruit-cost troop, 20). |
@@ -167,8 +167,8 @@ machine has had no audio device.
 A row has been bound to the option at its position, not by `id`: row 0 has
 stepped option 0 (delay), row 1 option 1 (sounds), and so on through walk
 beep, animation, CGA, music and volume. Its first value has been
-`world.default_options` at that position (§2.5); `id` and `default` have been
-read and have had no effect.
+`world.default_options` at that position (§2.5); `id` has been read and has
+had no effect.
 
 ### 2.4 `intro`
 
@@ -257,12 +257,9 @@ art has been listed in the art manifest (§9) like every other path.
 | Key | Type | Default | Effect |
 |---|---|---|---|
 | `starting_zone`    | string | required | The zone the hero has started in, at its `hero_spawn`, when no zone is `is_home`; under `magic.rites_per_zone` its rites have been known from the start. |
-| `zone_noun`        | string | required | Read and stored; no screen has drawn it. |
-| `zone_noun_plural` | string | required | Read and stored; no screen has drawn it. |
 | `default_name`     | string | required | The hero's name when the player leaves it empty. |
 | `language`         | string | `en`     | The base locale, `strings/<language>.json` (§5). |
 | `default_options`  | int array | `[4, 1, 1, 1, 1, 0, 5]` | The first values of the seven options, in order delay, sounds, walk beep, animation, CGA, music, volume; a shorter list has kept the default for the rest. The Controls rows have stepped them by position (§2.3). |
-| `max_army_slots`   | int    | 5        | Read and stored; the army has held five stacks whatever it says. |
 | `clear_keeps_ground` | bool | false    | A cleared object has restored walkable desert ground instead of plain grass (REQ-229f). |
 | `castle_gate_report` | bool | false    | A castle gate has shown the town informant's report on its castle, in a message box without siege weapons and above the siege question (string `castle_siege_ask`) with them (REQ-303). |
 
@@ -315,7 +312,6 @@ default.
 | `audio.tracks.openworld`, `.combat`, `.intro` | path | none | The map's music, the fight's, and the Introduction's theme (§2.4). |
 | `audio.tunes.walk`, `.bump`, `.chest`, `.defeat` | path (WAV) | none | The short tunes: a step, a blocked step, a chest, a defeat. An absent or unreadable one has stayed silent. |
 | `ending.grass_tile`, `carpet_tile`, `hero_tile` | path | none | The win cartoon's tiles (§4.1 for the grass and hero fallbacks). |
-| `ending.throne_backdrop` | path | none | Loaded; no screen has drawn it. |
 | `ending.grid_width` / `grid_height` | int | 6 / 5 | The cartoon's grid in tiles. |
 | `ending.carpet_column` / `carpet_length` | int | 4 / 5 | The carpet's column and its length in tiles. |
 | `ending.frame_count` / `ticks_per_step` | int | 10 / 2 | The cartoon's steps and the ticks between them. |
@@ -434,7 +430,6 @@ borrowed as described:
   units), `alcove_portrait`: the temple and its keeper (absent, the hill
   cave's backdrop and the `gnomes` troop in the troop slot).
 - `ending_win`, `ending_lose`: the ending pictures.
-- `orb`: loaded and listed in the art manifest; no screen has drawn it.
 - `siege_back_wall`, `siege_back_wall_left`, `siege_back_wall_right`,
   `siege_grid`, `field_grid`, `combat_ground` (`field` or `terrain`): the
   fight's ground and walls (§6).

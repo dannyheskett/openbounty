@@ -1167,8 +1167,6 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  res_json_str(ui, "combat_ground", "field"));
         res_copy_str(res->sprites.ending_lose, sizeof(res->sprites.ending_lose),
                  res_json_str(ui, "ending_lose", ""));
-        res_copy_str(res->sprites.orb, sizeof(res->sprites.orb),
-                 res_json_str(ui, "orb", ""));
         res_parse_path_list(cJSON_GetObjectItem(ui, "view_icons_extra"),
                         &res->sprites.view_icons_extra, &res->sprites.view_icons_extra_count);
         res_copy_str(res->sprites.chrome_overworld,
@@ -1362,7 +1360,6 @@ static void parse_controls(Resources *res, cJSON *obj) {
                  sizeof(res->controls.items[n].type),
                  res_json_str(it, "type", "bool"));
         res->controls.items[n].range = res_json_int(it, "range", 2);
-        res->controls.items[n].def   = res_json_int(it, "default", 0);
         cJSON *h = cJSON_GetObjectItem(it, "hidden");
         res->controls.items[n].hidden = cJSON_IsTrue(h);
         res->controls.items[n].audio = cJSON_IsTrue(cJSON_GetObjectItem(it, "audio"));
@@ -1439,7 +1436,6 @@ static void parse_ending(Resources *res, cJSON *obj) {
     res->ending.grass_tile[0]      = '\0';
     res->ending.carpet_tile[0]     = '\0';
     res->ending.hero_tile[0]       = '\0';
-    res->ending.throne_backdrop[0] = '\0';
     if (!cJSON_IsObject(obj)) return;
     res_copy_str(res->ending.grass_tile,
              sizeof(res->ending.grass_tile),
@@ -1450,9 +1446,6 @@ static void parse_ending(Resources *res, cJSON *obj) {
     res_copy_str(res->ending.hero_tile,
              sizeof(res->ending.hero_tile),
              res_json_str(obj, "hero_tile", ""));
-    res_copy_str(res->ending.throne_backdrop,
-             sizeof(res->ending.throne_backdrop),
-             res_json_str(obj, "throne_backdrop", ""));
     res->ending.grid_width     = res_json_int(obj, "grid_width",     res->ending.grid_width);
     res->ending.grid_height    = res_json_int(obj, "grid_height",    res->ending.grid_height);
     res->ending.carpet_column  = res_json_int(obj, "carpet_column",  res->ending.carpet_column);
@@ -2017,15 +2010,12 @@ bool resources_load(Resources *res, const char *manifest_path) {
                res->strings_missing++; } \
     } while (0)
     REQ_WORLD(starting_zone,    "starting_zone");
-    REQ_WORLD(zone_noun,        "zone_noun");
-    REQ_WORLD(zone_noun_plural, "zone_noun_plural");
     REQ_WORLD(default_name,     "default_name");
     #undef REQ_WORLD
     // Base locale code (names the strings/<language>.json file). Optional;
     // defaults to English so a pack that omits it still resolves a locale.
     res_copy_str(res->world.language, sizeof res->world.language,
              res_json_str(jw, "language", "en"));
-    res->world.max_army_slots = res_json_int(jw, "max_army_slots", 5);
     res->world.clear_keeps_ground = cJSON_IsTrue(cJSON_GetObjectItem(jw, "clear_keeps_ground"));
     res->world.castle_gate_report = cJSON_IsTrue(cJSON_GetObjectItem(jw, "castle_gate_report"));
     cJSON *jdo = cJSON_GetObjectItem(jw, "default_options");

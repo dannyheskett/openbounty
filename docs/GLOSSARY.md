@@ -32,4 +32,4 @@ The words the code and the docs have used, in alphabetical order.
 | **Shell** | `src/`: the window, rendering, audio, input and screens around the engine. |
 | **Siege** | A fight against a castle's garrison (`COMBAT_MODE_CASTLE`). |
 | **Week end** | The turn of the week: commission, upkeep, the astrology's creature and, in Glory of Rome, a renewed spell. |
-| **Zone** | One map of the world. The pack has named it (`world.zone_noun`): a *continent* in King's Bounty, a *province* in Glory of Rome. |
+| **Zone** | One map of the world: a *continent* in King's Bounty, a *province* in Glory of Rome. |

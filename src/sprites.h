@@ -125,13 +125,11 @@ typedef struct {
     Texture2D class_highlight;            // 42x44 cursor glow over current pick
     int        class_picker_selected_count;
     Texture2D *class_picker_selected;      // modern: the picker with one figure picked out
-    Texture2D orb;                        // orb of power tile overlay
 
     // Victory cartoon .
     Texture2D end_grass;
     Texture2D end_carpet;
     Texture2D end_hero;
-    Texture2D end_throne;
     Texture2D siege_back_wall;            // optional band above the siege board
     Texture2D siege_back_wall_end[2];     // its end cells, left and right
     // Optional full siege grid (sprites.ui.siege_grid): row 0 the band above
