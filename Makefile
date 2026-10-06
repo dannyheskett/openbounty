@@ -901,8 +901,9 @@ TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) \
             $(TEST_ONLY_SRC)
 
 # One gcc call compiles every source, so no .d files track its headers: it
-# depends on every header instead, and an edited header rebuilds it.
-TEST_HDR := $(wildcard engine/include/*.h src/*.h src/*/*.h demo/*.h autoplay/*.h tools/*.h tests/*.h)
+# depends on every header and included .inc file instead, and an edited one
+# rebuilds it.
+TEST_HDR := $(wildcard engine/include/*.h engine/*.h src/*.h src/*/*.h src/*.inc demo/*.h autoplay/*.h tools/*.h tools/*.inc tests/*.h)
 
 $(OUT_TEST): $(TEST_SRC) $(TEST_HDR) $(OUT_ENGLIB) build/version.h Makefile | build
 	gcc $(CFLAGS) -Ithird_party/greatest -Itests $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)

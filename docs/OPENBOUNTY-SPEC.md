@@ -3217,17 +3217,23 @@ every menu; this section has held the rules.
 - **REQ-510.** Asset extraction has been pure C compiled into the
   `openbounty` binary (`tools/extract*.c`); the invocation has been
   `./build/debug/openbounty --extract`, which has taken no path. The extractor has
-  read a user's DOS King's Bounty distribution (`KB.EXE`, etc.; input
-  `legacy/bin/KB.EXE` if present, else `./KB.EXE`) and written a complete
-  `.openbounty` pack (palette, font, sprites, tiles, chrome, audio metadata,
-  `game.json`, strings) to `<user-data>/<pack_id>.openbounty`. It has been
+  read a DOS King's Bounty distribution (`KB.EXE`, packed with COMPRESSOR or
+  already unpacked, `256.CC` and `416.CC`; input `legacy/bin/` when it holds
+  `KB.EXE`, else the current directory) and written the King's Bounty pack to
+  `<user-data>/<pack_id>.openbounty`: palette, font, sprites, tiles, chrome,
+  maps, the four PC-speaker tunes, `game.json` and `strings/en.json`, each
+  the same as `assets/kings-bounty`'s. The two music tracks, modern
+  recordings, have been copied from an installed King's Bounty pack when there
+  is one. The pack's port-authored sections (render, tile codes, controls,
+  sprites, the ending, the strings and the rest) have come from
+  `tools/extract_gamejson_const.inc`, generated from `assets/kings-bounty` by
+  `scripts/gen_extract_constants.py` and checked against it by
+  `tests/unit/test_extract_constants.c`. It has been
   split one translation unit per pipeline stage: `extract_unpack.c`,
   `extract_lzw.c`, `extract_vga.c`, `extract_png.c`, `extract_chrome.c`,
   `extract_gamejson.c`, `extract_io.c`, plus the dispatcher `extract.c`.
   `--out-dir` has emitted a loose tree instead of a zip; `--pack-dir <src>
-  <dst>` has zipped a pre-extracted tree into a `.openbounty` archive. The
-  King's Bounty pack has **not** been distributed (the DOS-extracted assets
-  have been copyright-restricted). The Python in `tools/` has been the Glory of Rome
+  <dst>` has zipped a pre-extracted tree into a `.openbounty` archive. The Python in `tools/` has been the Glory of Rome
   authoring tools (REQ-022), which no build step has run.
 
 ---

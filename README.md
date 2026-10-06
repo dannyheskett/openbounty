@@ -298,7 +298,7 @@ builder, gallery, demo, autoplay and pack validation).
 | `--validate-pack` | `[LO [HI]]` | Pack-author winnability report: the headless oracle has run over catalog worlds LO..HI (default `0..255`, the whole catalog), one seed at a time, and printed a table: per seed the verdict, objectives cleared, days, score, moves, and elapsed time, and on a miss the first objective that blocked it and why. A totals row has closed with `PASS`/`FAIL` and per-seed averages. Exit 0 only when every seed in the range has solved. |
 | `--headless` | - | Modifier for `--demo` / `--autoplay`: no window has opened; the run has played to its ending and exited with the mode's verdict code. |
 | `--verbose` | - | Has turned on the agent diagnostic channels (all at once; there has been no per-channel selection). Observation-only: a gated-off run has been bit-for-bit identical. |
-| `--extract` | - | Has built an asset pack from a user's DOS distribution and exited. It has taken no path: input `legacy/bin/KB.EXE` if present, else `./KB.EXE`; output `<user-data>/<pack_id>.openbounty`. |
+| `--extract` | - | Has built the King's Bounty pack from a DOS distribution (`KB.EXE`, `256.CC`, `416.CC`) and exited. It has taken no path: input `legacy/bin/` when it holds `KB.EXE`, else the current directory; output `<user-data>/<pack_id>.openbounty`, the same as the shipped pack, with the music copied from an installed King's Bounty pack when there is one. |
 | `--out-dir` | `<dir>` | Modifier for `--extract`: a loose asset tree to `<dir>` instead of a zip. |
 | `--pack-dir` | `<src> <dst>` | Has zipped a pre-extracted asset tree into a `.openbounty` archive. The Makefile has used it to build the shipped packs. |
 
@@ -889,9 +889,12 @@ files have been built from sources in `art/maps/` by `tools/mapbuild.py`.
 The pack extractor has been C and has compiled into the main `openbounty`
 binary; `./build/debug/openbounty --extract` has been the invocation.
 
-The extractor has read a KB.EXE distribution and written a complete
-`.openbounty` pack (palette, font, sprites, tiles, chrome, audio metadata,
-game.json). It has been broken into one translation unit per pipeline stage:
+The extractor has read a KB.EXE distribution and written the King's Bounty
+pack, file for file the same as `assets/kings-bounty` (§3, `--extract`). Its
+port-authored sections come from `tools/extract_gamejson_const.inc`,
+regenerated with `python3 scripts/gen_extract_constants.py` after the pack is
+edited (`tests/unit/test_extract_constants.c` fails until it is). It has been
+broken into one translation unit per pipeline stage:
 `extract_unpack.c`, `extract_lzw.c`, `extract_vga.c`, `extract_png.c`,
 `extract_chrome.c`, `extract_gamejson.c`, `extract_io.c`, plus the dispatcher
 `extract.c`.
