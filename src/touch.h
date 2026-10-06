@@ -75,7 +75,7 @@ void touch_forget_tap(void);
 // Absolute-cell grid (the combat target picker): a tap reports the tile it
 // landed on instead of a direction, so the screen can jump its cursor
 // there and confirm in one go.
-enum { TOUCH_GRID_COMBAT = 1 };
+enum { TOUCH_GRID_COMBAT = 1, TOUCH_GRID_WORLDMAP };
 void touch_region_grid(int x, int y, int w, int h,
                        int tile_w, int tile_h, int grid_id);
 bool touch_tapped_cell(int grid_id, int *cx, int *cy);

@@ -88,7 +88,7 @@ typedef struct {
     Texture2D rail_menu;
     Texture2D rail_map;
     Texture2D rail_army;
-    Texture2D rail_search;
+    Texture2D rail_goto;
     Texture2D rail_cast;
     // The combat command panel; Cast reuses rail_cast.
     Texture2D combat_shoot;

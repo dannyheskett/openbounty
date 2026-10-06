@@ -1242,8 +1242,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  json_str(rail, "map", ""));
         copy_str(res->sprites.rail_army,   sizeof(res->sprites.rail_army),
                  json_str(rail, "army", ""));
-        copy_str(res->sprites.rail_search, sizeof(res->sprites.rail_search),
-                 json_str(rail, "search", ""));
+        copy_str(res->sprites.rail_goto,   sizeof(res->sprites.rail_goto),
+                 json_str(rail, "goto", ""));
         copy_str(res->sprites.rail_cast,   sizeof(res->sprites.rail_cast),
                  json_str(rail, "cast", ""));
     }
@@ -1499,6 +1499,16 @@ static void parse_banners(ResBanners *b, cJSON *obj, Resources *res) {
     SET_BANNER_OPT(chest_gold_take,  "chest_gold_take");
     SET_BANNER_OPT(chest_gold_share, "chest_gold_share");
     SET_BANNER_OPT(gmr_spell_in_fight, "gmr_spell_in_fight");
+    SET_BANNER_OPT(goto_title, "goto_title");
+    SET_BANNER_OPT(goto_to, "goto_to");
+    SET_BANNER_OPT(goto_today, "goto_today");
+    SET_BANNER_OPT(goto_days, "goto_days");
+    SET_BANNER_OPT(goto_no_route, "goto_no_route");
+    SET_BANNER_OPT(goto_go, "goto_go");
+    SET_BANNER_OPT(goto_cancel, "goto_cancel");
+    SET_BANNER_OPT(gm_goto, "gm_goto");
+    SET_BANNER_OPT(gmd_goto, "gmd_goto");
+    SET_BANNER_OPT(rail_goto, "rail_goto");
     SET_BANNER_OPT(gmr_spell_on_map,   "gmr_spell_on_map");
     #undef SET_BANNER_OPT
     SET_BANNER(chest_commission,  "chest_commission");
@@ -3804,7 +3814,7 @@ int resources_art_manifest(const Resources *res, ResArtList *out) {
     art_add(out, cap, &n, res->sprites.rail_menu);
     art_add(out, cap, &n, res->sprites.rail_map);
     art_add(out, cap, &n, res->sprites.rail_army);
-    art_add(out, cap, &n, res->sprites.rail_search);
+    art_add(out, cap, &n, res->sprites.rail_goto);
     art_add(out, cap, &n, res->sprites.rail_cast);
     art_add(out, cap, &n, res->sprites.combat_shoot);
     art_add(out, cap, &n, res->sprites.combat_wait);

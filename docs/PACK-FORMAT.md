@@ -274,14 +274,15 @@ The `sprites` block has pointed at PNG files. Each entry has been either:
 
 `sprites.rail` has named the tiles of the left column, each one map tile
 square, edge to edge, because the shell has drawn the joins between them
-(DESIGN-SPEC DSGN-0022, DSGN-0023): Menu, Map, Army and Search, then the
+(DESIGN-SPEC DSGN-0022, DSGN-0023): Menu, Map, Goto and Army, then the
 puzzle, which the shell has drawn from `sprites.hud.puzzle_grid` and
-`sprites.ui.puzzle_cover`. `cast` has been the Cast command's tile in a
-fight:
+`sprites.ui.puzzle_cover`. `goto` has been optional: without it the Goto tile
+has been the `rail_goto` string on a dark card. `cast` has been the Cast
+command's tile in a fight:
 
 ```json
 "rail": { "menu": "art/ui/rail_menu.png", "map": "art/ui/rail_map.png",
-          "army": "art/ui/rail_army.png", "search": "art/ui/rail_search.png",
+          "goto": "art/ui/rail_goto.png", "army": "art/ui/rail_army.png",
           "cast": "art/ui/rail_cast.png" }
 ```
 
@@ -454,6 +455,11 @@ A few keys have been optional, each read by modern screens only:
   had no title and its rows have been A and B.
 - `banners.gmr_spell_in_fight`, `gmr_spell_on_map`: why a spell cannot be
   cast here, on the spells page.
+- `banners.goto_title`, `goto_to`, `goto_today`, `goto_days`,
+  `goto_no_route`, `goto_go`, `goto_cancel`, `rail_goto`, `gm_goto` and
+  `gmd_goto`: Goto's page, its rows, the rail's label without an icon and the
+  game menu's row (OPENBOUNTY-SPEC REQ-541). Without `gm_goto` the game menu
+  has had no Goto row.
 - `ui.title_intro` and the `intro` group: the Introduction's title-menu row
   and its captions (§2.4), required of a pack that names an `intro`.
 

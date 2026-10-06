@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-419 jobs. A job with a **Pack path** has produced that file in the pack; a
+415 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -245,20 +245,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** lowering onto one knee with the back upright, ending kneeling on one knee, the head slightly bowed
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_dux/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15711`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
 
-### intro_hero_dux_kneel_loop
-
-- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15671)
-- **Pack path:** `art/intro/hero_dux_kneel_00..07.png`
-- **prompt:** kneeling on one knee with the head bowed, breathing slowly, still, smooth loop
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_dux_kneeling/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15671`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
-
-### intro_hero_dux_kneeling
-
-- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 15670)
-- **Pack path:** `art/intro/hero_dux_kneel_00..07.png (via intro_hero_dux_kneel_loop)`
-- **prompt:** a grizzled grey-bearded barbarian warlord kneeling on one knee with his head bowed, a thick fur cloak over chain mail, a hand axe at his belt, leather boots, facing right
-- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15670`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
-
 ### intro_hero_dux_turn
 
 - **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15774)
@@ -314,20 +300,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/intro/hero_praetorianus_kneel_00..07.png`
 - **prompt:** going down onto one knee, ending fully kneeling on one knee with the head bowed
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_praetorianus/run03/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15732`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
-
-### intro_hero_praetorianus_kneel_loop
-
-- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (48x48, seed 15681)
-- **Pack path:** `art/intro/hero_praetorianus_kneel_00..07.png`
-- **prompt:** kneeling on one knee with the head bowed, breathing slowly, still, smooth loop
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=8`, `height=48`, `input_image_keep_alpha=true`, `input_image_path=build/art/intro_hero_praetorianus_kneeling/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=15681`, `style=rd_advanced_animation__custom_action`, `target=[48, 48]`, `width=48`
-
-### intro_hero_praetorianus_kneeling
-
-- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 15680)
-- **Pack path:** `art/intro/hero_praetorianus_kneel_00..07.png (via intro_hero_praetorianus_kneel_loop)`
-- **prompt:** an older bald Roman praetorian officer kneeling on one knee with his head bowed, a white mantle with gold trim over a gilded cuirass, sandals, facing right
-- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15680`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
 
 ### intro_hero_praetorianus_turn
 
@@ -2266,6 +2238,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a bronze lituus, the augur's curved staff, lying on a grey flagstone shelf with a faint pale glow around its curl, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8203`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
 
+### rail_goto
+
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 8204)
+- **Pack path:** `art/ui/rail_goto.png`
+- **prompt:** a Roman milestone, a short stone column with a worn top, beside a paved road running into the distance, on a grey flagstone shelf, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8204`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
+
 ### rail_map
 
 - **Engine:** Retro Diffusion rd_pro__default (96x96, seed 7902)
@@ -2279,13 +2258,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/ui/rail_menu.png`
 - **prompt:** a bronze stylus lying on an open wooden wax writing tablet on a grey flagstone shelf, warm lamplight, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8201`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
-
-### rail_search
-
-- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 8202)
-- **Pack path:** `art/ui/rail_search.png`
-- **prompt:** a lit bronze Roman oil lamp with a small flame standing on dark broken ground, warm light pooling below it, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=128`, `raw_only=false`, `seed=8202`, `style=rd_pro__default`, `target=[96, 96]`, `width=128`
 
 ### splash_logo_emblem
 

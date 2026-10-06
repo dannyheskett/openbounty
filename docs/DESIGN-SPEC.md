@@ -247,19 +247,21 @@ Source: `src/hud.c` `hud_column_finish`.
 
 **DSGN-0023. Left column.** The left column has held, top to bottom: Menu
 (`game.json:sprites.rail.menu`, the game menu), Map
-(`game.json:sprites.rail.map`, the world map), Army
-(`game.json:sprites.rail.army`, the army sheet), Search
-(`game.json:sprites.rail.search`, a search) and Puzzle (drawn by
-`hud_draw_puzzle_tile`, the puzzle). Each row has fired
-exactly the action its key has fired.
+(`game.json:sprites.rail.map`, the world map), Goto
+(`game.json:sprites.rail.goto`, the world map's Goto cursor, REQ-541; a pack
+without the icon has drawn the `rail_goto` string in yellow on a dark blue
+card), Army (`game.json:sprites.rail.army`, the army sheet) and Puzzle (drawn
+by `hud_draw_puzzle_tile`, the puzzle). Each row has fired
+exactly the action its key has fired; Search has kept its key and the game
+menu's World page.
 Source: `src/modern/rail.c` `ROWS`, `rail_draw`, `rail_tapped`;
 `src/shell_actions.c` `shell_dispatch_action`.
 
 **DSGN-0024. Right column.** The right column has held, top to bottom:
 Contract (the silhouette, overlaid by the active villain's animation or
-portrait; the contract), Siege (the silhouette, or its animation once siege
-weapons have been owned; the character sheet), Magic (the silhouette, or its
-animation once the zone's rites have been known; cast a spell), Gold (the
+portrait; the contract), Magic (the silhouette, or its animation once the
+zone's rites have been known; cast a spell), Siege (the silhouette, or its
+animation once siege weapons have been owned; the character sheet), Gold (the
 purse and the gold figure; the character sheet) and Days
 (`game.json:sprites.hud.days`, the sundial and the days figure; the character
 sheet). Animations have run at 2 frames a second of `ui_anim_time`, held at
@@ -732,6 +734,18 @@ spells have been full pages with choices (`page_full_body`): the strip, their
 own body, and Escape as the exit.
 Source: `src/modern/page.c` `page_full_body`.
 
+**DSGN-0073a. The world map's Goto.** Opened for Goto (REQ-541), the world
+map has been titled with `goto_title` and zoomed three times round the
+cursor, the view following it; the cursor has been a ring one tile across,
+black, yellow and black, turned red and blinking for 0.6 s when an order was
+refused. A tap on the map has moved it there (`TOUCH_GRID_WORLDMAP`). The side
+column has kept where you and your boat are, then the cursor's tile
+(`goto_to`) and the route's length (`goto_today`, `goto_days`) or, in red,
+`goto_no_route`, then two rows: Go, and Cancel on the foot with its key; the
+orb's row has not been drawn.
+Source: `src/modern/views_render.c` `draw_worldmap`, `goto_input`,
+`goto_row_fn`.
+
 **DSGN-0074. Pages to read.** A sheet has been a full page (`page_sheet`)
 whose single action has been its close: Close in the strip (DSGN-0052) and a
 tap anywhere pressing Escape, or, where its one row has been Continue (the
@@ -892,7 +906,7 @@ Source: `src/modern/gamemenu.c` `modern_gamemenu_page`, `gm_load_page`;
 **DSGN-0090. Map keys.** On the map, A has opened the army sheet, C Controls,
 F flown, L landed, I the contract, M the world map, P the puzzle, S searched,
 U cast, V the character sheet, W ended the week, D dismissed, N set sail,
-5 and keypad 5 rested, O and Escape opened the game menu, Q opened it on the
+G opened Goto (REQ-541), 5 and keypad 5 rested, O and Escape opened the game menu, Q opened it on the
 Save page, and Ctrl+Q quit. Arrows, the keypad and Home, End, PgUp and PgDn
 have stepped once a press; Enter and Space have done nothing.
 Source: `src/input.c` `input_poll`, `poll_direction`;

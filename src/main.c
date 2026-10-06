@@ -72,6 +72,7 @@
 #include "combat_loop.h"
 #include <time.h>
 #include "views_render.h"
+#include "shell_goto.h"
 #include "views_render_impl.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -1592,7 +1593,7 @@ title:;
             // Enter, Space or a tap on it swaps the map.
             bool worldmap_row = false;
             bool has_orb = false;
-            bool wm_modern = CL_IS_MODERN && views_active() == VIEW_WORLDMAP && modern_worldmap_input(&game);
+            bool wm_modern = CL_IS_MODERN && views_active() == VIEW_WORLDMAP && modern_worldmap_input(&game, &map, &fog);
             if (wm_modern) {
                 // Modern: the places list owns the keys (src/modern/views_render.c).
             } else if (views_active() == VIEW_WORLDMAP) {
@@ -1726,11 +1727,26 @@ title:;
             InputAction ra = rail_tapped();
             if (ra == INPUT_ACTION_NONE) ra = hud_tapped();   // the other column
             if (ra != INPUT_ACTION_NONE) in.action = ra;
+            // Goto (#70): a walk under way takes one step a beat; any key or
+            // tap of the player's stops it, and does nothing else.
+            bool walking = false;
+            if (shell_goto_active()) {
+                if (in.action != INPUT_ACTION_NONE || in.dx || in.dy) {
+                    shell_goto_cancel();
+                    in = (InputState){ 0, 0, INPUT_ACTION_NONE };
+                } else {
+                    int gdx, gdy;
+                    if (shell_goto_next(&game, frame_host_time(), &gdx, &gdy)) {
+                        in.dx = gdx; in.dy = gdy;
+                        walking = true;
+                    }
+                }
+            }
             shell_dispatch_action(&sctx, &in);
             if (in.action == INPUT_ACTION_NONE && (in.dx || in.dy)) {
-                if (GameStep(&game, &map, &fog, &res, in.dx, in.dy)) {
-                    last_step_time = frame_host_time();
-                }
+                bool moved = GameStep(&game, &map, &fog, &res, in.dx, in.dy);
+                if (moved) last_step_time = frame_host_time();
+                if (walking) shell_goto_after_step(&game, moved);
             }
         }
 

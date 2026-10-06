@@ -254,7 +254,7 @@ void sprites_load(Sprites *s, const Resources *res) {
     s->rail_menu               = load_rel(res->sprites.rail_menu);
     s->rail_map                = load_rel(res->sprites.rail_map);
     s->rail_army               = load_rel(res->sprites.rail_army);
-    s->rail_search             = load_rel(res->sprites.rail_search);
+    s->rail_goto               = load_rel(res->sprites.rail_goto);
     s->rail_cast               = load_rel(res->sprites.rail_cast);
     s->combat_shoot            = load_rel(res->sprites.combat_shoot);
     s->combat_wait             = load_rel(res->sprites.combat_wait);
@@ -412,7 +412,7 @@ void sprites_unload(Sprites *s) {
     gfx_texture_free(s->rail_menu);
     gfx_texture_free(s->rail_map);
     gfx_texture_free(s->rail_army);
-    gfx_texture_free(s->rail_search);
+    gfx_texture_free(s->rail_goto);
     gfx_texture_free(s->rail_cast);
     gfx_texture_free(s->combat_shoot);
     gfx_texture_free(s->combat_wait);

@@ -21,8 +21,12 @@
 void legacy_views_render_draw(const Game *g, const Map *m, const Fog *f,
                               const Sprites *s);
 // Modern world map: the places list's input (true: the keys were the view's).
-bool modern_worldmap_input(const Game *g);
+bool modern_worldmap_input(const Game *g, const Map *m, const Fog *f);
 void modern_worldmap_gallery(int cursor);
+// Goto (#70): open the world map's tile cursor on the hero; --gallery: the
+// cursor on (x, y), refused (the red ring) or not.
+void modern_worldmap_goto_open(const Game *g);
+void modern_worldmap_goto_gallery(int x, int y, bool refused);
 void modern_views_render_draw(const Game *g, const Map *m, const Fog *f,
                               const Sprites *s);
 
