@@ -1347,14 +1347,18 @@ title:;
                     dialog_dismiss();
                 }
             } else {
-                // ask_quit dialog handling: Ctrl-Q exits, any other key
-                // advances page or dismisses. Since Ctrl-Q is the only post-dialog action, we
-                // check it here for all dialogs (harmless elsewhere).
+                // Ctrl-Q on the legacy Q save message quits, as its words
+                // say; on any other message it closes the message and asks
+                // the map's "Quit without saving?" question. Any other key
+                // advances the page or dismisses.
                 bool ctrl = input_key_down(KEY_LEFT_CONTROL) || input_key_down(KEY_RIGHT_CONTROL);
                 if (ctrl && input_key_pressed(KEY_Q)) {
                     dialog_dismiss();
-                    quit_requested = true;
+                    if (fast_quit_save_message_open()) quit_requested = true;
+                    else fast_quit_open();
+                    fast_quit_set_save_message(false);
                 } else if (ui_any_key_pressed()) {
+                    fast_quit_set_save_message(false);
                     // Advance to next page or dismiss if on last page.
                     if (!dialog_advance()) {
                         dialog_dismiss();
