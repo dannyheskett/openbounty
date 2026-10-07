@@ -192,6 +192,33 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_ar
             t = cache[art]
             if t is not None:
                 img.paste(t, (px, py), t)
+    # Inner-corner fills (#63), as src/map_render.c draws them: a grass or
+    # sand cell with a wood or range on two adjacent sides gets that
+    # terrain's fill in the corner between them.
+    def ter(x, y):
+        if 0 <= x < w and 0 <= y < h:
+            return codes.get(rows[y][x], {}).get("terrain", "grass")
+        return None
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            here = ter(x, y)
+            if here not in ("grass", "desert"):
+                continue
+            for corner, (dx, dy) in (("ne", (1, -1)), ("nw", (-1, -1)), ("se", (1, 1)), ("sw", (-1, 1))):
+                a, b = ter(x + dx, y), ter(x, y + dy)
+                if a != b or a not in ("forest", "mountain"):
+                    continue
+                fam = "_sand" if here == "desert" else ""
+                name = f"{a}{fam}_fill_{corner}"
+                if name not in cache:
+                    own = tile_set and (not set_arts or name in set_arts)
+                    p = os.path.join(pack_dir, "art", "tiles", tile_set if own else "", name + ".png")
+                    cache[name] = Image.open(p).convert("RGBA") if os.path.exists(p) else None
+                if cache[name] is not None:
+                    f_ = cache[name]
+                    if f_.width != TW * 3:
+                        f_ = cache[name] = f_.resize((TW * 3, TH * 3), Image.NEAREST)
+                    img.paste(f_, ((x - x0 - 1) * TW, (y - y0 - 1) * TH), f_)
     return img
 
 

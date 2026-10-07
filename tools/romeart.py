@@ -16,6 +16,7 @@
     grass <set> <out> ...  the base grass and its variants
     stitch <set> <terrain> <out>      a PixelLab corner set into 96 px tiles
     edges [pack] [tile-set]           the terrain edges over that set's bases
+    fills [pack]                      inner-corner fills for woods and ranges
     lattice <out.json> --sprites ...  a forest/mountain layout (border contract)
     seamcheck <layout.json>           check a layout against that contract
     compose <layout.json> <out>       the layout's tiles, sprites over ground
@@ -252,6 +253,118 @@ and the edges written to art/tiles/<set>/.
 
     main()
 
+
+
+
+# ==========================================================================
+# fills.py -- inner-corner fills for woods and ranges
+# ==========================================================================
+
+def _fills(argv):
+    """Inner-corner fills (#63): where a grass (or sand) cell has a wood or
+range on two adjacent sides, the shell draws a fill of that terrain's own
+trees or rocks into the cell's corner, so a concave corner rounds off and a
+staircase reads as a slope.
+
+A fill is the set's own lattice continued into the cell: the whole sprites of
+the plain tile's arrangement whose ink centre lies in the cell within 50 px of
+the corner, drawn on a 288 px canvas with the cell in the middle (the shell
+draws it one cell up and left), so it joins the neighbours' trees and rocks
+and no sprite is cut. A set whose sprites are not kept (Italia's forest)
+takes the plain tile's own pixels within a ragged radius of the corner.
+
+    python3 tools/romeart.py fills [pack-dir]
+
+Writes art/tiles/[<set>/]<terrain>[_sand]_fill_<ne|nw|se|sw>.png.
+    """
+    import math, os, random, tempfile
+    from PIL import Image
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    TILES = os.path.join(PACK, "art", "tiles")
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    CORNER = {"se": (96, 96), "ne": (96, 0), "sw": (0, 96), "nw": (0, 0)}
+    R = 50
+    n = 0
+
+    def lattice_for(zone, t):
+        prim = os.path.join(ROOT, "art", "primitives", zone)
+        spr = os.path.join(prim, "trees" if t == "forest" else "rocks")
+        if not os.path.isdir(spr):
+            return None, None
+        args = ["romeart", "", "--sprites", spr, "--name", t]
+        if t == "forest":
+            args += ["--crown", "1" if zone == "oriens" else "0"]
+        else:
+            args += ["--terrain", "mountain"]
+            sl = os.path.join(prim, "rock_slots.json")
+            if os.path.exists(sl):
+                args += ["--slots", sl]
+        tmp = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+        args[1] = tmp
+        import contextlib, io
+        with contextlib.redirect_stdout(io.StringIO()):
+            _forestlattice(args)
+        lay = json.load(open(tmp))
+        os.remove(tmp)
+        return lay["tiles"][t]["sprites"], spr
+
+    for s in ["", "galliae", "africa", "oriens"]:
+        d = os.path.join(TILES, s)
+        zone = s or "italia"
+        for t in ("forest", "mountain"):
+            sprites, spr = lattice_for(zone, t)
+            for fam, ground in (("", "grass"), ("_sand", "desert")):
+                if not os.path.exists(os.path.join(d, f"{ground}.png")):
+                    continue
+                if fam and not os.path.exists(os.path.join(d, f"{t}_sand_edge_01.png")):
+                    continue
+                for corner, (cx, cy) in CORNER.items():
+                    out = Image.new("RGBA", (288, 288), (0, 0, 0, 0))
+                    if sprites:
+                        keep = []
+                        for (i, x, y) in sprites:
+                            im = Image.open(os.path.join(spr, f"tile_{i:02d}.png")).convert("RGBA")
+                            l, tp, r, b = im.getbbox()
+                            mx, my = x + (l + r) / 2, y + (tp + b) / 2
+                            if 0 <= mx < 96 and 0 <= my < 96 and math.hypot(mx - cx, my - cy) <= R:
+                                keep.append((y, x, im))
+                        for (y, x, im) in sorted(keep, key=lambda k: (k[0], k[1])):
+                            out.alpha_composite(im, (x + 96, y + 96))
+                    elif os.path.exists(os.path.join(d, f"{t}{fam}_edge_19.png")):
+                        # no sprites kept: the island piece's free-standing
+                        # clump (its pixels unlike the ground), set into the
+                        # corner with its middle 26 px in from the vertex
+                        isl = Image.open(os.path.join(d, f"{t}{fam}_edge_19.png")).convert("RGB")
+                        gr = Image.open(os.path.join(d, f"{ground}.png")).convert("RGB")
+                        ip, gp_ = isl.load(), gr.load()
+                        clump = Image.new("RGBA", isl.size, (0, 0, 0, 0)); cp = clump.load()
+                        for yy in range(isl.height):
+                            for xx in range(isl.width):
+                                if ip[xx, yy] != gp_[xx, yy]:
+                                    cp[xx, yy] = ip[xx, yy] + (255,)
+                        l, tp, r, b = clump.getbbox()
+                        clump = clump.crop((l, tp, r, b))
+                        mx = cx - 26 if cx else cx + 26
+                        my = cy - 26 if cy else cy + 26
+                        out.alpha_composite(clump, (int(mx - clump.width / 2) + 96, int(my - clump.height / 2) + 96))
+                    else:
+                        plain = Image.open(os.path.join(d, f"{t}.png")).convert("RGBA")
+                        rng = random.Random(f"{s}{fam}{t}{corner}")
+                        lobes = [rng.uniform(-7, 7) for _ in range(6)]
+                        pp, op = plain.load(), out.load()
+                        for y in range(96):
+                            for x in range(96):
+                                dx, dy = x - cx, y - cy
+                                a = math.atan2(abs(dy), abs(dx)) / (math.pi / 2) * (len(lobes) - 1)
+                                i0 = int(a); f = a - i0
+                                rad = 44 + lobes[i0] * (1 - f) + lobes[min(i0 + 1, len(lobes) - 1)] * f
+                                if math.hypot(dx, dy) <= rad:
+                                    op[x + 96, y + 96] = pp[x, y][:3] + (255,)
+                    a_ = out.getchannel("A").point(lambda v: 255 if v > 127 else 0)
+                    out.putalpha(a_)
+                    out.save(os.path.join(d, f"{t}{fam}_fill_{corner}.png"))
+                    n += 1
+    print(f"wrote {n} fills")
 
 
 # ==========================================================================
@@ -4699,6 +4812,7 @@ COMMANDS = {
     "grass": lambda a: _grassvar(["romeart"] + a),
     "stitch": lambda a: _stitch96(["romeart"] + a),
     "edges": lambda a: _tileedges(["romeart"] + a),
+    "fills": lambda a: _fills(["romeart"] + a),
     "lattice": lambda a: _forestlattice(["romeart"] + a),
     "seamcheck": lambda a: _seamcheck(["romeart"] + a),
     "compose": lambda a: _treetile(["romeart"] + a),

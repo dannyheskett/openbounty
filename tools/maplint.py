@@ -7,12 +7,15 @@ Reads the zone's hand-drawn source (art/maps/<zone>.txt) and fails on shapes
 that render badly with the pack's edge pieces, for the masses: forest (f),
 mountain (^) and farmland (p, w).
 
-  step      a one-cell stair step: two corner cells of the same mass, turned
-            the same way, diagonally adjacent -- a staircase of square corners
+  step      a one-cell stair step on farmland: two corner cells, turned the
+            same way, diagonally adjacent -- a staircase of square corners (a
+            wood's or range's stairs are rounded by the inner-corner fills)
   strand    a cell of a mass that belongs to no 2x2 block of it: a one-cell
             strand, spur or lone cell
   notch     a cell whose edge piece cannot show a different diagonal
-            neighbour (the corner is cut square)
+            neighbour (the corner is cut square), unless that neighbour is
+            grass or sand beside a wood or range, which an inner-corner fill
+            rounds
   pair      two different masses side by side: the edge pieces only fade to
             grass, so the seam between them is wrong
   coast     farmland beside the sea (woods and rock fade to grass at the
@@ -72,10 +75,14 @@ def findings(rows):
             if not any(all(kind(at(x + ox + i, y + oy + j)) == k for i in (0, 1) for j in (0, 1))
                        for ox in (-1, 0) for oy in (-1, 0)):
                 out.append(("strand", x, y, f"{k} cell in no 2x2 block of {k}"))
-            # notch: a different diagonal the cardinal edge cannot show
+            # notch: a different diagonal the cardinal edge cannot show --
+            # unless it is grass or sand beside a wood or range, where the
+            # shell draws an inner-corner fill (src/map_render.c)
             if open4:
                 for d, (dx, dy) in D8.items():
                     if len(d) == 2 and not same(dx, dy) and d[0] not in open4 and d[1] not in open4:
+                        if k in ('forest', 'mountain') and at(x + dx, y + dy) in ('.', 'd', ',', '='):
+                            continue
                         out.append(("notch", x, y, f"{k} edge on {sorted(open4)} hides the {d} corner"))
             # corners, for steps
             for pair in (('n', 'e'), ('n', 'w'), ('s', 'e'), ('s', 'w')):
@@ -94,6 +101,8 @@ def findings(rows):
             if k.startswith('field') and min(x, y, W - 1 - x, H - 1 - y) < 2:
                 out.append(("edge", x, y, f"{k} within two cells of the world's edge"))
     for (x, y), (k, pair) in corners.items():
+        if k in ('forest', 'mountain'):
+            continue        # the inner-corner fills round a wood's or range's stairs
         # the next step of a staircase: the corner cell diagonally beyond,
         # along the outline, turned the same way
         ddx = 1 if 'e' in pair else -1

@@ -125,6 +125,42 @@ void map_render_cell_ground(const Map *m, int mx, int my, Rectangle dst) {
                          dst, WHITE);
 }
 
+// Inner-corner fills (#63): a grass or sand cell with a wood or range on two
+// adjacent sides gets that terrain's own trees or rocks drawn into the corner
+// between them (art <terrain>[_sand]_fill_<corner>, 3x3 cells with the cell in
+// the middle, from tools/romeart.py fills), so a concave corner rounds off
+// and a staircase reads as a slope. Cosmetic: the cell stays what it is. A
+// cell holding an object is left alone.
+static void draw_inner_fills(const Map *m, const Fog *f, int cam_x, int cam_y,
+                             int ox, int oy, int x0, int x1, int y0, int y1) {
+    static const struct { const char *name; int dx, dy; } C[4] = {
+        { "ne", 1, -1 }, { "nw", -1, -1 }, { "se", 1, 1 }, { "sw", -1, 1 } };
+    for (int ty = y0; ty <= y1; ty++) {
+        for (int tx = x0; tx <= x1; tx++) {
+            int mx = cam_x + tx, my = cam_y + ty;
+            const Tile *t = MapGetTile(m, mx, my);
+            if (!t || !FogSeen(f, mx, my) || t->interactive != INTERACT_NONE) continue;
+            if (t->terrain != TERRAIN_GRASS && t->terrain != TERRAIN_DESERT) continue;
+            if (t->is_bridge) continue;
+            for (int k = 0; k < 4; k++) {
+                const Tile *a = MapGetTile(m, mx + C[k].dx, my);
+                const Tile *b = MapGetTile(m, mx, my + C[k].dy);
+                if (!a || !b || a->terrain != b->terrain) continue;
+                if (a->terrain != TERRAIN_FOREST && a->terrain != TERRAIN_MOUNTAIN) continue;
+                char stem[48], art[TILE_ART_NAME_LEN];
+                snprintf(stem, sizeof stem, "%s%s_fill_%s",
+                         a->terrain == TERRAIN_FOREST ? "forest" : "mountain",
+                         t->terrain == TERRAIN_DESERT ? "_sand" : "", C[k].name);
+                Texture2D tex = tile_cache_get(MapTerrainArt(m, stem, art, sizeof art));
+                if (!tex.id) continue;
+                Rectangle dst = { (float)(ox + (tx - 1) * CL_TILE_W), (float)(oy + (ty - 1) * CL_TILE_H),
+                                  (float)(3 * CL_TILE_W), (float)(3 * CL_TILE_H) };
+                gfx_texture_draw(tex, (Rectangle){ 0, 0, (float)tex.width, (float)tex.height }, dst, WHITE);
+            }
+        }
+    }
+}
+
 // Whether a fog strip leaves the edge toward (x, y) bare. Modern: past the
 // world's edge counts as seen, so the map's own edge never fades as if it
 // bordered unexplored land. Legacy keeps the original's strips there.
@@ -168,6 +204,8 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
             map_render_cell(m, mx, my, dst);
         }
     }
+    if (CL_IS_MODERN)
+        draw_inner_fills(m, f, cam_x, cam_y, ox, oy, v.x0, v.x1, v.y0, v.y1);
 
     // Hero (or boat). Centered on the hero's tile within the viewport.
     int hero_vx = g->position.x - cam_x;
