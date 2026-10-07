@@ -37,7 +37,7 @@
     25,
     9
    ],
-   "chests": 3,
+   "chests": 4,
    "armies": 1
   },
   {
@@ -48,8 +48,8 @@
     35,
     22
    ],
-   "chests": 4,
-   "armies": 2
+   "chests": 8,
+   "armies": 3
   },
   {
    "name": "Hibernia",
@@ -59,8 +59,8 @@
     12,
     19
    ],
-   "chests": 2,
-   "armies": 1
+   "chests": 5,
+   "armies": 2
   },
   {
    "name": "Gaul north of the Loire",
@@ -70,8 +70,8 @@
     49,
     31
    ],
-   "chests": 5,
-   "armies": 2
+   "chests": 10,
+   "armies": 4
   },
   {
    "name": "Gaul south of the Loire",
@@ -81,8 +81,8 @@
     50,
     43
    ],
-   "chests": 5,
-   "armies": 3
+   "chests": 10,
+   "armies": 5
   },
   {
    "name": "Germania, east of the Rhine",
@@ -92,8 +92,8 @@
     63,
     29
    ],
-   "chests": 3,
-   "armies": 2
+   "chests": 7,
+   "armies": 3
   },
   {
    "name": "Germania, north of the Rhine",
@@ -103,7 +103,7 @@
     54,
     18
    ],
-   "chests": 1,
+   "chests": 2,
    "armies": 0
   },
   {
@@ -114,8 +114,8 @@
     40,
     62
    ],
-   "chests": 7,
-   "armies": 3
+   "chests": 19,
+   "armies": 6
   }
  ]
 }
