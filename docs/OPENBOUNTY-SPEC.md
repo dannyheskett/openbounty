@@ -1266,17 +1266,17 @@ flagged (§38).
 - **REQ-229d.** A tile code has been able to declare cosmetic **`variants`**,
   any number of art names (heap) with the same terrain and flags (a name may repeat to
   weight it; the base art has counted once more). The shell (`src/tilevar.c`) has
-  picked one per cell when it draws, from the cell's x, y and a seed drawn
-  once per launch, so a field of one code has not been a single stamp and has
-  shuffled between launches. This has been the one stated exception to "nothing about
+  picked one per cell when it draws, from the cell's x, y and the game's
+  seed, so a field of one code has not been a single stamp, and the same game
+  has drawn the same field every launch. This has been the one stated exception to "nothing about
   appearance is computed at game time" (REQ-229): the choice has been
   draw-time only and cosmetic. The `.dat`, the engine, saves, replays and
   byte determinism have never seen it. The ground drawn under an object has
   gone through the same pick. Every variant has had to join every other and
   the base at any edge, which the pack has guaranteed by keeping variant edges
-  identical to the base (`glory-of-rome`: `grass_01..10` on `grass_variant`,
-  the grass with a patch of dry grass inside, from `tools/romeart.py grass`). The legacy pack
-  has declared no variants.
+  identical to the base (`tools/romeart.py grass` has built them so). Neither
+  shipped pack has declared variants: `glory-of-rome`'s first set
+  (`grass_01..10`, one blob on plain grass each) has been removed (#63).
 
 ## 10. Salt: per-zone object placement
 

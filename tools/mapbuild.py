@@ -335,6 +335,25 @@ def build(pack, zid, src, out, strict=False):
         out_art[y][x] = 'road_c_' + next(iter(corners))
 
     # Terrain edges.
+    def edge_idx(t, diff):
+        """(index, None) for the edge variant showing these different
+        neighbours, or (None, why) when the families have none."""
+        card = frozenset(d for d in diff if len(d) == 1)
+        m = WATER_IDX if t == 'water' else OTHER_IDX
+        for pair in ('ne', 'nw', 'sw', 'se'):
+            if card == frozenset(pair):
+                return m[pair + '_c'], None
+        if len(card) == 1:
+            return m[next(iter(card))], None
+        if not card:
+            dg = sorted(d for d in diff if len(d) == 2)
+            if len(dg) == 1:
+                return m[dg[0]], None
+            return None, f"{t} with open diagonals {dg} only; no variant"
+        if card in SPIT_IDX:
+            return SPIT_IDX[card] - (1 if t == 'water' else 0), None
+        return None, f"{t} open on {sorted(card)}; no variant"
+
     for y in range(H):
         for x in range(W):
             if out_art[y][x] is not None:
@@ -346,11 +365,26 @@ def build(pack, zid, src, out, strict=False):
             if t == 'grass':
                 out_art[y][x] = PLAIN_ART[c]
                 continue
-            diff = {d for d, (dx, dy) in DIRS8.items()
-                    if 0 <= x + dx < W and 0 <= y + dy < H
-                    and cls[y + dy][x + dx] != t}
+            near = {d: cls[y + dy][x + dx] for d, (dx, dy) in DIRS8.items()
+                    if 0 <= x + dx < W and 0 <= y + dy < H}
+            full = {d for d, k in near.items() if k != t}
+            # Every land edge has faded to grass, and the sea's own edge has
+            # drawn the shore: forest and sand meeting the sea have kept their
+            # own ground to the coast, so the shore is drawn once, not twice
+            # -- unless no variant shows what is left, when the old shape has
+            # stood. Rock has kept its fringe: cut square at the water, a crag
+            # has read as a wall.
+            diff = full if t in ('water', 'mountain') else \
+                {d for d in full if near[d] != 'water'}
+            idx, why = (None, None) if not diff else edge_idx(t, diff)
+            if diff and idx is None and diff != full:
+                diff = full
+                idx, why = edge_idx(t, diff)
             if not diff:
                 out_art[y][x] = PLAIN_ART[c]
+                continue
+            if idx is None:
+                errors.append(f"({x},{y}): {why}")
                 continue
             card = frozenset(d for d in diff if len(d) == 1)
             if card:
@@ -360,27 +394,12 @@ def build(pack, zid, src, out, strict=False):
                     (warnings if t == 'water' else notes).append(
                         f"({x},{y}): {t} edge on {sorted(card)} cannot "
                         f"show its different diagonal {lost}")
-            m = WATER_IDX if t == 'water' else OTHER_IDX
-            idx = None
-            for pair in ('ne', 'nw', 'sw', 'se'):
-                if card == frozenset(pair):
-                    idx = m[pair + '_c']
-            if idx is None and len(card) == 1:
-                idx = m[next(iter(card))]
-            if idx is None and not card:
-                dg = [d for d in diff if len(d) == 2]
-                if len(dg) == 1:
-                    idx = m[dg[0]]
-                else:
-                    errors.append(f"({x},{y}): {t} with open diagonals "
-                                  f"{sorted(dg)} only; no variant")
-                    continue
-            if idx is None and card in SPIT_IDX:
-                idx = SPIT_IDX[card] - (1 if t == 'water' else 0)
-            if idx is None:
-                errors.append(f"({x},{y}): {t} open on {sorted(card)}; no variant")
-                continue
-            name = f"{t}_edge_{idx:02d}"
+            family = f"{t}_edge"
+            # A sea whose shore is all sand has drawn a sand shore.
+            if t == 'water' and all(near[d] == 'desert' for d in diff) \
+                    and f"water_sand_edge_{idx:02d}" in a2c:
+                family = "water_sand_edge"
+            name = f"{family}_{idx:02d}"
             if name not in a2c:
                 errors.append(f"({x},{y}): {t} open on {sorted(diff)} wants "
                               f"{name}, which the pack does not ship")

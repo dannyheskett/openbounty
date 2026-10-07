@@ -4,7 +4,7 @@
 Usage:
   tools/maprender.py <pack-dir> <map.dat> <out.png> [--scale N] [--zone ID]
                      [--grid] [--tiles] [--seed N] [--crop X0,Y0,X1,Y1]
-                     [--shrink N]
+                     [--shrink N] [--no-objects]
 
 Two modes:
 
@@ -18,7 +18,8 @@ Two modes:
             will actually look like.
 
 --crop keeps only the inclusive tile box X0,Y0..X1,Y1, and --shrink N
-scales the picture down N times; both are for review pages.
+scales the picture down N times; both are for review pages. --no-objects
+keeps --zone's tile set but draws no markers.
 
 With --zone, the pack's declared objects for that zone (towns, castles,
 chests, signs, dwellings, armies) are overlaid as labelled markers, so
@@ -206,6 +207,7 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--crop", default=None)
     ap.add_argument("--shrink", type=int, default=1)
+    ap.add_argument("--no-objects", action="store_true")
     a = ap.parse_args()
     pack_dir, map_path, out_path = a.pack_dir, a.map_path, a.out_path
     scale, zone_id = a.scale, a.zone
@@ -244,7 +246,7 @@ def main():
             d.line([(0, (y - oy) * cell[1]), (img.width, (y - oy) * cell[1])],
                    fill=(255, 255, 255), width=1)
 
-    if zone_id:
+    if zone_id and not a.no_objects:
         d = ImageDraw.Draw(img)
         objs = zone_objects(pack, zone_id)
         r = max(2, cell[0] // 3)
