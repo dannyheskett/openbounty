@@ -66,11 +66,18 @@ OPP = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e',
        'ne': 'sw', 'sw': 'ne', 'nw': 'se', 'se': 'nw'}
 
 BASE = {'~': 'water', '.': 'grass', ',': 'grass', 'f': 'forest',
-        '^': 'mountain', 'd': 'desert', 'P': 'grass', 'T': 'grass'}
+        '^': 'mountain', 'd': 'desert', 'P': 'grass', 'T': 'grass',
+        'S': 'grass', 'O': 'grass', 'K': 'grass', 'G': 'grass'}
 # 'P': a landmark standing on grass -- the neighbours see grass, so no edge
 # art changes, and the tile draws the landmark (Africa's Pharos).
 PLAIN_ART = {'~': 'water', '.': 'grass', ',': 'grass_variant', 'f': 'forest',
-             '^': 'mountain', 'd': 'desert', 'P': 'pharos', 'T': 'temple_ocean'}
+             '^': 'mountain', 'd': 'desert', 'P': 'pharos', 'T': 'temple_ocean',
+             'S': 'landmark_sibyl', 'O': 'landmark_oppidum', 'K': 'landmark_tophet',
+             'G': 'landmark_gordian'}
+# S O K G: the vistas' landmarks (#63) -- the Sibyl's cave, the Oppidum's gate,
+# the Tophet's stelae, the Gordian cart -- standing on grass like the Pharos.
+# The Rubicon's boundary stone stands on its road (a road cell beside the
+# crossing whose event is the Rubicon: see the road pass).
 RIVER = {'r': 'grass', 'R': 'forest', 'M': 'mountain', 'H': 'grass'}
 ROAD = {'=', 'H'}
 RIVER_PREFIX = {'grass': 'river_', 'forest': 'river_forest_',
@@ -176,6 +183,9 @@ def build(pack, zid, src, out, strict=False):
     future_bridge = {(fx["x"], fx["y"]) for ev in z.get("events", [])
                      for fx in ev.get("effects", [])
                      if "tile" in fx and codes.get(fx["tile"], {}).get("is_bridge")}
+
+    # the Rubicon's trigger is a road cell: its landmark is drawn over the road
+    landmark_on_road = {(ev["x"], ev["y"]) for ev in z.get("events", []) if ev.get("id") == "rubicon"}
 
     def links(x, y, kind):
         """The directions this cell's run continues in."""
@@ -308,6 +318,8 @@ def build(pack, zid, src, out, strict=False):
                                   f"has no piece")
                     continue
                 out_art[y][x] = 'road_' + p
+                if (x, y) in landmark_on_road and p == 'ew' and 'landmark_rubicon' in a2c:
+                    out_art[y][x] = 'landmark_rubicon'      # the stone on its road
                 for d in ex:
                     if len(d) != 2:
                         continue

@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-424 jobs. A job with a **Pack path** has produced that file in the pack; a
+429 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1157,6 +1157,36 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3421)
 - **prompt:** muted moss green grass seen from directly above, dull and slightly grey, with a few darker scrub tufts scattered through it, low contrast, the same everywhere
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3421`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
+
+### landmark_gordian
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9304)
+- **prompt:** an isolated cut-out game sprite of an old wooden ox cart with its yoke tied to a post by a huge tangled knot of rope, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9304`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### landmark_oppidum
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9302)
+- **prompt:** an isolated cut-out game sprite of a Gaulish hill-fort gate, a tall wooden gateway of logs with a timber walkway on top, closed, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9302`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### landmark_rubicon
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9300)
+- **prompt:** an isolated cut-out game sprite of a Roman boundary stone, a short carved stone pillar beside a small stone altar with a thin wisp of smoke, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9300`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### landmark_sibyl
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9301)
+- **prompt:** an isolated cut-out game sprite of a cave mouth in a small grey limestone outcrop, a dark arched opening with an oil lamp burning beside it, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9301`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### landmark_tophet
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9303)
+- **prompt:** an isolated cut-out game sprite of a small cluster of carved Punic stone stelae with rounded tops, of different heights, standing together, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9303`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
 
 ### obstacle_01
 
