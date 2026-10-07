@@ -10,6 +10,18 @@
   "guardian_amun": [
    51,
    22
+  ],
+  "guardian_oasis": [
+   12,
+   25
+  ],
+  "chest_oasis": [
+   12,
+   23
+  ],
+  "chest_tophet": [
+   21,
+   8
   ]
  },
  "regions": [
