@@ -30,6 +30,18 @@
   "chest_cove_forest": [
    49,
    60
+  ],
+  "guardian_capri": [
+   31,
+   70
+  ],
+  "chest_capri": [
+   30,
+   70
+  ],
+  "chest_sibyl": [
+   49,
+   65
   ]
  },
  "regions": [

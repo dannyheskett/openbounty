@@ -687,6 +687,23 @@ road and another by Nicomedia have said that a war band holds it. `check` has
 shown the chest unreachable on foot and with the guardian standing, reachable
 by boat once it is beaten, with every town and castle reached as before.
 
+**The mini-quests** (#63) have been two to a province, one held by a
+guardian and one shut until a vista plays, each ending in a fixed gold chest
+(4,000 in Italia, 6,000 in Galliae, 8,000 in Africa, 10,000 in Oriens) inside
+a ring of rock or wood with one way in:
+
+| Province | Guardian lair | Vista gate |
+|---|---|---|
+| Italia | **Capri**: a rock islet in the bay south of Ostia, landed on only at its east cell (31,70), where `guardian_capri` has stood | **The Sibyl's Cave**: a ring of rock east of the Apennines; 1,500 gold at (49,67) has cut (49,66) open (`art/scenes/sibyl.png`) |
+| Galliae | **The Druid Grove**: a clearing in a ring of wood east of the Rhenus, `guardian_grove` in its one gap at (59,27) | **The Oppidum**: a ring of rock in southern Gaul; the Senatus Consultum shown at (11,50) has opened (11,49) (`art/scenes/oppidum.png`) |
+| Africa | **The Oasis**: a ring of palms round a pool in the desert, `guardian_oasis` in its gap at (12,25) | **The Tophet of Carthage**: a cell in the ridge south of the river; 2,000 gold at (21,10) has opened (21,9) (`art/scenes/tophet.png`) |
+| Oriens | **The Siq**: a one-cell canyon into a basin in the Arabian desert, `guardian_siq` inside it at (47,38) | **The Gordian Knot**: a ring of wood in Bithynia; the Gladius of Mars at (16,13) has cut (16,12) open (`art/scenes/gordian.png`) |
+
+Every vista has asked for gold or an artifact, never a troop, because
+autoplay has had no way to raise a troop for a vista. Each artifact has been
+one found in an earlier province. Each guardian has been about as strong as
+the province's others, measured by the recruit cost of its stacks.
+
 ### 10.6.2 The checker
 
 `tools/mapcheck.py` has enforced all of the above:

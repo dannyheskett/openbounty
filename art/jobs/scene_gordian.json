@@ -1,0 +1,17 @@
+{
+ "id": "scene_gordian",
+ "prompt": "a huge knot of ropes and leather lashings binding the yoke of an old ox cart, cut cleanly through by a sword stroke, the severed ends falling, inside a temple courtyard of a hill city of Asia Minor, columns and blue sky, dust in sunbeams, no people",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 6614,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/scenes/gordian.png",
+ "_note": "The Oriens vista: the Gordian knot cut with the Gladius of Mars. Location-backdrop route, rd_pro__default 240x102, opaque."
+}
