@@ -760,6 +760,11 @@ On the map; a keyboard action in the same frame has won.
 | Back | Options (legacy); the game menu (modern) |
 | B | Cancel, where a screen reads it (Controls, Goto, the bridge, the quit question) |
 
+In menus, lists and questions, and in combat, the gamepad has answered as the
+keys do: the d-pad or stick as the arrows, A as Enter, B as Escape. In
+combat the d-pad moves the unit or the target cursor, A confirms a target,
+and B opens the action menu (modern), backs out of it, or cancels a target.
+
 ### Combat
 
 | Key | Action |

@@ -1,4 +1,5 @@
 #include "input_host.h"
+#include "input.h"        // the gamepad: d-pad, A, B
 #include "ui_host.h"
 #include "prompt.h"
 #include "prompt_impl.h"
@@ -248,7 +249,7 @@ PromptResult prompt_update(void) {
     bool dwelling = CL_IS_MODERN && g_req_kind == PIO_ASK_NUMBER_IN_PLACE;
     if (dwelling && g_step_open) {
         int tapped = touch_tapped_row(TOUCH_LIST_PROMPT);    // "Recruit 20" / Cancel
-        if (input_key_pressed(KEY_ESCAPE) || tapped == 1) {
+        if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel() || tapped == 1) {
             g_step_open = false;
             return PROMPT_RESULT_NONE;
         }
@@ -259,7 +260,8 @@ PromptResult prompt_update(void) {
             return PROMPT_RESULT_YES;
         }
     }
-    if (input_key_pressed(KEY_ESCAPE)) {
+    // A gamepad's B cancels a prompt as Escape does.
+    if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
         if (no_evade) return PROMPT_RESULT_NONE;
         prompt_dismiss();
         return PROMPT_RESULT_CANCEL;
@@ -288,8 +290,9 @@ PromptResult prompt_update(void) {
         }
         if (input_key_pressed(KEY_Y)) { prompt_dismiss(); return PROMPT_RESULT_YES; }
         if (input_key_pressed(KEY_N)) { prompt_dismiss(); return PROMPT_RESULT_NO;  }
-        // also accepts Enter as "yes" in some prompts.
-        if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER)) {
+        // also accepts Enter (and a gamepad's A) as "yes" in some prompts.
+        if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
+            input_gamepad_confirm()) {
             prompt_dismiss();
             return PROMPT_RESULT_YES;
         }
