@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Bake a zone map from its hand-drawn source, check it, place its objects.
 
-    python3 tools/mapbuild.py build <pack-dir> <zone-id> <source.txt> <out.dat>
+    python3 tools/mapbuild.py build <pack-dir> <zone-id> <source.txt> <out.dat> [--strict]
     python3 tools/mapbuild.py check <pack-dir> <zone-id> <map.dat>
-    python3 tools/mapbuild.py place <pack-dir> <zone-id> <map.dat> <regions.json>
+    python3 tools/mapbuild.py place <pack-dir> <zone-id> <map.dat> <regions.json> [--add] [--write]
 
 Nothing is written unless an output path is named; `--help` only prints this.
 
@@ -30,6 +30,16 @@ The SOURCE is the map. One character per tile, `#` lines are comments:
   - a bridge is the river bridge crossing the river at right angles.
   - a road cell under a town or castle may have any number of exits; its
     sprite covers the ground.
+  - a river whose straight run leaves the map flows off it: the map's edge
+    continues the run, so the piece is a straight, not a tapered end.
+
+`build` also warns, naming each cell, about shapes the art draws badly:
+a river mouth without sea above and land below it (the mouth art's shape),
+a river that ends in open ground rather than at the sea, the map's edge or a
+source in the mountains or woods, a forest- or mountain-banked river beside
+another terrain (its drawn bank meets that terrain in a seam), and a terrain
+edge whose different diagonal no variant can show. --strict makes every
+warning an error.
 
 `check` asserts every object stands on walkable ground, every dock is on the
 open sea, and reports what the hero can reach from the spawn on foot and by
@@ -37,8 +47,10 @@ boat: with the static guardians holding their tiles, with them beaten, and
 then with every river bridged too.
 
 `place` scatters a zone's chests and wandering armies inside hand-drawn
-region boxes from a fixed seed, on open grass or sand, and writes them into
-game.json.
+region boxes from a fixed seed, on open grass or sand. It prints them; --write
+writes them into game.json. --add keeps every chest and army the zone has
+where it stands and places only what each region still lacks, so hand-moved
+objects and every id survive.
 """
 import json
 import os
@@ -131,7 +143,7 @@ def read_rows(path):
 
 # ---- build -----------------------------------------------------------------
 
-def build(pack, zid, src, out):
+def build(pack, zid, src, out, strict=False):
     g = load_pack(pack)
     a2c, _ = art_codes(g)
     z = zone_of(g, zid)
@@ -146,9 +158,13 @@ def build(pack, zid, src, out):
                 die(f"({x},{y}): unknown source character {c!r}")
     objs = object_cells(g, zid)
     errors = []
+    warnings = []
 
     def at(x, y):
         return rows[y][x] if 0 <= x < W and 0 <= y < H else None
+
+    def inside(x, y):
+        return 0 <= x < W and 0 <= y < H
 
     def links(x, y, kind):
         """The directions this cell's run continues in."""
@@ -218,10 +234,36 @@ def build(pack, zid, src, out):
                         errors.append(f"({x},{y}): river meets the sea from the "
                                       f"{inflow}; the pack has mouths for east "
                                       f"and west only")
+                    # The mouth art has the sea along its top and land along
+                    # its foot.
+                    if at(x, y - 1) not in ('~', None) or at(x, y + 1) in ('~', None):
+                        warnings.append(f"({x},{y}): river mouth wants sea to its "
+                                        f"north and land to its south (has "
+                                        f"{at(x, y - 1)!r} and {at(x, y + 1)!r})")
                     # The mouth piece is drawn on a coast tile whose sea side
                     # is open water: its neighbours see it as sea.
                     cls[y][x] = 'water'
                     continue
+                if len(ex) == 1:
+                    o = OPP[next(iter(ex))]
+                    if not inside(x + DIRS4[o][0], y + DIRS4[o][1]):
+                        ex = ex | {o}          # the run flows off the map
+                    elif c == 'r' and not any(
+                            at(x + dx, y + dy) in ('^', 'f')
+                            for d, (dx, dy) in DIRS4.items() if d != next(iter(ex))):
+                        warnings.append(f"({x},{y}): river ends in open ground, "
+                                        f"not at the sea, the map's edge or a "
+                                        f"source in the mountains or woods")
+                if c in 'RM':
+                    for d, (dx, dy) in DIRS4.items():
+                        n = at(x + dx, y + dy)
+                        if n is None or n in RIVER or n == 'H':
+                            continue
+                        if BASE.get(n) != RIVER[c]:
+                            warnings.append(f"({x},{y}): {RIVER[c]}-banked river "
+                                            f"has {n!r} to its {d}; its drawn bank "
+                                            f"meets it in a seam")
+                            break
                 p = piece(ex)
                 if p is None:
                     errors.append(f"({x},{y}): river with exits {sorted(ex)} "
@@ -295,6 +337,12 @@ def build(pack, zid, src, out):
                 out_art[y][x] = PLAIN_ART[c]
                 continue
             card = frozenset(d for d in diff if len(d) == 1)
+            if card:
+                lost = sorted(d for d in diff if len(d) == 2
+                              and d[0] not in card and d[1] not in card)
+                if lost:
+                    warnings.append(f"({x},{y}): {t} edge on {sorted(card)} cannot "
+                                    f"show its different diagonal {lost}")
             m = WATER_IDX if t == 'water' else OTHER_IDX
             idx = None
             for pair in ('ne', 'nw', 'sw', 'se'):
@@ -328,6 +376,14 @@ def build(pack, zid, src, out):
             if a is not None and a not in a2c:
                 errors.append(f"({x},{y}): the pack has no tile code for {a}")
 
+    if warnings:
+        print(f"{len(warnings)} warning(s):")
+        for w in warnings[:60]:
+            print("  " + w)
+        if len(warnings) > 60:
+            print(f"  ... and {len(warnings) - 60} more")
+        if strict:
+            errors += warnings
     if errors:
         print(f"{len(errors)} error(s):")
         for e in errors[:60]:
@@ -538,13 +594,21 @@ def check(pack, zid, path):
 
 # ---- place -----------------------------------------------------------------
 
-def place(pack, zid, path, regions_path):
-    """regions.json: {"seed": N, "spacing": r, "fixed": {"<army id>": [x, y]},
+# Arts a scattered object may stand on: open ground, whatever its look.
+OPEN_ARTS = ("grass", "grass_variant", "desert")
+
+
+def place(pack, zid, path, regions_path, add=False):
+    """regions.json: {"seed": N, "spacing": r, "fixed": {"<id>": [x, y]},
     "regions": [{"name", "box": [x0,y0,x1,y1], "chests": n, "armies": n}, ...]}
 
     A static army (a guardian holding a pass) and a "fixed" chest (a prize the
     salt never turns into something else) keep what they are and go where
-    "fixed" puts them; every other chest and army is re-scattered."""
+    "fixed" puts them; every other chest and army is re-scattered. With add,
+    every chest and army stays where it is and a region's counts are totals:
+    only what the region still lacks is placed, the new ones numbered on from
+    the zone's highest id. Towns, castles, signs, dwellings, events and the
+    tiles an event changes are kept clear."""
     g, z, W, H, ter, art = terrain_grid(pack, zid, path)
     with open(regions_path) as f:
         spec = json.load(f)
@@ -565,6 +629,13 @@ def place(pack, zid, path, regions_path):
         mark(c["x"], c["y"], 1); mark(c["x"], c["y"] + 1, 1)
     for s in z.get("signs", []):
         mark(s["x"], s["y"], 1)
+    for d in z.get("dwellings", []):
+        mark(d["x"], d["y"], 1)
+    for ev in z.get("events", []):
+        mark(ev["x"], ev["y"], 1)
+        for fx in ev.get("effects", []):
+            if "x" in fx:
+                mark(fx["x"], fx["y"], 1)
     fixed_chests = []
     for c in z.get("chests", []):
         if c.get("fixed"):
@@ -586,16 +657,42 @@ def place(pack, zid, path, regions_path):
     for k in ("magic_alcove", "hero_spawn"):
         mark(z[k]["x"], z[k]["y"], 1)
 
+    def inbox(box, x, y):
+        return box[0] <= x <= box[2] and box[1] <= y <= box[3]
+
+    # With add, what each region already holds counts against its total.
+    # Boxes may overlap: an object in one box belongs to it, and one in
+    # several goes to whichever of them is furthest short of its count.
+    have = [{"chests": 0, "armies": 0} for _ in spec["regions"]]
+    if add:
+        for kind, objs in (("chests", [c for c in z.get("chests", []) if not c.get("fixed")]),
+                           ("armies", [a for a in z.get("wandering_armies", [])
+                                       if not a.get("static")])):
+            shared = []
+            for o in objs:
+                mark(o["x"], o["y"], spec.get("spacing", 2))
+                hits = [i for i, reg in enumerate(spec["regions"])
+                        if inbox(reg["box"], o["x"], o["y"])]
+                if len(hits) == 1:
+                    have[hits[0]][kind] += 1
+                elif hits:
+                    shared.append(hits)
+            for hits in shared:
+                i = max(hits, key=lambda i: (spec["regions"][i].get(kind, 0)
+                                             - have[i][kind], -i))
+                have[i][kind] += 1
+
     def free(x, y):
         return (0 <= x < W and 0 <= y < H and (x, y) not in taken
-                and art[y][x] in ("grass", "grass_variant", "desert"))
+                and art[y][x] in OPEN_ARTS)
 
     chests, armies = [], []
-    for reg in spec["regions"]:
+    for reg, held in zip(spec["regions"], have):
         x0, y0, x1, y1 = reg["box"]
         cells = [(x, y) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)]
         rng.shuffle(cells)
-        for kind, n in (("chests", reg.get("chests", 0)), ("armies", reg.get("armies", 0))):
+        for kind in ("chests", "armies"):
+            n = max(0, reg.get(kind, 0) - held[kind])
             got = 0
             for x, y in cells:
                 if got == n:
@@ -607,28 +704,103 @@ def place(pack, zid, path, regions_path):
                 got += 1
             if got < n:
                 die(f"region {reg['name']}: room for {got} of {n} {kind}")
-    z["chests"] = [{"id": f"chest_{i + 1}", "x": x, "y": y}
-                   for i, (x, y) in enumerate(chests)] + fixed_chests
+
+    def next_num(objs, prefix):
+        nums = [int(o["id"][len(prefix):]) for o in objs
+                if o.get("id", "").startswith(prefix) and o["id"][len(prefix):].isdigit()]
+        return max(nums) + 1 if nums else 0
+
+    if add:
+        c0 = max(1, next_num(z.get("chests", []), "chest_"))
+        a0 = next_num(z.get("wandering_armies", []), "wandering_army_")
+        new_chests = [{"id": f"chest_{c0 + i}", "x": x, "y": y}
+                      for i, (x, y) in enumerate(chests)]
+        new_armies = [{"x": x, "y": y, "id": f"wandering_army_{a0 + i:03d}"}
+                      for i, (x, y) in enumerate(armies)]
+        return g, z, new_chests, new_armies, True
+    new_chests = [{"id": f"chest_{i + 1}", "x": x, "y": y}
+                  for i, (x, y) in enumerate(chests)] + fixed_chests
     # The guardians first, then the scattered armies.
-    z["wandering_armies"] = fixed + [{"x": x, "y": y, "id": f"wandering_army_{i:03d}"}
-                                     for i, (x, y) in enumerate(armies)]
-    return g, z, chests, armies
+    new_armies = fixed + [{"x": x, "y": y, "id": f"wandering_army_{i:03d}"}
+                          for i, (x, y) in enumerate(armies)]
+    return g, z, new_chests, new_armies, False
+
+
+# ---- writing game.json -----------------------------------------------------
+#
+# game.json is cJSON's formatted print, hand-edited in places, so it is never
+# re-printed whole: only the zone arrays `place` owns are touched, in the text.
+
+def cj_str(v):
+    return json.dumps(v, ensure_ascii=False)
+
+
+def cj_obj(o, depth):
+    """One flat object as cJSON prints it inside an array at this depth."""
+    pad = "\t" * (depth + 1)
+    body = ",\n".join(f"{pad}{cj_str(k)}:\t{cj_str(v) if isinstance(v, str) else json.dumps(v)}"
+                      for k, v in o.items())
+    return "{\n" + body + "\n" + "\t" * depth + "}"
+
+
+def zone_array_span(text, zid, key):
+    """(start, end) of the zone's `key` array value, '[' to ']' inclusive."""
+    zi = text.find(f'\n\t\t\t"id":\t"{zid}",')
+    if zi < 0:
+        die(f"game.json: no zone '{zid}' in the expected layout")
+    nxt = text.find('\n\t\t}, {\n', zi)
+    nxt = nxt if nxt >= 0 else len(text)
+    ki = text.find(f'\n\t\t\t"{key}":\t', zi, nxt)
+    if ki < 0:
+        die(f"game.json: zone '{zid}' has no {key} array")
+    start = text.index("[", ki)
+    if text.startswith("[]", start):
+        return start, start + 1
+    end = text.index("\n\t\t\t\t}]", start) + len("\n\t\t\t\t}]") - 1
+    return start, end
+
+
+def write_zone(pack, zid, chests, armies, add):
+    path = os.path.join(pack, "game.json")
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    for key, objs in (("wandering_armies", armies), ("chests", chests)):
+        s, e = zone_array_span(text, zid, key)
+        items = ", ".join(cj_obj(o, 4) for o in objs)
+        if add:
+            if not objs:
+                continue
+            if text[s:e + 1] == "[]":
+                text = text[:s] + "[" + items + "]" + text[e + 1:]
+            else:
+                text = text[:e] + ", " + items + text[e:]
+        else:
+            text = text[:s] + "[" + items + "]" + text[e + 1:]
+    json.loads(text)                       # still valid JSON
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
 
 
 def main():
-    a = sys.argv[1:]
-    if not a or a[0] in ("-h", "--help") or a[0] not in ("build", "check", "place"):
+    a = [x for x in sys.argv[1:] if not x.startswith("--")]
+    flags = {x for x in sys.argv[1:] if x.startswith("--")}
+    if not a or "--help" in flags or a[0] in ("-h",) or a[0] not in ("build", "check", "place"):
         print(__doc__)
         return
     if a[0] == "build" and len(a) == 5:
-        build(a[1], a[2], a[3], a[4])
+        build(a[1], a[2], a[3], a[4], strict="--strict" in flags)
     elif a[0] == "check" and len(a) == 4:
         check(a[1], a[2], a[3])
     elif a[0] == "place" and len(a) == 5:
-        g, z, c, r = place(a[1], a[2], a[3], a[4])
-        print(f"placed {len(c)} chests and {len(r)} armies (not written)")
-        print("  " + json.dumps(c))
-        print("  " + json.dumps(r))
+        g, z, c, r, add = place(a[1], a[2], a[3], a[4], add="--add" in flags)
+        verb = "added" if add else "placed"
+        if "--write" in flags:
+            write_zone(a[1], a[2], c, r, add)
+            print(f"{verb} {len(c)} chests and {len(r)} armies; wrote game.json")
+        else:
+            print(f"{verb} {len(c)} chests and {len(r)} armies (not written)")
+            print("  " + json.dumps(c))
+            print("  " + json.dumps(r))
     else:
         print(__doc__)
 

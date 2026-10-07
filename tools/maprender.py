@@ -3,15 +3,22 @@
 
 Usage:
   tools/maprender.py <pack-dir> <map.dat> <out.png> [--scale N] [--zone ID]
-                     [--grid] [--tiles]
+                     [--grid] [--tiles] [--seed N] [--crop X0,Y0,X1,Y1]
+                     [--shrink N]
 
 Two modes:
 
   default   one pixel block per tile, coloured by terrain. Fast, and the
             whole zone reads at a glance -- this is the mode for judging
             coastlines and landmass shape.
-  --tiles   composite the pack's real 48x34 tile art. Slower and produces a
-            large image, but it is what the zone will actually look like.
+  --tiles   composite the pack's real tile art at render.tile_w x tile_h,
+            with each code's cosmetic `variants` picked per cell the way the
+            shell picks them (src/tilevar.c) for game seed --seed (default
+            0). Slower and produces a large image, but it is what the zone
+            will actually look like.
+
+--crop keeps only the inclusive tile box X0,Y0..X1,Y1, and --shrink N
+scales the picture down N times; both are for review pages.
 
 With --zone, the pack's declared objects for that zone (towns, castles,
 chests, signs, dwellings, armies) are overlaid as labelled markers, so
@@ -112,24 +119,63 @@ def render_flat(rows, w, h, codes, scale):
     return img
 
 
-def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_arts=None):
+def tilevar_pick(seed, x, y, n):
+    """src/tilevar.c tilevar_pick, in 32-bit unsigned arithmetic."""
+    if n <= 1:
+        return 0
+    M = 0xFFFFFFFF
+    h = (seed ^ 0x9E3779B9) & M
+    h ^= (x * 0x85EBCA6B) & M
+    h ^= h >> 13
+    h ^= (y * 0xC2B2AE35) & M
+    h ^= h >> 16
+    h = (h * 0x27D4EB2F) & M
+    h ^= h >> 15
+    return h % n
+
+
+def variant_lists(codes):
+    """art stem -> its variant names, the first code with variants winning, as
+    src/tilevar.c tilevar_init keeps one entry per distinct stem."""
+    out = {}
+    for v in codes.values():
+        if v.get("variants") and v.get("art") and v["art"] not in out:
+            out[v["art"]] = v["variants"]
+    return out
+
+
+def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_arts=None,
+                 seed=0, box=None):
     TW, TH = cell
-    img = Image.new("RGB", (w * TW, h * TH), (0, 0, 0))
+    x0, y0, x1, y1 = box or (0, 0, w - 1, h - 1)
+    img = Image.new("RGB", ((x1 - x0 + 1) * TW, (y1 - y0 + 1) * TH), (0, 0, 0))
     cache = {}
-    for y in range(h):
-        for x in range(w):
+    var = variant_lists(codes)
+
+    def vary(art, x, y):
+        names = var.get(art)
+        if not names:
+            return art
+        k = tilevar_pick(seed, x, y, len(names) + 1)     # 0 = the base art
+        return art if k == 0 else names[k - 1]
+
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
             code = rows[y][x]
             art = codes.get(code, {}).get("art")
             if not art:
                 continue
+            art = vary(art, x, y)
+            px, py = (x - x0) * TW, (y - y0) * TH
             ground = codes.get(code, {}).get("ground")
             if ground:                      # a landmark over its own ground
+                ground = vary(ground, x, y)
                 gp = os.path.join(pack_dir, "art", "tiles",
                                   tile_set if (tile_set and (not set_arts or ground in set_arts)) else "",
                                   ground + ".png")
                 if os.path.exists(gp):
                     gt = Image.open(gp).convert("RGBA")
-                    img.paste(gt, (x * TW, y * TH), gt)
+                    img.paste(gt, (px, py), gt)
             if art not in cache:
                 # Same fixed layout the engine uses: src/tile_cache.c resolves
                 # a tile_codes `art` stem as art/tiles/<stem>.png, or under
@@ -144,7 +190,7 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_ar
                           f"(looked for {p})")
             t = cache[art]
             if t is not None:
-                img.paste(t, (x * TW, y * TH), t)
+                img.paste(t, (px, py), t)
     return img
 
 
@@ -157,6 +203,9 @@ def main():
     ap.add_argument("--zone", default=None)
     ap.add_argument("--grid", action="store_true")
     ap.add_argument("--tiles", action="store_true")
+    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--crop", default=None)
+    ap.add_argument("--shrink", type=int, default=1)
     a = ap.parse_args()
     pack_dir, map_path, out_path = a.pack_dir, a.map_path, a.out_path
     scale, zone_id = a.scale, a.zone
@@ -165,6 +214,9 @@ def main():
     codes = {c: v for c, v in ((code_char(k), v)
                                for k, v in pack["tile_codes"].items()) if c}
     rows, w, h = read_map(map_path)
+    box = tuple(int(v) for v in a.crop.split(",")) if a.crop else (0, 0, w - 1, h - 1)
+    if len(box) != 4 or not (0 <= box[0] <= box[2] < w and 0 <= box[1] <= box[3] < h):
+        sys.exit(f"maprender: --crop wants X0,Y0,X1,Y1 inside {w}x{h}")
 
     if a.tiles:
         tile_set, set_arts = "", None
@@ -174,18 +226,22 @@ def main():
                 set_arts = set(z.get("tile_set_arts", [])) or None
         r = pack.get("render", {})
         cell = (int(r.get("tile_w", 48)), int(r.get("tile_h", 34)))
-        img = render_tiles(rows, w, h, codes, pack_dir, tile_set, cell, set_arts)
+        img = render_tiles(rows, w, h, codes, pack_dir, tile_set, cell, set_arts,
+                           a.seed, box)
     else:
         img = render_flat(rows, w, h, codes, scale)
         cell = (scale, scale)
+        img = img.crop((box[0] * scale, box[1] * scale,
+                        (box[2] + 1) * scale, (box[3] + 1) * scale))
+    ox, oy = box[0], box[1]
 
     if a.grid and cell[0] >= 6:
         d = ImageDraw.Draw(img)
         for x in range(0, w + 1, 10):
-            d.line([(x * cell[0], 0), (x * cell[0], h * cell[1])],
+            d.line([((x - ox) * cell[0], 0), ((x - ox) * cell[0], img.height)],
                    fill=(255, 255, 255), width=1)
         for y in range(0, h + 1, 10):
-            d.line([(0, y * cell[1]), (w * cell[0], y * cell[1])],
+            d.line([(0, (y - oy) * cell[1]), (img.width, (y - oy) * cell[1])],
                    fill=(255, 255, 255), width=1)
 
     if zone_id:
@@ -193,13 +249,17 @@ def main():
         objs = zone_objects(pack, zone_id)
         r = max(2, cell[0] // 3)
         for (x, y, kind) in objs:
-            cx = x * cell[0] + cell[0] // 2
-            cy = y * cell[1] + cell[1] // 2
+            if not (box[0] <= x <= box[2] and box[1] <= y <= box[3]):
+                continue
+            cx = (x - ox) * cell[0] + cell[0] // 2
+            cy = (y - oy) * cell[1] + cell[1] // 2
             d.ellipse([cx - r, cy - r, cx + r, cy + r],
                       fill=OBJECT_RGB.get(kind, (255, 255, 255)),
                       outline=(0, 0, 0))
         print(f"overlaid {len(objs)} objects for zone {zone_id}")
 
+    if a.shrink > 1:
+        img = img.resize((img.width // a.shrink, img.height // a.shrink), Image.LANCZOS)
     img.save(out_path)
     print(f"wrote {out_path}  {img.width}x{img.height}  "
           f"({w}x{h} tiles, {'art' if a.tiles else 'flat'})")

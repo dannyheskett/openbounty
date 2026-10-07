@@ -958,6 +958,11 @@ $(OUT_ENGLIB): $(ENGLIB_OBJ) | build
 test: $(OUT_TEST)
 	@./$(OUT_TEST)
 
+# The Glory of Rome maps: each .dat is what its art/maps source builds, and
+# mapbuild's and mapcheck's rules hold (what CI's linux job runs).
+check-maps:
+	@scripts/check_maps.sh assets/glory-of-rome
+
 # ---------------------------------------------------------------------------
 # Library boundary check. Compiles a minimal consumer against
 # libobengine.a + engine/host_noop.c using ONLY engine include paths
@@ -1102,4 +1107,4 @@ clean:
 	rm -rf build
 	rm -f dist/*.tar.gz dist/*.zip
 
-.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play ios ios-sim dist-ios dist-rome-linux dist-rome-windows dist-rome-mac clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web
+.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play ios ios-sim dist-ios dist-rome-linux dist-rome-windows dist-rome-mac clean test check-maps extract extract-pack dist dist-linux dist-windows dist-mac dist-web

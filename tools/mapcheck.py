@@ -78,10 +78,11 @@ def zone_objects(pack_dir, zone_id):
     for z in g.get("zones", []):
         if z.get("id") != zone_id:
             continue
-        for kind in ("chests", "signs", "dwellings", "armies"):
+        for kind, label in (("chests", "chest"), ("signs", "sign"),
+                            ("dwellings", "dwelling"), ("wandering_armies", "army")):
             for o in z.get(kind, []):
                 if "x" in o and "y" in o:
-                    objs.append((o["x"], o["y"], kind[:-1]))
+                    objs.append((o["x"], o["y"], label))
     vistas = set()
     for z in g.get("zones", []):
         if z.get("id") != zone_id:

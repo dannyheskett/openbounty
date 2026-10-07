@@ -53,17 +53,7 @@ jobs:
       - name: Check the docs' links
         run: python3 scripts/check_doc_links.py
       - name: Check The Glory of Rome maps
-        run: |
-          set -e
-          python3 - <<'PY' > /tmp/zones.txt
-          import json
-          for z in json.load(open("assets/glory-of-rome/game.json"))["zones"]:
-              print(z["id"], z["map"])
-          PY
-          while read -r zone map; do
-            python3 tools/mapbuild.py check assets/glory-of-rome "$zone" "assets/glory-of-rome/$map"
-            python3 tools/mapcheck.py assets/glory-of-rome "assets/glory-of-rome/$map"
-          done < /tmp/zones.txt
+        run: scripts/check_maps.sh assets/glory-of-rome
 
   windows:
     runs-on: ubuntu-22.04
