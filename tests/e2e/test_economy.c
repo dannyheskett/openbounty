@@ -505,6 +505,30 @@ TEST the_boat_artifact_cheapens_the_boat(void) {
     PASS();
 }
 
+// A short purse at the week end pays what it holds for the boat, and the boat
+// stays: a hero sailing it is never left at sea without one (#199).
+TEST a_broke_hero_keeps_the_boat(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    for (int i = 0; i < GAME_ARMY_SLOTS; i++) { g->army[i].id[0] = '\0'; g->army[i].count = 0; }
+    g->boat.has_boat = true;
+    g->boat.x = 5; g->boat.y = 6;
+    strcpy(g->boat.zone, g->position.zone);
+    g->travel_mode = TRAVEL_BOAT;
+    g->stats.gold = 0;
+    g->stats.commission_weekly = 10;              // less than the fare
+    int paid = 0;
+    GameSpendWeek(g, &paid);
+    ASSERT(g->boat.has_boat);
+    ASSERT_EQ(TRAVEL_BOAT, g->travel_mode);
+    ASSERT_EQ(5, g->boat.x);
+    ASSERT_EQ(6, g->boat.y);
+    ASSERT_EQ(10, g->stats.last_week_boat);       // what the purse held
+    ASSERT_EQ(0, g->stats.gold);
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 SUITE(e2e_economy_suite) {
     RUN_TEST(rent_boat_deducts_gold_and_places);
     RUN_TEST(rent_boat_refuses_when_gold_equals_cost);
@@ -527,4 +551,5 @@ SUITE(e2e_economy_suite) {
     RUN_TEST(the_castle_offers_a_troop_at_six_times_its_hit_points);
     RUN_TEST(army_view_morale_follows_the_chart);
     RUN_TEST(the_boat_artifact_cheapens_the_boat);
+    RUN_TEST(a_broke_hero_keeps_the_boat);
 }

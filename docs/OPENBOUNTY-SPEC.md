@@ -1412,7 +1412,8 @@ flagged (§38).
   Rental has been cancellable at the same menu; while the hero is still
   sailing (`TRAVEL_BOAT`) cancellation has been refused
   (`GameCancelBoat`). A rented boat has cost one weekly
-  rental at each week boundary; on bankruptcy it has been repossessed.
+  rental at each week boundary, from what the purse holds, and has been kept
+  however short the purse (King's Bounty's rule, #199).
 
 ### 11.4 Sail navigation
 
@@ -2096,8 +2097,8 @@ flagged (§38).
   (recruit_cost / 10))`, with `last_week_army` the part of it the wallet
   covered (`min(upkeep, gold)`), or, under REQ-264a, the stacks paid and
   the rest gone; (6) if `boat.has_boat`, `gold -=
-  GameBoatCost` and `last_week_boat` = that fare, repossessing the boat on
-  shortfall with `last_week_boat = 0`; (7) `gold = max(0, gold)`; (8) astrology effects (§24), with the
+  GameBoatCost`, `last_week_boat` the part of it the purse covered, and the
+  boat kept; (7) `gold = max(0, gold)`; (8) astrology effects (§24), with the
   week's learned spell renewed (REQ-540) after the dwellings, then empty
   player castles retaken (REQ-302) before castle and foe growth.
 

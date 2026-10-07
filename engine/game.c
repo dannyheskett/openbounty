@@ -174,15 +174,9 @@ int GameWeeklyNetGold(const Game *g) {
     if (!g) return 0;
     int wallet = g->stats.gold + g->stats.commission_weekly;
     int net = g->stats.commission_weekly - week_army_charge(g, wallet > 0 ? wallet : 0, NULL);
-    if (g->boat.has_boat) {
-        // Mirror end_day's order exactly: commission and upkeep land BEFORE
-        // the fare check, so affordability is judged on the post-credit
-        // wallet. (Judging on the pre-credit wallet predicted "repossessed,
-        // not charged" for a poor hero whose commission covers the fare --
-        // overstating weekly income by the whole fare.)
-        int boat_cost = GameBoatCost(g);
-        if (g->stats.gold + net >= boat_cost) net -= boat_cost;   // else repossessed, not charged
-    }
+    // The boat's fare is charged whatever the purse holds (end_day floors the
+    // gold at 0 afterwards).
+    if (g->boat.has_boat) net -= GameBoatCost(g);
     return net;
 }
 
@@ -260,17 +254,15 @@ static void end_day(Game *g, bool *week_ended, int *commission_paid) {
         g->stats.last_week_boat = 0;
         g->stats.gold -= upkeep;
 
+        // The boat's fare is charged from what the purse holds and the boat
+        // is kept, as King's Bounty's end_week does (#199): a short purse
+        // pays what it has, never taking the boat from under a sailing hero.
         if (g->boat.has_boat) {
             int boat_cost = GameBoatCost(g);
-            if (g->stats.gold >= boat_cost) {
-                g->stats.gold -= boat_cost;
-                g->stats.last_week_boat = boat_cost;
-            } else {
-                // Can't afford boat -- it's repossessed.
-                g->boat.has_boat = false;
-                g->boat.x = -1;
-                g->boat.y = -1;
-            }
+            int purse = g->stats.gold > 0 ? g->stats.gold : 0;
+            int paid = boat_cost < purse ? boat_cost : purse;
+            g->stats.gold -= boat_cost;
+            g->stats.last_week_boat = paid;
         }
         if (g->stats.gold < 0) g->stats.gold = 0;
 
