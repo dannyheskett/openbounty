@@ -1472,6 +1472,11 @@ title:;
 
     }
 
+    // In a browser the program never ends (the page would only freeze on its
+    // last frame): a quit (Ctrl+Q) goes back to the title menu instead.
+#if defined(PLATFORM_WEB)
+    back_to_title = true;
+#endif
     // New Game from the in-game menu: clear what the session left on screen
     // and go back to the title menu. The window, audio and render target stay.
     if (back_to_title && !frame_host_should_close()) {
