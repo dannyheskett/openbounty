@@ -737,7 +737,7 @@ action has also been a menu row or a tap (`docs/DESIGN-SPEC.md`).
 | Key | Action |
 |---|---|
 | `Q` | Legacy: save to slot 0 at once, then a message where `Ctrl+Q` quits and any other key continues. Modern: the game menu on its Save page |
-| `Ctrl+Q` | Quit without saving, after a yes/no; on an open message, quit at once |
+| `Ctrl+Q` | Quit without saving, after a yes/no (on an open message too; on the legacy `Q` save message, at once) |
 | Alt+Enter | Toggle fullscreen |
 | Backtick (\`) | Manual screenshot to `screenshots/shot_NNNN.png` |
 | Esc | Dismiss view / cancel prompt; in modern mode, open the game menu |
@@ -782,7 +782,7 @@ On the map; a keyboard action in the same frame has won.
 | Key | Action |
 |---|---|
 | Any non-modifier key | Advance / dismiss a message |
-| `Ctrl+Q` | Quit at once from a message |
+| `Ctrl+Q` | Close the message and ask to quit without saving (on the legacy `Q` save message, quit at once) |
 | `Y` / `N` | Yes / No on yes-no prompts |
 | `1`–`5` (or numpad) | Choice on numbered prompts |
 | `A` / `B` | Choice on two-choice prompts |

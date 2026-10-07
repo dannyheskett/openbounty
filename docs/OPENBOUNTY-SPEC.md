@@ -2870,7 +2870,9 @@ every menu; this section has held the rules.
   at 5), `A` / `B` on a two-choice prompt, and digits, Backspace and Enter on
   a legacy count; `Esc` has cancelled; modern rows have been read as REQ-430e
   says and a modern count by Left/Right (1), Down/Up (10), Home/End and
-  Enter or Space (`docs/DESIGN-SPEC.md` DSGN-0054). `Ctrl+Q` on an open dialog has quit at once. The engine has never
+  Enter or Space (`docs/DESIGN-SPEC.md` DSGN-0054). `Ctrl+Q` on an open
+  dialog has closed it and asked to quit without saving, but quit at once on
+  the legacy `Q` save message, whose words say so. The engine has never
   rendered; it has requested prompts and dialogs through the player-IO
   queue and the host callbacks in `engine/include/ui_host.h`, which the shell
   has implemented.
@@ -2890,8 +2892,8 @@ every menu; this section has held the rules.
   toggle, CGA, music, volume. Meta keys: Alt+Enter fullscreen, backtick
   screenshot (`screenshots/shot_NNNN.png`, `src/screenshot.c`, the folder
   created on first use), `Q` save (REQ-250), `Ctrl+Q` quit without saving
-  after a yes/no (`src/shell_fastquit.c`), and `Ctrl+Q` on any open message
-  quitting at once (`src/main.c`).
+  after a yes/no (`src/shell_fastquit.c`), on an open message too, and at
+  once on the legacy `Q` save message (`src/main.c`).
 - **REQ-442.** **Touch input** (`src/touch.c`) has translated taps into
   synthetic key events injected at the `input_host` shim
   (`input_host_inject_key/_char`), so every screen has kept its keyboard
