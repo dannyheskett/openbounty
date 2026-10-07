@@ -18,6 +18,18 @@
   "chest_thrace_road": [
    3,
    2
+  ],
+  "guardian_siq": [
+   47,
+   38
+  ],
+  "chest_siq": [
+   47,
+   40
+  ],
+  "chest_gordian": [
+   16,
+   10
   ]
  },
  "regions": [

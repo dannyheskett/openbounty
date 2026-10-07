@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-415 jobs. A job with a **Pack path** has produced that file in the pack; a
+419 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1717,6 +1717,20 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a paved stone causeway revealed across a grey northern sea as the water draws back, wet black rocks and kelp on either side, the way running from the foreground shore out to a small island of dark firs and a broken crag, heavy clouds breaking overhead, cold silver light, no people
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=7502`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
 
+### scene_gordian
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 6614)
+- **Pack path:** `art/scenes/gordian.png`
+- **prompt:** a huge knot of ropes and leather lashings binding the yoke of an old ox cart, cut cleanly through by a sword stroke, the severed ends falling, inside a temple courtyard of a hill city of Asia Minor, columns and blue sky, dust in sunbeams, no people
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=6614`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### scene_oppidum
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 6612)
+- **Pack path:** `art/scenes/oppidum.png`
+- **prompt:** the great timber gate of a Gaulish hill fort swinging open, walls of stacked stone and logs on a green hilltop, round thatched houses glimpsed inside, a road of packed earth climbing to the gate, oak woods and grey northern sky behind, no people
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=6612`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
 ### scene_pharos
 
 - **Engine:** Retro Diffusion rd_pro__default (240x102, seed 7402)
@@ -1730,6 +1744,20 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/scenes/rubicon.png`
 - **prompt:** a Roman legion far in the distance marching in a long column over a low wooden bridge across a small river, standards raised, green hills and poplars of northern Italy, late afternoon light, seen from a hillside above, the river and the bridge small in a wide landscape
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=6501`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### scene_sibyl
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 6611)
+- **Pack path:** `art/scenes/sibyl.png`
+- **prompt:** a dark cave mouth cut into a grey limestone cliff above a calm bay of the sea, a long trapezoidal passage of dressed stone running back into shadow, a single oil lamp burning at its far end, a few laurel bushes and fallen rocks at the entrance, warm evening light on the cliff, no people
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=6611`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### scene_tophet
+
+- **Engine:** Retro Diffusion rd_pro__default (240x102, seed 6613)
+- **Pack path:** `art/scenes/tophet.png`
+- **prompt:** an ancient Punic sanctuary in a rocky valley near the sea, rows of small carved stone stelae among dry grass and palms, a low altar under a stone canopy, the walls of a great city faint on the horizon, hot golden light, no people
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=6613`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
 
 ### scene_treasure_africa
 

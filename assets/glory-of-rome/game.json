@@ -154,6 +154,23 @@
 							"y":	30,
 							"tile":	"\\xcc"
 						}]
+				}, {
+					"id":	"sibyl",
+					"x":	49,
+					"y":	67,
+					"scene":	"art/scenes/sibyl.png",
+					"title":	"The Sibyl's Cave",
+					"hint":	"A wall of rock seals the Sibyl's cave. Her priest will have it cut away for an offering of 1500 gold to Apollo.",
+					"body":	"The priest takes your offering, and the last of the rock is cut away. Deep in the cave the Sibyl's lamp still burns, and beside it lie the gifts of a hundred years of pilgrims.",
+					"requires":	[{
+							"gold":	1500,
+							"consume":	true
+						}],
+					"effects":	[{
+							"x":	49,
+							"y":	66,
+							"tile":	"."
+						}]
 				}],
 			"is_home":	true,
 			"home_spawn":	{
@@ -493,6 +510,18 @@
 					"x":	49,
 					"y":	60,
 					"fixed":	true
+				}, {
+					"id":	"chest_capri",
+					"x":	30,
+					"y":	70,
+					"fixed":	true,
+					"gold":	4000
+				}, {
+					"id":	"chest_sibyl",
+					"x":	49,
+					"y":	65,
+					"fixed":	true,
+					"gold":	4000
 				}],
 			"artifacts":	[],
 			"dwellings":	[],
@@ -689,6 +718,27 @@
 					"x":	45,
 					"y":	122,
 					"id":	"wandering_army_030"
+				}, {
+					"x":	31,
+					"y":	70,
+					"id":	"guardian_capri",
+					"static":	true,
+					"army":	[{
+							"troop":	"ghosts",
+							"count":	6
+						}, {
+							"troop":	"barbarians",
+							"count":	3
+						}, {
+							"troop":	"archers",
+							"count":	6
+						}, {
+							"troop":	"ogres",
+							"count":	2
+						}, {
+							"troop":	"pikemen",
+							"count":	4
+						}]
 				}]
 		}, {
 			"id":	"galliae",
@@ -720,6 +770,22 @@
 							"x":	16,
 							"y":	29,
 							"tile":	"\\xd2"
+						}]
+				}, {
+					"id":	"oppidum",
+					"x":	11,
+					"y":	50,
+					"scene":	"art/scenes/oppidum.png",
+					"title":	"The Oppidum",
+					"hint":	"The hill fort's gate is barred. Its chieftain will open it to no one but the bearer of a decree of the Senate itself.",
+					"body":	"You show the chieftain the Senatus Consultum, and he knows the Senate's seal. The gate swings open, and the fort's treasury is yours by right.",
+					"requires":	[{
+							"artifact":	"articles"
+						}],
+					"effects":	[{
+							"x":	11,
+							"y":	49,
+							"tile":	"."
 						}]
 				}],
 			"town_backdrop":	"art/ui/backdrop_town_galliae.png",
@@ -828,8 +894,8 @@
 					"y":	25
 				}, {
 					"id":	"chest_21",
-					"x":	60,
-					"y":	27
+					"x":	62,
+					"y":	28
 				}, {
 					"id":	"chest_22",
 					"x":	60,
@@ -866,6 +932,18 @@
 					"id":	"chest_30",
 					"x":	16,
 					"y":	60
+				}, {
+					"id":	"chest_grove",
+					"x":	59,
+					"y":	25,
+					"fixed":	true,
+					"gold":	6000
+				}, {
+					"id":	"chest_oppidum",
+					"x":	11,
+					"y":	47,
+					"fixed":	true,
+					"gold":	6000
 				}],
 			"signs":	[{
 				"x":	46,
@@ -1058,6 +1136,27 @@
 					"x":	17,
 					"y":	48,
 					"id":	"wandering_army_013"
+				}, {
+					"x":	59,
+					"y":	27,
+					"id":	"guardian_grove",
+					"static":	true,
+					"army":	[{
+							"troop":	"druids",
+							"count":	8
+						}, {
+							"troop":	"trolls",
+							"count":	6
+						}, {
+							"troop":	"barbarians",
+							"count":	6
+						}, {
+							"troop":	"elves",
+							"count":	10
+						}, {
+							"troop":	"wolves",
+							"count":	12
+						}]
 				}]
 		}, {
 			"id":	"africa",
@@ -1078,6 +1177,23 @@
 						}],
 					"effects":	[{
 							"reveal":	true
+						}]
+				}, {
+					"id":	"tophet",
+					"x":	21,
+					"y":	10,
+					"scene":	"art/scenes/tophet.png",
+					"title":	"The Tophet of Carthage",
+					"hint":	"Carved stelae crowd a sanctuary sealed in the rock. Its keepers will roll the stone aside for an offering of 2000 gold.",
+					"body":	"The keepers take your gold and roll the stone aside. Among the stelae lie the offerings of generations, and the keepers swear Baal will not miss them.",
+					"requires":	[{
+							"gold":	2000,
+							"consume":	true
+						}],
+					"effects":	[{
+							"x":	21,
+							"y":	9,
+							"tile":	"."
 						}]
 				}],
 			"town_backdrop":	"art/ui/backdrop_town_africa.png",
@@ -1218,6 +1334,18 @@
 					"id":	"chest_30",
 					"x":	24,
 					"y":	21
+				}, {
+					"id":	"chest_oasis",
+					"x":	12,
+					"y":	23,
+					"fixed":	true,
+					"gold":	8000
+				}, {
+					"id":	"chest_tophet",
+					"x":	21,
+					"y":	8,
+					"fixed":	true,
+					"gold":	8000
 				}],
 			"signs":	[{
 					"x":	23,
@@ -1420,6 +1548,27 @@
 					"x":	16,
 					"y":	22,
 					"id":	"wandering_army_013"
+				}, {
+					"x":	12,
+					"y":	25,
+					"id":	"guardian_oasis",
+					"static":	true,
+					"army":	[{
+							"troop":	"nomads",
+							"count":	12
+						}, {
+							"troop":	"cavalry",
+							"count":	6
+						}, {
+							"troop":	"archers",
+							"count":	8
+						}, {
+							"troop":	"orcs",
+							"count":	10
+						}, {
+							"troop":	"elephants",
+							"count":	1
+						}]
 				}]
 		}, {
 			"id":	"oriens",
@@ -1434,6 +1583,23 @@
 			"width":	64,
 			"height":	44,
 			"neighbors":	["italia", "africa"],
+			"events":	[{
+					"id":	"gordian",
+					"x":	16,
+					"y":	13,
+					"scene":	"art/scenes/gordian.png",
+					"title":	"The Gordian Knot",
+					"hint":	"An old ox cart's yoke is lashed to a post with a knot no one has ever untied. They say whoever looses it will rule all Asia.",
+					"body":	"You draw the Gladius of Mars and cut the knot through in one stroke. The priests of Gordium cry out, then bow, and open the temple treasury to you.",
+					"requires":	[{
+							"artifact":	"sword"
+						}],
+					"effects":	[{
+							"x":	16,
+							"y":	12,
+							"tile":	"."
+						}]
+				}],
 			"salt":	{
 				"artifacts":	2,
 				"navmaps":	1,
@@ -1570,6 +1736,18 @@
 					"id":	"chest_30",
 					"x":	60,
 					"y":	11
+				}, {
+					"id":	"chest_siq",
+					"x":	47,
+					"y":	40,
+					"fixed":	true,
+					"gold":	10000
+				}, {
+					"id":	"chest_gordian",
+					"x":	16,
+					"y":	10,
+					"fixed":	true,
+					"gold":	10000
 				}],
 			"signs":	[{
 					"x":	40,
@@ -1767,7 +1945,7 @@
 					"y":	23,
 					"id":	"wandering_army_006"
 				}, {
-					"x":	48,
+					"x":	52,
 					"y":	39,
 					"id":	"wandering_army_007"
 				}, {
@@ -1794,6 +1972,27 @@
 					"x":	54,
 					"y":	0,
 					"id":	"wandering_army_013"
+				}, {
+					"x":	47,
+					"y":	38,
+					"id":	"guardian_siq",
+					"static":	true,
+					"army":	[{
+							"troop":	"giants",
+							"count":	4
+						}, {
+							"troop":	"knights",
+							"count":	6
+						}, {
+							"troop":	"cavalry",
+							"count":	8
+						}, {
+							"troop":	"nomads",
+							"count":	15
+						}, {
+							"troop":	"sagittarii",
+							"count":	12
+						}]
 				}]
 		}],
 	"portraits":	[{

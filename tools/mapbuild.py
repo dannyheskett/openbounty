@@ -682,7 +682,8 @@ def place(pack, zid, path, regions_path, add=False):
 
     # With add, what each region already holds counts against its total.
     # Boxes may overlap: an object in one box belongs to it, and one in
-    # several goes to whichever of them is furthest short of its count.
+    # several goes to whichever of them is furthest short of its count; a
+    # region that then has no room for its count spills the rest.
     have = [{"chests": 0, "armies": 0} for _ in spec["regions"]]
     if add:
         for kind, objs in (("chests", [c for c in z.get("chests", []) if not c.get("fixed")]),
@@ -707,6 +708,7 @@ def place(pack, zid, path, regions_path, add=False):
                 and art[y][x] in OPEN_ARTS)
 
     chests, armies = [], []
+    spill = {"chests": 0, "armies": 0}
     for reg, held in zip(spec["regions"], have):
         x0, y0, x1, y1 = reg["box"]
         cells = [(x, y) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)]
@@ -723,7 +725,28 @@ def place(pack, zid, path, regions_path, add=False):
                 mark(x, y, spec.get("spacing", 2))
                 got += 1
             if got < n:
-                die(f"region {reg['name']}: room for {got} of {n} {kind}")
+                if not add:
+                    die(f"region {reg['name']}: room for {got} of {n} {kind}")
+                print(f"  region {reg['name']}: room for {got} of {n} {kind}; "
+                      f"the rest go to the zone's other regions")
+                spill[kind] += n - got
+    # With add, what a full region could not take goes anywhere in the
+    # zone's regions there is still room.
+    if any(spill.values()):
+        cells = sorted({(x, y) for reg in spec["regions"]
+                        for y in range(reg["box"][1], reg["box"][3] + 1)
+                        for x in range(reg["box"][0], reg["box"][2] + 1)})
+        rng.shuffle(cells)
+        for kind in ("chests", "armies"):
+            for x, y in cells:
+                if spill[kind] == 0:
+                    break
+                if free(x, y):
+                    (chests if kind == "chests" else armies).append((x, y))
+                    mark(x, y, spec.get("spacing", 2))
+                    spill[kind] -= 1
+            if spill[kind]:
+                die(f"no room in any region for {spill[kind]} more {kind}")
 
     def next_num(objs, prefix):
         nums = [int(o["id"][len(prefix):]) for o in objs
