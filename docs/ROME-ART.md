@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-419 jobs. A job with a **Pack path** has produced that file in the pack; a
+424 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1097,6 +1097,36 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 6223)
 - **prompt:** an Etruscan death demon, a heavy broad-shouldered man-shaped creature with blue-grey rotting flesh, a great hooked nose, pointed ears and two tusks in a snarling mouth, matted black hair, a short dark tunic belted at the waist, huge dark ragged wings spread behind his shoulders, a long rhomphaia held upright at rest in his right hand -- a tall spear shaft with a long straight sword blade for its head -- standing squarely facing right
 - **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=6223`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### feature_boulders
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 8812)
+- **prompt:** a small cluster of three weathered grey boulders seen from directly above, one large and two small, rounded tops lit from the upper left with soft shadows, a few tufts of grass at their feet, flat magenta background around the rocks, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=8812`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### feature_flowers
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 8811)
+- **prompt:** a small patch of wild meadow flowers seen from directly above, red poppies, white and yellow daisies and blue cornflowers among short green leaves, a loose round clump, flat magenta background around the clump, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=8811`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### feature_scrub
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 8815)
+- **prompt:** a small clump of dry desert scrub seen from directly above, a few spiky grey-green and straw-coloured dry bushes and a couple of small pale stones, sparse and low, flat magenta background around the clump, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=8815`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### feature_shrubs
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 8813)
+- **prompt:** a small clump of three low round green bushes seen from directly above, dense leafy tops of slightly different greens lit from the upper left, soft dark shadows beneath, flat magenta background around the bushes, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=8813`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### feature_wheat
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 8814)
+- **prompt:** a small square plot of ripe golden wheat seen from directly above, neat parallel rows of grain, a thin border of brown earth around the plot, flat magenta background around the plot, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=8814`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
 
 ### forest_native_block
 
