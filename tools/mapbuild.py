@@ -709,12 +709,18 @@ def place(pack, zid, path, regions_path, add=False):
 
     chests, armies = [], []
     spill = {"chests": 0, "armies": 0}
+    # The zone as a whole wants what its regions' counts add up to: what a
+    # full region spilled before is counted where it landed, so a second run
+    # adds nothing.
+    left = {k: sum(r.get(k, 0) for r in spec["regions"]) - sum(h[k] for h in have)
+            for k in ("chests", "armies")}
     for reg, held in zip(spec["regions"], have):
         x0, y0, x1, y1 = reg["box"]
         cells = [(x, y) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)]
         rng.shuffle(cells)
         for kind in ("chests", "armies"):
-            n = max(0, reg.get(kind, 0) - held[kind])
+            n = max(0, min(reg.get(kind, 0) - held[kind], left[kind]))
+            left[kind] -= n
             got = 0
             for x, y in cells:
                 if got == n:

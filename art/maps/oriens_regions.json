@@ -41,8 +41,8 @@
     12,
     18
    ],
-   "chests": 3,
-   "armies": 1
+   "chests": 9,
+   "armies": 3
   },
   {
    "name": "Bithynia and Galatia",
@@ -52,8 +52,8 @@
     27,
     15
    ],
-   "chests": 4,
-   "armies": 2
+   "chests": 11,
+   "armies": 4
   },
   {
    "name": "Pontus and Cappadocia",
@@ -63,8 +63,8 @@
     42,
     15
    ],
-   "chests": 4,
-   "armies": 2
+   "chests": 11,
+   "armies": 4
   },
   {
    "name": "Cilicia and Syria",
@@ -74,8 +74,8 @@
     40,
     31
    ],
-   "chests": 4,
-   "armies": 2
+   "chests": 9,
+   "armies": 4
   },
   {
    "name": "Cyprus",
@@ -96,8 +96,8 @@
     63,
     43
    ],
-   "chests": 3,
-   "armies": 2
+   "chests": 17,
+   "armies": 6
   },
   {
    "name": "Mesopotamia, beyond the Euphrates",
@@ -107,8 +107,8 @@
     63,
     35
    ],
-   "chests": 5,
-   "armies": 3
+   "chests": 16,
+   "armies": 6
   },
   {
    "name": "Armenia, beyond the pass",
@@ -118,8 +118,8 @@
     63,
     11
    ],
-   "chests": 5,
-   "armies": 2
+   "chests": 13,
+   "armies": 5
   }
  ]
 }

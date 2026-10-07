@@ -44,7 +44,7 @@
     25,
     12
    ],
-   "chests": 8,
+   "chests": 10,
    "armies": 3
   },
   {
@@ -66,7 +66,7 @@
     56,
     21
    ],
-   "chests": 5,
+   "chests": 6,
    "armies": 2
   },
   {
@@ -88,7 +88,7 @@
     63,
     27
    ],
-   "chests": 5,
+   "chests": 6,
    "armies": 3
   },
   {
@@ -99,8 +99,8 @@
     47,
     27
    ],
-   "chests": 6,
-   "armies": 4
+   "chests": 13,
+   "armies": 5
   }
  ]
 }
