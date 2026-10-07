@@ -1596,7 +1596,9 @@ flagged (§38).
   `(troop.hp * count) > leadership_current`. In the army view this has shown
   as "Out of Control" in red (mutually exclusive with the Low/Normal/High
   labels). In combat an OOC unit has still taken turns but attacked its own
-  side (§25.4).
+  side (§25.4), until its losses bring it within the leadership: control has
+  been checked again before every unit acts (`combat_next_unit`), and a stack
+  that fits has been under control from that move on.
 
 ---
 

@@ -799,7 +799,22 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
 // Find the next actable unit on the current side. Scans
 // [unit_id+1 .. SLOTS-1], then wraps [0 .. unit_id] with phase++.
 // Returns slot or -1.
+// A stack out of control comes back under control as soon as its losses bring
+// it within the hero's leadership (hp x count <= leadership). Checked before
+// every unit acts, so it holds from the next move on.
+static void combat_refresh_control(Combat *c) {
+    const Game *g = c->heroes[COMBAT_SIDE_PLAYER];
+    if (!g) return;
+    for (int i = 0; i < COMBAT_SLOTS; i++) {
+        CombatUnit *u = &c->units[COMBAT_SIDE_PLAYER][i];
+        if (u->out_of_control && u->troop_idx >= 0 && u->count > 0 &&
+            unit_under_control(g, u->troop_idx, u->count))
+            u->out_of_control = false;
+    }
+}
+
 /* exposed for tests */ int combat_next_unit(Combat *c) {
+    combat_refresh_control(c);
     for (int i = c->unit_id + 1; i < COMBAT_SLOTS; i++) {
         const CombatUnit *u = &c->units[c->side][i];
         if (u->troop_idx >= 0 && u->count > 0 && !u->acted) {
