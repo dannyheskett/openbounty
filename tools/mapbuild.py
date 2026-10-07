@@ -69,13 +69,20 @@ OPP = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e',
 BASE = {'~': 'water', '.': 'grass', ',': 'grass', 'f': 'forest',
         '^': 'mountain', 'd': 'desert', 'P': 'grass', 'T': 'grass',
         'S': 'grass', 'O': 'grass', 'K': 'grass', 'G': 'grass',
-        'p': 'fields_plough', 'w': 'fields_wheat'}
+        'p': 'fields_plough', 'w': 'fields_wheat',
+        'j': 'water', 'n': 'grass', 'u': 'grass', 'h': 'grass', 'e': 'grass'}
 # 'P': a landmark standing on grass -- the neighbours see grass, so no edge
 # art changes, and the tile draws the landmark (Africa's Pharos).
 PLAIN_ART = {'~': 'water', '.': 'grass', ',': 'grass_variant', 'f': 'forest',
              '^': 'mountain', 'd': 'desert', 'P': 'pharos', 'T': 'temple_ocean',
              'S': 'landmark_sibyl', 'O': 'landmark_oppidum', 'K': 'landmark_tophet',
-             'G': 'landmark_gordian', 'p': 'fields_plough', 'w': 'fields_wheat'}
+             'G': 'landmark_gordian', 'p': 'fields_plough', 'w': 'fields_wheat',
+             'j': None, 'n': 'piece_farmstead', 'u': 'piece_ruin',
+             'h': 'piece_shrine', 'e': 'piece_well'}
+# j n u h e: settlement set pieces (#63). j, a jetty by a harbour town, is sea
+# off a straight shore: the neighbours see sea, and the tile draws dock_<side>
+# (the jetty from the land side) over that side's water_edge piece. n u h e, a
+# farmstead, a ruin, a shrine and a well, stand on grass (solid: blocks_foot).
 # p w: farmland (#63), ploughed and in wheat -- grass to the engine, its own
 # ground for the edges: a field fades into the grass round it the way sand
 # does (fields_<kind>_edge_01..12, romeart.py edges --as).
@@ -401,6 +408,9 @@ def build(pack, zid, src, out, strict=False):
             if diff and idx is None and diff != full:
                 diff = full
                 idx, why = edge_idx(t, diff)
+            if not diff and c == 'j':
+                errors.append(f"({x},{y}): a jetty in open sea; it wants one straight shore")
+                continue
             if not diff:
                 out_art[y][x] = PLAIN_ART[c]
                 continue
@@ -424,6 +434,14 @@ def build(pack, zid, src, out, strict=False):
             elif t in ('forest', 'mountain') and all(near[d] == 'desert' for d in diff):
                 wants_sand.add(f"{t}_sand_edge_{idx:02d}")
             name = f"{family}_{idx:02d}"
+            if c == 'j':
+                side = next(iter(card)) if len(card) == 1 else None
+                if family != 'water_edge' or side is None or f"dock_{side}" not in a2c:
+                    errors.append(f"({x},{y}): a jetty wants one straight grass shore "
+                                  f"(has land on {sorted(diff)})")
+                else:
+                    out_art[y][x] = f"dock_{side}"
+                continue
             if name not in a2c:
                 errors.append(f"({x},{y}): {t} open on {sorted(diff)} wants "
                               f"{name}, which the pack does not ship")
@@ -480,7 +498,9 @@ def terrain_grid(pack, zid, path):
     rows = read_rows(path)
     if len(rows) != H or any(len(r) != W for r in rows):
         die(f"{path}: not {W}x{H}")
-    ter = [[c2e[c]["terrain"] if c in c2e else die(f"unknown byte {c!r}")
+    # a solid object on grass (a set piece) is no ground to stand on
+    ter = [[(("blocked" if c2e[c].get("blocks_foot") and c2e[c]["terrain"] in ("grass", "desert")
+              else c2e[c]["terrain"]) if c in c2e else die(f"unknown byte {c!r}"))
             for c in r] for r in rows]
     art = [[c2e[c]["art"] for c in r] for r in rows]
     return g, z, W, H, ter, art
