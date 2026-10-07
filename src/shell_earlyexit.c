@@ -26,6 +26,31 @@ const char *shell_extract_input_dir(void) {
     return NULL;
 }
 
+// The two music tracks are modern recordings, not in KB.EXE: copy them into
+// the extracted tree `dir` from the King's Bounty pack already installed, when
+// there is one (the desktop archives ship it). Without one the pack has no
+// music, and plays silently.
+static void copy_music_from_installed_pack(const char *dir) {
+    static const char *const TRACKS[] = { "audio/openworld.ogg", "audio/combat.ogg" };
+    char path[PACK_ENTRY_PATH_MAX];
+    if (!pack_resolve_arg("kings-bounty", path, sizeof path)) {
+        fprintf(stdout, "extract: no King's Bounty pack installed; the music tracks "
+                        "are left out\n");
+        return;
+    }
+    Pack *p = pack_open(path);
+    if (!p) return;
+    for (size_t i = 0; i < sizeof TRACKS / sizeof TRACKS[0]; i++) {
+        size_t n = 0;
+        const unsigned char *bytes = pack_read(p, TRACKS[i], &n);
+        char out[PACK_ENTRY_PATH_MAX + 32];
+        snprintf(out, sizeof out, "%s/%s", dir, TRACKS[i]);
+        if (bytes && n > 0 && ex_write_file(out, bytes, n) == 0)
+            fprintf(stdout, "extract: copied %s from %s\n", TRACKS[i], path);
+    }
+    pack_close(p);
+}
+
 bool shell_extract_to_user_dir(const char *in_dir, char *out_zip, size_t cap) {
     char user_dir[PACK_ENTRY_PATH_MAX];
     if (!SavePathGetDir(user_dir, sizeof user_dir)) {
@@ -39,6 +64,7 @@ bool shell_extract_to_user_dir(const char *in_dir, char *out_zip, size_t cap) {
         pack_rmtree(tmp_dir);
         return false;
     }
+    copy_music_from_installed_pack(tmp_dir);
     // Read pack_id from the emitted game.json so the output filename
     // matches what discovery will surface.
     char pid[64] = "kings-bounty";
@@ -81,6 +107,7 @@ int shell_run_extract_mode(const char *out_dir) {
     }
     if (out_dir) {
         int rc = extract_run(in_dir, out_dir);
+        if (rc == 0) copy_music_from_installed_pack(out_dir);
         return rc == 0 ? 0 : 1;
     }
     return shell_extract_to_user_dir(in_dir, NULL, 0) ? 0 : 1;

@@ -591,8 +591,6 @@ static cJSON *emit_artifacts(void) {
 #define EX_DAY_STEPS  40
 #define EX_WEEK_DAYS   5
 
-// From upstream
-#define EX_MAX_PLAYER_ARMY 5
 
 // days_per_difficulty[4]
 static const int EX_DAYS_PER_DIFFICULTY[4] = { 900, 600, 400, 200 };
@@ -615,7 +613,7 @@ static const int EX_DIFFICULTY_MODIFIER[5] = { 0, 1, 2, 4, 8 };
 // first branch whose threshold strictly exceeds the roll fires.
 static const int EX_CHANCE_GOLD       [4] = { 0x3d, 0x42, 0x4c, 0x47 };
 static const int EX_CHANCE_COMMISSION [4] = { 0x51, 0x56, 0x56, 0x51 };
-static const int EX_CHANCE_SPELL_POWER[4] = { 0x56, 0x5c, 0x5d, 0x5b };
+static const int EX_CHANCE_SPELL_POWER[4] = { 0x53, 0x59, 0x59, 0x56 };
 static const int EX_CHANCE_MAX_SPELLS [4] = { 0x56, 0x5c, 0x5d, 0x5b };
 static const int EX_CHANCE_NEW_SPELL  [4] = { 0x65, 0x65, 0x65, 0x65 };
 // value ranges (per continent)
@@ -707,7 +705,6 @@ static cJSON *emit_time(void) {
 
 static cJSON *emit_world(void) {
     cJSON *o = cJSON_CreateObject();
-    cJSON_AddNumberToObject(o, "max_army_slots", EX_MAX_PLAYER_ARMY);
     // Nominal sight radius. The engine's FogReveal ignores this argument
     // and always stamps the DOS-authentic 5x5 box, but the pack still
     // declares the value the original used.
@@ -717,16 +714,15 @@ static cJSON *emit_world(void) {
     // English vocabulary -- KB uses "continent" / "continents" everywhere
     // (continent_names[]). Hard-coded per phase 1
     // decision: these stay in game.json as port-extractor constants.
-    cJSON_AddStringToObject(o, "zone_noun",        "continent");
-    cJSON_AddStringToObject(o, "zone_noun_plural", "continents");
     // Default name when the player enters none. Original game prompts
     // for a name; openbounty falls back to "Hero".
     cJSON_AddStringToObject(o, "default_name",     "Hero");
-    // Default options[] vector: [delay, sounds, walk_beep, anim,
-    // army_size, cga]. Defaults match the engine.
+    cJSON_AddStringToObject(o, "language",         "en");
+    // The first values of the options, in order delay, sounds, walk beep,
+    // animation, CGA; the rest (music, volume) keep the engine's defaults.
     cJSON *opts = cJSON_CreateArray();
-    static const int DEFAULTS[6] = { 4, 1, 1, 1, 1, 1 };
-    for (int k = 0; k < 6; k++)
+    static const int DEFAULTS[5] = { 4, 1, 1, 1, 1 };
+    for (int k = 0; k < 5; k++)
         cJSON_AddItemToArray(opts, cJSON_CreateNumber(DEFAULTS[k]));
     cJSON_AddItemToObject(o, "default_options", opts);
     return o;
@@ -1141,18 +1137,13 @@ static cJSON *emit_zones(const CcArchive *cc) {
         cJSON_AddNumberToObject(z, "height", 64);
         cJSON_AddItemToObject(z, "neighbors", emit_zone_neighbors(c));
 
-        // Hero spawn for home continent: HOME_X/Y (as OpenKB names it) is
-        // the castle anchor (top-left). The 3x2 castle has its gate at
-        // the bottom-row middle = (HOME_X, HOME_Y+1 KB-up). The player
-        // spawns one tile south of the gate. With Y-axis flip applied:
-        //   castle anchor display y = 63 - HOME_Y     = 56
-        //   castle gate   display y = anchor + 1      = 57
-        //   hero spawn    display y = gate + 1 south  = 58
-        // Same offset rule for non-home continents off the boat-arrival.
+        // The zone's hero_spawn is where a hero sailing in arrives. The home
+        // continent's is the King's Bounty pack's own (12, 62), at sea off
+        // the south coast; the original's continent_entry gives (11, 60).
         cJSON *hs = cJSON_CreateObject();
         if (c == EX_HOME_CONTINENT) {
-            cJSON_AddNumberToObject(hs, "x", EX_HOME_X);
-            cJSON_AddNumberToObject(hs, "y", EX_FLIP_Y(EX_HOME_Y_KB) + 2);
+            cJSON_AddNumberToObject(hs, "x", 12);
+            cJSON_AddNumberToObject(hs, "y", 62);
         } else {
             // continent_entry[][]
             static const int ENTRY[4][2] = {
@@ -1165,6 +1156,13 @@ static cJSON *emit_zones(const CcArchive *cc) {
 
         if (c == EX_HOME_CONTINENT) {
             cJSON_AddBoolToObject(z, "is_home", 1);
+            // The home spawn: HOME_X/Y (as OpenKB names it) is the castle
+            // anchor (top-left). The 3x2 castle has its gate at the
+            // bottom-row middle = (HOME_X, HOME_Y+1 KB-up), and a new game
+            // starts one tile south of the gate. With the Y-axis flip:
+            //   castle anchor display y = 63 - HOME_Y     = 56
+            //   castle gate   display y = anchor + 1      = 57
+            //   home spawn    display y = gate + 1 south  = 58
             cJSON *hsp = cJSON_CreateObject();
             cJSON_AddNumberToObject(hsp, "x", EX_HOME_X);
             cJSON_AddNumberToObject(hsp, "y", EX_FLIP_Y(EX_HOME_Y_KB) + 2);

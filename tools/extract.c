@@ -32,9 +32,6 @@
 //   puzzle_cover.png             -- synthesized procedurally (ex_emit_synth);
 //                                   9x6 black border + palette-color-4
 //                                   interior.
-//   throne_backdrop              -- game.json points throne_backdrop at
-//                                   end_lose_screen.png; there is no
-//                                   separate throne art.
 //
 // These sources compile into the game binary, not a separate tool.
 // Run:    ./build/debug/openbounty --extract [--out-dir <dir>]
@@ -47,6 +44,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -127,6 +126,24 @@ int extract_run(const char *in_dir, const char *out_dir) {
     // `cc` directly.
     {
         cJSON *gj = ex_gamejson_synthesize(&cc, exe_unpacked, exe_unpacked_len);
+        // The strings are the pack's strings/en.json, not part of game.json.
+        cJSON *strings = gj ? cJSON_DetachItemFromObject(gj, "strings") : NULL;
+        if (strings) {
+            char sdir[512], spath[600];
+            snprintf(sdir, sizeof sdir, "%s/strings", out_dir);
+            snprintf(spath, sizeof spath, "%s/en.json", sdir);
+            char *stext = cJSON_Print(strings);
+            cJSON_Delete(strings);
+            if (!stext || ex_mkdir_p(sdir) != 0 ||
+                ex_write_file(spath, (const uint8_t *)stext, strlen(stext)) != 0) {
+                fprintf(stderr, "extract: cannot write %s\n", spath);
+                free(stext);
+                cJSON_Delete(gj);
+                return 1;
+            }
+            fprintf(stderr, "extract: wrote %s (%zu bytes)\n", spath, strlen(stext));
+            free(stext);
+        }
         if (gj) {
             char *text = cJSON_Print(gj);
             cJSON_Delete(gj);
@@ -531,6 +548,27 @@ int ex_emit_wavs(const uint8_t *kb, size_t klen, const char *out_dir) {
     // Original freq palette was at 0x189D1; our freq_off is wherever we
     // found it. Delta = freq_off - 0x189D1.
     int delta = freq_off - 0x189D1;
+    // That estimate holds for the image it was measured on; another build of
+    // KB.EXE moves the data a few bytes against the palette. The tunes pin it
+    // down: each ends in 0xFF just before the next one starts, so take the
+    // nearest shift at which all ten line up that way.
+    {
+        int best = INT_MIN;
+        for (int dd = delta - 1024; dd <= delta + 1024; dd++) {
+            bool aligned = true;
+            for (int s = 0; s + 1 < TUNE_PTR_N && aligned; s++) {
+                long o = (long)KB_DATA_SEGMENT + tune_ptrs[s + 1] + dd - 1;
+                aligned = o >= 0 && o < (long)klen && kb[o] == 0xFF;
+            }
+            if (aligned && (best == INT_MIN || abs(dd - delta) < abs(best - delta)))
+                best = dd;
+        }
+        if (best == INT_MIN) {
+            fprintf(stderr, "extract: cannot line up the tune table\n");
+            return -1;
+        }
+        delta = best;
+    }
 
     static const struct { int slot; const char *name; } tunes[4] = {
         { 0, "walk"   },
