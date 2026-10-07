@@ -577,12 +577,22 @@ mountain, `d` desert; overlays `r` / `R` / `M` river on grass / in forest / in
 mountains, `=` road, `H` bridge. `tools/mapbuild.py build` has baked it into
 `maps/italia.dat`: the edge variants (REQ-229a/e), the river and road pieces
 by their links, the mouths, the bridges. The `.dat` has never been edited by
-hand; the source has. Rivers have linked only orthogonally, because the hero
-has moved 8-way with no corner rule and would step across a diagonal river.
+hand; the source has, and `scripts/check_maps.sh` has failed any `.dat` that
+is not what its source builds. Rivers have linked only orthogonally, because
+the hero has moved 8-way with no corner rule and would step across a diagonal
+river. A river whose straight run reaches the map's edge has flowed off it.
+The builder has warned, cell by cell, about shapes the art draws badly: a
+mouth without sea above and land below, a river ending in open ground, a
+forest- or mountain-banked river beside another terrain, and an edge whose
+different diagonal no variant shows; `--strict` has made those errors.
 
 `tools/mapbuild.py place` has scattered the zone's chests and wandering
 armies from a fixed seed inside the region boxes in
-`art/maps/italia_regions.json`, and kept a static guardian where it has said
+`art/maps/italia_regions.json`, clear of towns, castles, signs, dwellings,
+events and the tiles an event changes; `--write` has written them into
+`game.json`, touching only those two arrays, and `--add` has kept every object
+where it stands and placed only what each region's count still lacks. It has
+kept a static guardian where it has said
 (`guardian_calabria` has held the one pass into the toe; `guardian_sardinia_1`
 to `_3` have held the three gates of Sardinia's southern trail, whose last chamber
 has held the pinned Senatus Consultum). Sardinia has had Olbia on its east
