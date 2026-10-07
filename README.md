@@ -580,7 +580,7 @@ On each step the engine has:
 2. Zeroed `steps_left_today` on desert terrain, else decremented it.
 3. Run `end_day` while `steps_left_today <= 0`, which may fire week rollover.
 4. At week rollover: paid commission, deducted upkeep + boat rental,
-   repossessed the boat if unpaid, rolled the astrology troop, refilled its
+   kept the boat however short the purse, rolled the astrology troop, refilled its
    dwellings and grown its troops in enemy garrisons and wandering armies.
    Player castles have not been repopulated, and dwellings have not grown at
    any other time.
