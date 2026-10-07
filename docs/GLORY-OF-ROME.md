@@ -581,10 +581,14 @@ hand; the source has, and `scripts/check_maps.sh` has failed any `.dat` that
 is not what its source builds. Rivers have linked only orthogonally, because
 the hero has moved 8-way with no corner rule and would step across a diagonal
 river. A river whose straight run reaches the map's edge has flowed off it.
-The builder has warned, cell by cell, about shapes the art draws badly: a
-mouth without sea above and land below, a river ending in open ground, a
-forest- or mountain-banked river beside another terrain, and an edge whose
-different diagonal no variant shows; `--strict` has made those errors.
+A mouth has had the sea on its outflow side and along its top
+(`river_mouth_e`/`_w`), or along its foot (`river_mouth_e_s`/`_w_s`, the same
+art the other way up). The builder has warned, cell by cell, about shapes the
+art draws badly: a mouth with sea on both or neither of its north and south
+sides, a river ending in open ground, a forest- or mountain-banked river
+beside another terrain, and a sea tile whose different diagonal no water
+variant shows; `--strict`, which `scripts/check_maps.sh` has used, has made
+those errors. A land tile's corner no variant shows has been counted only.
 
 `tools/mapbuild.py place` has scattered the zone's chests and wandering
 armies from a fixed seed inside the region boxes in

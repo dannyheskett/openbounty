@@ -24,7 +24,8 @@ The SOURCE is the map. One character per tile, `#` lines are comments:
     ships no variant for is an error naming the cell.
   - rivers and roads by their links: straights, curves, ends, diagonals, the
     straight-to-diagonal joins and the corner companions a diagonal needs.
-    A river ending against the sea is its mouth (river_mouth_e / _w). Rivers
+    A river ending against the sea is its mouth (river_mouth_e / _w, and the
+    _s pieces drawn the other way up where the sea lies to the south). Rivers
     link only orthogonally: movement is 8-way with no corner rule, so a
     diagonal river would let the hero step across it.
   - a bridge is the river bridge crossing the river at right angles.
@@ -38,8 +39,9 @@ a river mouth without sea above and land below it (the mouth art's shape),
 a river that ends in open ground rather than at the sea, the map's edge or a
 source in the mountains or woods, a forest- or mountain-banked river beside
 another terrain (its drawn bank meets that terrain in a seam), and a terrain
-edge whose different diagonal no variant can show. --strict makes every
-warning an error.
+sea tile whose different diagonal no water variant can show. --strict makes
+every warning an error. A land tile's corner no variant shows (a small
+notch) is only counted.
 
 `check` asserts every object stands on walkable ground, every dock is on the
 open sea, and reports what the hero can reach from the spawn on foot and by
@@ -159,6 +161,7 @@ def build(pack, zid, src, out, strict=False):
     objs = object_cells(g, zid)
     errors = []
     warnings = []
+    notes = []          # land-against-land corners: a notch, never an error
 
     def at(x, y):
         return rows[y][x] if 0 <= x < W and 0 <= y < H else None
@@ -166,26 +169,36 @@ def build(pack, zid, src, out, strict=False):
     def inside(x, y):
         return 0 <= x < W and 0 <= y < H
 
+    # A tile an event turns into a bridge (the Rubicon's) is road to its
+    # neighbours, so the roads either side point at the crossing to come.
+    codes = g["tile_codes"]
+    future_bridge = {(fx["x"], fx["y"]) for ev in z.get("events", [])
+                     for fx in ev.get("effects", [])
+                     if "tile" in fx and codes.get(fx["tile"], {}).get("is_bridge")}
+
     def links(x, y, kind):
         """The directions this cell's run continues in."""
-        member = (lambda c: c in RIVER) if kind == 'river' else (lambda c: c in ROAD)
+        if kind == 'river':
+            member = lambda x, y: (at(x, y) or '') in RIVER
+        else:
+            member = lambda x, y: (at(x, y) or '') in ROAD or (x, y) in future_bridge
         out = set()
         for d, (dx, dy) in DIRS4.items():
-            if member(at(x + dx, y + dy) or ''):
+            if member(x + dx, y + dy):
                 out.add(d)
         if kind == 'road':
             for d, (dx, dy) in DIRS8.items():
-                if len(d) != 2 or not member(at(x + dx, y + dy) or ''):
+                if len(d) != 2 or not member(x + dx, y + dy):
                     continue
                 # A diagonal only where the run does not turn the corner itself.
-                if member(at(x + dx, y) or '') or member(at(x, y + dy) or ''):
+                if member(x + dx, y) or member(x, y + dy):
                     continue
                 out.add(d)
         elif kind == 'river':
             for d, (dx, dy) in DIRS8.items():
-                if len(d) == 2 and member(at(x + dx, y + dy) or '') \
-                        and not member(at(x + dx, y) or '') \
-                        and not member(at(x, y + dy) or ''):
+                if len(d) == 2 and member(x + dx, y + dy) \
+                        and not member(x + dx, y) \
+                        and not member(x, y + dy):
                     errors.append(f"({x},{y}): river links diagonally to "
                                   f"({x + dx},{y + dy}) -- make it a corner")
         return out
@@ -226,20 +239,23 @@ def build(pack, zid, src, out, strict=False):
                 sea = [d for d, (dx, dy) in DIRS4.items() if at(x + dx, y + dy) == '~']
                 if len(ex) == 1 and len(sea) >= 1:
                     inflow = next(iter(ex))
+                    # A mouth's art has the open sea on its outflow side and
+                    # along its top, land along its foot; the _s piece is the
+                    # same drawn the other way up, the sea along its foot.
+                    north, south = at(x, y - 1), at(x, y + 1)
+                    flip = south == '~' and north != '~'
                     if inflow == 'w' and 'e' in sea:
-                        out_art[y][x] = 'river_mouth_e'
+                        out_art[y][x] = 'river_mouth_e' + ('_s' if flip else '')
                     elif inflow == 'e' and 'w' in sea:
-                        out_art[y][x] = 'river_mouth_w'
+                        out_art[y][x] = 'river_mouth_w' + ('_s' if flip else '')
                     else:
                         errors.append(f"({x},{y}): river meets the sea from the "
                                       f"{inflow}; the pack has mouths for east "
                                       f"and west only")
-                    # The mouth art has the sea along its top and land along
-                    # its foot.
-                    if at(x, y - 1) not in ('~', None) or at(x, y + 1) in ('~', None):
-                        warnings.append(f"({x},{y}): river mouth wants sea to its "
-                                        f"north and land to its south (has "
-                                        f"{at(x, y - 1)!r} and {at(x, y + 1)!r})")
+                    if (north == '~') == (south == '~'):
+                        warnings.append(f"({x},{y}): river mouth wants the sea on "
+                                        f"one of its north and south sides, land "
+                                        f"on the other (has {north!r} and {south!r})")
                     # The mouth piece is drawn on a coast tile whose sea side
                     # is open water: its neighbours see it as sea.
                     cls[y][x] = 'water'
@@ -341,8 +357,9 @@ def build(pack, zid, src, out, strict=False):
                 lost = sorted(d for d in diff if len(d) == 2
                               and d[0] not in card and d[1] not in card)
                 if lost:
-                    warnings.append(f"({x},{y}): {t} edge on {sorted(card)} cannot "
-                                    f"show its different diagonal {lost}")
+                    (warnings if t == 'water' else notes).append(
+                        f"({x},{y}): {t} edge on {sorted(card)} cannot "
+                        f"show its different diagonal {lost}")
             m = WATER_IDX if t == 'water' else OTHER_IDX
             idx = None
             for pair in ('ne', 'nw', 'sw', 'se'):
@@ -376,6 +393,9 @@ def build(pack, zid, src, out, strict=False):
             if a is not None and a not in a2c:
                 errors.append(f"({x},{y}): the pack has no tile code for {a}")
 
+    if notes:
+        print(f"{len(notes)} note(s): land corners no edge variant shows "
+              f"(a small notch), e.g. {notes[0]}")
     if warnings:
         print(f"{len(warnings)} warning(s):")
         for w in warnings[:60]:

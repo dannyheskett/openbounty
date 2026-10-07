@@ -18,7 +18,7 @@ PY
 while read -r zone map size; do
   src="art/maps/$zone.txt"
   if [ -f "$src" ]; then
-    python3 tools/mapbuild.py build "$PACK" "$zone" "$src" "$tmp/$zone.dat" > "$tmp/build.log" \
+    python3 tools/mapbuild.py build "$PACK" "$zone" "$src" "$tmp/$zone.dat" --strict > "$tmp/build.log" \
       || { cat "$tmp/build.log"; exit 1; }
     if ! cmp -s "$tmp/$zone.dat" "$PACK/$map"; then
       echo "FAIL: $PACK/$map is not what $src builds; run tools/mapbuild.py build"
