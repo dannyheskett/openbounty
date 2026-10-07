@@ -19,12 +19,10 @@ Every release has carried two desktop products for each of Linux x86_64,
 Windows x86_64 and i686, and macOS universal, plus the web and mobile builds
 (`docs/RELEASE-PROCESS.md` has listed the file names):
 
-- **OpenBounty** (`openbounty-build-N-*`): the engine alone, with **no game
-  data**. It has played King's Bounty from a pack the player has built from a
-  legally-owned copy of the DOS distribution: run `./openbounty --extract` in
-  the directory that holds `KB.EXE`, and it writes
-  `kings-bounty.openbounty` into the user data directory, where the next
-  launch has found it.
+- **OpenBounty** (`openbounty-build-N-*`): King's Bounty, the binary with
+  `assets/kings-bounty.openbounty` beside it; it has started with no flags.
+  `./openbounty --extract` has also built the same pack from a copy of the
+  DOS distribution (§3).
 - **Glory of Rome** (`gloryofrome-build-N-*`): the same binary with
   `assets/glory-of-rome.openbounty` beside it; it has started with no flags.
 - **Web / WebAssembly**: two zips of `.html`/`.js`/`.wasm`/`.data`, served
