@@ -3347,7 +3347,7 @@ The painting itself is read only, never changed.
 Which pixels belong to which figure: the landscape is found by scanning each
 column down from the top edge to the first dark outline pixel (plus short
 sideways steps under overhangs); the figures overlap, so three hand-placed
-dividing lines decide whose pixel is whose, and two small hand fixes remain.
+dividing lines decide whose pixel is whose, and three small hand fixes remain.
 
     python3 tools/romeart.py classpicker [pack dir]   (default assets/glory-of-rome)
 """
@@ -3421,6 +3421,10 @@ dividing lines decide whose pixel is whose, and two small hand fixes remain.
     FORCE_BG=[(22,33,26,39)]          # trees showing beside the Legatus's neck
     FORCE_FIG=[(160,15,162,15),(152,16,162,16),(151,17,162,17),(150,18,162,18)]+[(149,y,162,y) for y in range(19,25)]
                                       # the top of the Sibylla's veil and fillet
+    FORCE_FIG+=[(93,8,101,8),(90,9,104,9),(89,10,107,10),(89,11,107,11),(91,12,108,12),
+                (90,13,109,13),(89,14,110,14),(88,15,110,15),(88,16,111,16)]
+                                      # the top of the Praetorianus's hood: its outline is
+                                      # lighter than TH, so the scan runs on into the hood
     for x0,y0,x1,y1 in FORCE_BG:
         for y in range(y0,y1+1):
             for x in range(x0,x1+1):
