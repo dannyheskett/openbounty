@@ -1675,6 +1675,7 @@ typedef struct {
         char tune_bump[RES_PATH_LEN];
         char tune_chest[RES_PATH_LEN];
         char tune_defeat[RES_PATH_LEN];
+        char tune_victory[RES_PATH_LEN];
     } audio;
 
     // Strict-strings bookkeeping: the engine ships NO hardcoded user-facing

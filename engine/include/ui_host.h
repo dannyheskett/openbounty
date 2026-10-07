@@ -155,6 +155,7 @@ typedef enum {
     AUDIO_TUNE_BUMP,        // step blocked (obstacle / off-map)
     AUDIO_TUNE_CHEST,       // treasure chest opened
     AUDIO_TUNE_DEFEAT,      // hero lost combat / died
+    AUDIO_TUNE_VICTORY,     // hero won a battle (optional: audio.tunes.victory)
     AUDIO_TUNE_COUNT
 } AudioTuneId;
 

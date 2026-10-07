@@ -1273,6 +1273,8 @@ static void parse_audio(Resources *res, cJSON *obj) {
                  res_json_str(tunes, "chest", ""));
         res_copy_str(res->audio.tune_defeat, sizeof(res->audio.tune_defeat),
                  res_json_str(tunes, "defeat", ""));
+        res_copy_str(res->audio.tune_victory, sizeof(res->audio.tune_victory),
+                 res_json_str(tunes, "victory", ""));
     }
 }
 

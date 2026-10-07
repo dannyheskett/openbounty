@@ -58,7 +58,7 @@ its defaults.
 | `combat`      | object ✱ | Morale chart, number-name labels, `morale_as_army_view`, `field_obstacle_chance`, `guardian_full_band` (§2.7). |
 | `controls`    | object   | Settings-menu rows (§2.3). |
 | `colors`      | object   | Difficulty-bar colors, minimap palette (§2.7). |
-| `audio`       | object   | Music tracks and the four short tunes (§2.8). |
+| `audio`       | object   | Music tracks and the five short tunes (§2.8). |
 | `render`      | object ✱ | Screen geometry: `mode`, tile size, viewport, `ui_scale`, optional fixed buffer (see §2.1). |
 | `font`        | object   | A TrueType/OpenType font rasterised at load into the glyph cell (see §2.2). Absent: the bitmap strip in `sprites.font`. |
 | `sprites`     | object ✱ | Texture-atlas paths (see §4). |
@@ -310,7 +310,7 @@ default.
 | Key | Type | Default | Effect |
 |---|---|---|---|
 | `audio.tracks.openworld`, `.combat`, `.intro` | path | none | The map's music, the fight's, and the Introduction's theme (§2.4). |
-| `audio.tunes.walk`, `.bump`, `.chest`, `.defeat` | path (WAV) | none | The short tunes: a step, a blocked step, a chest, a defeat. An absent or unreadable one has stayed silent. |
+| `audio.tunes.walk`, `.bump`, `.chest`, `.defeat`, `.victory` | path (WAV) | none | The short tunes: a step, a blocked step, a chest, a defeat, a won battle. An absent or unreadable one has stayed silent. |
 | `ending.grass_tile`, `carpet_tile`, `hero_tile` | path | none | The win cartoon's tiles (§4.1 for the grass and hero fallbacks). |
 | `ending.grid_width` / `grid_height` | int | 6 / 5 | The cartoon's grid in tiles. |
 | `ending.carpet_column` / `carpet_length` | int | 4 / 5 | The carpet's column and its length in tiles. |

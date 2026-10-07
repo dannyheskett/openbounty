@@ -1330,6 +1330,7 @@ settle:
         }
         GameCompactArmy(g);
         recorder_capture("combat:end:win");
+        audio_play_tune(AUDIO_TUNE_VICTORY);   // silent when the pack has none
         audio_set_track(AUDIO_TRACK_OPENWORLD);
         return COMBAT_RESULT_WIN;
     }
