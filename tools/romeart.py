@@ -202,15 +202,20 @@ new T base where it is terrain and the new grass base elsewhere, so the
 edges seam with their bases by construction (ART-PIPELINE, terrain edges;
 OPENBOUNTY-SPEC REQ-229). No generation.
 
-    python3 tools/romeart.py edges [pack-dir] [tile-set]
+    python3 tools/romeart.py edges [pack-dir] [tile-set] [--as <art>=<terrain> ...]
 
 Default pack assets/glory-of-rome; with a tile set the bases are read from
-and the edges written to art/tiles/<set>/.
+and the edges written to art/tiles/<set>/. --as builds ONLY another base's
+edges, from a reference terrain's shapes (fields_wheat=desert: a wheat field
+fading into grass the way sand does), writing <art>_edge_01..12; the
+terrains' own edges are left alone.
     """
 
 
-    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
-    SET = argv[2] if len(argv) > 2 else ""
+    AS = [argv[i + 1].split("=", 1) for i, a in enumerate(argv) if a == "--as"]
+    pos = [a for i, a in enumerate(argv) if not a.startswith("--") and (i == 0 or argv[i - 1] != "--as")]
+    PACK = pos[1] if len(pos) > 1 else "assets/glory-of-rome"
+    SET = pos[2] if len(pos) > 2 else ""
     REF = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "art", "reference", "edges")
     TILES = os.path.join(PACK, "art", "tiles", SET)
     TERRAINS = ("water", "forest", "mountain", "desert")
@@ -238,6 +243,20 @@ and the edges written to art/tiles/<set>/.
         grass = Image.open(os.path.join(TILES, "grass.png")).convert("RGBA")
         g_cols = colours(os.path.join(REF, "grass.png"))
         n = 0
+        if AS:
+            for art, ref in AS:
+                base = Image.open(os.path.join(TILES, f"{art}.png")).convert("RGBA")
+                t_cols = colours(os.path.join(REF, f"{ref}.png"))
+                for name in sorted(os.listdir(REF)):
+                    if not name.startswith(f"{ref}_edge_"):
+                        continue
+                    m = mask_from(os.path.join(REF, name), t_cols, g_cols, base.size)
+                    out = grass.copy()
+                    out.paste(base, (0, 0), m)
+                    out.save(os.path.join(TILES, name.replace(f"{ref}_edge_", f"{art}_edge_")))
+                    n += 1
+            print(f"wrote {n} edge tiles to {TILES}")
+            return
         for t in TERRAINS:
             base = Image.open(os.path.join(TILES, f"{t}.png")).convert("RGBA")
             t_cols = colours(os.path.join(REF, f"{t}.png"))

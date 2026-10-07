@@ -10,6 +10,7 @@ Nothing is written unless an output path is named; `--help` only prints this.
 The SOURCE is the map. One character per tile, `#` lines are comments:
 
   terrain   ~ sea   . grass   , grass variant   f forest   ^ mountain   d desert
+            p ploughed field   w wheat field (farmland: grass to the engine)
   overlays  r river on grass   R river in forest   M river in mountains
             = road             H bridge (a road crossing a river)
 
@@ -67,13 +68,17 @@ OPP = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e',
 
 BASE = {'~': 'water', '.': 'grass', ',': 'grass', 'f': 'forest',
         '^': 'mountain', 'd': 'desert', 'P': 'grass', 'T': 'grass',
-        'S': 'grass', 'O': 'grass', 'K': 'grass', 'G': 'grass'}
+        'S': 'grass', 'O': 'grass', 'K': 'grass', 'G': 'grass',
+        'p': 'fields_plough', 'w': 'fields_wheat'}
 # 'P': a landmark standing on grass -- the neighbours see grass, so no edge
 # art changes, and the tile draws the landmark (Africa's Pharos).
 PLAIN_ART = {'~': 'water', '.': 'grass', ',': 'grass_variant', 'f': 'forest',
              '^': 'mountain', 'd': 'desert', 'P': 'pharos', 'T': 'temple_ocean',
              'S': 'landmark_sibyl', 'O': 'landmark_oppidum', 'K': 'landmark_tophet',
-             'G': 'landmark_gordian'}
+             'G': 'landmark_gordian', 'p': 'fields_plough', 'w': 'fields_wheat'}
+# p w: farmland (#63), ploughed and in wheat -- grass to the engine, its own
+# ground for the edges: a field fades into the grass round it the way sand
+# does (fields_<kind>_edge_01..12, romeart.py edges --as).
 # S O K G: the vistas' landmarks (#63) -- the Sibyl's cave, the Oppidum's gate,
 # the Tophet's stelae, the Gordian cart -- standing on grass like the Pharos.
 # The Rubicon's boundary stone stands on its road (a road cell beside the
