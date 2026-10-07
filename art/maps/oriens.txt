@@ -38,11 +38,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~........rdddddddddddddddddddrddrrr
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~rrrrrrrrrrdddddddddddddddddddrddddd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.........ddddddddddddddddddddrddddd
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........dddddd^^^.^^^dddddddrrrrrr
-~~~~~~~dddddddddddd~~~~~~~~~..........dddddd^^^.^^^ddddddddddddd
-dddddddddddddddddddddddddddddddddddddddddddd^^...^^ddddddddddddd
-dddddddddddddddddddddddddddddddddddddddddddd^^...^^ddddddddddddd
-dddddddddddddddddddddddddddddddddddddddddddd^^...^^ddddddddddddd
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........dddddd^^^d^^^dddddddrrrrrr
+~~~~~~~dddddddddddd~~~~~~~~~..........dddddd^^^d^^^ddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddd^^ddd^^ddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddd^^ddd^^ddddddddddddd
+dddddddddddddddddddddddddddddddddddddddddddd^^ddd^^ddddddddddddd
 dddddddddddddddddddddddddddddddddddddddddddd^^^^^^^ddddddddddddd
 dddddddddddddddddddddddddddddddddddddddddddd^^^^^^^ddddddddddddd
 dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd

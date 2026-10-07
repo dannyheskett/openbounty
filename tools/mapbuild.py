@@ -161,7 +161,8 @@ def build(pack, zid, src, out, strict=False):
     objs = object_cells(g, zid)
     errors = []
     warnings = []
-    notes = []          # land-against-land corners: a notch, never an error
+    notes = []
+    wants_sand = set()      # sand-backed edge pieces the pack does not ship yet          # land-against-land corners: a notch, never an error
 
     def at(x, y):
         return rows[y][x] if 0 <= x < W and 0 <= y < H else None
@@ -374,7 +375,11 @@ def build(pack, zid, src, out, strict=False):
             # shows what is left, when the old shape stands). Forest and rock
             # keep their grass fringe: drawn solid to the water, they stop in
             # a straight line at the tile's edge.
-            diff = {d for d in full if near[d] != 'water'} if t == 'desert' else full
+            # ... and sand beside a wood or range that has sand edges leaves the
+            # edge to it, so no grass shows between them.
+            diff = {d for d in full if near[d] != 'water' and
+                    not (near[d] in ('forest', 'mountain') and f"{near[d]}_sand_edge_01" in a2c)} \
+                if t == 'desert' else full
             idx, why = (None, None) if not diff else edge_idx(t, diff)
             if diff and idx is None and diff != full:
                 diff = full
@@ -394,10 +399,13 @@ def build(pack, zid, src, out, strict=False):
                         f"({x},{y}): {t} edge on {sorted(card)} cannot "
                         f"show its different diagonal {lost}")
             family = f"{t}_edge"
-            # A sea whose shore is all sand has drawn a sand shore.
-            if t == 'water' and all(near[d] == 'desert' for d in diff) \
-                    and f"water_sand_edge_{idx:02d}" in a2c:
-                family = "water_sand_edge"
+            # A sea, wood or range whose every other neighbour is sand fades
+            # to sand, not grass: its *_sand_edge piece, where the pack has it.
+            if t in ('water', 'forest', 'mountain') and all(near[d] == 'desert' for d in diff) \
+                    and f"{t}_sand_edge_{idx:02d}" in a2c:
+                family = f"{t}_sand_edge"
+            elif t in ('forest', 'mountain') and all(near[d] == 'desert' for d in diff):
+                wants_sand.add(f"{t}_sand_edge_{idx:02d}")
             name = f"{family}_{idx:02d}"
             if name not in a2c:
                 errors.append(f"({x},{y}): {t} open on {sorted(diff)} wants "
@@ -411,6 +419,9 @@ def build(pack, zid, src, out, strict=False):
             if a is not None and a not in a2c:
                 errors.append(f"({x},{y}): the pack has no tile code for {a}")
 
+    if wants_sand:
+        warnings.append("wood or rock on sand drawn with a grass fringe; the pack "
+                        "ships no " + ", ".join(sorted(wants_sand)))
     if notes:
         print(f"{len(notes)} note(s): land corners no edge variant shows "
               f"(a small notch), e.g. {notes[0]}")
