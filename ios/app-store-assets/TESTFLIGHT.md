@@ -1,4 +1,4 @@
-# Getting Glory of Rome into TestFlight
+# Getting The Glory of Rome into TestFlight
 
 The release workflow has signed the `.ipa` and uploaded it to App Store
 Connect whenever the Apple secrets are set; without them every Apple step has
@@ -99,7 +99,7 @@ Download it as `profile.mobileprovision`.
 | Field | Value |
 | --- | --- |
 | Platform | iOS |
-| Name | `Glory of Rome` |
+| Name | `The Glory of Rome` |
 | Primary Language | English (U.S.) |
 | Bundle ID | `com.danheskett.gloryofrome` |
 | SKU | `gloryofrome` |

@@ -9,7 +9,7 @@ alone, paired with the asset pack at `assets/kings-bounty/` (sprites, palette,
 maps, audio).
 
 OpenBounty has been a faithful raylib reimplementation of King's Bounty (1990,
-New World Computing), and the engine behind Glory of Rome, an original modern
+New World Computing), and the engine behind The Glory of Rome, an original modern
 pack (`assets/glory-of-rome/`, `GLORY-OF-ROME.md`). It has descended from
 **OpenKB** (an earlier SDL 1.2 reimplementation) and deliberately diverged from
 it in several architectural respects (§1.10); gameplay-significant constants
@@ -167,13 +167,13 @@ flagged (§38).
     (mingw-w64), static link, no DLLs.
   - `make mac`: macOS universal (arm64 + x86_64).
   - `make web`: one WebAssembly bundle per pack.
-  - `make android` / `make android-play`: the Glory of Rome APK / AAB.
-  - `make ios-sim` / `make ios`: the Glory of Rome Simulator app / device
+  - `make android` / `make android-play`: The Glory of Rome APK / AAB.
+  - `make ios-sim` / `make ios`: The Glory of Rome Simulator app / device
     `.ipa`.
   - `make extract` / `make extract-pack`: wrappers around
     `./build/debug/openbounty --extract`.
   - `make dist-{linux,windows,mac}` / `make dist`: OpenBounty archives;
-    `make dist-rome-{linux,windows,mac}`: Glory of Rome archives;
+    `make dist-rome-{linux,windows,mac}`: The Glory of Rome archives;
     `make dist-web`, `dist-android`, `dist-android-play`, `dist-ios`.
   - `make clean`: has removed `build/` and `dist/` archives.
 - **REQ-022.** The game and its build have used **no Python**. Asset
@@ -2169,7 +2169,7 @@ golden-digest regression tests have pinned the formulas.
   the field each cell of columns 1–3 has held an obstacle (code 1..3, drawn
   at random) at the pack's `combat.field_obstacle_chance` percent: absent,
   King's Bounty's one in ten, drawn exactly as in the original, so
-  its random stream has stayed unchanged; Glory of Rome has set 12. The
+  its random stream has stayed unchanged; The Glory of Rome has set 12. The
   obstacle map (`omap`) has used codes 1..3 for field obstacles and 5..10 for
   castle walls (0 = open); the unit map (`umap`) has held packed unit ids
   (1-based; 0 = empty). Both maps have been sized `[H+1][W+1]` for off-by-one
@@ -2332,7 +2332,7 @@ golden-digest regression tests have pinned the formulas.
   as cards in the battle column, newest first, as many as the column has
   held (`DESIGN-SPEC.md` DSGN-0115).
 - **REQ-392a.** A pack that gives the optional `combat_log.melee_no_kill`
-  (Glory of Rome, #131) has logged every troop attack: one that killed
+  (The Glory of Rome, #131) has logged every troop attack: one that killed
   nothing as `melee_no_kill` or, ranged, `ranged_no_effect`, and, after the
   attack's own line, a retaliation that killed as `retaliate`
   (`Combat.retaliation_kills`). Without it only kills have been logged, as
@@ -3171,17 +3171,17 @@ every menu; this section has held the rules.
   name has also found a loose `<name>/game.json` under those roots. The pack
   schema version has been 1 (`PACK-FORMAT.md`). The OpenBounty desktop
   archives have shipped **without** game data -- the user has supplied a pack via
-  `--extract` (§37) -- while Glory of Rome's archives and apps have carried
+  `--extract` (§37) -- while The Glory of Rome's archives and apps have carried
   their own pack. `docs/PACK-FORMAT.md` has documented the full format.
 
 ### 34.3 Platform
 
 - **REQ-482.** Every release (`docs/RELEASE-PROCESS.md`) has carried: the
-  OpenBounty engine and the Glory of Rome package for Linux x86_64
+  OpenBounty engine and The Glory of Rome package for Linux x86_64
   (tar.gz), Windows x86_64 + i686 (zip, single static .exe, no DLLs) and
   macOS universal (zip, arm64 + x86_64, ad-hoc signed); two Web/WebAssembly
   zips (`.html`/`.js`/`.wasm`/`.data`), `openbounty-*` with King's Bounty
-  embedded and `gloryofrome-*` with Glory of Rome; the iOS `.ipa`
+  embedded and `gloryofrome-*` with The Glory of Rome; the iOS `.ipa`
   (native Metal, `IOS-BACKEND.md`); and the Android APK and AAB. Releases have
   been sequential build numbers under `release-N` tags; the build number has
   been embedded at compile time and exposed via `--version`.
@@ -3247,7 +3247,7 @@ every menu; this section has held the rules.
   `extract_lzw.c`, `extract_vga.c`, `extract_png.c`, `extract_chrome.c`,
   `extract_gamejson.c`, `extract_io.c`, plus the dispatcher `extract.c`.
   `--out-dir` has emitted a loose tree instead of a zip; `--pack-dir <src>
-  <dst>` has zipped a pre-extracted tree into a `.openbounty` archive. The Python in `tools/` has been the Glory of Rome
+  <dst>` has zipped a pre-extracted tree into a `.openbounty` archive. The Python in `tools/` has been The Glory of Rome
   authoring tools (REQ-022), which no build step has run.
 
 ---
@@ -3305,7 +3305,7 @@ has been deliberately out of scope (§38.4).
 ## Appendix A, Complete data tables (from `game.json`)
 
 These tables have been reproduced from `assets/kings-bounty/game.json` (the
-reference `kings-bounty` pack; Glory of Rome's have been in `GLORY-OF-ROME.md`). The
+reference `kings-bounty` pack; The Glory of Rome's have been in `GLORY-OF-ROME.md`). The
 pack's values have been the authoritative source; the spec body has named JSON
 paths rather than copying values, so this appendix has been the one place the
 full tables appear.

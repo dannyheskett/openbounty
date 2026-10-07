@@ -1,4 +1,4 @@
-# Glory of Rome — art pipeline
+# The Glory of Rome — art pipeline
 
 Every prompt behind the pack, with its engine and settings, has been collected
 in **`docs/ROME-ART.md`**, generated from `art/jobs/*.json` by

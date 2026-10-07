@@ -1,10 +1,10 @@
-# Glory of Rome — Google Play store listing
+# The Glory of Rome — Google Play store listing
 
 Copy these into the Play Console (**Grow → Store presence → Main store
 listing**, plus **Store settings** for the category). Everything here has been
 text that can be pasted; the image assets the listing takes are listed first.
 
-The Play app has been **Glory of Rome only** — one pack, no pack picker, no
+The Play app has been **The Glory of Rome only** — one pack, no pack picker, no
 King's Bounty. The desktop game has been a different thing and has not been
 mentioned here.
 
@@ -27,7 +27,7 @@ as the screen draws it, to drop the alpha channel Play refuses.
 ## App name (≤30 chars)
 
 ```
-Glory of Rome
+The Glory of Rome
 ```
 
 ## Short description (≤80 chars)
@@ -41,7 +41,7 @@ Hire troops, hunt villains, reclaim Italia. Free, open source, no ads.
 ```
 Rome needs a champion. Raise an army, sweep the roads of Italia, hunt down the villains who have carved the peninsula up between them, and deliver them to the Senate before your commission runs out.
 
-Glory of Rome is a turn-based fantasy strategy game: recruit troops, fight tactical battles on a hex-free grid, take castles, find artefacts, and track each villain through the provinces that shelter them.
+The Glory of Rome is a turn-based fantasy strategy game: recruit troops, fight tactical battles on a hex-free grid, take castles, find artefacts, and track each villain through the provinces that shelter them.
 
 WHAT YOU DO
 • Recruit legionaries, auxiliaries and stranger things from dwellings across four zones
@@ -56,7 +56,7 @@ BUILT RIGHT
 • Landscape, full screen, and clear of notches and gesture bars
 
 FREE AND OPEN SOURCE
-Glory of Rome is built on OpenBounty, an open-source engine. Read the code, report a bug, or build it yourself: https://github.com/dannyheskett/openbounty
+The Glory of Rome is built on OpenBounty, an open-source engine. Read the code, report a bug, or build it yourself: https://github.com/dannyheskett/openbounty
 ```
 
 ## Categorisation

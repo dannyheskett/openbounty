@@ -2,8 +2,8 @@
 # The release's pack rule, checked on the archives themselves.
 #
 #   openbounty-*   King's Bounty: MUST carry assets/kings-bounty.openbounty,
-#                  and nothing from Glory of Rome.
-#   gloryofrome-*  Glory of Rome: MUST carry assets/glory-of-rome.openbounty,
+#                  and nothing from The Glory of Rome.
+#   gloryofrome-*  The Glory of Rome: MUST carry assets/glory-of-rome.openbounty,
 #                  and nothing from King's Bounty.
 #   *-web-*        a browser bundle: its game's pack embedded in
 #                  openbounty.data (King's Bounty in openbounty-*, Glory of
@@ -44,13 +44,13 @@ for f in "$DIR"/*.tar.gz "$DIR"/*.zip; do
             fi ;;
         openbounty-*)
             if printf '%s\n' "$listing" | grep -qi "glory-of-rome"; then
-                echo "FAIL: $name contains Glory of Rome data"; fail=1
+                echo "FAIL: $name contains The Glory of Rome data"; fail=1
             fi ;;
     esac
     case "$name" in
         gloryofrome-*-web-*|openbounty-*-web-*)
             # A web bundle embeds its game's pack inside openbounty.data by
-            # design (King's Bounty in openbounty-*, Glory of Rome in
+            # design (King's Bounty in openbounty-*, The Glory of Rome in
             # gloryofrome-*); no loose pack file may appear beside it.
             if printf '%s\n' "$listing" | grep -qE '\.openbounty$'; then
                 echo "FAIL: $name has a loose pack file"; fail=1
@@ -59,7 +59,7 @@ for f in "$DIR"/*.tar.gz "$DIR"/*.zip; do
             fi ;;
         gloryofrome-*)
             if printf '%s\n' "$listing" | grep -qE '(^|/)assets/glory-of-rome\.openbounty$'; then
-                echo "ok:   $name carries the Glory of Rome pack"
+                echo "ok:   $name carries The Glory of Rome pack"
             else
                 echo "FAIL: $name is missing assets/glory-of-rome.openbounty"; fail=1
             fi ;;

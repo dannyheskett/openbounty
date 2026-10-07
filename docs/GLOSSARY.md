@@ -20,16 +20,16 @@ The words the code and the docs have used, in alphabetical order.
 | **Guardian** | A zone army with `static`: it has never moved, and with `combat.guardian_full_band` it has fielded all five stacks. |
 | **Legacy** | The presentation that has reproduced King's Bounty's DOS screens (`render.mode` `legacy`); finished and pinned by `test_legacy_freeze`. |
 | **Leadership** | How many hit points of troops the hero has been able to control; it has capped recruiting and decided which stacks have stayed under control. |
-| **Modern** | Glory of Rome's presentation (`render.mode` `modern`): larger tiles, a rail, touch and pages. `CL_IS_MODERN` in the shell. |
+| **Modern** | The Glory of Rome's presentation (`render.mode` `modern`): larger tiles, a rail, touch and pages. `CL_IS_MODERN` in the shell. |
 | **Pack** | A game's content: `game.json`, strings, art, audio and maps, as a directory or a `.openbounty` zip (`PACK-FORMAT.md`). |
 | **Pack stack** | The open packs, read top-down: a file in a higher pack has won (`pack_stack_read`). |
 | **Placement** | An object the salt has put on a map: a chest, an artifact, a dwelling, a friendly foe (`SaltedPlacement`). |
 | **Player-IO queue** | The engine's FIFO of everything the player must see or answer (`engine/include/player_io.h`), drained alike by the shell, the demo and autoplay. |
 | **REQ-NNN** | A requirement in `OPENBOUNTY-SPEC.md`. |
-| **Rites** | In Glory of Rome, what a zone's Augur has taught; without them that zone's temples have taught no spells (`magic.rites_per_zone`). |
+| **Rites** | In The Glory of Rome, what a zone's Augur has taught; without them that zone's temples have taught no spells (`magic.rites_per_zone`). |
 | **Salt** | The seeded scattering of objects over a zone (`salt_continent`), set by the zone's `salt` keys. |
 | **Scepter** | The object buried in one zone. The puzzle map has shown where, and searching its tile has won the game. |
 | **Shell** | `src/`: the window, rendering, audio, input and screens around the engine. |
 | **Siege** | A fight against a castle's garrison (`COMBAT_MODE_CASTLE`). |
-| **Week end** | The turn of the week: commission, upkeep, the astrology's creature and, in Glory of Rome, a renewed spell. |
-| **Zone** | One map of the world: a *continent* in King's Bounty, a *province* in Glory of Rome. |
+| **Week end** | The turn of the week: commission, upkeep, the astrology's creature and, in The Glory of Rome, a renewed spell. |
+| **Zone** | One map of the world: a *continent* in King's Bounty, a *province* in The Glory of Rome. |

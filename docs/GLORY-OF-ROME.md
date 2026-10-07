@@ -1,6 +1,6 @@
-# Glory of Rome, Pack Design
+# The Glory of Rome, Pack Design
 
-The design of Glory of Rome, the second OpenBounty pack: a mythic-Roman total
+The design of The Glory of Rome, the second OpenBounty pack: a mythic-Roman total
 re-theme of the King's Bounty ruleset. Each section has given the choice and
 the reason for it.
 
@@ -48,7 +48,7 @@ The home castle's occupant has been **Imperator Traianus** — Trajan. He has
 been the source of contracts, the place rank has been conferred, and the only
 castle that can never be besieged.
 
-Trajan has been the right man for a game called Glory of Rome: his reign has
+Trajan has been the right man for a game called The Glory of Rome: his reign has
 marked the empire's greatest territorial extent, he has taken Dacia and
 campaigned in the East, and the Senate has awarded him *optimus princeps*,
 the best of emperors. He has read as an authority worth serving rather than a
@@ -464,7 +464,7 @@ These have been the engine's limits, and they have bound the design.
 
 ## 9. Shipping
 
-Glory of Rome has been the pack of the `gloryofrome-*` release files: the
+The Glory of Rome has been the pack of the `gloryofrome-*` release files: the
 desktop archives, the browser build (danheskett.com/dist/gloryofrome/), the
 iOS app and the Android app. It has been original, where `kings-bounty` has
 been DOS-extracted. `scripts/verify_release_packs.sh` has checked every

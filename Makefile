@@ -315,7 +315,7 @@ WEB_LDFLAGS := -L$(RAYLIB_WEB)/lib -lraylib -lidbfs.js \
 
 # The packs that get a web build. `make web` builds both, and dist-web
 # packages each as its own zip (openbounty-* for King's Bounty, gloryofrome-*
-# for Glory of Rome).
+# for The Glory of Rome).
 WEB_PACK_NAMES := kings-bounty glory-of-rome
 WEB_OUTS       := $(foreach p,$(WEB_PACK_NAMES),build/web/$(p)/openbounty.html)
 OUT_WEB_ROME   := build/web/glory-of-rome/openbounty.html
@@ -660,7 +660,7 @@ define ios_build
 	sed -e "s|<string>1</string>|<string>$(IOS_BUILD_NUMBER)</string>|" \
 	    -e "s|<string>1.0</string>|<string>$(IOS_VERSION_NAME)</string>|" \
 	    ios/Info.plist > $(3)/Info.plist
-	# Glory of Rome only: the one pack, as a bundle resource.
+	# The Glory of Rome only: the one pack, as a bundle resource.
 	cp $(PACK_DIR)/$(ANDROID_PACK).openbounty $(3)/
 endef
 
@@ -819,7 +819,7 @@ dist-mac: $(OUT_MAC) $(KB_PACK_FILE)
 	(cd $(STAGING)/mac && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-macos-universal.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
 
 # ---------------------------------------------------------------------------
-# Glory of Rome desktop packages: the same binary as the OpenBounty archives
+# The Glory of Rome desktop packages: the same binary as the OpenBounty archives
 # above, plus the Rome pack in assets/ beside it -- the directory pack
 # discovery already searches (src/main.c), so the game starts with no flags.
 # Each game's archives carry its own pack only: the gloryofrome-* ones carry
@@ -858,7 +858,7 @@ dist-rome-mac: $(OUT_MAC) $(ROME_PACK_FILE)
 # module, the .data pack image, and the .html shell. Serve them over HTTP --
 # browsers refuse to fetch .wasm/.data over file://.
 # Two zips, one per game: openbounty-* carries King's Bounty and gloryofrome-*
-# Glory of Rome, each with its pack embedded in the .data image. The site pulls
+# The Glory of Rome, each with its pack embedded in the .data image. The site pulls
 # each by its prefix into its own URL.
 # $(call web_stage,<pack-name>,<zip-prefix>,<readme-template>)
 define web_stage

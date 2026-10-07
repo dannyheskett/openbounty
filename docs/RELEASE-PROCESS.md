@@ -1,6 +1,6 @@
 # Release process
 
-How a release of OpenBounty and Glory of Rome has been cut. The pipeline has
+How a release of OpenBounty and The Glory of Rome has been cut. The pipeline has
 been automated via GitHub Actions; in the normal case the maintainer has done
 nothing at all.
 
@@ -63,7 +63,7 @@ practice, the merge of a `staging` -> `main` pull request) and by
   against the runner's glibc, run `make test` (the full suite, unit, e2e,
   autoplay, and the combat-formula regression digests), built the Linux
   release binary and Win64+Win32 binaries, packaged each as an OpenBounty
-  archive and a Glory of Rome archive, and verified the pack rule
+  archive and an archive of The Glory of Rome, and verified the pack rule
   (`scripts/verify_release_packs.sh`).
 - **macOS universal build** (macOS 14, Apple Silicon): has rebuilt raylib for
   arm64+x86_64 and lipo'd them into a universal static archive, built the
@@ -74,7 +74,7 @@ practice, the merge of a `staging` -> `main` pull request) and by
   *Linux* toolchain as well as emsdk because the wasm target has depended on the
   asset pack, and the native binary has been what has zipped that pack.
 - **iOS build** (macOS 26): has built raylib for macOS and the pack tool
-  first -- the .app has embedded the Glory of Rome pack and the native binary
+  first -- the .app has embedded The Glory of Rome pack and the native binary
   has been what has zipped that pack -- then packaged the device `.ipa`. The
   `.ipa` has been unsigned when the Apple secrets have been absent, and
   App Store-signed when they have been present, in a throwaway keychain, with
@@ -86,11 +86,11 @@ practice, the merge of a `staging` -> `main` pull request) and by
   uploaded anywhere.
 - **android build** (Ubuntu): has installed the NDK, build-tools and platform,
   built raylib for `arm64-v8a` and the Linux toolchain (the APK has embedded
-  the Glory of Rome pack, and the native binary has been what has zipped that
+  The Glory of Rome pack, and the native binary has been what has zipped that
   pack), then
   packaged a debug-signed sideload **APK** and -- only when all four
   `PLAY_*` signing secrets have been present -- an upload-signed **AAB**. Mobile has
-  been Glory of Rome only; the job has asserted no King's Bounty pack has been
+  been The Glory of Rome only; the job has asserted no King's Bounty pack has been
   inside either artifact.
 - **publish** (Ubuntu): has downloaded all build artifacts, created the
   `release-N` **tag at the triggering SHA**, and published the GitHub Release
@@ -126,7 +126,7 @@ its own pack and nothing of the other game.
 
 Each web archive has embedded its game's pack inside `openbounty.data`,
 since it must carry a pack to run at all: `openbounty-*-web-wasm.zip` King's
-Bounty, `gloryofrome-*-web-wasm.zip` Glory of Rome. The site
+Bounty, `gloryofrome-*-web-wasm.zip` The Glory of Rome. The site
 (danheskett.com) has pulled each from the latest release by its prefix, into
 `/dist/openbounty/` and `/dist/gloryofrome/`.
 
@@ -169,7 +169,7 @@ Each merge to `main` has produced one `release-N` with all of these:
 | Artifact | What it has been |
 |---|---|
 | `openbounty-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **OpenBounty** -- King's Bounty: the binary with `assets/kings-bounty.openbounty`. |
-| `gloryofrome-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **Glory of Rome** -- the same binary with `assets/glory-of-rome.openbounty` beside it, where pack discovery has looked, so it has started with no flags. |
+| `gloryofrome-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **The Glory of Rome** -- the same binary with `assets/glory-of-rome.openbounty` beside it, where pack discovery has looked, so it has started with no flags. |
 | `openbounty-build-<N>-web-wasm.zip` | The King's Bounty browser build (its pack embedded in `openbounty.data`), served at danheskett.com/dist/openbounty/. |
 | `gloryofrome-build-<N>-web-wasm.zip` | The Glory of Rome browser build (its pack embedded in `openbounty.data`), served at danheskett.com/dist/gloryofrome/. |
 | `gloryofrome-build-<N>-ios-arm64.ipa` | The App Store-signed iOS app, uploaded to TestFlight. |
@@ -280,7 +280,7 @@ make web-serve        # build + serve them on localhost:8080/<pack>/openbounty.h
 make dist-linux       # OpenBounty Linux archive in dist/
 make dist-windows     # OpenBounty Windows zips in dist/
 make dist-mac         # OpenBounty macOS zip in dist/ (only on macOS)
-make dist-rome-linux  # Glory of Rome Linux archive (also -windows, -mac)
+make dist-rome-linux  # The Glory of Rome Linux archive (also -windows, -mac)
 make dist-web         # the two WASM zips in dist/ (needs emsdk)
 make dist-android     # sideload APK (also dist-android-play for the AAB)
 make dist-ios         # device .ipa (only on macOS)

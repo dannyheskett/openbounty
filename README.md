@@ -1,7 +1,7 @@
 # OpenBounty
 
 A faithful raylib reimplementation of King's Bounty (1990, New World
-Computing), and the engine behind **Glory of Rome**, an original pack that
+Computing), and the engine behind **The Glory of Rome**, an original pack that
 has run on desktop, the web, iOS and Android.
 
 This document has described how the game works, what it ships with, and how
@@ -23,15 +23,15 @@ Windows x86_64 and i686, and macOS universal, plus the web and mobile builds
   `assets/kings-bounty.openbounty` beside it; it has started with no flags.
   `./openbounty --extract` has also built the same pack from a copy of the
   DOS distribution (§3).
-- **Glory of Rome** (`gloryofrome-build-N-*`): the same binary with
+- **The Glory of Rome** (`gloryofrome-build-N-*`): the same binary with
   `assets/glory-of-rome.openbounty` beside it; it has started with no flags.
 - **Web / WebAssembly**: two zips of `.html`/`.js`/`.wasm`/`.data`, served
   over HTTP, each with its game embedded: `openbounty-build-N-web-wasm.zip`
   (King's Bounty, danheskett.com/dist/openbounty/) and
-  `gloryofrome-build-N-web-wasm.zip` (Glory of Rome,
+  `gloryofrome-build-N-web-wasm.zip` (The Glory of Rome,
   danheskett.com/dist/gloryofrome/).
 - **iOS** (`.ipa`, also on TestFlight) and **Android** (sideload `.apk` and
-  the Play `.aab`): Glory of Rome only.
+  the Play `.aab`): The Glory of Rome only.
 
 The Linux build has been made on Ubuntu 22.04 (glibc 2.35+). The Windows
 builds have been a single .exe with no installer and no DLLs. The macOS build
@@ -196,7 +196,7 @@ via `--preload-file`, so each build has been self-contained. All four files
 have been needed, served over HTTP: browsers have refused to fetch `.wasm`/`.data`
 over `file://`. Saves have persisted in IndexedDB. `make web` has not been
 part of `make dist`; `make dist-web` has packaged each build as its own zip,
-`openbounty-*` for King's Bounty and `gloryofrome-*` for Glory of Rome, and
+`openbounty-*` for King's Bounty and `gloryofrome-*` for The Glory of Rome, and
 the site has served each at its own URL.
 
 ### Android
@@ -212,7 +212,7 @@ taken `--ndk`, `--api` and `--arch`, and the Makefile has stopped with an
 error when `ANDROID_NDK` or `ANDROID_SDK_ROOT` arrives through the
 environment.
 
-**Mobile has shipped Glory of Rome only** -- one pack, bundled in the APK's
+**Mobile has shipped The Glory of Rome only** -- one pack, bundled in the APK's
 `assets/`, opened by `src/plat_android.c` (`pack_open_mem`, so it has not
 depended on raylib's `fopen` wrap, which miniz can bypass via `fopen64`).
 There has been no pack discovery and no picker. Saves have gone to the app's
@@ -246,7 +246,7 @@ type-checked every iOS-bound shell file with `-DPLATFORM_IOS` and no raylib
 include path (`build/ios-purity.stamp`), so the split has held on machines
 without Xcode. See `docs/IOS-BACKEND.md`.
 
-Like Android, iOS has shipped **Glory of Rome only**: the pack has been a
+Like Android, iOS has shipped **The Glory of Rome only**: the pack has been a
 bundle resource opened with `pack_open_mem`, and saves have gone to the app's
 `Documents/saves`. All iOS building has happened on GitHub's macOS runners.
 
@@ -370,12 +370,12 @@ depending on shell headers or shell symbols, this build step has failed and
 | `make mac` | `openbounty-mac` (universal binary, on macOS). |
 | `make web` | WebAssembly build, one per pack -> `build/web/<pack>/openbounty.{html,js,wasm,data}` (needs emsdk). |
 | `make web-serve` | Built both web builds + served them on `http://localhost:8080/<pack>/openbounty.html`. |
-| `make android` / `make android-play` | Glory of Rome APK (`build/gloryofrome.apk`) / the upload-signed AAB (needs the Android NDK + SDK build-tools). |
-| `make ios-sim` / `make ios` | Glory of Rome Simulator `.app` / device `.ipa` (on macOS). |
+| `make android` / `make android-play` | The Glory of Rome APK (`build/gloryofrome.apk`) / the upload-signed AAB (needs the Android NDK + SDK build-tools). |
+| `make ios-sim` / `make ios` | The Glory of Rome Simulator `.app` / device `.ipa` (on macOS). |
 | `make extract` | Wrapper for `./build/debug/openbounty --extract`. |
 | `make extract-pack` | Regenerated `assets/kings-bounty/` from a user's DOS files. |
 | `make dist-{linux,windows,mac}` | OpenBounty distribution archives. |
-| `make dist-rome-{linux,windows,mac}` | Glory of Rome distribution archives. |
+| `make dist-rome-{linux,windows,mac}` | The Glory of Rome distribution archives. |
 | `make dist-web`, `make dist-android`, `make dist-android-play`, `make dist-ios` | The two web zips and the mobile packages in `dist/`. |
 | `make clean` | Removed `build/` and `dist/` archives. |
 
@@ -389,7 +389,7 @@ depending on shell headers or shell symbols, this build step has failed and
   (`CL_SCREEN_W/H`, the original VGA mode), integer-scaled to fit the window
   preserving aspect ratio, minimum 2×. The base window has been 640×400
   (`CL_WINDOW_W/H` = `CL_SCREEN_W/H` × `CL_SCALE` in `src/layout.h`).
-- **Modern mode** (Glory of Rome): the pack has declared a buffer (800×504
+- **Modern mode** (The Glory of Rome): the pack has declared a buffer (800×504
   for Rome), the smallest screen, not a fixed size. The scale has been the
   largest whole number (3 at most) at which it fits the surface -- there has
   been no zoom setting, and a desktop window has held its scale while an
@@ -401,7 +401,7 @@ depending on shell headers or shell symbols, this build step has failed and
 - 256-color palette loaded from the pack's `palettes/palette.bin` (for King's
   Bounty, extracted from the original DOS MCGA.DRV).
 - King's Bounty's font has been `art/font/kb-font.png` (8×8 bitmap,
-  `src/bfont.c`); Glory of Rome has declared a TrueType face
+  `src/bfont.c`); The Glory of Rome has declared a TrueType face
   (`docs/PACK-FORMAT.md` §2.2).
 - King's Bounty's map tiles and sprites have been 48×34 pixels; Glory of
   Rome's have been 96×96 (`docs/ART-SPEC.md`).
@@ -467,7 +467,7 @@ placements, foes, the catalogs -- has been sized from the pack at load
 
 ## 6. Game rules and mechanics
 
-The rules below have been King's Bounty's; Glory of Rome has renamed them and
+The rules below have been King's Bounty's; The Glory of Rome has renamed them and
 kept the numbers (`docs/GLORY-OF-ROME.md`).
 
 ### Classes (4)
@@ -842,7 +842,7 @@ Maps have been ASCII files at `maps/<zone>.dat` in the pack.
 - Each character has been one tile, mapped via `tile_codes` in `game.json`
   (`0x20..0x7E` ASCII chars have corresponded to tile codes).
 - Width and height have come from each zone's `width`/`height` JSON fields:
-  64×64 for every King's Bounty zone; Glory of Rome's have been 64×128,
+  64×64 for every King's Bounty zone; The Glory of Rome's have been 64×128,
   64×64, 64×28 and 64×44.
 
 Tile codes have carried: art name, terrain category (grass / forest /
@@ -854,7 +854,7 @@ blocking so the player has been able to step on them to trigger interaction).
 Interactive tiles (signs, towns, castles, chests, dwellings, foes,
 artifacts, telecaves, navmaps, orbs) have not been in the .dat file:
 `stamp_objects` and `stamp_placements` have applied them from the zone's
-JSON arrays + the salt-time placements at zone load. Glory of Rome's `.dat`
+JSON arrays + the salt-time placements at zone load. The Glory of Rome's `.dat`
 files have been built from sources in `art/maps/` by `tools/mapbuild.py`.
 
 ---
@@ -906,7 +906,7 @@ Packing a loose asset tree into a `.openbounty` zip has been done by the
 engine binary itself: `./build/debug/openbounty --pack-dir <src> <out_zip>`.
 
 The game and its build have used no Python. The rest of `tools/` has been
-the Glory of Rome authoring tools, which the build has never run: `romeart.py`,
+The Glory of Rome authoring tools, which the build has never run: `romeart.py`,
 the one art pipeline script (tile compositing, screen and combat art,
 animation review, the art record, the launcher icon, and the paid-API calls,
 which have posted only with `--run`); and `mapbuild.py`, `mapcheck.py` and

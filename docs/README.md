@@ -28,8 +28,8 @@ the terms, and [../CONTRIBUTING.md](../CONTRIBUTING.md) the house rules.
 
 | Doc | What it has covered |
 |---|---|
-| [ART-SPEC.md](ART-SPEC.md) | The authoring sizes for a pack's art, derived from the numbers its `game.json` has declared, worked for Glory of Rome. |
-| [ART-PIPELINE.md](ART-PIPELINE.md) | Glory of Rome's art routes: which generator, which settings, and why. |
+| [ART-SPEC.md](ART-SPEC.md) | The authoring sizes for a pack's art, derived from the numbers its `game.json` has declared, worked for The Glory of Rome. |
+| [ART-PIPELINE.md](ART-PIPELINE.md) | The Glory of Rome's art routes: which generator, which settings, and why. |
 | [ROME-ART.md](ROME-ART.md) | Every generation prompt, generated from the job files. |
 
 ## Players in code

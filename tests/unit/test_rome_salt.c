@@ -1,4 +1,4 @@
-// Glory of Rome's lairs rise with the province (#106): each zone's salt
+// The Glory of Rome's lairs rise with the province (#106): each zone's salt
 // settings are its own, every preferred troop exists and hosts a dwelling,
 // and the last province's range holds the strongest troops, elephants in.
 

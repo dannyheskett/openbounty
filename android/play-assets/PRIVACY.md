@@ -1,8 +1,8 @@
-# Privacy Policy — Glory of Rome
+# Privacy Policy — The Glory of Rome
 
 _Last updated: September 21, 2026_
 
-Glory of Rome ("the app") is a single-player strategy game. This policy explains
+The Glory of Rome ("the app") is a single-player strategy game. This policy explains
 what the app does with your information: **nothing.**
 
 ## Data we collect

@@ -1,4 +1,4 @@
-Glory of Rome audio sources
+The Glory of Rome audio sources
 
 intro_theme.ogg   Original, synthesised by tools/romeart.py introtheme. No licence needed.
 intro_thunder.wav "Thunderclap" by Fission9, https://freesound.org/people/Fission9/sounds/534023/
