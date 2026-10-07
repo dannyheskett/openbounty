@@ -215,6 +215,13 @@ generated from.
   the mask resized to the pack tile and filled with the new bases, so every
   edge has seamed with its neighbours by construction. Re-run it whenever a
   base changes; with a tile-set argument it has written a zone's folder.
+- **Sand shores** (`water_sand_edge_NN`, #63) — not generated. Each zone
+  set's `water_edge_NN` has been read pixel by pixel as sea or shore (nearest
+  to the set's water or grass colours), and the shore part filled with the
+  set's desert, so a sea whose coast is all sand has drawn a sand shore line
+  instead of a grass one. `tools/mapbuild.py build` has picked them; forest
+  and sand meeting the sea have kept their own ground to the coast, and rock
+  its grass fringe.
 - **Villain portraits** (`art/villains/<name>_00..07.png`) — villains have
   not been sprites: they have been opaque head-and-shoulders portraits drawn
   as faces in the contract view, the HUD contract chip and the puzzle grid.

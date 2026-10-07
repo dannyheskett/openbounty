@@ -632,13 +632,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **description:** dark mossy meadow grass, mostly flat and even, low contrast, a few short blade clusters and slightly darker patches, seen from directly above
 - **Settings:** `outline_mode=segmentation`, `seed=8102`, `tile_size=32`, `tile_type=square_topdown`, `tile_view=top-down`
 
-### grass_variant
-
-- **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3421)
-- **Pack path:** `art/tiles/grass_variant.png`
-- **prompt:** muted moss green grass seen from directly above, dull and slightly grey, with a few darker scrub tufts scattered through it, low contrast, the same everywhere
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3421`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
-
 ### oriens_t32_cobble
 
 - **Engine:** PixelLab create-tileset (32 px, seed 4114)
@@ -1128,6 +1121,12 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Engine:** PixelLab tiles (96 px, seed 91)
 - **description:** 1). dense mossy meadow grass, deep dark green, thick soft blades, seen from directly overhead, seamless repeating texture, the same everywhere 2). dense mossy meadow grass, rich mid green with a few darker clumps, seen from directly overhead, seamless repeating texture, the same everywhere
 - **Settings:** `outline_mode=segmentation`, `seed=91`, `tile_size=96`, `tile_type=square_topdown`, `tile_view=top-down`
+
+### grass_variant
+
+- **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3421)
+- **prompt:** muted moss green grass seen from directly above, dull and slightly grey, with a few darker scrub tufts scattered through it, low contrast, the same everywhere
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3421`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
 
 ### obstacle_01
 
