@@ -215,6 +215,13 @@ generated from.
   the mask resized to the pack tile and filled with the new bases, so every
   edge has seamed with its neighbours by construction. Re-run it whenever a
   base changes; with a tile-set argument it has written a zone's folder.
+- **Mountain edges end raggedly** (#63) — `romeart.py lattice --ragged S,A,B`:
+  on a mountain edge piece the rocks within A or B px of an open side
+  (alternately) are taken out and the middle edge crag left out, so a range
+  ends in an uneven outline instead of a straight line; strips and spits keep
+  their rows, straddlers keep their places (seamcheck 0), the plain tile is
+  unchanged. Forest edges are left as they were: thinned the same way, a wood
+  came out crenellated.
 - **Sand shores** (`water_sand_edge_NN`, #63) — not generated. Each zone
   set's `water_edge_NN` has been read pixel by pixel as sea or shore (nearest
   to the set's water or grass colours), and the shore part filled with the

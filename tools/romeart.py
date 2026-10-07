@@ -886,6 +886,12 @@ Terminal sides:
          cliff face the row 12 rocks stand on.
 Codes 5..8 (diagonal-only) are plain lattice: nothing touches a corner.
 
+--ragged S,A,B (#63): terminal sides end raggedly instead of in a line. Every
+sprite fully inside the tile whose ink comes within A px (B px, alternating)
+of an open side's line is taken out, and small sprites S are laid loose in
+the gap, covering no straddler, fully inside the tile and 4 px clear of every
+line. Straddlers keep their places, so tiles still join (seamcheck).
+
 Codes are the engine's (OPENBOUNTY-SPEC REQ-229a). Output is a layout for
 romeart.py compose with wrap off, every sprite listed, negatives included.
     """
@@ -1053,7 +1059,9 @@ romeart.py compose with wrap off, every sprite listed, negatives included.
         # which cuts the corner back.
         for side, spec in (("W", EDGE_W), ("E", EDGE_E)):
             if side not in open_sides: continue
-            for (i, ins, place) in spec:
+            for k_, (i, ins, place) in enumerate(spec):
+                if RAGGED and place == "mid" and code < 13:
+                    continue          # a notch midway: the side is not one wall
                 if place == "top" and "N" in open_sides: continue
                 if place == "bottom" and "S" in open_sides: continue
                 l, t, r, b = bbox(i)
@@ -1069,6 +1077,10 @@ romeart.py compose with wrap off, every sprite listed, negatives included.
             # Nothing may be drawn in front of a straddler that the neighbour
             # does not draw too, so the face cannot be in front.
             keep.append((LEDGE, (96 - (lR - lL)) // 2 - lL, ly, -1))
+        # strips and spits (two opposite sides open) keep their full rows: thinned
+        # from both sides they come apart into a string of beads
+        if RAGGED and open_sides and code < 13:
+            keep = ragged(keep, open_sides)
         for (i, x, y, _) in keep:
             assert not (crossings(i, x, y) & set(open_sides))
         # Draw order, the same in every tile: the face, the lower rows (which
@@ -1078,6 +1090,74 @@ romeart.py compose with wrap off, every sprite listed, negatives included.
         keep = sorted(set(keep), key=lambda p: (min(p[3], 0), p[2], p[1]))
         return {"wrap": "", "sprites": [[i, x, y] for (i, x, y, _) in keep]}
 
+
+    RAGGED = [int(v) for v in argv[argv.index("--ragged") + 1].split(",")] if "--ragged" in argv else None
+
+    def ragged(keep, open_sides):
+        """Terminal sides end raggedly: every sprite fully inside the tile whose
+        ink comes within REACH px of an open side's line is taken out (a
+        straddler stays: both tiles draw it), and small loose sprites are laid
+        in the gap where they cover no straddler, fully inside the tile and
+        4 px clear of every line."""
+        small, reach_a, reach_b = RAGGED
+        strad = [ink(i, x, y) for (i, x, y, lay) in keep if crossings(i, x, y)]
+
+        def clear(box, others):
+            l, t, r, bb = box
+            return all(r <= a_ or l >= c_ or bb <= b_ or t >= d_ for (a_, b_, c_, d_) in others)
+        out, n = [], 0
+        for (i, x, y, lay) in keep:
+            l, t, r, bb = ink(i, x, y)
+            if crossings(i, x, y):
+                out.append((i, x, y, lay)); continue
+            if lay == 2:
+                # the side's own edge sprite (a crag, a snow peak): kept
+                out.append((i, x, y, lay)); continue
+            reach = reach_a if n % 2 == 0 else reach_b
+            n += 1
+            near = (("N" in open_sides and t < reach) or ("S" in open_sides and bb > 96 - reach) or
+                    ("W" in open_sides and l < reach) or ("E" in open_sides and r > 96 - reach))
+            if not near:
+                out.append((i, x, y, lay))
+        # loose sprites in the gap: try a grid of spots, keep the ones whose ink
+        # covers no straddler's ink and no other loose sprite
+        sl, st, sr, sb = bbox(small)
+        w, h = sr - sl, sb - st
+        inkpx = set()
+        for (i, x, y, lay) in keep:
+            if crossings(i, x, y):
+                a_ = alpha(i); l_, t_, r_, b_ = bbox(i)
+                for yy in range(t_, b_):
+                    for xx in range(l_, r_):
+                        if a_[xx, yy] > 0:
+                            inkpx.add((x + xx, y + yy))
+        sa = alpha(small)
+        mine = [(xx - sl, yy - st) for yy in range(st, sb) for xx in range(sl, sr) if sa[xx, yy] > 0]
+
+        def clear(box, others):
+            px_, py_ = box[0], box[1]
+            if others is strad:
+                return not any((px_ + dx_, py_ + dy_) in inkpx for dx_, dy_ in mine)
+            l, t, r, bb = box
+            return all(r <= a_ or l >= c_ or bb <= b_ or t >= d_ for (a_, b_, c_, d_) in others)
+        placed = []
+        spots = []
+        for side in "NESW":
+            if side not in open_sides:
+                continue
+            for f in (0.22, 0.5, 0.78):
+                c = int(96 * f)
+                spots.append({"N": (c - w // 2, 6), "S": (c - w // 2, 90 - h),
+                              "W": (6, c - h // 2), "E": (90 - w, c - h // 2)}[side])
+        for k, (px, py) in enumerate(spots):
+            if k % 2:                       # every other spot: a gap of grass
+                continue
+            px = max(4, min(92 - w, px)); py = max(4, min(92 - h, py))
+            box = (px, py, px + w, py + h)
+            if clear(box, strad) and clear(box, placed):
+                placed.append(box)
+                out.append((small, px - sl, py - st, 3))
+        return out
 
     check_lattice()
     lay = {"sprites": SPR, "grass": GRASS, "tiles": {}}
@@ -2084,7 +2164,9 @@ def cmd_zone(argv):
     for terrain, sprites, extra in (("forest", "trees", ["--crown", str(cfg["crown"])]),
                                     ("mountain", "rocks",
                                      ["--terrain", "mountain"] +
-                                     (["--slots", cfg["slots"]] if cfg["slots"] else []))):
+                                     (["--slots", cfg["slots"]] if cfg["slots"] else []) +
+                                     # ragged rock edges (#63), the loose rock rock 6
+                                     ["--ragged", "6,20,34"])):
         lay = os.path.join(stage, f"{terrain}.json")
         _forestlattice(["romeart", lay, "--sprites", os.path.join(prim, sprites),
                         "--name", terrain] + extra)
