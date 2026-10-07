@@ -505,7 +505,7 @@ void page_title_menu(const char *const *labels, int n, int cursor, int touch_lis
     Page pg = open_page(w, ml_list_height(n), PAGE_CENTER, 0, 0, true, true);
     UkRows rows = { { 0 }, { false }, 0 };
     for (int i = 0; i < n && i < 8; i++) { rows.label[i] = labels[i]; rows.enabled[i] = true; }
-#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID)
+#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID) && !defined(PLATFORM_WEB)
     rows.esc = n;          // Exit: the row Escape presses
 #endif
     ml_list_draw(pg.r.x, pg.r.y, pg.r.w, pg.r.h, n, cursor, uk_rows_fn, &rows, touch_list, uk_ink());

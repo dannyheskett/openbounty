@@ -112,8 +112,9 @@ void modern_gamemenu_page(const Game *g, GmPageId id, GmPage *p) {
         add(p, ui->gm_close, bn->gmd_back,  NULL, "", GM_ACT_BACK, true);
         p->foot = 1;
         // Exit only here, last on the foot -- and not at all on a phone,
-        // where quitting an app is not the player's job.
-#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID)
+        // where quitting an app is not the player's job, or in a browser,
+        // where an ended program only freezes the page.
+#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID) && !defined(PLATFORM_WEB)
         add(p, ui->gm_exit,  bn->gmd_exit,  NULL, "", ACT_EXIT, true);
         p->foot = 2;
 #endif

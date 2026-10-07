@@ -3103,12 +3103,15 @@ every menu; this section has held the rules.
   first command the unit can use; on the foe's turn every command tile has been
   greyed.
 
-- **REQ-529.** **No Exit on a phone.** The title menu's Exit row and the game
-  menu's Exit footer have been compiled out under `PLATFORM_IOS` and
-  `PLATFORM_ANDROID` (`src/startup.c`, `src/modern/gamemenu.c`). iOS has had
+- **REQ-529.** **No Exit on a phone or in a browser.** The title menu's Exit
+  row (and its Esc hint) and the game menu's Exit footer have been compiled
+  out under `PLATFORM_IOS`, `PLATFORM_ANDROID` and `PLATFORM_WEB`
+  (`src/startup.c`, `src/modern/page.c`, `src/modern/gamemenu.c`). iOS has had
   no notion of an app quitting itself and Apple has refused a control that
-  says otherwise; Android's system has handled it. Desktop and web have kept both
-  rows.
+  says otherwise; Android's system has handled it; a web page whose program
+  ends only holds its last frame (#194). On the web, Esc on the title menu has
+  done nothing and a quit (Ctrl+Q) has gone back to the title menu. Desktop
+  has kept both rows.
 
 ---
 
