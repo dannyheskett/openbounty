@@ -77,7 +77,8 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
     }
 
     int dx = 0, dy = 0;
-    if      (input_key_pressed(KEY_UP)    || input_key_pressed(KEY_KP_8)) dy = -1;
+    if (input_gamepad_dir(&dx, &dy)) { /* the d-pad or stick moves the cursor */ }
+    else if (input_key_pressed(KEY_UP)    || input_key_pressed(KEY_KP_8)) dy = -1;
     else if (input_key_pressed(KEY_DOWN)  || input_key_pressed(KEY_KP_2)) dy =  1;
     if      (input_key_pressed(KEY_LEFT)  || input_key_pressed(KEY_KP_4)) dx = -1;
     else if (input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) dx =  1;
@@ -96,7 +97,8 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
 
     if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
         input_key_pressed(KEY_SPACE) ||
-        input_key_pressed(KEY_A)     || input_key_pressed(KEY_C)) {
+        input_key_pressed(KEY_A)     || input_key_pressed(KEY_C) ||
+        input_gamepad_confirm()) {
         if (combat_cell_passes_filter(c, c->cursor_x, c->cursor_y,
                                        c->side, c->pick_filter)) {
             if (out_x) *out_x = c->cursor_x;
@@ -105,7 +107,7 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
         }
         // Filter rejected -- leave cursor for another step.
     }
-    if (input_key_pressed(KEY_ESCAPE)) {
+    if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
         if (out_cancelled) *out_cancelled = true;
     }
     return false;
@@ -116,6 +118,7 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
 static bool combat_read_dir(int *dx, int *dy) {
     *dx = 0; *dy = 0;
     if (input_key_pressed(KEY_KP_5)) return false;
+    if (input_gamepad_dir(dx, dy)) return true;            // the d-pad or stick
     if (input_key_pressed(KEY_UP)        || input_key_pressed(KEY_KP_8)) { *dy = -1; return true; }
     if (input_key_pressed(KEY_DOWN)      || input_key_pressed(KEY_KP_2)) { *dy =  1; return true; }
     if (input_key_pressed(KEY_LEFT)      || input_key_pressed(KEY_KP_4)) { *dx = -1; return true; }
@@ -1045,7 +1048,7 @@ CombatResult RunCombat(Game *g, const Map *m, const Fog *f, const Sprites *sprit
         // backs the action out (no turn spent). Without this, ESC was swallowed
         // here and a no-target spell (e.g. Turn Undead with no undead on the
         // field) trapped the turn with no way out.
-        if (input_key_pressed(KEY_ESCAPE)) {
+        if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
             if (views_active() != VIEW_NONE) {
                 views_dismiss();
                 continue;

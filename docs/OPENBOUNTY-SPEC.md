@@ -1479,7 +1479,10 @@ flagged (§38).
 - **REQ-251.** D-pad / left stick → 8-direction movement; A → search; X →
   cast spell; Y → end week; LB → army; RB → character; LT → fly; RT → land;
   Start → worldmap; Back → options (legacy) or the game menu (modern); B →
-  cancel. A keyboard action in the same frame has won.
+  cancel. A keyboard action in the same frame has won. Every list and
+  question (`ml_list_input`, `prompt_update`) and combat (`src/combat_loop.c`:
+  the unit's move, the target picker, the action menu) have read the gamepad
+  as the keys: the d-pad or stick as the arrows, A as Enter, B as Escape.
 
 ### 12.3 Search / dismiss / end week
 
