@@ -159,7 +159,7 @@ TEST full_band_follows_the_pack_key(void) {
     ASSERT_STR_EQ(foe->placement_id, t.seed_key);
     ASSERT_FALSE(t.full_band);
 
-    res1->guardian_full_band = true;         // Glory of Rome: a guardian, five
+    res1->guardian_full_band = true;         // The Glory of Rome: a guardian, five
     CombatTargetForFoe(g, foe->placement_id, &t);
     ASSERT(t.full_band);
 

@@ -13,7 +13,7 @@ static Resources s_res;
 static Game s_g;
 static Map s_m;
 
-// Glory of Rome's render block: 96 px tiles, five by five whole tiles, 800 x 504.
+// The Glory of Rome's render block: 96 px tiles, five by five whole tiles, 800 x 504.
 static void rome(void) {
     memset(&s_res, 0, sizeof s_res);
     s_res.render.mode = RENDER_MODE_MODERN;

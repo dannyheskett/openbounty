@@ -65,7 +65,7 @@ jobs:
     needs: prepare
     runs-on: ubuntu-22.04
     # The full test suite, two raylib builds and both package sets (OpenBounty
-    # and Glory of Rome) take ~10m; 10 was the old limit and cut the first
+    # and The Glory of Rome) take ~10m; 10 was the old limit and cut the first
     # full release off at 10m16s.
     timeout-minutes: 25
     steps:
@@ -86,11 +86,11 @@ jobs:
         run: make test RELEASE_VERSION=${{ needs.prepare.outputs.version }}
       - name: Build raylib (mingw win64 + win32)
         run: ./scripts/build_raylib_windows.sh
-      - name: Package Linux + Windows archives (OpenBounty and Glory of Rome)
+      - name: Package Linux + Windows archives (OpenBounty and The Glory of Rome)
         run: |
           make dist-linux dist-windows dist-rome-linux dist-rome-windows \
             RELEASE_VERSION=${{ needs.prepare.outputs.version }}
-      - name: Verify the pack rule (no pack in OpenBounty, Rome's in Glory of Rome)
+      - name: Verify the pack rule (no pack in OpenBounty, Rome's in The Glory of Rome)
         run: ./scripts/verify_release_packs.sh dist
       - uses: actions/upload-artifact@v7
         with:
@@ -110,11 +110,11 @@ jobs:
         run: ./scripts/build_raylib_mac.sh
       # The Rome pack is zipped by a native binary, and the default one links
       # X11 -- so on macOS the mac build zips it (PACK_TOOL).
-      - name: Package macOS archives (OpenBounty and Glory of Rome)
+      - name: Package macOS archives (OpenBounty and The Glory of Rome)
         run: |
           make dist-mac dist-rome-mac PACK_TOOL=build/openbounty-mac \
             RELEASE_VERSION=${{ needs.prepare.outputs.version }}
-      - name: Verify the pack rule (no pack in OpenBounty, Rome's in Glory of Rome)
+      - name: Verify the pack rule (no pack in OpenBounty, Rome's in The Glory of Rome)
         run: ./scripts/verify_release_packs.sh dist
       - uses: actions/upload-artifact@v7
         with:
@@ -151,7 +151,7 @@ jobs:
         run: make web RELEASE_VERSION=${{ needs.prepare.outputs.version }}
       - name: Package WASM bundle
         run: make dist-web RELEASE_VERSION=${{ needs.prepare.outputs.version }}
-      - name: Verify the pack rule (no pack in OpenBounty, Rome's in Glory of Rome)
+      - name: Verify the pack rule (no pack in OpenBounty, Rome's in The Glory of Rome)
         run: ./scripts/verify_release_packs.sh dist
       - uses: actions/upload-artifact@v7
         with:
@@ -185,7 +185,7 @@ jobs:
             echo "::error::iOS SDK $sdk is too old; App Store uploads require 26+. Update the runner image or select a newer Xcode."
             exit 1
           fi
-      # The .app embeds the Glory of Rome pack, and the pack is zipped by a
+      # The .app embeds The Glory of Rome pack, and the pack is zipped by a
       # native binary, so a macOS build of the game itself comes first. The
       # default target links X11 and is not buildable here.
       - name: Build raylib (macOS)
@@ -326,7 +326,7 @@ jobs:
           sdkmanager --install "ndk;${NDK_VERSION}" \
             "build-tools;${ANDROID_BUILD_TOOLS}" \
             "platforms;android-${ANDROID_PLATFORM_VER}"
-      # The APK embeds the Glory of Rome pack, and the pack is zipped by the
+      # The APK embeds The Glory of Rome pack, and the pack is zipped by the
       # NATIVE binary (./build/debug/openbounty --pack-dir), so the Linux
       # toolchain is required even though nothing native ships from this job.
       - name: Install Linux build deps
@@ -383,7 +383,7 @@ jobs:
             PLAY_KEY_ALIAS="$PLAY_KEY_ALIAS" \
             PLAY_STORE_PASS="$PLAY_KEYSTORE_PASSWORD" \
             PLAY_KEY_PASS="$PLAY_KEY_PASSWORD"
-      # The pack inside these artifacts is Glory of Rome, which is ours. The guard the
+      # The pack inside these artifacts is The Glory of Rome, which is ours. The guard the
       # other platforms run is about King's Bounty's DOS-extracted pack: check it is not
       # in here rather than checking for any pack at all.
       - name: Verify no King's Bounty pack in the Android artifacts
@@ -488,7 +488,7 @@ jobs:
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5  # v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          # The mobile app is Glory of Rome, not the repository name.
+          # The mobile app is The Glory of Rome, not the repository name.
           packageName: com.danheskett.gloryofrome
           releaseFiles: ${{ steps.gate.outputs.aab }}
           track: internal

@@ -35,8 +35,8 @@ import sys
 
 from asc_release import ASC, BUNDLE_ID, is_placeholder
 
-APP_NAME = "Glory of Rome"
-PROFILE_NAME = "Glory of Rome App Store"
+APP_NAME = "The Glory of Rome"
+PROFILE_NAME = "The Glory of Rome App Store"
 # Dan publishes the privacy policy; its text is android/play-assets/PRIVACY.md.
 # Change this the day it has a URL -- `app-info` writes whatever is here to
 # every localization, and review rejects a listing with no policy.

@@ -4,14 +4,14 @@ Authoring dimensions for a complete pack of game graphics.
 
 No size here has been compiled into the renderer. Every size below has been
 derived from numbers a pack declares in `game.json`, so this document has been
-a worked example, not a set of constants. Glory of Rome's block:
+a worked example, not a set of constants. The Glory of Rome's block:
 
 ```json
 "render": { "mode": "modern", "tile_w": 96, "tile_h": 96, "tiles_w": 5, "tiles_h": 5,
             "ui_scale": 1, "dim": 30, "native_w": 800, "native_h": 504 }
 ```
 
-Glory of Rome has been the target this spec has been written for: **96 x 96 tiles,
+The Glory of Rome has been the target this spec has been written for: **96 x 96 tiles,
 authored at native resolution.** King's Bounty has been `mode: legacy`,
 48 x 34, `ui_scale` 1, and every formula below has evaluated to its legacy
 value at those settings, so the legacy pack has been unaffected by anything

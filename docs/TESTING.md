@@ -38,7 +38,7 @@ change that has moved a legacy pixel has failed there.
    picked up new files by wildcard.
 3. `fx_init_game_full` (`tests/fixtures.h`) has given a seeded game on the
    fixture pack with its map and fog; `fx_free_game_full` has released it.
-   Tests on Glory of Rome have opened `assets/glory-of-rome` with
+   Tests on The Glory of Rome have opened `assets/glory-of-rome` with
    `pack_open` and `pack_stack_push`, and popped it before any assert can
    fail.
 4. A test writing a file has written it under `build/` and removed it.
@@ -49,7 +49,7 @@ change that has moved a legacy pixel has failed there.
 |---|---|
 | Any | `make`, `make test` |
 | Gameplay rules | Autoplay on a few worlds of each pack: `./build/release/openbounty --pack <pack> --autoplay --headless --seed N` (exit 0 = solved); for a wider sweep, `--validate-pack LO HI` |
-| Glory of Rome screens | `make release`, then `./build/release/openbounty --pack glory-of-rome --gallery <dir>`: every screen to PNG, with the tap check (`[tapcheck] FAIL` has failed the run) |
+| The Glory of Rome screens | `make release`, then `./build/release/openbounty --pack glory-of-rome --gallery <dir>`: every screen to PNG, with the tap check (`[tapcheck] FAIL` has failed the run) |
 | King's Bounty screens | The same gallery with `--pack kings-bounty`, and `test_legacy_freeze` |
 | A Rome map | `python3 tools/mapbuild.py check <pack-dir> <zone-id> <map.dat>` and `python3 tools/mapcheck.py <pack-dir> <map.dat>` |
 | The save format | The round-trip suites and the golden fixture (`OPENBOUNTY-SPEC.md` §27) |
@@ -59,10 +59,10 @@ change that has moved a legacy pixel has failed there.
 Every pull request to `staging` or `main`, and every push to `staging`, has
 run `.github/workflows/ci.yml`:
 
-- **linux:** `make test`, `make all release`, the Glory of Rome package with
+- **linux:** `make test`, `make all release`, The Glory of Rome package with
   its pack check, the store-listing check, the docs' link check
   (`scripts/check_doc_links.py`), and `tools/mapbuild.py check` and
-  `tools/mapcheck.py` on every Glory of Rome zone.
+  `tools/mapcheck.py` on every zone of The Glory of Rome.
 - **windows**, **mac**, **web:** the cross-compiled, universal and WebAssembly
   builds.
 - **android:** the APK, its contents checked, started on an emulator.

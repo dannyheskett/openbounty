@@ -288,7 +288,7 @@ laid out 5 × 5 by the engine's `puzzle_grid_entity` (the layout the puzzle
 sheet has used). Each cell has been exactly one chip at the chip's own size
 times the largest whole multiple `k` at which five chips have fitted the tile both
 ways, `k` = max(1, min(`TW` / (5 × chip width), `TH` / (5 × chip height))),
-the grid centred on the tile, so the covers have tiled edge to edge. Glory of Rome
+the grid centred on the tile, so the covers have tiled edge to edge. The Glory of Rome
 has authored its chip 18 × 18 (ART-SPEC), five to a 90 px grid on the 96 px
 tile.
 Source: `src/hud.c` `hud_draw_puzzle_tile`; `engine/tables.c`
@@ -1615,7 +1615,7 @@ Source: `src/startup.c` `draw_credits`, `run_credits`.
 
 **DSGN-0161. Introduction.** The Introduction (OPENBOUNTY-SPEC REQ-430u) has
 been a film on black, with no frame, lattice or page (`page_bare`):
-- The picture: the script's frame (240 × 102 art pixels in Glory of Rome)
+- The picture: the script's frame (240 × 102 art pixels in The Glory of Rome)
   at the largest whole multiple that has left room below for a caption band of
   three lines + 2 × `UK_INSET`; picture and band centred together. On the
   800 × 504 reference screen, 3× (720 × 306).

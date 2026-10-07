@@ -32,7 +32,7 @@ start)
   out="${5:-$DIR/screenshots}"
   pkill -x openbounty; sleep 1
   mkdir -p "$STATE" "$out"; echo "$out" > "$STATE/out"
-  case "$pack" in glory-of-rome) title="Glory of Rome";;
+  case "$pack" in glory-of-rome) title="The Glory of Rome";;
                   *)             title="King's Bounty";; esac
   cd "$DIR" || exit 1
   setsid nohup ./build/debug/openbounty --pack "$pack" \

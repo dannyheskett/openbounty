@@ -511,7 +511,7 @@ distributed with permission. Its two OGG music tracks have been modern
 recordings. The `--extract` mode has built the extracted files from a copy of
 the DOS distribution.
 
-## Glory of Rome bitmap font
+## The Glory of Rome bitmap font
 
 `assets/glory-of-rome/art/font/rome-font.png`, the pack's fallback strip,
 has been derived from **Px437 EagleSpCGA Alt3**, from the Ultimate Oldschool
@@ -525,7 +525,7 @@ applied to that file only, not to the rest of the pack.
 ## Press Start 2P
 
 `assets/glory-of-rome/art/font/PressStart2P-Regular.ttf`, the TrueType face
-Glory of Rome has drawn its text in (every Glory of Rome package and app
+The Glory of Rome has drawn its text in (every package and app of The Glory of Rome
 carries it).
 
 - License: SIL Open Font License 1.1, the same text reproduced under

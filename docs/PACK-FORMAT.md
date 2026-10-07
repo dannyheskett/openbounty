@@ -296,9 +296,9 @@ Every key has been optional; the defaults have been King's Bounty's.
 |---|---|---|---|
 | `combat.morale_chart` | 5 × 5 array of strings | all `"N"` | Row the unit's `morale_group`, column the other group (`A`..`E`); each cell `N` (normal), `L` (low) or `H` (high). Any other cell has kept `N`. |
 | `combat.number_names` | array | empty | `{"min": n, "label": "..."}` entries (`min` default 1), highest first: a stack's size has taken the first label whose `min` it reaches. |
-| `combat.morale_as_army_view` | bool | false | A unit's combat morale has followed the army view's rule (REQ-271) instead of the behaviour ported from King's Bounty (REQ-385). Glory of Rome has set it. |
-| `combat.field_obstacle_chance` | int 0..100 | 10 | The percent chance that each cell of an open-field battle's middle three columns holds an obstacle; a value outside 0..100 has kept 10. Glory of Rome has set 12. |
-| `combat.guardian_full_band` | bool | false | A fixed guardian (a zone army with `static`) has fielded all five of its stacks on the open field instead of the first three. Glory of Rome has set it. |
+| `combat.morale_as_army_view` | bool | false | A unit's combat morale has followed the army view's rule (REQ-271) instead of the behaviour ported from King's Bounty (REQ-385). The Glory of Rome has set it. |
+| `combat.field_obstacle_chance` | int 0..100 | 10 | The percent chance that each cell of an open-field battle's middle three columns holds an obstacle; a value outside 0..100 has kept 10. The Glory of Rome has set 12. |
+| `combat.guardian_full_band` | bool | false | A fixed guardian (a zone army with `static`) has fielded all five of its stacks on the open field instead of the first three. The Glory of Rome has set it. |
 | `colors.minimap_terrain` | object | `grass` `#00AA00`, `forest` `#55FF55`, `mountain` `#AA5500`, `water` `#5555FF`, `desert` `#FFFF55`, `fog` `#000000` | The minimap's colour per terrain. |
 | `colors.difficulty_bar` | object | `easy` `#00AAAA`, `normal` `#AA0000`, `hard` `#5555FF`, `impossible` `#AA00AA` | The difficulty bar's colours. |
 
@@ -810,7 +810,7 @@ a chest.
 it has then been that artifact, placed before the salt draws and counted
 against the zone's artifact quota, so the salt has scattered only the rest
 (OPENBOUNTY-SPEC REQ-231). It has stayed out of the barrel like a fixed chest.
-Glory of Rome's guarded trail on Sardinia has ended in one.
+The Glory of Rome's guarded trail on Sardinia has ended in one.
 
 **An explicit garrison.** A `wandering_armies` entry has been able to carry
 `army`, a list of `{"troop": id, "count": n}`, fielded verbatim instead of a

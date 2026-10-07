@@ -34,7 +34,7 @@ covered the engine library in detail, `OPENBOUNTY-SPEC.md` every rule, and
   and neither has included the other. The shell has reached each through one
   adapter file.
 - **Tools** (`tools/`): `--extract` (the King's Bounty pack from `KB.EXE`) and
-  the Glory of Rome art and map tools (`ART-PIPELINE.md`).
+  The Glory of Rome art and map tools (`ART-PIPELINE.md`).
 
 ## One step of play
 

@@ -241,7 +241,7 @@ typedef enum {
 // unless LOW is the only computed result. Reproduced faithfully --
 // instruction was "functionally identical ".
 //
-// Army view (combat.morale_as_army_view true; Glory of Rome). The rule the
+// Army view (combat.morale_as_army_view true; The Glory of Rome). The rule the
 // player reads on the army screen, REQ-271: alone is High; every OTHER
 // live unit is looked up as morale_result(self, other); any L is Low,
 // all H is High, else Normal. The label and the damage multiplier agree.

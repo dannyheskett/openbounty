@@ -187,7 +187,7 @@ typedef struct {
     // within calm_radius (Chebyshev) of its zone's hero_spawn rolls no pool
     // slot above calm_max_slot and no more than calm_max_stacks stacks.
     // calm_radius 0 (absent) disables it: the King's Bounty pack rolls as
-    // the original did. Glory of Rome sets 12 / 1 / 2.
+    // the original did. The Glory of Rome sets 12 / 1 / 2.
     int    calm_radius;
     int    calm_max_slot;
     int    calm_max_stacks;
@@ -1444,7 +1444,7 @@ typedef struct {
     // army view's rule (REQ-271: alone High; each OTHER slot looked up as
     // chart[mine][theirs]; any L Low, all H High, else Normal). Absent or
     // false = the behaviour ported from King's Bounty (REQ-385), kept for
-    // the legacy pack. Glory of Rome sets it (#75).
+    // the legacy pack. The Glory of Rome sets it (#75).
     bool morale_as_army_view;
     // combat.field_obstacle_chance: the percent chance that each cell of an
     // open-field battle's middle columns holds an obstacle. Absent = 10, King's

@@ -1,6 +1,6 @@
 # The iOS backend
 
-Glory of Rome has run on iOS **without raylib**. The engine (`engine/`), the
+The Glory of Rome has run on iOS **without raylib**. The engine (`engine/`), the
 demo agent (`demo/`) and the autoplay oracle (`autoplay/`) have had no raylib
 at all; the shell (`src/`) has reached the platform through five seams, and
 iOS has implemented each of them natively in `ios/`. Every other platform has

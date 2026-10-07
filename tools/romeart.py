@@ -2333,7 +2333,7 @@ def cmd_fieldgrade(argv):
 Cuts the window (w:h should be 6:5 so `siegeslice --field` keeps all of
 it), flips it, shifts hue by N (OpenCV's 0..180 scale), scales saturation
 and value by F, and blends W of the tint colour over the result. The three
-non-Italian fields of Glory of Rome are windows of the calmed Italia
+non-Italian fields of The Glory of Rome are windows of the calmed Italia
 painting graded this way (2026-09-28, #64; the exact calls are in
 art/fields/BUILD.md). Deterministic: the same call gives the same file.
     """

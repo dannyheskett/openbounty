@@ -1,6 +1,6 @@
-# Submitting Glory of Rome to the App Store and Google Play
+# Submitting The Glory of Rome to the App Store and Google Play
 
-The mobile app has been **Glory of Rome only** — one pack, no picker, bundle id
+The mobile app has been **The Glory of Rome only** — one pack, no picker, bundle id
 `com.danheskett.gloryofrome` on both stores. Desktop OpenBounty has been
 unaffected by everything here.
 

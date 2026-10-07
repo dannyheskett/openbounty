@@ -1,4 +1,4 @@
-# Glory of Rome — App Store listing
+# The Glory of Rome — App Store listing
 
 Copy these into App Store Connect. It has mirrored
 `android/play-assets/LISTING.md` with the fields Apple has and Play does not,
@@ -12,7 +12,7 @@ and one rule that differs:
 | Field | Value |
 | --- | --- |
 | Platform | iOS |
-| Name | `Glory of Rome` (must be unique App Store-wide) |
+| Name | `The Glory of Rome` (must be unique App Store-wide) |
 | Primary Language | English (U.S.) |
 | Bundle ID | `com.danheskett.gloryofrome` |
 | SKU | `gloryofrome` |
@@ -43,7 +43,7 @@ store has been rejected. `scripts/store_listing.py` has read this block.
 ```
 Rome needs a champion. Raise an army, sweep the roads of Italia, hunt down the villains who have carved the peninsula up between them, and deliver them to the Senate before your commission runs out.
 
-Glory of Rome is a turn-based fantasy strategy game: recruit troops, fight tactical battles on a grid, take castles, find artefacts, and track each villain through the provinces that shelter them.
+The Glory of Rome is a turn-based fantasy strategy game: recruit troops, fight tactical battles on a grid, take castles, find artefacts, and track each villain through the provinces that shelter them.
 
 WHAT YOU DO
 • Recruit legionaries, auxiliaries and stranger things from dwellings across four zones
@@ -58,7 +58,7 @@ BUILT RIGHT
 • Landscape, full screen, and clear of the notch and the home indicator
 
 FREE AND OPEN SOURCE
-Glory of Rome is built on OpenBounty, an open-source engine. Read the code, report a bug, or build it yourself: https://github.com/dannyheskett/openbounty
+The Glory of Rome is built on OpenBounty, an open-source engine. Read the code, report a bug, or build it yourself: https://github.com/dannyheskett/openbounty
 ```
 
 ## Keywords (≤100 chars, comma separated, no spaces)
