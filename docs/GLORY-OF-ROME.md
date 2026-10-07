@@ -592,7 +592,12 @@ those errors. A land tile's corner no variant shows has been counted only.
 Forest and desert meeting the sea have kept their own ground to the coast,
 the sea's edge drawing the one shore line (a sand one, `water_sand_edge_NN`,
 where every land beside it has been desert); rock has kept its grass fringe,
-since cut square at the water a crag has read as a wall.
+since cut square at the water a crag has read as a wall. The builder has
+scattered the feature tiles (flowers, shrubs and boulders on grass, wheat
+beside towns, boulders and scrub on sand) from a seed per zone, about one
+plain cell in fourteen of grass and sixteen of sand, three cells apart, never
+under an object nor beside a town, castle or event; they have been scenery,
+the ground's own terrain to the engine.
 
 `tools/mapbuild.py place` has scattered the zone's chests and wandering
 armies from a fixed seed inside the region boxes in

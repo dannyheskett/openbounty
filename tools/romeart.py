@@ -16,6 +16,7 @@
     grass <set> <out> ...  the base grass and its variants
     stitch <set> <terrain> <out>      a PixelLab corner set into 96 px tiles
     edges [pack] [tile-set]           the terrain edges over that set's bases
+    features [pack]                   the feature tiles: sprites on each set's ground
     lattice <out.json> --sprites ...  a forest/mountain layout (border contract)
     seamcheck <layout.json>           check a layout against that contract
     compose <layout.json> <out>       the layout's tiles, sprites over ground
@@ -252,6 +253,61 @@ and the edges written to art/tiles/<set>/.
 
     main()
 
+
+
+# ==========================================================================
+# features.py -- the feature tiles: a sprite on each set's own ground
+# ==========================================================================
+
+def _features(argv):
+    """Composite the feature tiles (#63): a transparent feature sprite, scaled
+down and set inside a 12 px margin, on each tile set's own grass or desert.
+The tile's edges stay that set's plain ground, so a feature tile joins any
+neighbour the plain tile does, by construction. No generation: the sprites
+are build/art/feature_<name>/run01 (02_keyed.png where the magenta had to be
+keyed out, else 01_raw.png), from art/jobs/feature_*.json.
+
+    python3 tools/romeart.py features [pack-dir]
+
+Writes art/tiles/[<set>/]<ground>_<feature>.png for the shared set and every
+zone set, and prints them.
+    """
+    import os
+    from PIL import Image
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    TILES = os.path.join(PACK, "art", "tiles")
+    # ground -> [(feature, size of its longer side in px)]
+    FEATURES = {"grass": [("flowers", 54), ("boulders", 52), ("shrubs", 50), ("wheat", 64)],
+                "desert": [("boulders", 52), ("scrub", 56)]}
+
+    def sprite(name, side):
+        d = os.path.join(ROOT, "build", "art", f"feature_{name}", "run01")
+        p = os.path.join(d, "02_keyed.png")
+        im = Image.open(p if os.path.exists(p) else os.path.join(d, "01_raw.png")).convert("RGBA")
+        im = im.crop(im.getchannel("A").point(lambda a: 255 if a > 127 else 0).getbbox())
+        k = side / max(im.size)
+        im = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS)
+        a = im.getchannel("A").point(lambda a: 255 if a > 127 else 0)    # alpha is binary
+        im.putalpha(a)
+        return im
+
+    for s in ("", "galliae", "africa", "oriens"):
+        d = os.path.join(TILES, s)
+        for ground, feats in FEATURES.items():
+            base = os.path.join(d, f"{ground}.png")
+            if not os.path.exists(base):
+                continue
+            for name, side in feats:
+                t = Image.open(base).convert("RGBA")
+                sp = sprite(name, side)
+                x = (t.width - sp.width) // 2
+                y = (t.height - sp.height) // 2
+                assert x >= 12 and y >= 12, (name, sp.size)
+                t.alpha_composite(sp, (x, y))
+                out = os.path.join(d, f"{ground}_{name}.png")
+                t.convert("RGB").save(out)
+                print(out)
 
 # ==========================================================================
 # stitch96.py -- stitch a PixelLab corner tileset into 96 px tiles
@@ -4616,6 +4672,7 @@ COMMANDS = {
     "grass": lambda a: _grassvar(["romeart"] + a),
     "stitch": lambda a: _stitch96(["romeart"] + a),
     "edges": lambda a: _tileedges(["romeart"] + a),
+    "features": lambda a: _features(["romeart"] + a),
     "lattice": lambda a: _forestlattice(["romeart"] + a),
     "seamcheck": lambda a: _seamcheck(["romeart"] + a),
     "compose": lambda a: _treetile(["romeart"] + a),
