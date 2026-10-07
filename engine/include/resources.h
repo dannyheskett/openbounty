@@ -429,7 +429,7 @@ typedef struct {
 typedef struct {
     int  x, y;
     char id[RES_ID_LEN];
-    bool is_static;                    // never moves; forced fight on contact
+    bool is_static;                    // never moves (a guardian)
     // Optional explicit garrison. If army_stacks == 0 the foe's garrison is
     // rolled by zone tier (default); otherwise these stacks are used verbatim
     // (a hand-tuned guardian).

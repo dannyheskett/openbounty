@@ -268,9 +268,6 @@ PromptResult prompt_update(void) {
     }
 
     if (g_kind == PK_YES_NO) {
-        // A forced (static-guardian) foe fight cannot be declined: confirm it
-        // immediately, without waiting for a keypress -- no decline offered.
-        if (pending_foe_forced) { prompt_dismiss(); return PROMPT_RESULT_YES; }
         // Modern: two rows, Yes and No, with the cursor; Enter confirms the
         // cursor row (Enter is never a blind yes), and Y and N answer too.
         if (CL_IS_MODERN) {
