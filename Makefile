@@ -294,11 +294,12 @@ WEB_CFLAGS := -std=c99 -Wall -Wextra -O2 -DPLATFORM_WEB \
 # -sSTACK_SIZE=8388608 mirrors the Windows target's --stack=8388608 and for
 #   the same reason: several main.c locals are large (Resources ~3.9 MB,
 #   Map ~848 KB) and Emscripten's 64 KB default stack overflows instantly.
-# -sINITIAL_MEMORY=67108864 (64 MiB) is a FIXED heap, deliberately not
+# -sINITIAL_MEMORY=134217728 (128 MiB) is a FIXED heap, deliberately not
 #   ALLOW_MEMORY_GROWTH: a growable wasm heap hands out resizable
-#   ArrayBuffers, which browsers reject in WebGL texImage2D. Measured peak
-#   over boot / save load / roaming with zone reloads is a flat 32.8 MB --
-#   growth never fired -- so 64 MiB is 2x headroom.
+#   ArrayBuffers, which browsers reject in WebGL texImage2D. Boot, save load
+#   and roaming peak at about 33 MB, but the Introduction's pictures and
+#   sounds ran a 64 MiB heap out of memory near its end (#192); at 128 MiB
+#   it plays through and returns to the title menu.
 # -lidbfs.js provides the IDBFS the shell mounts at /saves so saves survive
 #   a page reload (engine/savepath.c's __EMSCRIPTEN__ branch).
 # A wasm module embeds its pack, so there is one build PER PACK, each in its
@@ -308,7 +309,7 @@ WEB_CFLAGS := -std=c99 -Wall -Wextra -O2 -DPLATFORM_WEB \
 #   workflow's asset guard is unaffected -- and `web` is deliberately NOT part
 #   of `dist`.
 WEB_LDFLAGS := -L$(RAYLIB_WEB)/lib -lraylib -lidbfs.js \
-               -sUSE_GLFW=3 -sASYNCIFY -sINITIAL_MEMORY=67108864 \
+               -sUSE_GLFW=3 -sASYNCIFY -sINITIAL_MEMORY=134217728 \
                -sSTACK_SIZE=8388608 -sFORCE_FILESYSTEM \
                -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,addRunDependency,removeRunDependency
 
