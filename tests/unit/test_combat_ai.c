@@ -197,6 +197,20 @@ TEST move_offset_no_target_returns_zero_when_blocked(void) {
     PASS();
 }
 
+// An out-of-control unit attacks anyone, its own side included, but never
+// itself: with only itself to pick it would step off its cell and back (#196).
+TEST ooc_unit_never_targets_itself(void) {
+    Resources *res = fx_load_resources(); ASSERT(res);
+    Combat c; ai_reset(&c);
+    ai_place(&c, COMBAT_SIDE_PLAYER, 0, "peasants", 10, 0, 0);
+    c.units[COMBAT_SIDE_PLAYER][0].out_of_control = true;
+    ASSERT_EQ(0, ai_pick_target(&c, COMBAT_SIDE_PLAYER, 0, false));   // no one else
+    ai_place(&c, COMBAT_SIDE_PLAYER, 1, "peasants", 10, 2, 2);
+    unsigned char uid = ai_pick_target(&c, COMBAT_SIDE_PLAYER, 0, false);
+    ASSERT_EQ(COMBAT_SIDE_PLAYER * COMBAT_SLOTS + 1 + 1, uid);         // its ally, slot 1
+    resources_free(res); free(res); PASS();
+}
+
 SUITE(unit_combat_ai_suite) {
     RUN_TEST(ai_pick_target_returns_zero_when_no_enemies);
     RUN_TEST(ai_pick_target_nearby_only_picks_adjacent);
@@ -207,4 +221,5 @@ SUITE(unit_combat_ai_suite) {
     RUN_TEST(move_offset_steps_toward_target);
     RUN_TEST(move_offset_skips_friendly_blocker);
     RUN_TEST(move_offset_no_target_returns_zero_when_blocked);
+    RUN_TEST(ooc_unit_never_targets_itself);
 }

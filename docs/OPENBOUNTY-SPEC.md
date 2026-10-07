@@ -2313,7 +2313,8 @@ golden-digest regression tests have pinned the formulas.
   adjacent to a far target; walk toward closest/far target; else pass.
   `ai_pick_target` has scored far ranged enemies = 10000, others = `1000 -
   hp` (lower-HP preferred); OOC attackers have treated their own side as
-  targetable. Movement tie-breaks have iterated `dy ∈ {+1,0,-1}` outer,
+  targetable, but never themselves (#196; OpenKB's let an OOC unit pick
+  itself and step off its cell and back each turn). Movement tie-breaks have iterated `dy ∈ {+1,0,-1}` outer,
   `dx ∈ {-1,0,+1}` inner.
 
 ### 25.11 Log, banner, result, spoils

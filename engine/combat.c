@@ -1156,7 +1156,9 @@ int combat_cast_spell(Combat *c, int side, int spell_idx,
         // Under-control units skip own side.
         if (s == side && !ooc) continue;
         for (int i = 0; i < COMBAT_SLOTS; i++) {
-            if (s == side && i == slot && !ooc) continue;
+            // Never itself: an out-of-control unit that picked itself stepped
+            // "toward" its own cell, one square off and back each turn (#196).
+            if (s == side && i == slot) continue;
             const CombatUnit *t = &c->units[s][i];
             if (t->troop_idx < 0 || t->count == 0) continue;
             if (nearby && !unit_touching(self, t)) continue;
