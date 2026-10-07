@@ -367,6 +367,99 @@ Writes art/tiles/[<set>/]<terrain>[_sand]_fill_<ne|nw|se|sw>.png.
     print(f"wrote {n} fills")
 
 
+
+# ==========================================================================
+# interiors.py -- plain forest and mountain variants, so a mass is no grid
+# ==========================================================================
+
+def _interiors(argv):
+    """Two more versions of each set's plain forest and mountain tile (#63),
+listed as that code's `variants` so the shell picks one per cell
+(src/tilevar.c) and a wood or range stops repeating one arrangement.
+
+A variant keeps the plain tile's sprites that straddle its borders -- the
+neighbours draw those too, so tiles still join -- and redraws only the
+sprites fully inside the tile, each flipped or nudged a few pixels within
+the tile (seeded per set and variant). Italia's forest, whose sprites are not kept, takes the
+plain tile's interior mirrored instead. No generation.
+
+    python3 tools/romeart.py interiors [pack-dir]
+
+Writes art/tiles/[<set>/]<terrain>_v1.png and _v2.png.
+    """
+    import os, random, tempfile, contextlib, io
+    from PIL import Image
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    TILES = os.path.join(PACK, "art", "tiles")
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    n = 0
+    for s in ["", "galliae", "africa", "oriens"]:
+        zone = s or "italia"
+        d = os.path.join(TILES, s)
+        prim = os.path.join(ROOT, "art", "primitives", zone)
+        for t in ("forest", "mountain"):
+            spr = os.path.join(prim, "trees" if t == "forest" else "rocks")
+            plain_p = os.path.join(d, f"{t}.png")
+            if not os.path.exists(plain_p):
+                continue
+            plain = Image.open(plain_p).convert("RGBA")
+            if not os.path.isdir(spr):
+                # no sprites: the interior mirrored, its 12 px border kept
+                for v, op in ((1, Image.FLIP_LEFT_RIGHT), (2, Image.FLIP_TOP_BOTTOM)):
+                    out = plain.copy()
+                    inner = plain.crop((12, 12, 84, 84)).transpose(op)
+                    out.paste(inner, (12, 12))
+                    out.save(os.path.join(d, f"{t}_v{v}.png")); n += 1
+                continue
+            args = ["romeart", "", "--sprites", spr, "--name", t]
+            if t == "forest":
+                args += ["--crown", "1" if zone == "oriens" else "0"]
+            else:
+                args += ["--terrain", "mountain"]
+                sl = os.path.join(prim, "rock_slots.json")
+                if os.path.exists(sl):
+                    args += ["--slots", sl]
+            tmp = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+            args[1] = tmp
+            with contextlib.redirect_stdout(io.StringIO()):
+                _forestlattice(args)
+            lay = json.load(open(tmp)); os.remove(tmp)
+            sprites = lay["tiles"][t]["sprites"]
+            ims = {}
+            def im(i):
+                if i not in ims:
+                    ims[i] = Image.open(os.path.join(spr, f"tile_{i:02d}.png")).convert("RGBA")
+                return ims[i]
+            ids = sorted(int(f[5:7]) for f in os.listdir(spr) if f.startswith("tile_") and f.endswith(".png"))
+            boxes = {i: im(i).getbbox() for i in ids}
+            ground = Image.open(os.path.join(d, "grass.png")).convert("RGBA")
+            for v in (1, 2):
+                rng = random.Random(f"{zone}-{t}-{v}")
+                out = ground.copy()
+                for (i, x, y) in sprites:
+                    l, tp, r, b = boxes[i]
+                    inside = x + l >= 0 and y + tp >= 0 and x + r <= 96 and y + b <= 96
+                    if not inside:
+                        # straddler: drawn exactly as the plain tile has it
+                        can = Image.new("RGBA", (288, 288)); can.alpha_composite(im(i), (x + 96, y + 96))
+                        out.alpha_composite(can.crop((96, 96, 192, 192)))
+                        continue
+                    # the same sprite (the set's art is one family per slot:
+                    # swapping in a bush or a cliff left holes), flipped and
+                    # nudged so the arrangement no longer repeats
+                    j = i
+                    sp = im(j)
+                    if rng.random() < 0.5:
+                        sp = sp.transpose(Image.FLIP_LEFT_RIGHT)
+                    jl, jt, jr, jb = sp.getbbox()
+                    nx = x + l - jl + rng.randint(-5, 5)
+                    ny = y + tp - jt + rng.randint(-4, 4)
+                    nx = max(-jl, min(96 - jr, nx)); ny = max(-jt, min(96 - jb, ny))
+                    can = Image.new("RGBA", (288, 288)); can.alpha_composite(sp, (nx + 96, ny + 96))
+                    out.alpha_composite(can.crop((96, 96, 192, 192)))
+                out.save(os.path.join(d, f"{t}_v{v}.png")); n += 1
+    print(f"wrote {n} interior variants")
+
 # ==========================================================================
 # stitch96.py -- stitch a PixelLab corner tileset into 96 px tiles
 # ==========================================================================
@@ -4813,6 +4906,7 @@ COMMANDS = {
     "stitch": lambda a: _stitch96(["romeart"] + a),
     "edges": lambda a: _tileedges(["romeart"] + a),
     "fills": lambda a: _fills(["romeart"] + a),
+    "interiors": lambda a: _interiors(["romeart"] + a),
     "lattice": lambda a: _forestlattice(["romeart"] + a),
     "seamcheck": lambda a: _seamcheck(["romeart"] + a),
     "compose": lambda a: _treetile(["romeart"] + a),
