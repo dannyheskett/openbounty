@@ -159,8 +159,7 @@ typedef struct {
     Unit garrison[GAME_ARMY_SLOTS];
     bool alive;
     bool friendly;          // true -> recruit dialog; false -> attack prompt
-    bool is_static;         // never moves (skipped by foes_follow); the fight
-                            // is forced on contact -- no decline (REQ-gate).
+    bool is_static;         // never moves (skipped by foes_follow): a guardian
     // A gate this army holds against everything but one arm: the fight is
     // refused unless that troop stands in the hero's army (Oriens' elephants).
     // Empty = anyone may attack.

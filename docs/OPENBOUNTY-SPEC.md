@@ -596,7 +596,7 @@ flagged (§38).
   chest slot it was salted onto, which the map has never drawn as a chest),
   `placement_id[32]` (saved as `id`), `garrison[5]`, `alive`, `friendly`
   (true → recruit dialog; false → attack prompt), `is_static` (never moves;
-  the fight is forced on contact; saved as `static`), `requires_troop[32]` (the one arm a gate army admits,
+  a guardian; saved as `static`), `requires_troop[32]` (the one arm a gate army admits,
   empty = anyone), `scene_index` and `scene_title[48]` (the picture and
   heading shown when it turns the hero back; `-1` / empty = none). Friendly
   and hostile foes have shared the one `foes` table; classification has been
@@ -1663,8 +1663,7 @@ flagged (§38).
 
 - **REQ-284.** Stepping onto a hostile foe has shown the garrison (the foe
   view in modern mode) and a fight decision: Fight has entered combat, No /
-  Evade has bounced back. A static guardian's fight has not been declinable
-  (`pending_foe_forced`): its decision has offered Fight alone. Stepping onto
+  Evade has bounced back, a static guardian's as any other's (#198). Stepping onto
   a friendly foe has re-rolled a fresh
   troop offer; Yes with a free slot has run `GameAddTroop` (no gold cost) and
   consumed the foe; Yes with no slot, or No, has consumed the foe with the

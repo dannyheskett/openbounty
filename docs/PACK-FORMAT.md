@@ -686,8 +686,8 @@ zone whose remaining chests are fewer than the counts' total has been left
 unsalted, with a log line.
 
 **Wandering armies.** A `wandering_armies` entry has become a hostile foe at
-`x, y`. `static` (bool, default false) has made it a guardian that never moves
-and whose fight cannot be declined.
+`x, y`. `static` (bool, default false) has made it a guardian that never moves;
+like any foe, it has offered Fight or Evade.
 
 **Panel frame.** `sprites.ui.panel_frame` has named a palette colour
 (`YELLOW`, `GREY`, ... or a raw index) and a legacy screen has then drawn a
