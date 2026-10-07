@@ -9,7 +9,7 @@
 //              VGA-mode graphics (.256 files).
 //
 // Outputs (written to the output directory, default assets/kings-bounty/):
-//   audio/tune_{walk,bump,chest,defeat}.wav
+//   audio/tune_{walk,bump,chest,defeat,victory}.wav
 //   maps/{continentia,forestria,archipelia,saharia}.dat
 //   palettes/palette.bin
 //   art/font/kb-font.png
@@ -570,17 +570,18 @@ int ex_emit_wavs(const uint8_t *kb, size_t klen, const char *out_dir) {
         delta = best;
     }
 
-    static const struct { int slot; const char *name; } tunes[4] = {
-        { 0, "walk"   },
-        { 1, "bump"   },
-        { 5, "chest"  },
-        { 7, "defeat" },
+    static const struct { int slot; const char *name; } tunes[5] = {
+        { 0, "walk"    },
+        { 1, "bump"    },
+        { 3, "victory" },
+        { 5, "chest"   },
+        { 7, "defeat"  },
     };
 
     const int SR = 22050;
     const int AMP = 0x4000;
 
-    for (int t = 0; t < 4; t++) {
+    for (int t = 0; t < (int)(sizeof tunes / sizeof tunes[0]); t++) {
         long file_off = (long)KB_DATA_SEGMENT + tune_ptrs[tunes[t].slot] + delta;
         if (file_off < 0 || file_off >= (long)klen) {
             fprintf(stderr, "extract: tune %s offset 0x%lx out of range\n",

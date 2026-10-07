@@ -2942,8 +2942,11 @@ every menu; this section has held the rules.
   callback), through the `src/audio_backend.h` seam: raylib's audio device
   (`src/audio_raylib.c`) everywhere but iOS, `AVAudioEngine`
   (`ios/audio_ios.mm`) there. Track and SFX paths have come from
-  `game.json:audio`. Volume, ducking, and the sound on/off option have been
-  handled shell-side; the engine has only emitted tune/sfx events.
+  `game.json:audio`. The five tunes have been a step, a blocked step, a
+  chest, a defeat and a won battle (`audio.tunes.victory`, King's Bounty's
+  tune slot 3, played as the fight ends in a win; #195). Volume, ducking, and
+  the sound on/off option have been handled shell-side; the engine has only
+  emitted tune/sfx events.
 - **REQ-539.** The Introduction's theme (`game.json:audio.tracks.intro`) has
   loaded when the intro begins and been freed when it ends
   (`audio_intro_begin` / `audio_intro_end`), since iOS has decoded a whole track
@@ -3227,7 +3230,7 @@ every menu; this section has held the rules.
   already unpacked, `256.CC` and `416.CC`; input `legacy/bin/` when it holds
   `KB.EXE`, else the current directory) and written the King's Bounty pack to
   `<user-data>/<pack_id>.openbounty`: palette, font, sprites, tiles, chrome,
-  maps, the four PC-speaker tunes, `game.json` and `strings/en.json`, each
+  maps, the five PC-speaker tunes, `game.json` and `strings/en.json`, each
   the same as `assets/kings-bounty`'s. The two music tracks, modern
   recordings, have been copied from an installed King's Bounty pack when there
   is one. The pack's port-authored sections (render, tile codes, controls,

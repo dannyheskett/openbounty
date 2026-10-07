@@ -4771,7 +4771,8 @@
 			"walk":	"audio/tune_walk.wav",
 			"bump":	"audio/tune_bump.wav",
 			"chest":	"audio/tune_chest.wav",
-			"defeat":	"audio/tune_defeat.wav"
+			"defeat":	"audio/tune_defeat.wav",
+			"victory":	"audio/tune_victory.wav"
 		}
 	}
 }

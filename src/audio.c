@@ -148,6 +148,7 @@ static void load_assets(const Resources *res) {
             res->audio.tune_bump,
             res->audio.tune_chest,
             res->audio.tune_defeat,
+            res->audio.tune_victory,
         };
         for (int i = 0; i < AUDIO_TUNE_COUNT; i++) {
             if (!paths[i] || !paths[i][0]) continue;
