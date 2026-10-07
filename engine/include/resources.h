@@ -992,6 +992,7 @@ typedef struct {
     char cv_top_rank[RES_UI_LABEL_LEN];
     // Modern hint buttons: labels, key names by device, key-free texts.
     char key_esc[RES_UI_LABEL_LEN];
+    char key_space[RES_UI_LABEL_LEN];   // the Space key's name on screen
     char pad_back[RES_UI_LABEL_LEN];
     char give_up_header_modern[RES_UI_LABEL_LEN];
     // Status-bar fast-quit prompt. Rendered into the

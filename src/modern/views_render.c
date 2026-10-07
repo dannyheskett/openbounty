@@ -592,7 +592,8 @@ static bool worldmap_orb_row(void *ctx, int i, char *label, char *right, int cap
     (void)i;
     const Game *g = (const Game *)ctx;
     const ResUI *ui = &g->res->ui;
-    right[0] = '\0';
+    // Space toggles it too: the row says so.
+    snprintf(right, (size_t)cap, "%s", ui->key_space);
     snprintf(label, (size_t)cap, "%s", views_render_worldmap_whole() ? ui->worldmap_row_your_map
                                                                      : ui->worldmap_row_whole_map);
     return true;
