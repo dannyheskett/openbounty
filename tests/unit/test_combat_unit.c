@@ -173,6 +173,35 @@ TEST full_band_follows_the_pack_key(void) {
     PASS();
 }
 
+// An out-of-control stack is back under control as soon as its losses bring
+// it within the hero's leadership: 100 peasants (1 hp) out of control under
+// 60 leadership, 50 lost, are under control again before the next unit acts.
+TEST ooc_stack_regains_control_when_it_fits(void) {
+    Resources *res1; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res1, &g, &m, &f, NULL, FIXTURE_SEED));
+    const TroopDef *t = troop_by_id("peasants");
+    ASSERT(t && t->hit_points == 1);
+    g->stats.leadership_current = 60;
+    static Combat c;
+    memset(&c, 0, sizeof c);
+    for (int s = 0; s < COMBAT_SIDES; s++)
+        for (int i = 0; i < COMBAT_SLOTS; i++) c.units[s][i].troop_idx = -1;
+    c.heroes[COMBAT_SIDE_PLAYER] = g;
+    combat_init_unit(&c.units[COMBAT_SIDE_PLAYER][0], t->index, 100);
+    c.units[COMBAT_SIDE_PLAYER][0].out_of_control = !unit_under_control(g, t->index, 100);
+    ASSERT(c.units[COMBAT_SIDE_PLAYER][0].out_of_control);
+    c.side = COMBAT_SIDE_PLAYER; c.unit_id = -1;
+    c.units[COMBAT_SIDE_PLAYER][0].count = 61;          // still over
+    combat_next_unit(&c);
+    ASSERT(c.units[COMBAT_SIDE_PLAYER][0].out_of_control);
+    c.units[COMBAT_SIDE_PLAYER][0].count = 50;          // 50 died: fits under 60
+    c.unit_id = -1;
+    combat_next_unit(&c);
+    ASSERT_FALSE(c.units[COMBAT_SIDE_PLAYER][0].out_of_control);
+    fx_free_game_full(res1, g, m, f);
+    PASS();
+}
+
 SUITE(unit_combat_unit_suite) {
     RUN_TEST(init_unit_sets_count_and_max);
     RUN_TEST(init_unit_zero_count);
@@ -183,4 +212,5 @@ SUITE(unit_combat_unit_suite) {
     RUN_TEST(wandering_band_fields_three);
     RUN_TEST(fixed_guardian_fields_five);
     RUN_TEST(full_band_follows_the_pack_key);
+    RUN_TEST(ooc_stack_regains_control_when_it_fits);
 }
