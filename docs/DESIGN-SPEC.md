@@ -1435,7 +1435,7 @@ Source: `src/modern/views_render.c` `draw_character`, `draw_army`,
 - The column has held where the hero and the boat have stood, then the list:
   "All of" (`banners.worldmap_all`), the visited towns and castles, and Close
   alone on the foot; with the orb, a row over the foot has swapped the
-  player's map and the whole map.
+  player's map and the whole map, with Space, its key, shown on the row.
 
 Its list has been read by the one reader (DSGN-0088): moving the cursor has
 zoomed the map to the place under it; Close or Escape has closed it; the

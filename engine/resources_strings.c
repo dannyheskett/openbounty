@@ -441,6 +441,7 @@ static void parse_ui(Resources *res, cJSON *root_strings) {
         UI_SET(cv_next, "cv_next");
         UI_SET(cv_top_rank, "cv_top_rank");
         UI_SET(key_esc, "key_esc");
+        UI_SET(key_space, "key_space");
         UI_SET(pad_back, "pad_back");
         UI_SET(give_up_header_modern, "give_up_header_modern");
         UI_SET(quit_to_dos_prompt, "quit_to_dos_prompt");
