@@ -33,11 +33,6 @@ The SOURCE is the map. One character per tile, `#` lines are comments:
     sprite covers the ground.
   - a river whose straight run leaves the map flows off it: the map's edge
     continues the run, so the piece is a straight, not a tapered end.
-  - feature tiles (grass_flowers/_boulders/_shrubs/_wheat, desert_boulders/
-    _scrub), where the pack declares them: from a seed per zone, on about one
-    plain grass cell in fourteen and one plain sand cell in sixteen, at least
-    three cells apart, never under an object nor beside a town, castle,
-    event or a tile an event changes; wheat only within two cells of a town.
 
 `build` also warns, naming each cell, about shapes the art draws badly:
 a river mouth without sea above and land below it (the mouth art's shape),
@@ -374,13 +369,12 @@ def build(pack, zid, src, out, strict=False):
                     if 0 <= x + dx < W and 0 <= y + dy < H}
             full = {d for d, k in near.items() if k != t}
             # Every land edge has faded to grass, and the sea's own edge has
-            # drawn the shore: forest and sand meeting the sea have kept their
-            # own ground to the coast, so the shore is drawn once, not twice
-            # -- unless no variant shows what is left, when the old shape has
-            # stood. Rock has kept its fringe: cut square at the water, a crag
-            # has read as a wall.
-            diff = full if t in ('water', 'mountain') else \
-                {d for d in full if near[d] != 'water'}
+            # drawn the shore. Sand meeting the sea keeps its own ground to
+            # the coast, where the sea draws a sand shore (unless no variant
+            # shows what is left, when the old shape stands). Forest and rock
+            # keep their grass fringe: drawn solid to the water, they stop in
+            # a straight line at the tile's edge.
+            diff = {d for d in full if near[d] != 'water'} if t == 'desert' else full
             idx, why = (None, None) if not diff else edge_idx(t, diff)
             if diff and idx is None and diff != full:
                 diff = full
@@ -410,65 +404,6 @@ def build(pack, zid, src, out, strict=False):
                               f"{name}, which the pack does not ship")
                 continue
             out_art[y][x] = name
-
-    # Feature tiles: scenery on open ground, placed where nothing stands.
-    near_obj = set()
-
-    def keep(px, py, r=1):
-        for dy in range(-r, r + 1):
-            for dx in range(-r, r + 1):
-                near_obj.add((px + dx, py + dy))
-    towns = [t for t in g.get("towns", []) if t.get("zone") == zid]
-    for t in towns:
-        keep(t["x"], t["y"])
-        for k in ("gate", "boat"):
-            o = t.get(k) or {}
-            if o.get("x", -1) >= 0:
-                keep(o["x"], o["y"])
-    for c in (c for c in g.get("castles", []) if c.get("zone") == zid):
-        keep(c["x"], c["y"]); keep(c["x"], c["y"] + 1)
-    for k in ("chests", "wandering_armies", "signs", "dwellings"):
-        for o in z.get(k, []):
-            keep(o["x"], o["y"], 0)
-    for ev in z.get("events", []):
-        keep(ev["x"], ev["y"])
-        for fx in ev.get("effects", []):
-            if "x" in fx:
-                keep(fx["x"], fx["y"])
-    for k in ("magic_alcove", "hero_spawn", "home_spawn"):
-        if k in z:
-            keep(z[k]["x"], z[k]["y"])
-    for a in z.get("arrivals", {}).values():
-        keep(a["x"], a["y"])
-    town_cells = {(t["x"], t["y"]) for t in towns}
-    FEATURE = {'.': ('grass', 14, ['grass_flowers', 'grass_shrubs', 'grass_boulders']),
-               'd': ('desert', 16, ['desert_scrub', 'desert_boulders'])}
-    rng = random.Random(f"{zid}-features")
-    placed = []
-    for ch, (ground, every, pool) in FEATURE.items():
-        pool = [a for a in pool if a in a2c]
-        if not pool:
-            continue
-        # A feature tile's edges are its plain ground, so it may stand
-        # beside anything that ground may.
-        plain = [(x, y) for y in range(H) for x in range(W)
-                 if rows[y][x] == ch and out_art[y][x] == ground]
-        cells = [c for c in plain if c not in near_obj]
-        want = len(plain) // every
-        rng.shuffle(cells)
-        got = 0
-        for x, y in cells:
-            if got == want:
-                break
-            if any(max(abs(x - px), abs(y - py)) < 3 for px, py in placed):
-                continue
-            by_town = any(max(abs(x - tx), abs(y - ty)) <= 2 for tx, ty in town_cells)
-            if by_town and ground == 'grass' and 'grass_wheat' in a2c:
-                out_art[y][x] = 'grass_wheat'
-            else:
-                out_art[y][x] = rng.choice(pool)
-            placed.append((x, y))
-            got += 1
 
     for y in range(H):
         for x in range(W):
@@ -698,8 +633,7 @@ def check(pack, zid, path):
 # ---- place -----------------------------------------------------------------
 
 # Arts a scattered object may stand on: open ground, whatever its look.
-OPEN_ARTS = ("grass", "grass_variant", "desert", "grass_flowers", "grass_boulders",
-             "grass_shrubs", "grass_wheat", "desert_boulders", "desert_scrub")
+OPEN_ARTS = ("grass", "grass_variant", "desert")
 
 
 def place(pack, zid, path, regions_path, add=False):

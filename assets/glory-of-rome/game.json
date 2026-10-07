@@ -156,8 +156,8 @@
 						}]
 				}, {
 					"id":	"sibyl",
-					"x":	49,
-					"y":	67,
+					"x":	34,
+					"y":	51,
 					"scene":	"art/scenes/sibyl.png",
 					"title":	"The Sibyl's Cave",
 					"hint":	"A wall of rock seals the Sibyl's cave. Her priest will have it cut away for an offering of 1500 gold to Apollo.",
@@ -167,8 +167,12 @@
 							"consume":	true
 						}],
 					"effects":	[{
-							"x":	49,
-							"y":	66,
+							"x":	35,
+							"y":	51,
+							"tile":	"."
+						}, {
+							"x":	36,
+							"y":	51,
 							"tile":	"."
 						}]
 				}],
@@ -512,14 +516,14 @@
 					"fixed":	true
 				}, {
 					"id":	"chest_capri",
-					"x":	30,
-					"y":	70,
+					"x":	29,
+					"y":	71,
 					"fixed":	true,
 					"gold":	4000
 				}, {
 					"id":	"chest_sibyl",
-					"x":	49,
-					"y":	65,
+					"x":	37,
+					"y":	51,
 					"fixed":	true,
 					"gold":	4000
 				}, {
@@ -916,7 +920,7 @@
 					"id":	"wandering_army_030"
 				}, {
 					"x":	31,
-					"y":	70,
+					"y":	71,
 					"id":	"guardian_capri",
 					"static":	true,
 					"army":	[{
@@ -963,6 +967,10 @@
 							"artifact":	"anchor"
 						}],
 					"effects":	[{
+							"x":	13,
+							"y":	29,
+							"tile":	"."
+						}, {
 							"x":	14,
 							"y":	29,
 							"tile":	"."
@@ -977,8 +985,8 @@
 						}]
 				}, {
 					"id":	"oppidum",
-					"x":	11,
-					"y":	50,
+					"x":	54,
+					"y":	33,
 					"scene":	"art/scenes/oppidum.png",
 					"title":	"The Oppidum",
 					"hint":	"The hill fort's gate is barred. Its chieftain will open it to no one but the bearer of a decree of the Senate itself.",
@@ -987,15 +995,19 @@
 							"artifact":	"articles"
 						}],
 					"effects":	[{
-							"x":	11,
-							"y":	49,
+							"x":	54,
+							"y":	34,
+							"tile":	"."
+						}, {
+							"x":	54,
+							"y":	35,
 							"tile":	"."
 						}]
 				}],
 			"town_backdrop":	"art/ui/backdrop_town_galliae.png",
 			"treasure_scene":	"art/scenes/treasure_galliae.png",
 			"tile_set":	"galliae",
-			"tile_set_arts":	["bridge_h", "bridge_river_ew", "bridge_river_ns", "bridge_v", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_e_s", "river_mouth_w", "river_mouth_w_s", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18", "grass_flowers", "grass_boulders", "grass_shrubs", "grass_wheat"],
+			"tile_set_arts":	["bridge_h", "bridge_river_ew", "bridge_river_ns", "bridge_v", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_e_s", "river_mouth_w", "river_mouth_w_s", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18"],
 			"army_art":	"wandering_army_galliae",
 			"width":	64,
 			"height":	64,
@@ -1012,7 +1024,7 @@
 			},
 			"chests":	[{
 					"id":	"chest_sein",
-					"x":	13,
+					"x":	12,
 					"y":	29,
 					"fixed":	true,
 					"gold":	5000
@@ -1144,8 +1156,8 @@
 					"gold":	6000
 				}, {
 					"id":	"chest_oppidum",
-					"x":	11,
-					"y":	47,
+					"x":	54,
+					"y":	36,
 					"fixed":	true,
 					"gold":	6000
 				}, {
@@ -1565,7 +1577,7 @@
 				}, {
 					"id":	"tophet",
 					"x":	21,
-					"y":	10,
+					"y":	12,
 					"scene":	"art/scenes/tophet.png",
 					"title":	"The Tophet of Carthage",
 					"hint":	"Carved stelae crowd a sanctuary sealed in the rock. Its keepers will roll the stone aside for an offering of 2000 gold.",
@@ -1576,14 +1588,18 @@
 						}],
 					"effects":	[{
 							"x":	21,
-							"y":	9,
+							"y":	11,
+							"tile":	"."
+						}, {
+							"x":	21,
+							"y":	10,
 							"tile":	"."
 						}]
 				}],
 			"town_backdrop":	"art/ui/backdrop_town_africa.png",
 			"treasure_scene":	"art/scenes/treasure_africa.png",
 			"tile_set":	"africa",
-			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_01", "desert_edge_02", "desert_edge_03", "desert_edge_04", "desert_edge_05", "desert_edge_06", "desert_edge_07", "desert_edge_08", "desert_edge_09", "desert_edge_10", "desert_edge_11", "desert_edge_12", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_e_s", "river_mouth_w", "river_mouth_w_s", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18", "water_sand_edge_00", "water_sand_edge_01", "water_sand_edge_02", "water_sand_edge_03", "water_sand_edge_04", "water_sand_edge_05", "water_sand_edge_06", "water_sand_edge_07", "water_sand_edge_08", "water_sand_edge_09", "water_sand_edge_10", "water_sand_edge_11", "water_sand_edge_12", "water_sand_edge_13", "water_sand_edge_18", "grass_flowers", "grass_boulders", "grass_shrubs", "grass_wheat", "desert_boulders", "desert_scrub"],
+			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_01", "desert_edge_02", "desert_edge_03", "desert_edge_04", "desert_edge_05", "desert_edge_06", "desert_edge_07", "desert_edge_08", "desert_edge_09", "desert_edge_10", "desert_edge_11", "desert_edge_12", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_e_s", "river_mouth_w", "river_mouth_w_s", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18", "water_sand_edge_00", "water_sand_edge_01", "water_sand_edge_02", "water_sand_edge_03", "water_sand_edge_04", "water_sand_edge_05", "water_sand_edge_06", "water_sand_edge_07", "water_sand_edge_08", "water_sand_edge_09", "water_sand_edge_10", "water_sand_edge_11", "water_sand_edge_12", "water_sand_edge_13", "water_sand_edge_18"],
 			"army_art":	"wandering_army_africa",
 			"width":	64,
 			"height":	28,
@@ -1624,8 +1640,8 @@
 					"y":	12
 				}, {
 					"id":	"chest_7",
-					"x":	19,
-					"y":	10
+					"x":	16,
+					"y":	11
 				}, {
 					"id":	"chest_8",
 					"x":	23,
@@ -1727,7 +1743,7 @@
 				}, {
 					"id":	"chest_tophet",
 					"x":	21,
-					"y":	8,
+					"y":	9,
 					"fixed":	true,
 					"gold":	8000
 				}, {
@@ -2010,7 +2026,7 @@
 			"town_backdrop":	"art/ui/backdrop_town_oriens.png",
 			"treasure_scene":	"art/scenes/treasure_oriens.png",
 			"tile_set":	"oriens",
-			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_01", "desert_edge_02", "desert_edge_03", "desert_edge_04", "desert_edge_05", "desert_edge_06", "desert_edge_07", "desert_edge_08", "desert_edge_09", "desert_edge_10", "desert_edge_11", "desert_edge_12", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_e_s", "river_mouth_w", "river_mouth_w_s", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18", "water_sand_edge_00", "water_sand_edge_01", "water_sand_edge_02", "water_sand_edge_03", "water_sand_edge_04", "water_sand_edge_05", "water_sand_edge_06", "water_sand_edge_07", "water_sand_edge_08", "water_sand_edge_09", "water_sand_edge_10", "water_sand_edge_11", "water_sand_edge_12", "water_sand_edge_13", "water_sand_edge_18", "grass_flowers", "grass_boulders", "grass_shrubs", "grass_wheat", "desert_boulders", "desert_scrub"],
+			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_01", "desert_edge_02", "desert_edge_03", "desert_edge_04", "desert_edge_05", "desert_edge_06", "desert_edge_07", "desert_edge_08", "desert_edge_09", "desert_edge_10", "desert_edge_11", "desert_edge_12", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_e_s", "river_mouth_w", "river_mouth_w_s", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18", "water_sand_edge_00", "water_sand_edge_01", "water_sand_edge_02", "water_sand_edge_03", "water_sand_edge_04", "water_sand_edge_05", "water_sand_edge_06", "water_sand_edge_07", "water_sand_edge_08", "water_sand_edge_09", "water_sand_edge_10", "water_sand_edge_11", "water_sand_edge_12", "water_sand_edge_13", "water_sand_edge_18"],
 			"army_art":	"wandering_army_oriens",
 			"width":	64,
 			"height":	44,
@@ -2027,6 +2043,10 @@
 							"artifact":	"sword"
 						}],
 					"effects":	[{
+							"x":	16,
+							"y":	11,
+							"tile":	"."
+						}, {
 							"x":	16,
 							"y":	12,
 							"tile":	"."
@@ -2638,7 +2658,7 @@
 					"id":	"wandering_army_013"
 				}, {
 					"x":	47,
-					"y":	38,
+					"y":	37,
 					"id":	"guardian_siq",
 					"static":	true,
 					"army":	[{
@@ -5545,13 +5565,7 @@
 		"\\xe1":	{"art":	"water_sand_edge_11", "terrain":	"water"},
 		"\\xe2":	{"art":	"water_sand_edge_12", "terrain":	"water"},
 		"\\xe3":	{"art":	"water_sand_edge_13", "terrain":	"water"},
-		"\\xe4":	{"art":	"water_sand_edge_18", "terrain":	"water"},
-		"\\xe5":	{"art":	"grass_flowers", "terrain":	"grass"},
-		"\\xe6":	{"art":	"grass_boulders", "terrain":	"grass"},
-		"\\xe7":	{"art":	"grass_shrubs", "terrain":	"grass"},
-		"\\xe8":	{"art":	"grass_wheat", "terrain":	"grass"},
-		"\\xe9":	{"art":	"desert_boulders", "terrain":	"desert"},
-		"\\xea":	{"art":	"desert_scrub", "terrain":	"desert"}
+		"\\xe4":	{"art":	"water_sand_edge_18", "terrain":	"water"}
 	},
 	"spawn":	{
 		"calm_radius":	12,

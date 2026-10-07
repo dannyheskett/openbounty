@@ -1,0 +1,387 @@
+[
+ {
+  "rule": "strand",
+  "x": 0,
+  "y": 6,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 1,
+  "y": 6,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "notch",
+  "x": 1,
+  "y": 6,
+  "what": "mountain edge on ['e', 'n'] hides the sw corner",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 1,
+  "y": 7,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 1,
+  "y": 8,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "notch",
+  "x": 1,
+  "y": 8,
+  "what": "mountain edge on ['s', 'w'] hides the ne corner",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "pair",
+  "x": 1,
+  "y": 8,
+  "what": "mountain beside forest to the s",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 2,
+  "y": 8,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "pair",
+  "x": 2,
+  "y": 8,
+  "what": "mountain beside forest to the s",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 3,
+  "y": 8,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "pair",
+  "x": 3,
+  "y": 8,
+  "what": "mountain beside forest to the s",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 4,
+  "y": 8,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 5,
+  "y": 8,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 1,
+  "y": 9,
+  "what": "forest cell in no 2x2 block of forest",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 2,
+  "y": 9,
+  "what": "forest cell in no 2x2 block of forest",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 3,
+  "y": 9,
+  "what": "forest cell in no 2x2 block of forest",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 43,
+  "y": 16,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 44,
+  "y": 16,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "pair",
+  "x": 44,
+  "y": 16,
+  "what": "mountain beside forest to the s",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 45,
+  "y": 16,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "pair",
+  "x": 45,
+  "y": 16,
+  "what": "mountain beside forest to the s",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 46,
+  "y": 16,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "pair",
+  "x": 46,
+  "y": 16,
+  "what": "mountain beside forest to the s",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 44,
+  "y": 17,
+  "what": "forest cell in no 2x2 block of forest",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 45,
+  "y": 17,
+  "what": "forest cell in no 2x2 block of forest",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 46,
+  "y": 17,
+  "what": "forest cell in no 2x2 block of forest",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 48,
+  "y": 22,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "notch",
+  "x": 48,
+  "y": 22,
+  "what": "mountain edge on ['n', 'w'] hides the se corner",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 49,
+  "y": 22,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 50,
+  "y": 22,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 52,
+  "y": 22,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 53,
+  "y": 22,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 54,
+  "y": 22,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "notch",
+  "x": 54,
+  "y": 22,
+  "what": "mountain edge on ['e', 'n'] hides the sw corner",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 48,
+  "y": 23,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 54,
+  "y": 23,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 48,
+  "y": 24,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 54,
+  "y": 24,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 48,
+  "y": 25,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 54,
+  "y": 25,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 48,
+  "y": 26,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 54,
+  "y": 26,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 48,
+  "y": 27,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "notch",
+  "x": 48,
+  "y": 27,
+  "what": "mountain edge on ['w'] hides the ne corner",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 49,
+  "y": 27,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 50,
+  "y": 27,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 51,
+  "y": 27,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 52,
+  "y": 27,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 53,
+  "y": 27,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 54,
+  "y": 27,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "notch",
+  "x": 54,
+  "y": 27,
+  "what": "mountain edge on ['e'] hides the nw corner",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "step",
+  "x": 10,
+  "y": 10,
+  "what": "mountain stair step with (11,9)",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "step",
+  "x": 13,
+  "y": 11,
+  "what": "mountain stair step with (14,10)",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "step",
+  "x": 7,
+  "y": 12,
+  "what": "mountain stair step with (8,11)",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "step",
+  "x": 8,
+  "y": 14,
+  "what": "mountain stair step with (9,13)",
+  "reason": "in the map before #63 (fd822ee)"
+ }
+]

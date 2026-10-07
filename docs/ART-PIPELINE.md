@@ -215,21 +215,13 @@ generated from.
   the mask resized to the pack tile and filled with the new bases, so every
   edge has seamed with its neighbours by construction. Re-run it whenever a
   base changes; with a tile-set argument it has written a zone's folder.
-- **Feature tiles** (`grass_flowers`, `grass_boulders`, `grass_shrubs`,
-  `grass_wheat`, `desert_boulders`, `desert_scrub`, #63) — five feature
-  sprites from `rd_pro__topdown` at 96x96 with `remove_bg` and the magenta
-  background named (`art/jobs/feature_*.json`; the wheat and scrub runs kept
-  some magenta, keyed out to `02_keyed.png`), then `tools/romeart.py
-  features` has scaled each down inside a 12 px margin, alpha binary, onto
-  every set's own grass or desert. The tile's edges have stayed plain ground,
-  so a feature tile has joined anything its plain tile joins.
 - **Sand shores** (`water_sand_edge_NN`, #63) — not generated. Each zone
   set's `water_edge_NN` has been read pixel by pixel as sea or shore (nearest
   to the set's water or grass colours), and the shore part filled with the
   set's desert, so a sea whose coast is all sand has drawn a sand shore line
-  instead of a grass one. `tools/mapbuild.py build` has picked them; forest
-  and sand meeting the sea have kept their own ground to the coast, and rock
-  its grass fringe.
+  instead of a grass one. `tools/mapbuild.py build` has picked them; sand
+  meeting the sea has kept its own ground to the coast, and forest and rock
+  their grass fringe.
 - **Villain portraits** (`art/villains/<name>_00..07.png`) — villains have
   not been sprites: they have been opaque head-and-shoulders portraits drawn
   as faces in the contract view, the HUD contract chip and the puzzle grid.

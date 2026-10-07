@@ -589,15 +589,16 @@ sides, a river ending in open ground, a forest- or mountain-banked river
 beside another terrain, and a sea tile whose different diagonal no water
 variant shows; `--strict`, which `scripts/check_maps.sh` has used, has made
 those errors. A land tile's corner no variant shows has been counted only.
-Forest and desert meeting the sea have kept their own ground to the coast,
-the sea's edge drawing the one shore line (a sand one, `water_sand_edge_NN`,
-where every land beside it has been desert); rock has kept its grass fringe,
-since cut square at the water a crag has read as a wall. The builder has
-scattered the feature tiles (flowers, shrubs and boulders on grass, wheat
-beside towns, boulders and scrub on sand) from a seed per zone, about one
-plain cell in fourteen of grass and sixteen of sand, three cells apart, never
-under an object nor beside a town, castle or event; they have been scenery,
-the ground's own terrain to the engine.
+Desert meeting the sea has kept its own ground to the coast, the sea's edge
+drawing the shore line as sand (`water_sand_edge_NN`, where every land beside
+it has been desert); forest and rock have kept their grass fringe, since
+drawn solid to the water they stop in a straight line at the tile's edge.
+`tools/maplint.py`, run by `scripts/check_maps.sh`, has failed any terrain
+shape the edge pieces draw badly -- a one-cell stair step, a strand in no
+2x2 block, a cut corner, two masses side by side, a field at the sea or the
+world's edge -- beyond the original cases listed in
+`art/maps/<zone>_lint_allow.json`, and any change in the hero's reach from
+`art/maps/<zone>_reach.json`.
 
 `tools/mapbuild.py place` has scattered the zone's chests and wandering
 armies from a fixed seed inside the region boxes in
