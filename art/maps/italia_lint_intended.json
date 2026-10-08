@@ -1,0 +1,69 @@
+{
+ "coast": [
+  {
+   "box": [
+    30,
+    3,
+    38,
+    18
+   ],
+   "reason": "the Po plain's marsh-wood Adriatic coast, which no boat can land on (the Rubicon gate)"
+  },
+  {
+   "box": [
+    30,
+    19,
+    32,
+    29
+   ],
+   "reason": "the marsh-wood coast continued south to the Rubicon's mouth"
+  },
+  {
+   "box": [
+    42,
+    52,
+    46,
+    57
+   ],
+   "reason": "the Apennine cliffs round the boat-only Sibylline cove"
+  },
+  {
+   "box": [
+    49,
+    58,
+    51,
+    61
+   ],
+   "reason": "the ring of wood on the headland round the second boat-only cove"
+  },
+  {
+   "box": [
+    7,
+    66,
+    17,
+    78
+   ],
+   "reason": "Corsica's coast of wood and rock"
+  },
+  {
+   "box": [
+    7,
+    79,
+    17,
+    97
+   ],
+   "reason": "Sardinia's coast of wood and rock all round, so a boat lands only at Olbia's harbour"
+  }
+ ],
+ "edge": [
+  {
+   "box": [
+    0,
+    0,
+    38,
+    35
+   ],
+   "reason": "the Alps and the Maritime Alps run off the map's north and west edges"
+  }
+ ]
+}

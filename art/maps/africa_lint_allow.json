@@ -1,198 +1,415 @@
 [
  {
-  "rule": "strand",
-  "x": 0,
-  "y": 6,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "rule": "notch",
+  "x": 15,
+  "y": 13,
+  "what": "mountain edge on ['n'] hides the se corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
+  "rule": "notch",
+  "x": 16,
+  "y": 13,
+  "what": "mountain edge on ['s'] hides the nw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 27,
+  "y": 19,
+  "what": "mountain edge on ['w'] hides the se corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
   "x": 1,
-  "y": 6,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "y": 20,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
+  "rule": "notch",
+  "x": 27,
+  "y": 20,
+  "what": "mountain edge on ['e'] hides the nw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
   "x": 1,
-  "y": 7,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "y": 21,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
+  "rule": "notch",
+  "x": 14,
+  "y": 21,
+  "what": "forest edge on ['n'] hides the se corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 15,
+  "y": 21,
+  "what": "forest edge on ['s'] hides the nw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
   "x": 1,
-  "y": 8,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "y": 22,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "pair",
+  "rule": "edge",
   "x": 1,
-  "y": 8,
-  "what": "mountain beside forest to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 3,
-  "y": 8,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 3,
-  "y": 8,
-  "what": "mountain beside forest to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 4,
-  "y": 8,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 5,
-  "y": 8,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 1,
-  "y": 9,
-  "what": "forest cell in no 2x2 block of forest",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 2,
-  "y": 9,
-  "what": "forest cell in no 2x2 block of forest",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 3,
-  "y": 9,
-  "what": "forest cell in no 2x2 block of forest",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 46,
-  "y": 16,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 46,
-  "y": 16,
-  "what": "mountain beside forest to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 46,
-  "y": 17,
-  "what": "forest cell in no 2x2 block of forest",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 49,
-  "y": 22,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 50,
-  "y": 22,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 52,
-  "y": 22,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 53,
-  "y": 22,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 54,
-  "y": 22,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 54,
   "y": 23,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
+  "rule": "notch",
+  "x": 4,
+  "y": 23,
+  "what": "mountain edge on ['w'] hides the se corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 4,
+  "y": 24,
+  "what": "mountain edge on ['e'] hides the nw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
   "x": 54,
   "y": 24,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "mountain edge on ['e'] hides the sw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
-  "x": 48,
-  "y": 26,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "rule": "notch",
+  "x": 13,
+  "y": 25,
+  "what": "forest edge on ['w'] hides the se corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
-  "x": 48,
-  "y": 27,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "rule": "notch",
+  "x": 14,
+  "y": 25,
+  "what": "forest edge on ['s'] hides the ne corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
-  "x": 50,
-  "y": 27,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "rule": "notch",
+  "x": 15,
+  "y": 25,
+  "what": "forest edge on ['n'] hides the sw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
-  "x": 51,
-  "y": 27,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 52,
-  "y": 27,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
+  "rule": "notch",
   "x": 54,
+  "y": 25,
+  "what": "mountain edge on ['w'] hides the ne corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 2,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 3,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 4,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 5,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 12,
+  "y": 26,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 13,
+  "y": 26,
+  "what": "forest edge on ['e'] hides the nw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 13,
+  "y": 26,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 15,
+  "y": 26,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 16,
+  "y": 26,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 17,
+  "y": 26,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 18,
+  "y": 26,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 19,
+  "y": 26,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 20,
+  "y": 26,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 37,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 38,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 39,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 40,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 41,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 42,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 43,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 44,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 45,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 56,
+  "y": 26,
+  "what": "mountain within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 12,
   "y": 27,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 13,
+  "y": 27,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 15,
+  "y": 27,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 16,
+  "y": 27,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 17,
+  "y": 27,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 18,
+  "y": 27,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 19,
+  "y": 27,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "edge",
+  "x": 20,
+  "y": 27,
+  "what": "forest within two cells of the world's edge",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 4,
+  "y": 9,
+  "what": "mountain stair step with (5,8)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 10,
+  "y": 10,
+  "what": "mountain stair step with (11,9)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 11,
+  "y": 12,
+  "what": "mountain stair step with (12,11)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 12,
+  "y": 14,
+  "what": "mountain stair step with (13,13)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 7,
+  "y": 22,
+  "what": "mountain stair step with (8,21)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 43,
+  "y": 22,
+  "what": "mountain stair step with (44,21)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 6,
+  "y": 23,
+  "what": "mountain stair step with (7,22)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 32,
+  "y": 23,
+  "what": "mountain stair step with (33,22)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 52,
+  "y": 23,
+  "what": "mountain stair step with (53,24)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 2,
+  "y": 25,
+  "what": "mountain stair step with (3,24)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 36,
+  "y": 25,
+  "what": "mountain stair step with (37,26)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  }
 ]

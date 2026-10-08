@@ -600,11 +600,13 @@ drawing the shore line as sand (`water_sand_edge_NN`, where every land beside
 it has been desert); forest and rock have kept their grass fringe, since
 drawn solid to the water they stop in a straight line at the tile's edge.
 `tools/maplint.py`, run by `scripts/check_maps.sh`, has failed any terrain
-shape the edge pieces draw badly -- a one-cell stair step, a strand in no
-2x2 block, a cut corner, two masses side by side, a field at the sea or the
-world's edge -- beyond the original cases listed in
-`art/maps/<zone>_lint_allow.json`, and any change in the hero's reach from
-`art/maps/<zone>_reach.json`.
+shape the edge pieces draw badly, in the source or the built `.dat` -- a
+one-cell stair step, a strand in no 2x2 block, a cut corner, two masses side
+by side, a mass at the sea or within two cells of the world's edge outside the
+zone's intended coasts and edges (`art/maps/<zone>_lint_intended.json`, each
+with its reason; a field never) -- beyond the findings still to clear in
+`art/maps/<zone>_lint_allow.json`, whose count has only fallen, and any change
+in the hero's reach from `art/maps/<zone>_reach.json`.
 
 The shell (modern) has drawn four cosmetic layers over the baked tiles,
 picked per cell so a map has looked the same every time (#63; the art from

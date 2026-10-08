@@ -1684,8 +1684,8 @@
 					"y":	21
 				}, {
 					"id":	"chest_18",
-					"x":	49,
-					"y":	23
+					"x":	50,
+					"y":	24
 				}, {
 					"id":	"chest_19",
 					"x":	49,
@@ -2132,8 +2132,8 @@
 					"y":	23
 				}, {
 					"id":	"chest_thrace_road",
-					"x":	3,
-					"y":	2,
+					"x":	7,
+					"y":	0,
 					"fixed":	true,
 					"artifact":	"shield"
 				}, {
@@ -2580,8 +2580,8 @@
 							"count":	6
 						}]
 				}, {
-					"x":	8,
-					"y":	1,
+					"x":	3,
+					"y":	0,
 					"id":	"guardian_thrace",
 					"static":	true,
 					"army":	[{

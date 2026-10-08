@@ -1,5 +1,19 @@
 [
  {
+  "rule": "coast",
+  "x": 38,
+  "y": 0,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 38,
+  "y": 1,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
   "rule": "pair",
   "x": 37,
   "y": 2,
@@ -7,25 +21,39 @@
   "reason": "in the map before #63 (fd822ee)"
  },
  {
-  "rule": "pair",
-  "x": 38,
-  "y": 2,
-  "what": "mountain beside forest to the s",
-  "reason": "in the map before #63 (fd822ee)"
+  "rule": "notch",
+  "x": 32,
+  "y": 8,
+  "what": "forest edge on ['e'] hides the sw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
   "rule": "notch",
-  "x": 30,
-  "y": 27,
-  "what": "forest edge on ['s'] hides the ne corner",
-  "reason": "in the map before #63 (fd822ee)"
+  "x": 32,
+  "y": 9,
+  "what": "forest edge on ['w'] hides the ne corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
+  "rule": "notch",
+  "x": 19,
+  "y": 24,
+  "what": "mountain edge on ['s'] hides the ne corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 20,
+  "y": 24,
+  "what": "mountain edge on ['n'] hides the sw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
   "x": 31,
   "y": 27,
-  "what": "forest cell in no 2x2 block of forest",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "forest edge on ['e'] hides the sw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
   "rule": "strand",
@@ -52,99 +80,155 @@
   "rule": "notch",
   "x": 29,
   "y": 33,
-  "what": "mountain edge on ['e', 'n'] hides the sw corner",
+  "what": "mountain edge on ['n'] hides the sw corner",
   "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "coast",
+  "x": 37,
+  "y": 38,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 37,
+  "y": 39,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 19,
+  "y": 40,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 19,
+  "y": 41,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 20,
+  "y": 41,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 20,
+  "y": 42,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 23,
+  "y": 49,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 40,
+  "y": 49,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 23,
+  "y": 50,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 40,
+  "y": 50,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 41,
+  "y": 52,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 39,
+  "y": 53,
+  "what": "mountain edge on ['e'] hides the sw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 39,
+  "y": 54,
+  "what": "mountain edge on ['w'] hides the ne corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 39,
+  "y": 57,
+  "what": "mountain edge on ['e'] hides the sw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 39,
+  "y": 58,
+  "what": "mountain edge on ['w'] hides the ne corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
   "rule": "notch",
   "x": 40,
-  "y": 55,
-  "what": "mountain edge on ['n'] hides the se corner",
-  "reason": "in the map before #63 (fd822ee)"
+  "y": 59,
+  "what": "mountain edge on ['e'] hides the sw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "pair",
-  "x": 41,
-  "y": 55,
-  "what": "mountain beside forest to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 42,
-  "y": 55,
-  "what": "mountain beside forest to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
+  "rule": "notch",
   "x": 40,
-  "y": 56,
-  "what": "mountain beside forest to the e",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 40,
-  "y": 57,
-  "what": "mountain beside forest to the e",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 41,
-  "y": 57,
-  "what": "forest beside mountain to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 42,
   "y": 60,
-  "what": "mountain beside forest to the e",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "mountain edge on ['w'] hides the ne corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "pair",
-  "x": 42,
-  "y": 61,
-  "what": "mountain beside forest to the e",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 43,
-  "y": 61,
-  "what": "forest beside mountain to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 43,
+  "rule": "coast",
+  "x": 50,
   "y": 62,
-  "what": "mountain beside forest to the e",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "pair",
-  "x": 43,
+  "rule": "notch",
+  "x": 42,
   "y": 63,
-  "what": "mountain beside forest to the e",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "mountain edge on ['e'] hides the sw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "pair",
-  "x": 44,
-  "y": 63,
-  "what": "forest beside mountain to the s",
-  "reason": "in the map before #63 (fd822ee)"
+  "rule": "notch",
+  "x": 42,
+  "y": 64,
+  "what": "mountain edge on ['w'] hides the ne corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
+  "rule": "notch",
   "x": 12,
   "y": 67,
-  "what": "forest cell in no 2x2 block of forest",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "forest edge on ['n'] hides the se corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
   "rule": "strand",
@@ -175,178 +259,661 @@
   "reason": "in the map before #63 (fd822ee)"
  },
  {
-  "rule": "notch",
-  "x": 12,
-  "y": 68,
-  "what": "forest edge on ['e'] hides the nw corner",
-  "reason": "in the map before #63 (fd822ee)"
+  "rule": "coast",
+  "x": 27,
+  "y": 67,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
-  "x": 15,
-  "y": 68,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "rule": "coast",
+  "x": 28,
+  "y": 67,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
-  "x": 15,
+  "rule": "coast",
+  "x": 29,
+  "y": 67,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 27,
+  "y": 68,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 29,
+  "y": 68,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 27,
   "y": 69,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 29,
+  "y": 69,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 30,
+  "y": 69,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 31,
+  "y": 69,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 24,
+  "y": 70,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 25,
+  "y": 70,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 26,
+  "y": 70,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 27,
+  "y": 70,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 31,
+  "y": 70,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 24,
+  "y": 71,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 24,
+  "y": 72,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 25,
+  "y": 72,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 26,
+  "y": 72,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 27,
+  "y": 72,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 31,
+  "y": 72,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 32,
+  "y": 72,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 33,
+  "y": 72,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 27,
+  "y": 73,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 28,
+  "y": 73,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 33,
+  "y": 73,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 28,
+  "y": 74,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 33,
+  "y": 74,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 34,
+  "y": 74,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 35,
+  "y": 74,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 28,
+  "y": 75,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 32,
+  "y": 75,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 33,
+  "y": 75,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 34,
+  "y": 75,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 35,
+  "y": 75,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 28,
+  "y": 76,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 29,
+  "y": 76,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 30,
+  "y": 76,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 31,
+  "y": 76,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 32,
+  "y": 76,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 31,
+  "y": 77,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 32,
+  "y": 77,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 43,
+  "y": 77,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
   "rule": "notch",
-  "x": 15,
-  "y": 70,
-  "what": "mountain edge on ['w'] hides the ne corner",
+  "x": 51,
+  "y": 77,
+  "what": "mountain edge on ['s'] hides the ne corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 52,
+  "y": 77,
+  "what": "mountain edge on ['n'] hides the sw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 31,
+  "y": 78,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 32,
+  "y": 78,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 43,
+  "y": 78,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 57,
+  "y": 78,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 43,
+  "y": 79,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 57,
+  "y": 79,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 57,
+  "y": 80,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 58,
+  "y": 80,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 47,
+  "y": 84,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 47,
+  "y": 85,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 48,
+  "y": 85,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 48,
+  "y": 86,
+  "what": "mountain beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "pair",
+  "x": 9,
+  "y": 87,
+  "what": "mountain beside forest to the s",
   "reason": "in the map before #63 (fd822ee)"
  },
  {
   "rule": "pair",
+  "x": 16,
+  "y": 87,
+  "what": "forest beside mountain to the s",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 16,
+  "y": 88,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "notch",
+  "x": 16,
+  "y": 89,
+  "what": "mountain edge on ['e'] hides the nw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "pair",
+  "x": 8,
+  "y": 92,
+  "what": "forest beside mountain to the s",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "strand",
+  "x": 8,
+  "y": 93,
+  "what": "mountain cell in no 2x2 block of mountain",
+  "reason": "in the map before #63 (fd822ee)"
+ },
+ {
+  "rule": "notch",
+  "x": 8,
+  "y": 94,
+  "what": "mountain edge on ['w'] hides the ne corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 32,
+  "y": 108,
+  "what": "forest edge on ['w'] hides the se corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "notch",
+  "x": 32,
+  "y": 109,
+  "what": "forest edge on ['e'] hides the nw corner",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 45,
+  "y": 116,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "coast",
+  "x": 45,
+  "y": 117,
+  "what": "forest beside the sea",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 37,
+  "y": 2,
+  "what": "mountain stair step with (38,1)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 16,
+  "y": 3,
+  "what": "mountain stair step with (17,4)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 30,
+  "y": 3,
+  "what": "mountain stair step with (31,4)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 11,
+  "y": 4,
+  "what": "forest stair step with (12,5)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 32,
+  "y": 4,
+  "what": "mountain stair step with (33,3)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 31,
+  "y": 6,
+  "what": "forest stair step with (32,7)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 34,
+  "y": 7,
+  "what": "forest stair step with (35,6)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 25,
+  "y": 8,
+  "what": "forest stair step with (26,7)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 8,
+  "y": 10,
+  "what": "forest stair step with (9,11)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 11,
+  "y": 19,
+  "what": "forest stair step with (12,20)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 13,
+  "y": 25,
+  "what": "mountain stair step with (14,26)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 22,
+  "y": 27,
+  "what": "mountain stair step with (23,28)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 23,
+  "y": 28,
+  "what": "mountain stair step with (24,29)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 19,
+  "y": 41,
+  "what": "forest stair step with (20,42)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 36,
+  "y": 42,
+  "what": "forest stair step with (37,41)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 25,
+  "y": 50,
+  "what": "forest stair step with (26,49)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 14,
+  "y": 53,
+  "what": "forest stair step with (15,54)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 11,
+  "y": 54,
+  "what": "forest stair step with (12,55)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 56,
+  "y": 71,
+  "what": "forest stair step with (57,72)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 54,
+  "y": 72,
+  "what": "forest stair step with (55,71)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
   "x": 46,
   "y": 75,
-  "what": "mountain beside forest to the s",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "mountain stair step with (47,76)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "pair",
-  "x": 46,
+  "rule": "step",
+  "x": 45,
   "y": 76,
-  "what": "forest beside mountain to the e",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "forest stair step with (46,77)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "pair",
+  "rule": "step",
   "x": 47,
-  "y": 79,
-  "what": "forest beside mountain to the e",
-  "reason": "in the map before #63 (fd822ee)"
+  "y": 76,
+  "what": "mountain stair step with (48,77)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "strand",
-  "x": 9,
+  "rule": "step",
+  "x": 43,
+  "y": 77,
+  "what": "forest stair step with (44,76)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 47,
+  "y": 85,
+  "what": "mountain stair step with (48,86)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
+ },
+ {
+  "rule": "step",
+  "x": 10,
   "y": 87,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "what": "mountain stair step with (11,86)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "pair",
-  "x": 9,
-  "y": 87,
-  "what": "mountain beside forest to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 16,
-  "y": 87,
-  "what": "forest beside mountain to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 9,
-  "y": 88,
-  "what": "forest cell in no 2x2 block of forest",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 16,
-  "y": 88,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "notch",
-  "x": 9,
-  "y": 89,
-  "what": "forest edge on ['e'] hides the nw corner",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 16,
-  "y": 91,
-  "what": "mountain beside forest to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 8,
-  "y": 92,
-  "what": "forest beside mountain to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 16,
-  "y": 92,
-  "what": "forest cell in no 2x2 block of forest",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 8,
-  "y": 93,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 16,
-  "y": 93,
-  "what": "forest cell in no 2x2 block of forest",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "pair",
-  "x": 16,
-  "y": 93,
-  "what": "forest beside mountain to the s",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "notch",
-  "x": 14,
-  "y": 94,
-  "what": "mountain edge on ['n'] hides the se corner",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 15,
-  "y": 94,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 16,
-  "y": 94,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "notch",
-  "x": 13,
-  "y": 95,
-  "what": "mountain edge on ['w'] hides the se corner",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "notch",
-  "x": 12,
-  "y": 96,
-  "what": "mountain edge on ['n'] hides the se corner",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "strand",
-  "x": 13,
-  "y": 96,
-  "what": "mountain cell in no 2x2 block of mountain",
-  "reason": "in the map before #63 (fd822ee)"
+  "rule": "step",
+  "x": 38,
+  "y": 118,
+  "what": "forest stair step with (39,119)",
+  "reason": "baseline: still to clear (#63 plan, step 1)"
  }
 ]
