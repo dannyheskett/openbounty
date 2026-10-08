@@ -641,11 +641,11 @@ shut, then with them bridged.
 **The two coves** (#66), which have given sailing a purpose on the
 peninsula itself. Two pockets on the Adriatic coast have been reachable only
 from the water, rented at Ancona's harbour: a winding channel into the
-Apennine cliffs east of the spine (in at column 43 of row 52, three cells
-west, two south, two west), whose last chamber has held the pinned Sibylline
-Fragment, and a winding grass path inside a ring of wood on the headland
-south of it (in at column 51 of row 58, four west, two south, two east),
-ending in a fixed chest. Only the entry cell of each has touched the sea, so
+Apennine cliffs east of the spine (in at column 42 of row 52, two cells west,
+one south, one south-west), ending in a fixed chest at (39,54), and a grass
+path inside a ring of rock on the headland south of it (in at column 50 of
+row 58, two west, one south-west, one south), ending in a fixed chest at
+(47,60). Only the entry cell of each has touched the sea, so
 a boat has landed there and nowhere else along the channel; `check` has
 shown both ends unreachable on foot and reachable by boat, with every town
 and castle reached as before. A sign beside Ancona's harbour has said the
