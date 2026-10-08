@@ -398,7 +398,7 @@ flagged (§38).
   Autoplay and the demo player have kept their own table sizes and ignored
   content beyond them. The `kings-bounty` pack has had 25 troops, 14 spells,
   4 classes, 17 villains, 8 artifacts (§Appendix A); `glory-of-rome` has had
-  27 troops and the same 14 / 4 / 17 / 8.
+  29 troops and the same 14 / 4 / 17 / 8.
 
 ### 3.4 Enums
 

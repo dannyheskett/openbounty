@@ -222,6 +222,7 @@ static int validate_pack_run(const char *pack_dir, int lo, int hi,
             snprintf(blk, sizeof blk, "%s", r.unmet_label);
         printf(VP_ROW_FMT, seedc, r.solved ? "SOLVED" : "NOT-SOLVED",
                done, daysc, scorec, movesc, t, blk);
+        if (ob_diag_verbose()) autoplay_print_sieges();
         fflush(stdout);
     }
 
@@ -374,6 +375,7 @@ int shell_run_game(int argc, char **argv) {
             fprintf(stdout, "--autoplay --headless: run setup failed\n");
             return 2;
         }
+        if (ob_diag_verbose()) autoplay_print_sieges();
         recsink_free();
         return r.solved ? 0 : 1;
     }

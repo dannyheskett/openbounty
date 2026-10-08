@@ -1310,6 +1310,17 @@ mover, recruiter, and their measurement layer.
     feeding the `[LEDGER]` CROSSING tally with its zone pairs.
   - the calendar/economy ledger (`autoplay/exec_ledger.c`), the `[LEDGER]`
     day accounting (AP-172).
+  - the siege record (`autoplay/exec_fight.c`), `[SIEGE]`: one line per
+    villain siege on the committed line, printed once the run is over (by
+    `--autoplay --headless`, and after each `--validate-pack` row): day,
+    villain, gold, the hero's army HP, the garrison's HP and the army's
+    signed HP change, then the army's make-up before and after. Each siege
+    has been noted when fought, keyed by its YES prim's pre-combat world
+    fingerprint; the fight has been a pure function of that state, so the
+    note read back for a committed prim has been that prim's own fight,
+    whichever branch first ran it. The notes have lived in a file-static
+    table outside `Game` (AP-172's posture), so play has been untouched
+    (#200).
   - the stranding audit (`autoplay/primitives.c`), `[STRAND]`, one line per
     stranding pre-gate skip (AP-051).
   - the engagement contact trace (`autoplay/primitives.c
