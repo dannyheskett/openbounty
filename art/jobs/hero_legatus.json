@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/classes/legatus_hero.png (and ending.hero_tile as art/ui/end_hero.png)",
-  "_note": "The hero still (2026-09-06): troop route, the worklist's hero prompt. Installed as the win-cartoon hero tile and kept as the start frame for the hero walk animation."
+  "_note": "The hero still (2026-09-06): troop route, the worklist's hero prompt. Installed as the win-cartoon hero tile and kept as the start frame for the hero walk animation.",
+  "pack": [
+    "art/classes/legatus_hero.png"
+  ]
 }

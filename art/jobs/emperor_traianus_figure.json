@@ -16,5 +16,15 @@
   ],
   "_pack_path": "art/ui/emperor_traianus_figure_00..07.png",
   "_animation": "breathes slowly and lifts his chin a little and lowers it, his body, sceptre, toga and feet all completely still, smooth loop",
-  "_note": "Traianus standing on the home castle backdrop (2026-09-13): the head townsperson figure route, troop style at 96, magenta removed, no crop."
+  "_note": "Traianus standing on the home castle backdrop (2026-09-13): the head townsperson figure route, troop style at 96, magenta removed, no crop.",
+  "pack": [
+    "art/ui/emperor_traianus_figure_00.png",
+    "art/ui/emperor_traianus_figure_01.png",
+    "art/ui/emperor_traianus_figure_02.png",
+    "art/ui/emperor_traianus_figure_03.png",
+    "art/ui/emperor_traianus_figure_04.png",
+    "art/ui/emperor_traianus_figure_05.png",
+    "art/ui/emperor_traianus_figure_06.png",
+    "art/ui/emperor_traianus_figure_07.png"
+  ]
 }

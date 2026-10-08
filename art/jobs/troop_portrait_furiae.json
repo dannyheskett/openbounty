@@ -16,5 +16,8 @@
     "assets/glory-of-rome/art/troops/furiae_00.png"
   ],
   "_pack_path": "art/portraits/troop_furiae.png",
-  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. Re-run 2026-09-20 to match the reworked sprite (furiae.json seed 6210): ash-grey skin and red eyes rather than a dark unlit face, and the torch flame orange, the accent that separates her from her own wings."
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. Re-run 2026-09-20 to match the reworked sprite (furiae.json seed 6210): ash-grey skin and red eyes rather than a dark unlit face, and the torch flame orange, the accent that separates her from her own wings.",
+  "pack": [
+    "art/portraits/troop_furiae.png"
+  ]
 }

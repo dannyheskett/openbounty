@@ -15,5 +15,13 @@
   96
  ],
  "_pack_path": "art/intro/aquilifer_00..05.png (via intro_aquilifer_fall)",
- "_note": "2026-10-03, Introduction (#154) scene 1: the aquilifer; the figure route at 96, magenta removed. run01 is the still under intro_aquilifer_fall."
+ "_note": "2026-10-03, Introduction (#154) scene 1: the aquilifer; the figure route at 96, magenta removed. run01 is the still under intro_aquilifer_fall.",
+ "pack": [
+  "art/intro/aquilifer_00.png",
+  "art/intro/aquilifer_01.png",
+  "art/intro/aquilifer_02.png",
+  "art/intro/aquilifer_03.png",
+  "art/intro/aquilifer_04.png",
+  "art/intro/aquilifer_05.png"
+ ]
 }

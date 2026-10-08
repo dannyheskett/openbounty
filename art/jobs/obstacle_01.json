@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/combat/obstacle_01.png",
-  "_note": "Combat obstacle (2026-09-07): object route, transparent over the field; rubble, bushes, a broken wall (no water)."
+  "_note": "Combat obstacle (2026-09-07): object route, transparent over the field; rubble, bushes, a broken wall (no water).",
+  "pack": [
+    "art/combat/obstacle_01.png"
+  ]
 }

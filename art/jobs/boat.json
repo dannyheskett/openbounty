@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/sprites/boat_00.png (frame 0)",
-  "_note": "The hero's boat, reset 2026-09-07: a plain prompt, sail named as cream linen, no oar count (the engine does not hold a count). Object route, transparent; loop on custom action, four frames, expansion on."
+  "_note": "The hero's boat, reset 2026-09-07: a plain prompt, sail named as cream linen, no oar count (the engine does not hold a count). Object route, transparent; loop on custom action, four frames, expansion on.",
+  "pack": [
+    "art/sprites/boat_00.png"
+  ]
 }

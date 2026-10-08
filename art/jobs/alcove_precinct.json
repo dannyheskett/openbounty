@@ -15,5 +15,8 @@
   96
  ],
  "_pack_path": "art/tiles/alcove.png",
- "_note": "The magic alcove's map tile (2026-09-12), replacing the hills-dwelling sprite it borrowed. Map-object route, the same as the towns and dwellings: rd_pro__topdown, 96x96, magenta named and removed, no reference image, a facing cue, freestanding with no ground under it, expansion bypassed. The subject is an AUGURACULUM, the augur's marked precinct -- deliberately roofless, because an augur reads a quartered region of sky and a roof would close the one thing the place is for. Distinct at a glance from dwelling_hills, which is a cave mouth in a mound."
+ "_note": "The magic alcove's map tile (2026-09-12), replacing the hills-dwelling sprite it borrowed. Map-object route, the same as the towns and dwellings: rd_pro__topdown, 96x96, magenta named and removed, no reference image, a facing cue, freestanding with no ground under it, expansion bypassed. The subject is an AUGURACULUM, the augur's marked precinct -- deliberately roofless, because an augur reads a quartered region of sky and a roof would close the one thing the place is for. Distinct at a glance from dwelling_hills, which is a cave mouth in a mound.",
+ "pack": [
+  "art/tiles/alcove.png"
+ ]
 }

@@ -22,5 +22,5 @@
  "upper_description": "clear shallow river water, blue, with a gentle current and soft ripples, seen from above",
  "transition_description": "a narrow muddy bank where the river meets the meadow grass",
  "transition_size": 0.0,
- "_note": "River water (2026-09-16) for inland rivers. Everything but the two descriptions and the seed is t32_cobble_203.json unchanged -- same 32 px create-tileset, same lower_base_tile_id d1de924b, so it chains to the grass the roads chained to. Swept into the 24 river_* pieces by romeart.py sweep --sweep --prefix river; the sweep discards the transition tiles, so the bank described here never reaches the game. Dan chose a new set over the sea tile; one call authorised, more only on request."
+ "_note": "River water (2026-09-16) for inland rivers. Everything but the two descriptions and the seed is t32_cobble_203.json unchanged -- same 32 px create-tileset, same lower_base_tile_id d1de924b, so it chains to the grass the roads chained to. Swept into the 24 river_* pieces by romeart.py sweep --prefix river; the sweep discards the transition tiles, so the bank described here never reaches the game. Dan chose a new set over the sea tile; one call authorised, more only on request."
 }

@@ -8,6 +8,9 @@
 #     the built .dat, beyond the zone's baseline, and the hero's reach exactly
 #     as recorded in art/maps/<zone>_reach.json;
 #   - `map sanity`: one sea, no occupied pockets, the object budget.
+# Then the art record: `romeart.py provenance check --rebuild` -- every shipped
+# art file named by a job, a recipe or a kept source, and every deterministic
+# recipe re-run against the pack, pixel for pixel.
 # Exits non-zero on the first failure.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -33,3 +36,4 @@ while read -r zone map size; do
   fi
   $RA map sanity "$PACK" "$PACK/$map" "$size" "$zone" | tail -1
 done < "$tmp/zones.txt"
+$RA provenance check --rebuild

@@ -17,5 +17,11 @@
     128
   ],
   "_pack_path": "art/ui/hud_magic_00..03.png",
-  "_note": "HUD panel loop (2026-09-06): custom action on the opaque framed still, four frames, expansion on, tag prompt; the sidebar cycles it at two frames a second. run02: from the frameless still. 2026-09-07: loop at 128 on build/art/hud_magic_00/run01; frames centre-cropped to 96 after."
+  "_note": "HUD panel loop (2026-09-06): custom action on the opaque framed still, four frames, expansion on, tag prompt; the sidebar cycles it at two frames a second. run02: from the frameless still. 2026-09-07: loop at 128 on build/art/hud_magic_00/run01; frames centre-cropped to 96 after.",
+  "pack": [
+    "art/ui/hud_magic_00.png",
+    "art/ui/hud_magic_01.png",
+    "art/ui/hud_magic_02.png",
+    "art/ui/hud_magic_03.png"
+  ]
 }

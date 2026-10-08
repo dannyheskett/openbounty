@@ -17,5 +17,15 @@
     96
   ],
   "_pack_path": "art/ui/praefectus_castrorum_figure_00..07.png",
-  "_note": "Loop (2026-09-13): custom action on run01, eight frames at 96, alpha kept."
+  "_note": "Loop (2026-09-13): custom action on run01, eight frames at 96, alpha kept.",
+  "pack": [
+    "art/ui/praefectus_castrorum_figure_00.png",
+    "art/ui/praefectus_castrorum_figure_01.png",
+    "art/ui/praefectus_castrorum_figure_02.png",
+    "art/ui/praefectus_castrorum_figure_03.png",
+    "art/ui/praefectus_castrorum_figure_04.png",
+    "art/ui/praefectus_castrorum_figure_05.png",
+    "art/ui/praefectus_castrorum_figure_06.png",
+    "art/ui/praefectus_castrorum_figure_07.png"
+  ]
 }

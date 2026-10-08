@@ -17,5 +17,13 @@
   96,
   96
  ],
- "_pack_path": "art/troops/athanatoi_00..05.png"
+ "_pack_path": "art/troops/athanatoi_00..05.png",
+ "pack": [
+  "art/troops/athanatoi_00.png",
+  "art/troops/athanatoi_01.png",
+  "art/troops/athanatoi_02.png",
+  "art/troops/athanatoi_03.png",
+  "art/troops/athanatoi_04.png",
+  "art/troops/athanatoi_05.png"
+ ]
 }

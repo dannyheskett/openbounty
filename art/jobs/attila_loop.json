@@ -17,5 +17,15 @@
     128
   ],
   "_pack_path": "art/villains/attila_00..07.png",
-  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif. retry after inference_failed (no charge), seed incremented. 2026-09-07: loop run at 128 on the frame-free 128 still (run04); each frame is then centre-cropped to 96 with romeart.py crop (Dan-approved for villains)."
+  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif. retry after inference_failed (no charge), seed incremented. 2026-09-07: loop run at 128 on the frame-free 128 still (run04); each frame is then centre-cropped to 96 with romeart.py crop (Dan-approved for villains).",
+  "pack": [
+    "art/villains/attila_00.png",
+    "art/villains/attila_01.png",
+    "art/villains/attila_02.png",
+    "art/villains/attila_03.png",
+    "art/villains/attila_04.png",
+    "art/villains/attila_05.png",
+    "art/villains/attila_06.png",
+    "art/villains/attila_07.png"
+  ]
 }

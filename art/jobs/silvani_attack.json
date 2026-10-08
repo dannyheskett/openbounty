@@ -16,5 +16,11 @@
   "target": [
     96,
     96
+  ],
+  "pack": [
+    "art/troops/silvani_00.png",
+    "art/troops/silvani_01.png",
+    "art/troops/silvani_02.png",
+    "art/troops/silvani_03.png"
   ]
 }

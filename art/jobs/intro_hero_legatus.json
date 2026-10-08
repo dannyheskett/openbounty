@@ -15,5 +15,19 @@
   64
  ],
  "_pack_path": "art/intro/hero_legatus_walk_00..03.png and art/intro/hero_legatus_kneel_00..07.png (via intro_hero_legatus_walk and intro_hero_legatus_kneel)",
- "_note": "2026-10-04, Introduction (#154): the Legatus on foot, after the class portrait (art/classes/legatus.png); the figure route at 64, the troop style's smallest canvas. run02 (seed 15645) is the still under the walk and kneel."
+ "_note": "2026-10-04, Introduction (#154): the Legatus on foot, after the class portrait (art/classes/legatus.png); the figure route at 64, the troop style's smallest canvas. run02 (seed 15645) is the still under the walk and kneel.",
+ "pack": [
+  "art/intro/hero_legatus_kneel_00.png",
+  "art/intro/hero_legatus_kneel_01.png",
+  "art/intro/hero_legatus_kneel_02.png",
+  "art/intro/hero_legatus_kneel_03.png",
+  "art/intro/hero_legatus_kneel_04.png",
+  "art/intro/hero_legatus_kneel_05.png",
+  "art/intro/hero_legatus_kneel_06.png",
+  "art/intro/hero_legatus_kneel_07.png",
+  "art/intro/hero_legatus_walk_00.png",
+  "art/intro/hero_legatus_walk_01.png",
+  "art/intro/hero_legatus_walk_02.png",
+  "art/intro/hero_legatus_walk_03.png"
+ ]
 }

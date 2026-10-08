@@ -13,5 +13,8 @@
   102
  ],
  "_pack_path": "art/ui/backdrop_alcove.png",
- "_note": "The magic alcove's location backdrop (2026-09-12), replacing the hill cave's, which it shared with the hills dwelling. Same route as the other six: rd_pro__default at the 240x102 design size, opaque, no background removal, scaled by the shell. Composed as the OPPOSITE of backdrop_hillcave: that one is a dark cave mouth under an overcast sky, this one is open, high and bright, with the sky taking most of the frame -- an augur's templum is a region of sky, so the sky is the subject."
+ "_note": "The magic alcove's location backdrop (2026-09-12), replacing the hill cave's, which it shared with the hills dwelling. Same route as the other six: rd_pro__default at the 240x102 design size, opaque, no background removal, scaled by the shell. Composed as the OPPOSITE of backdrop_hillcave: that one is a dark cave mouth under an overcast sky, this one is open, high and bright, with the sky taking most of the frame -- an augur's templum is a region of sky, so the sky is the subject.",
+ "pack": [
+  "art/ui/backdrop_alcove.png"
+ ]
 }

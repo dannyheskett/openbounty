@@ -16,5 +16,11 @@
   "target": [
     96,
     96
+  ],
+  "pack": [
+    "art/troops/druidae_00.png",
+    "art/troops/druidae_01.png",
+    "art/troops/druidae_02.png",
+    "art/troops/druidae_03.png"
   ]
 }

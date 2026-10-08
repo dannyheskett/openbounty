@@ -16,5 +16,13 @@
  "target": [
   96,
   96
+ ],
+ "pack": [
+  "art/troops/sagittarii_00.png",
+  "art/troops/sagittarii_01.png",
+  "art/troops/sagittarii_02.png",
+  "art/troops/sagittarii_03.png",
+  "art/troops/sagittarii_04.png",
+  "art/troops/sagittarii_05.png"
  ]
 }

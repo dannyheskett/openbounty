@@ -16,5 +16,8 @@
  "_note": "Temporary-death scene for the dux (2026-09-14): backdrop route (rd_pro__default at 240x102, opaque, shown at 3x), the class's hero seed, the class portrait's description made beaten and tattered but alive. Run 2 sends the class portrait as a reference image so the figure matches the character.",
  "reference_image_paths": [
   "assets/glory-of-rome/art/classes/dux.png"
+ ],
+ "pack": [
+  "art/ui/disgraced_dux.png"
  ]
 }

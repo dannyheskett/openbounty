@@ -16,5 +16,11 @@
   "target": [
     96,
     96
+  ],
+  "pack": [
+    "art/troops/coloni_00.png",
+    "art/troops/coloni_01.png",
+    "art/troops/coloni_02.png",
+    "art/troops/coloni_03.png"
   ]
 }

@@ -11,5 +11,11 @@
  "bypass_prompt_expansion": true,
  "raw_only": true,
  "figure": false,
- "target": [96, 96]
+ "target": [96, 96],
+ "pack": [
+  "art/troops/ligures_00.png",
+  "art/troops/ligures_01.png",
+  "art/troops/ligures_02.png",
+  "art/troops/ligures_03.png"
+ ]
 }

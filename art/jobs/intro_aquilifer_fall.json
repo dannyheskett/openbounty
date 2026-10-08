@@ -17,5 +17,13 @@
   96
  ],
  "_pack_path": "art/intro/aquilifer_00..05.png",
- "_note": "2026-10-03, Introduction (#154) scene 1: fall action, the troop attack route (custom action, six frames, expansion on, alpha kept); played once, held on the last frame. run01 is installed."
+ "_note": "2026-10-03, Introduction (#154) scene 1: fall action, the troop attack route (custom action, six frames, expansion on, alpha kept); played once, held on the last frame. run01 is installed.",
+ "pack": [
+  "art/intro/aquilifer_00.png",
+  "art/intro/aquilifer_01.png",
+  "art/intro/aquilifer_02.png",
+  "art/intro/aquilifer_03.png",
+  "art/intro/aquilifer_04.png",
+  "art/intro/aquilifer_05.png"
+ ]
 }

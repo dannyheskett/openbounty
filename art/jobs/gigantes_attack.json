@@ -17,5 +17,11 @@
     96
   ],
   "_pack_path": "art/troops/gigantes_00..03.png",
-  "_note": "2026-09-07: job copied whole from silvani_attack (the approved release loop); sideways hurl so the giant keeps the frame (Dan). Still is gigantes run03."
+  "_note": "2026-09-07: job copied whole from silvani_attack (the approved release loop); sideways hurl so the giant keeps the frame (Dan). Still is gigantes run03.",
+  "pack": [
+    "art/troops/gigantes_00.png",
+    "art/troops/gigantes_01.png",
+    "art/troops/gigantes_02.png",
+    "art/troops/gigantes_03.png"
+  ]
 }

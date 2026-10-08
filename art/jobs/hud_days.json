@@ -13,5 +13,8 @@
     96
   ],
   "_pack_path": "art/ui/hud_days.png",
-  "_note": "HUD sidebar panel, the days-remaining readout: generated at 128 because rd_pro__default paints a frame at 96 whatever the prompt says (ART-PIPELINE, villain portraits), then downscaled to the pack tile by Retro Diffusion's k_centroid tool; the shell draws the frame."
+  "_note": "HUD sidebar panel, the days-remaining readout: generated at 128 because rd_pro__default paints a frame at 96 whatever the prompt says (ART-PIPELINE, villain portraits), then downscaled to the pack tile by Retro Diffusion's k_centroid tool; the shell draws the frame.",
+  "pack": [
+    "art/ui/hud_days.png"
+  ]
 }

@@ -14,5 +14,11 @@
   "bypass_prompt_expansion": true,
   "raw_only": true,
   "figure": false,
-  "target": [128, 128]
+  "target": [128, 128],
+  "pack": [
+    "art/troops/manes_00.png",
+    "art/troops/manes_01.png",
+    "art/troops/manes_02.png",
+    "art/troops/manes_03.png"
+  ]
 }

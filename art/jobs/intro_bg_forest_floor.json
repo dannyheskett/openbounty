@@ -13,5 +13,8 @@
   102
  ],
  "_pack_path": "art/intro/bg_forest_floor.png",
- "_note": "2026-10-03, Introduction (#154) scene 1: the eagle falls here; the backdrop route, empty of people. run01 is installed."
+ "_note": "2026-10-03, Introduction (#154) scene 1: the eagle falls here; the backdrop route, empty of people. run01 is installed.",
+ "pack": [
+  "art/intro/bg_forest_floor.png"
+ ]
 }

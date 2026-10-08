@@ -14,5 +14,8 @@
   96,
   96
  ],
- "_note": "#63 settlement set piece: a map object round towns and along roads (the parent-and-children placement Songs of Conquest uses), on the map-object route."
+ "_note": "#63 settlement set piece: a map object round towns and along roads (the parent-and-children placement Songs of Conquest uses), on the map-object route.",
+ "pack": [
+  "art/tiles/piece_ruin.png"
+ ]
 }

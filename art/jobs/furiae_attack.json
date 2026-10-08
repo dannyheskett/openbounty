@@ -17,5 +17,11 @@
   "frames_duration": 4,
   "seed": 6211,
   "_note": "First job file for this loop: the shipped furiae frames predate the job record. Made 2026-09-20 on the reworked still (furiae.json seed 6210), the four-frame custom action the other troops use, expansion on. The motion line names the swing's direction and forbids blur -- the lesson from the baleares loop, which drew the released sling as a violet smear -- and says the feet stay off the ground, because she flies (abilities FLY|MAGIC).",
-  "_pack_path": "art/troops/furiae_00..03.png"
+  "_pack_path": "art/troops/furiae_00..03.png",
+  "pack": [
+    "art/troops/furiae_00.png",
+    "art/troops/furiae_01.png",
+    "art/troops/furiae_02.png",
+    "art/troops/furiae_03.png"
+  ]
 }

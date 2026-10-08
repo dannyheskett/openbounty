@@ -13,5 +13,8 @@
   102
  ],
  "_pack_path": "art/intro/bg_map_table.png",
- "_note": "2026-10-03, Introduction (#154) scene 4: the map table, the map with its missing middle; the backdrop route. The hourglass is a sprite over it. run01 is installed."
+ "_note": "2026-10-03, Introduction (#154) scene 4: the map table, the map with its missing middle; the backdrop route. The hourglass is a sprite over it. run01 is installed.",
+ "pack": [
+  "art/intro/bg_map_table.png"
+ ]
 }

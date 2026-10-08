@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/classes/praetorianus_hero.png",
-  "_note": "Per-class mounted hero still (2026-09-06), troop route: the win-cartoon hero tile for this class and the start frame of its map walk. The Legatus is the earlier hero still (seed 7401)."
+  "_note": "Per-class mounted hero still (2026-09-06), troop route: the win-cartoon hero tile for this class and the start frame of its map walk. The Legatus is the earlier hero still (seed 7401).",
+  "pack": [
+    "art/classes/praetorianus_hero.png"
+  ]
 }

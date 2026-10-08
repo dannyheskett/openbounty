@@ -17,5 +17,15 @@
     128
   ],
   "_pack_path": "art/portraits/townhead_oriens_00..07.png",
-  "_note": "Head townsperson portrait loop (2026-09-13): custom action on run01, eight frames at 128, each frame centre-cropped to 96."
+  "_note": "Head townsperson portrait loop (2026-09-13): custom action on run01, eight frames at 128, each frame centre-cropped to 96.",
+  "pack": [
+    "art/portraits/townhead_oriens_00.png",
+    "art/portraits/townhead_oriens_01.png",
+    "art/portraits/townhead_oriens_02.png",
+    "art/portraits/townhead_oriens_03.png",
+    "art/portraits/townhead_oriens_04.png",
+    "art/portraits/townhead_oriens_05.png",
+    "art/portraits/townhead_oriens_06.png",
+    "art/portraits/townhead_oriens_07.png"
+  ]
 }

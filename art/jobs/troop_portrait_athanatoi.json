@@ -16,5 +16,8 @@
   "build/art/athanatoi/run05/01_raw.png"
  ],
  "_pack_path": "art/portraits/troop_athanatoi.png",
- "_note": "Static troop portrait (2026-10-08, #200), the settled portrait route: 128 still with the troop's own sprite as reference, resized whole to 96. Run02: redrawn from the scimitar still (athanatoi run05) so the portrait carries the sword, not run01's spear."
+ "_note": "Static troop portrait (2026-10-08, #200), the settled portrait route: 128 still with the troop's own sprite as reference, resized whole to 96. Run02: redrawn from the scimitar still (athanatoi run05) so the portrait carries the sword, not run01's spear.",
+ "pack": [
+  "art/portraits/troop_athanatoi.png"
+ ]
 }

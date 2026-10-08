@@ -13,5 +13,8 @@
     164
   ],
   "_pack_path": "art/ui/splash_title.png",
-  "_note": "Title screen regenerated without its painted border (2026-09-06); screen route, rd_pro__default at the 256x164 size the shell draws it at."
+  "_note": "Title screen regenerated without its painted border (2026-09-06); screen route, rd_pro__default at the 256x164 size the shell draws it at.",
+  "pack": [
+    "art/ui/splash_title.png"
+  ]
 }

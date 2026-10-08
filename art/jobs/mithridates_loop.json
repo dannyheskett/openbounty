@@ -17,5 +17,15 @@
     128
   ],
   "_pack_path": "art/villains/mithridates_00..07.png",
-  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif. 2026-09-07: loop run at 128 on the frame-free 128 still (run02); each frame is then centre-cropped to 96 with romeart.py crop (Dan-approved for villains)."
+  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif. 2026-09-07: loop run at 128 on the frame-free 128 still (run02); each frame is then centre-cropped to 96 with romeart.py crop (Dan-approved for villains).",
+  "pack": [
+    "art/villains/mithridates_00.png",
+    "art/villains/mithridates_01.png",
+    "art/villains/mithridates_02.png",
+    "art/villains/mithridates_03.png",
+    "art/villains/mithridates_04.png",
+    "art/villains/mithridates_05.png",
+    "art/villains/mithridates_06.png",
+    "art/villains/mithridates_07.png"
+  ]
 }

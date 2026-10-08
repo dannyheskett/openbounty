@@ -14,5 +14,8 @@
   96,
   96
  ],
- "_note": "#63 event landmark: drawn on the vista's trigger tile over its ground, as the Temple of Ocean and the Pharos are. The map-object route the towns and dwellings use."
+ "_note": "#63 event landmark: drawn on the vista's trigger tile over its ground, as the Temple of Ocean and the Pharos are. The map-object route the towns and dwellings use.",
+ "pack": [
+  "art/tiles/landmark_rubicon.png"
+ ]
 }

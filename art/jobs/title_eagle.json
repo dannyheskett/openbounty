@@ -15,5 +15,8 @@
     164
   ],
   "_pack_path": "art/ui/title_eagle.png",
-  "_note": "Title screen eagle standard as a cut-out (2026-09-13), the same standard as splash_title, so the modern title can slide it left while the battle fades in. rd_pro__default at the title's height, magenta removed."
+  "_note": "Title screen eagle standard as a cut-out (2026-09-13), the same standard as splash_title, so the modern title can slide it left while the battle fades in. rd_pro__default at the title's height, magenta removed.",
+  "pack": [
+    "art/ui/title_eagle.png"
+  ]
 }

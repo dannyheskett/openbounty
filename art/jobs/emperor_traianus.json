@@ -14,5 +14,15 @@
   ],
   "_pack_path": "art/portraits/emperor_traianus_00..07.png",
   "_animation": "a slow dignified nod, eyes steady, static background, smooth loop",
-  "_note": "Emperor Traianus (2026-09-13): the modern home castle's portrait slot. Town-portrait route: still at 128, loop at 128, frames cropped to 96."
+  "_note": "Emperor Traianus (2026-09-13): the modern home castle's portrait slot. Town-portrait route: still at 128, loop at 128, frames cropped to 96.",
+  "pack": [
+    "art/portraits/emperor_traianus_00.png",
+    "art/portraits/emperor_traianus_01.png",
+    "art/portraits/emperor_traianus_02.png",
+    "art/portraits/emperor_traianus_03.png",
+    "art/portraits/emperor_traianus_04.png",
+    "art/portraits/emperor_traianus_05.png",
+    "art/portraits/emperor_traianus_06.png",
+    "art/portraits/emperor_traianus_07.png"
+  ]
 }

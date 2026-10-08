@@ -17,5 +17,13 @@
   96,
   96
  ],
- "_pack_path": "art/troops/ifrit_00..05.png"
+ "_pack_path": "art/troops/ifrit_00..05.png",
+ "pack": [
+  "art/troops/ifrit_00.png",
+  "art/troops/ifrit_01.png",
+  "art/troops/ifrit_02.png",
+  "art/troops/ifrit_03.png",
+  "art/troops/ifrit_04.png",
+  "art/troops/ifrit_05.png"
+ ]
 }

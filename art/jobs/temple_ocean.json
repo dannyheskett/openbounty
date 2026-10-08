@@ -15,5 +15,8 @@
   96
  ],
  "_pack_path": "art/tiles/temple_ocean.png",
- "_note": "The Temple of Ocean map tile (Galliae vista). Object route as every town/castle tile: rd_pro__topdown 96x96, magenta removed; its tile code names grass as its ground. Installed: run 2 (seed 7501), the shrine with its own grass patch, chosen by Dan over the ground-free run 3 (seed 7511), which read flat."
+ "_note": "The Temple of Ocean map tile (Galliae vista). Object route as every town/castle tile: rd_pro__topdown 96x96, magenta removed; its tile code names grass as its ground. Installed: run 2 (seed 7501), the shrine with its own grass patch, chosen by Dan over the ground-free run 3 (seed 7511), which read flat.",
+ "pack": [
+  "art/tiles/temple_ocean.png"
+ ]
 }

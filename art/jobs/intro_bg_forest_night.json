@@ -13,5 +13,8 @@
   102
  ],
  "_pack_path": "art/intro/bg_forest_night.png",
- "_note": "2026-10-03, Introduction (#154) scene 1: the night forest where the legion marches, empty of people, with the engine's rain over it; the backdrop route (rd_pro__default, 240x102). run01 is installed."
+ "_note": "2026-10-03, Introduction (#154) scene 1: the night forest where the legion marches, empty of people, with the engine's rain over it; the backdrop route (rd_pro__default, 240x102). run01 is installed.",
+ "pack": [
+  "art/intro/bg_forest_night.png"
+ ]
 }

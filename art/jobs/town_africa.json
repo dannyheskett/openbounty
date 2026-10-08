@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/tiles/town_africa.png",
-  "_note": "Per-zone town tile. Route settled 2026-09-05 after engine and framing tests: rd_pro__topdown, 96x96, remove_bg with magenta named, NO reference image (a reference made the model fill the frame edge to edge), buildings seen from the front and above with doors facing the viewer (without a facing cue the model draws an isometric diorama on a slab), freestanding with no wall or ground so the tile sits over the terrain, a short road among the buildings named as the only ground (a road 'from the bottom edge' made the model fill and crop the frame)."
+  "_note": "Per-zone town tile. Route settled 2026-09-05 after engine and framing tests: rd_pro__topdown, 96x96, remove_bg with magenta named, NO reference image (a reference made the model fill the frame edge to edge), buildings seen from the front and above with doors facing the viewer (without a facing cue the model draws an isometric diorama on a slab), freestanding with no wall or ground so the tile sits over the terrain, a short road among the buildings named as the only ground (a road 'from the bottom edge' made the model fill and crop the frame).",
+  "pack": [
+    "art/tiles/town_africa.png"
+  ]
 }

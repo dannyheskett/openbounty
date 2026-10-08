@@ -15,5 +15,8 @@
   96
  ],
  "_pack_path": "art/ui/alcove_augur_00.png (frame 0 of 4)",
- "_note": "The figure who keeps the magic alcove (2026-09-12). Troop route, the pack's trained troop style at 96x96 with magenta removed, because he stands in the same tile-shaped slot on the backdrop that a troop sprite used to fill -- the screen animated Fauni there, a leftover from the original hard-coding Gnomes at the archmage's home. Neutral stance with the lituus at rest, so the gesture is the travel the loop spends. Deliberately NOT the Sibylla class portrait, which is a veiled priestess in white with a laurel sprig: this is a bearded male priest in the striped trabea with the crooked staff and a raven, so the oracle and the player are never the same figure."
+ "_note": "The figure who keeps the magic alcove (2026-09-12). Troop route, the pack's trained troop style at 96x96 with magenta removed, because he stands in the same tile-shaped slot on the backdrop that a troop sprite used to fill -- the screen animated Fauni there, a leftover from the original hard-coding Gnomes at the archmage's home. Neutral stance with the lituus at rest, so the gesture is the travel the loop spends. Deliberately NOT the Sibylla class portrait, which is a veiled priestess in white with a laurel sprig: this is a bearded male priest in the striped trabea with the crooked staff and a raven, so the oracle and the player are never the same figure.",
+ "pack": [
+  "art/ui/alcove_augur_00.png"
+ ]
 }

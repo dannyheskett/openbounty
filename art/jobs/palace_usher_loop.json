@@ -17,5 +17,15 @@
   96
  ],
  "_pack_path": "art/ui/palace_usher_00..07.png",
- "_note": "Loop (2026-09-15): custom action on run01, eight frames at 96, alpha kept."
+ "_note": "Loop (2026-09-15): custom action on run01, eight frames at 96, alpha kept.",
+ "pack": [
+  "art/ui/palace_usher_00.png",
+  "art/ui/palace_usher_01.png",
+  "art/ui/palace_usher_02.png",
+  "art/ui/palace_usher_03.png",
+  "art/ui/palace_usher_04.png",
+  "art/ui/palace_usher_05.png",
+  "art/ui/palace_usher_06.png",
+  "art/ui/palace_usher_07.png"
+ ]
 }

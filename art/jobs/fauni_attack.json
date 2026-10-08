@@ -16,5 +16,11 @@
   "target": [
     96,
     96
+  ],
+  "pack": [
+    "art/troops/fauni_00.png",
+    "art/troops/fauni_01.png",
+    "art/troops/fauni_02.png",
+    "art/troops/fauni_03.png"
   ]
 }

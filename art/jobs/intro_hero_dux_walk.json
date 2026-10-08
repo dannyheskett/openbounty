@@ -17,5 +17,11 @@
   48
  ],
  "_pack_path": "art/intro/hero_dux_walk_00..03.png",
- "_note": "2026-10-04, Introduction (#154): the Dux's walk at 48 for the palace steps, the Curia and the city gate. run02 is installed."
+ "_note": "2026-10-04, Introduction (#154): the Dux's walk at 48 for the palace steps, the Curia and the city gate. run02 is installed.",
+ "pack": [
+  "art/intro/hero_dux_walk_00.png",
+  "art/intro/hero_dux_walk_01.png",
+  "art/intro/hero_dux_walk_02.png",
+  "art/intro/hero_dux_walk_03.png"
+ ]
 }

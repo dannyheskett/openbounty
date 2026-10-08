@@ -16,5 +16,15 @@
  ],
  "_pack_path": "art/ui/palace_usher_00..07.png",
  "_animation": "breathes slowly and tips the staff of office once, his body, head and feet completely still, smooth loop",
- "_note": "The Emperor's chamberlain, who greets you in the palace atrium (2026-09-15): the figure route the camp prefect and the Augur use -- troop style at 96, magenta removed, no crop."
+ "_note": "The Emperor's chamberlain, who greets you in the palace atrium (2026-09-15): the figure route the camp prefect and the Augur use -- troop style at 96, magenta removed, no crop.",
+ "pack": [
+  "art/ui/palace_usher_00.png",
+  "art/ui/palace_usher_01.png",
+  "art/ui/palace_usher_02.png",
+  "art/ui/palace_usher_03.png",
+  "art/ui/palace_usher_04.png",
+  "art/ui/palace_usher_05.png",
+  "art/ui/palace_usher_06.png",
+  "art/ui/palace_usher_07.png"
+ ]
 }

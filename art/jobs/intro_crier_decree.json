@@ -17,5 +17,15 @@
   56
  ],
  "_pack_path": "art/intro/crier_decree_00..07.png",
- "_note": "2026-10-04, Introduction (#154) scene 5: the crier unrolls the decree; one action, held on the last frame, at 56 like his gesture loop. run01 is installed."
+ "_note": "2026-10-04, Introduction (#154) scene 5: the crier unrolls the decree; one action, held on the last frame, at 56 like his gesture loop. run01 is installed.",
+ "pack": [
+  "art/intro/crier_decree_00.png",
+  "art/intro/crier_decree_01.png",
+  "art/intro/crier_decree_02.png",
+  "art/intro/crier_decree_03.png",
+  "art/intro/crier_decree_04.png",
+  "art/intro/crier_decree_05.png",
+  "art/intro/crier_decree_06.png",
+  "art/intro/crier_decree_07.png"
+ ]
 }

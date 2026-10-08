@@ -13,5 +13,15 @@
   128
  ],
  "_pack_path": "art/portraits/intro_crier_00..07.png (via intro_crier_face_loop)",
- "_note": "2026-10-04, Introduction (#154) scenes 2 and 5: the crier's face for the caption band; the town-portrait still route at 128. run02 is the still under intro_crier_face_loop."
+ "_note": "2026-10-04, Introduction (#154) scenes 2 and 5: the crier's face for the caption band; the town-portrait still route at 128. run02 is the still under intro_crier_face_loop.",
+ "pack": [
+  "art/portraits/intro_crier_00.png",
+  "art/portraits/intro_crier_01.png",
+  "art/portraits/intro_crier_02.png",
+  "art/portraits/intro_crier_03.png",
+  "art/portraits/intro_crier_04.png",
+  "art/portraits/intro_crier_05.png",
+  "art/portraits/intro_crier_06.png",
+  "art/portraits/intro_crier_07.png"
+ ]
 }

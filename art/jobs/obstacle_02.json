@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/combat/obstacle_02.png",
-  "_note": "Combat obstacle (2026-09-07): object route, transparent over the field; rubble, bushes, a broken wall (no water). run02: run01's round cartoon bushes rejected; a ragged thorny scrub thicket instead."
+  "_note": "Combat obstacle (2026-09-07): object route, transparent over the field; rubble, bushes, a broken wall (no water). run02: run01's round cartoon bushes rejected; a ragged thorny scrub thicket instead.",
+  "pack": [
+    "art/combat/obstacle_02.png"
+  ]
 }

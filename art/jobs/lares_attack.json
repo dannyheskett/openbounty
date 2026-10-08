@@ -17,5 +17,13 @@
     96
   ],
   "_pack_path": "art/troops/lares_00..05.png",
-  "_note": "Lares loop (2026-09-06), the Sarmatae settings: custom action, six frames, prompt expansion on, tag prompt, the still untouched at 96. Re-run 2026-09-20 on the winged still (lares.json seed 6178). 'Feet planted' is gone -- the unit flies -- and the wings are given the beat; the blur clause is the lesson from the baleares loop, which drew the released sling as a violet smear."
+  "_note": "Lares loop (2026-09-06), the Sarmatae settings: custom action, six frames, prompt expansion on, tag prompt, the still untouched at 96. Re-run 2026-09-20 on the winged still (lares.json seed 6178). 'Feet planted' is gone -- the unit flies -- and the wings are given the beat; the blur clause is the lesson from the baleares loop, which drew the released sling as a violet smear.",
+  "pack": [
+    "art/troops/lares_00.png",
+    "art/troops/lares_01.png",
+    "art/troops/lares_02.png",
+    "art/troops/lares_03.png",
+    "art/troops/lares_04.png",
+    "art/troops/lares_05.png"
+  ]
 }

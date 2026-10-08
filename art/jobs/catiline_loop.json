@@ -17,5 +17,15 @@
     96
   ],
   "_pack_path": "art/villains/catiline_00..07.png",
-  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif. Re-run from the bar-free still run03."
+  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif. Re-run from the bar-free still run03.",
+  "pack": [
+    "art/villains/catiline_00.png",
+    "art/villains/catiline_01.png",
+    "art/villains/catiline_02.png",
+    "art/villains/catiline_03.png",
+    "art/villains/catiline_04.png",
+    "art/villains/catiline_05.png",
+    "art/villains/catiline_06.png",
+    "art/villains/catiline_07.png"
+  ]
 }

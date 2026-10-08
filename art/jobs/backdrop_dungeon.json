@@ -12,5 +12,8 @@
   "target": [
     240,
     102
+  ],
+  "pack": [
+    "art/ui/backdrop_dungeon.png"
   ]
 }

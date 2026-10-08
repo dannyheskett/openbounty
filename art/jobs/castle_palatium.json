@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/tiles/castle_palatium.png",
-  "_note": "The Emperor's palace map tile for Roma's castle (2026-09-13), drawn beside the town_rome tile. The per-zone town tile route exactly (rd_pro__topdown, 96x96, magenta removed, no reference, a facing cue, freestanding with a short road as the only ground), in the same white marble, terracotta and gilded palette as town_rome so the two read as one city."
+  "_note": "The Emperor's palace map tile for Roma's castle (2026-09-13), drawn beside the town_rome tile. The per-zone town tile route exactly (rd_pro__topdown, 96x96, magenta removed, no reference, a facing cue, freestanding with a short road as the only ground), in the same white marble, terracotta and gilded palette as town_rome so the two read as one city.",
+  "pack": [
+    "art/tiles/castle_palatium.png"
+  ]
 }

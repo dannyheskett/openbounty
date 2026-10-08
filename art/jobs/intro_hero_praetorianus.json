@@ -15,5 +15,19 @@
   64
  ],
  "_pack_path": "art/intro/hero_praetorianus_walk_00..03.png and art/intro/hero_praetorianus_kneel_00..07.png (via intro_hero_praetorianus_walk and intro_hero_praetorianus_kneel)",
- "_note": "2026-10-04, Introduction (#154): the Praetorianus on foot, after the class portrait (art/classes/praetorianus.png); the figure route at 64, the troop style's smallest canvas. run03 is the still under the walk and kneel."
+ "_note": "2026-10-04, Introduction (#154): the Praetorianus on foot, after the class portrait (art/classes/praetorianus.png); the figure route at 64, the troop style's smallest canvas. run03 is the still under the walk and kneel.",
+ "pack": [
+  "art/intro/hero_praetorianus_kneel_00.png",
+  "art/intro/hero_praetorianus_kneel_01.png",
+  "art/intro/hero_praetorianus_kneel_02.png",
+  "art/intro/hero_praetorianus_kneel_03.png",
+  "art/intro/hero_praetorianus_kneel_04.png",
+  "art/intro/hero_praetorianus_kneel_05.png",
+  "art/intro/hero_praetorianus_kneel_06.png",
+  "art/intro/hero_praetorianus_kneel_07.png",
+  "art/intro/hero_praetorianus_walk_00.png",
+  "art/intro/hero_praetorianus_walk_01.png",
+  "art/intro/hero_praetorianus_walk_02.png",
+  "art/intro/hero_praetorianus_walk_03.png"
+ ]
 }
