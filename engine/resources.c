@@ -702,6 +702,53 @@ static int parse_troop_abilities(const char *s) {
     return mask;
 }
 
+// "troop_aliases": {"old id": "new id", ...}. Fail-loud like the other
+// pack contracts: every new id must be a troop the pack defines, and no old
+// id may still be one (an alias would then hide a live troop).
+static const TroopDef *alias_troop(const Resources *res, const char *id) {
+    for (int i = 0; i < res->troops_count; i++)
+        if (strcmp(res->troops[i].id, id) == 0) return &res->troops[i];
+    return NULL;
+}
+
+static bool parse_troop_aliases(Resources *res, cJSON *obj) {
+    free(res->troop_alias_from); res->troop_alias_from = NULL;
+    free(res->troop_alias_to);   res->troop_alias_to = NULL;
+    res->troop_alias_count = 0;
+    if (!cJSON_IsObject(obj)) return true;
+    int n = cJSON_GetArraySize(obj);
+    if (n <= 0) return true;
+    res->troop_alias_from = calloc((size_t)n, sizeof *res->troop_alias_from);
+    res->troop_alias_to   = calloc((size_t)n, sizeof *res->troop_alias_to);
+    if (!res->troop_alias_from || !res->troop_alias_to) {
+        fprintf(stderr, "resources: out of memory for %d troop aliases\n", n);
+        return false;
+    }
+    cJSON *it;
+    cJSON_ArrayForEach(it, obj) {
+        if (!cJSON_IsString(it) || !alias_troop(res, it->valuestring) ||
+            alias_troop(res, it->string)) {
+            fprintf(stdout, "resources: invalid troop_aliases entry "
+                    "'%s' -> '%s'\n", it->string,
+                    cJSON_IsString(it) ? it->valuestring : "?");
+            return false;
+        }
+        int k = res->troop_alias_count++;
+        res_copy_str(res->troop_alias_from[k], sizeof res->troop_alias_from[k],
+                     it->string);
+        res_copy_str(res->troop_alias_to[k], sizeof res->troop_alias_to[k],
+                     it->valuestring);
+    }
+    return true;
+}
+
+const char *resources_troop_alias(const Resources *res, const char *id) {
+    for (int i = 0; res && id && i < res->troop_alias_count; i++)
+        if (strcmp(res->troop_alias_from[i], id) == 0)
+            return res->troop_alias_to[i];
+    return NULL;
+}
+
 static void parse_troops(Resources *res, cJSON *arr) {
     res->troops_count = 0;
     free(res->troops);
@@ -1129,6 +1176,8 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  res_json_str(ui, "scene_column_shaft", ""));
         res_copy_str(res->sprites.scene_column_base, sizeof(res->sprites.scene_column_base),
                  res_json_str(ui, "scene_column_base", ""));
+        res_copy_str(res->sprites.alcove_troop, sizeof(res->sprites.alcove_troop),
+                 res_json_str(ui, "alcove_troop", ""));
         res_copy_str(res->sprites.alcove_figure, sizeof(res->sprites.alcove_figure),
                  res_json_str(ui, "alcove_figure", ""));
         res_parse_path_list(cJSON_GetObjectItem(ui, "alcove_figure_animation"),
@@ -2041,6 +2090,10 @@ bool resources_load(Resources *res, const char *manifest_path) {
     parse_tile_codes(res,  cJSON_GetObjectItem(root, "tile_codes"));
 
     parse_troops(res,      cJSON_GetObjectItem(root, "troops"));
+    if (!parse_troop_aliases(res, cJSON_GetObjectItem(root, "troop_aliases"))) {
+        cJSON_Delete(root);
+        return false;
+    }
     parse_spells(res,      cJSON_GetObjectItem(root, "spells"));
     parse_classes(res,     cJSON_GetObjectItem(root, "classes"));
     parse_villains(res,    cJSON_GetObjectItem(root, "villains"));
@@ -2187,6 +2240,9 @@ void resources_free(Resources *res) {
         res->portrait_count = 0;
         for (int i = 0; res->troops && i < res->troops_count; i++) free(res->troops[i].anim);
         free(res->troops);        res->troops = NULL;        res->troops_count = 0;
+        free(res->troop_alias_from); res->troop_alias_from = NULL;
+        free(res->troop_alias_to);   res->troop_alias_to = NULL;
+        res->troop_alias_count = 0;
         free(res->spells);        res->spells = NULL;        res->spells_count = 0;
         for (int i = 0; res->classes && i < res->classes_count; i++) {
             free(res->classes[i].starting_troops);

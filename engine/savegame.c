@@ -135,6 +135,33 @@ static void copy_json_string(char *dst, size_t dst_sz, const cJSON *j) {
     dst[i] = '\0';
 }
 
+// A save written before its pack renamed a troop holds the old id; map each
+// one to the id the pack uses now ("troop_aliases"), so the save plays on.
+static void alias_troop_id(const Resources *res, char *id, size_t cap) {
+    const char *now = resources_troop_alias(res, id);
+    if (now) copy_string(id, cap, now);
+}
+
+static void alias_saved_troops(Game *g) {
+    const Resources *res = g->res;
+    if (!res || res->troop_alias_count <= 0) return;
+    for (int s = 0; s < GAME_ARMY_SLOTS; s++)
+        alias_troop_id(res, g->army[s].id, sizeof g->army[s].id);
+    for (int i = 0; g->castles && i < g->castle_count; i++)
+        for (int s = 0; s < GAME_ARMY_SLOTS; s++)
+            alias_troop_id(res, g->castles[i].garrison[s].id,
+                           sizeof g->castles[i].garrison[s].id);
+    for (int i = 0; g->foes && i < g->foe_count; i++) {
+        FoeState *f = &g->foes[i];
+        for (int s = 0; s < GAME_ARMY_SLOTS; s++)
+            alias_troop_id(res, f->garrison[s].id, sizeof f->garrison[s].id);
+        alias_troop_id(res, f->requires_troop, sizeof f->requires_troop);
+    }
+    for (int i = 0; g->dwellings && i < g->dwelling_count; i++)
+        alias_troop_id(res, g->dwellings[i].troop_id,
+                       sizeof g->dwellings[i].troop_id);
+}
+
 SaveResult SaveGameRead(const char *path,
                         Game *g,
                         Map *map,
@@ -735,6 +762,7 @@ SaveResult SaveGameRead(const char *path,
         }
     }
 
+    alias_saved_troops(g);
     cJSON_Delete(root);
     return SAVE_OK;
 }

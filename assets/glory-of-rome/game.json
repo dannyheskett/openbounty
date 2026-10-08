@@ -197,7 +197,7 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
+				"preferred_troops":	["coloni", "lares", "baleares", "larvae", "lupi", "fauni"],
 				"dwelling_range":	[0, 14]
 			},
 			"signs":	[{
@@ -731,19 +731,19 @@
 					"id":	"guardian_calabria",
 					"static":	true,
 					"army":	[{
-						"troop":	"barbarians",
+						"troop":	"sarmatae",
 						"count":	4
 					}, {
-						"troop":	"trolls",
+						"troop":	"antaei",
 						"count":	2
 					}, {
-						"troop":	"ogres",
+						"troop":	"cyclopes",
 						"count":	2
 					}, {
-						"troop":	"knights",
+						"troop":	"praetoriani",
 						"count":	1
 					}, {
-						"troop":	"archers",
+						"troop":	"velites",
 						"count":	4
 					}]
 				}, {
@@ -752,13 +752,13 @@
 					"id":	"guardian_sardinia_1",
 					"static":	true,
 					"army":	[{
-						"troop":	"militia",
+						"troop":	"tirones",
 						"count":	12
 					}, {
-						"troop":	"orcs",
+						"troop":	"baleares",
 						"count":	8
 					}, {
-						"troop":	"archers",
+						"troop":	"velites",
 						"count":	4
 					}]
 				}, {
@@ -767,13 +767,13 @@
 					"id":	"guardian_sardinia_2",
 					"static":	true,
 					"army":	[{
-						"troop":	"pikemen",
+						"troop":	"hastati",
 						"count":	12
 					}, {
-						"troop":	"nomads",
+						"troop":	"numidae",
 						"count":	8
 					}, {
-						"troop":	"ghosts",
+						"troop":	"manes",
 						"count":	6
 					}]
 				}, {
@@ -782,16 +782,16 @@
 					"id":	"guardian_sardinia_3",
 					"static":	true,
 					"army":	[{
-						"troop":	"ogres",
+						"troop":	"cyclopes",
 						"count":	8
 					}, {
-						"troop":	"trolls",
+						"troop":	"antaei",
 						"count":	6
 					}, {
-						"troop":	"vampires",
+						"troop":	"striges",
 						"count":	5
 					}, {
-						"troop":	"knights",
+						"troop":	"praetoriani",
 						"count":	4
 					}]
 				}, {
@@ -924,19 +924,19 @@
 					"id":	"guardian_capri",
 					"static":	true,
 					"army":	[{
-							"troop":	"ghosts",
+							"troop":	"manes",
 							"count":	6
 						}, {
-							"troop":	"barbarians",
+							"troop":	"sarmatae",
 							"count":	3
 						}, {
-							"troop":	"archers",
+							"troop":	"velites",
 							"count":	6
 						}, {
-							"troop":	"ogres",
+							"troop":	"cyclopes",
 							"count":	2
 						}, {
-							"troop":	"pikemen",
+							"troop":	"hastati",
 							"count":	4
 						}]
 				}, {
@@ -1019,7 +1019,7 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["dwarves", "zombies", "druids", "elves", "ogres", "elves"],
+				"preferred_troops":	["ligures", "lemures", "druidae", "silvani", "cyclopes", "silvani"],
 				"dwelling_range":	[1, 14]
 			},
 			"chests":	[{
@@ -1406,16 +1406,16 @@
 					"id":	"guardian_hadrian",
 					"static":	true,
 					"army":	[{
-						"troop":	"dwarves",
+						"troop":	"ligures",
 						"count":	12
 					}, {
-						"troop":	"barbarians",
+						"troop":	"sarmatae",
 						"count":	10
 					}, {
-						"troop":	"elves",
+						"troop":	"silvani",
 						"count":	8
 					}, {
-						"troop":	"druids",
+						"troop":	"druidae",
 						"count":	6
 					}]
 				}, {
@@ -1424,16 +1424,16 @@
 					"id":	"guardian_rhenus",
 					"static":	true,
 					"army":	[{
-						"troop":	"barbarians",
+						"troop":	"sarmatae",
 						"count":	15
 					}, {
-						"troop":	"trolls",
+						"troop":	"antaei",
 						"count":	8
 					}, {
-						"troop":	"ogres",
+						"troop":	"cyclopes",
 						"count":	6
 					}, {
-						"troop":	"cavalry",
+						"troop":	"equites",
 						"count":	6
 					}]
 				}, {
@@ -1498,19 +1498,19 @@
 					"id":	"guardian_grove",
 					"static":	true,
 					"army":	[{
-							"troop":	"druids",
+							"troop":	"druidae",
 							"count":	8
 						}, {
-							"troop":	"trolls",
+							"troop":	"antaei",
 							"count":	6
 						}, {
-							"troop":	"barbarians",
+							"troop":	"sarmatae",
 							"count":	6
 						}, {
-							"troop":	"elves",
+							"troop":	"silvani",
 							"count":	10
 						}, {
-							"troop":	"wolves",
+							"troop":	"lupi",
 							"count":	12
 						}]
 				}, {
@@ -1611,7 +1611,7 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["ghosts", "barbarians", "trolls", "nomads"],
+				"preferred_troops":	["manes", "sarmatae", "antaei", "numidae"],
 				"dwelling_range":	[2, 14]
 			},
 			"chests":	[{
@@ -1906,16 +1906,16 @@
 					"id":	"guardian_mulucha",
 					"static":	true,
 					"army":	[{
-							"troop":	"nomads",
+							"troop":	"numidae",
 							"count":	15
 						}, {
-							"troop":	"orcs",
+							"troop":	"baleares",
 							"count":	12
 						}, {
-							"troop":	"archers",
+							"troop":	"velites",
 							"count":	10
 						}, {
-							"troop":	"cavalry",
+							"troop":	"equites",
 							"count":	6
 						}]
 				}, {
@@ -1924,16 +1924,16 @@
 					"id":	"guardian_amun",
 					"static":	true,
 					"army":	[{
-							"troop":	"ghosts",
+							"troop":	"manes",
 							"count":	12
 						}, {
-							"troop":	"skeletons",
+							"troop":	"larvae",
 							"count":	15
 						}, {
-							"troop":	"zombies",
+							"troop":	"lemures",
 							"count":	12
 						}, {
-							"troop":	"vampires",
+							"troop":	"striges",
 							"count":	5
 						}]
 				}, {
@@ -1998,19 +1998,19 @@
 					"id":	"guardian_oasis",
 					"static":	true,
 					"army":	[{
-							"troop":	"nomads",
+							"troop":	"numidae",
 							"count":	12
 						}, {
-							"troop":	"cavalry",
+							"troop":	"equites",
 							"count":	6
 						}, {
-							"troop":	"archers",
+							"troop":	"velites",
 							"count":	8
 						}, {
-							"troop":	"orcs",
+							"troop":	"baleares",
 							"count":	10
 						}, {
-							"troop":	"elephants",
+							"troop":	"elephanti",
 							"count":	1
 						}]
 				}, {
@@ -2059,7 +2059,7 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["giants", "vampires", "archmages", "dragons", "demons"],
+				"preferred_troops":	["gigantes", "striges", "furiae", "dracones", "empusae"],
 				"dwelling_range":	[20, 26]
 			},
 			"chests":	[{
@@ -2481,7 +2481,7 @@
 					"x":	35,
 					"y":	28,
 					"kind":	"plains",
-					"troop":	"elephants"
+					"troop":	"elephanti"
 				}],
 			"hero_spawn":	{
 				"x":	5,
@@ -2546,16 +2546,16 @@
 					"id":	"guardian_euphrates",
 					"static":	true,
 					"army":	[{
-							"troop":	"nomads",
+							"troop":	"numidae",
 							"count":	15
 						}, {
 							"troop":	"sagittarii",
 							"count":	10
 						}, {
-							"troop":	"barbarians",
+							"troop":	"sarmatae",
 							"count":	10
 						}, {
-							"troop":	"cavalry",
+							"troop":	"equites",
 							"count":	8
 						}]
 				}, {
@@ -2563,20 +2563,20 @@
 					"y":	8,
 					"id":	"guardian_armenia",
 					"static":	true,
-					"requires_troop":	"elephants",
+					"requires_troop":	"elephanti",
 					"scene":	"art/scenes/pass.png",
 					"title":	"The Armenian Pass",
 					"army":	[{
-							"troop":	"dwarves",
+							"troop":	"ligures",
 							"count":	14
 						}, {
-							"troop":	"barbarians",
+							"troop":	"sarmatae",
 							"count":	10
 						}, {
-							"troop":	"trolls",
+							"troop":	"antaei",
 							"count":	8
 						}, {
-							"troop":	"ogres",
+							"troop":	"cyclopes",
 							"count":	6
 						}]
 				}, {
@@ -2585,19 +2585,19 @@
 					"id":	"guardian_thrace",
 					"static":	true,
 					"army":	[{
-							"troop":	"giants",
+							"troop":	"gigantes",
 							"count":	8
 						}, {
-							"troop":	"trolls",
+							"troop":	"antaei",
 							"count":	10
 						}, {
-							"troop":	"vampires",
+							"troop":	"striges",
 							"count":	8
 						}, {
-							"troop":	"knights",
+							"troop":	"praetoriani",
 							"count":	10
 						}, {
-							"troop":	"archmages",
+							"troop":	"furiae",
 							"count":	8
 						}]
 				}, {
@@ -2662,16 +2662,16 @@
 					"id":	"guardian_siq",
 					"static":	true,
 					"army":	[{
-							"troop":	"giants",
+							"troop":	"gigantes",
 							"count":	4
 						}, {
-							"troop":	"knights",
+							"troop":	"praetoriani",
 							"count":	6
 						}, {
-							"troop":	"cavalry",
+							"troop":	"equites",
 							"count":	8
 						}, {
-							"troop":	"nomads",
+							"troop":	"numidae",
 							"count":	15
 						}, {
 							"troop":	"sagittarii",
@@ -3699,7 +3699,7 @@
 		}],
 	"troops":	[{
 			"index":	0,
-			"id":	"peasants",
+			"id":	"coloni",
 			"name":	"Coloni",
 			"sprite":	"art/troops/coloni_00.png",
 			"portrait":	"art/portraits/troop_coloni.png",
@@ -3719,7 +3719,7 @@
 			"tier_counts":	[10, 20, 50, 100]
 		}, {
 			"index":	1,
-			"id":	"sprites",
+			"id":	"lares",
 			"name":	"Lares",
 			"sprite":	"art/troops/lares_00.png",
 			"portrait":	"art/portraits/troop_lares.png",
@@ -3739,7 +3739,7 @@
 			"tier_counts":	[10, 15, 30, 50]
 		}, {
 			"index":	2,
-			"id":	"militia",
+			"id":	"tirones",
 			"name":	"Tirones",
 			"sprite":	"art/troops/tirones_00.png",
 			"portrait":	"art/portraits/troop_tirones.png",
@@ -3759,7 +3759,7 @@
 			"tier_counts":	[0, 5, 15, 30]
 		}, {
 			"index":	3,
-			"id":	"wolves",
+			"id":	"lupi",
 			"name":	"Lupi",
 			"sprite":	"art/troops/lupi_00.png",
 			"portrait":	"art/portraits/troop_lupi.png",
@@ -3779,7 +3779,7 @@
 			"tier_counts":	[5, 10, 20, 40]
 		}, {
 			"index":	4,
-			"id":	"skeletons",
+			"id":	"larvae",
 			"name":	"Larvae",
 			"sprite":	"art/troops/larvae_00.png",
 			"portrait":	"art/portraits/troop_larvae.png",
@@ -3799,7 +3799,7 @@
 			"tier_counts":	[5, 10, 15, 25]
 		}, {
 			"index":	5,
-			"id":	"zombies",
+			"id":	"lemures",
 			"name":	"Lemures",
 			"sprite":	"art/troops/lemures_00.png",
 			"portrait":	"art/portraits/troop_lemures.png",
@@ -3819,7 +3819,7 @@
 			"tier_counts":	[5, 10, 15, 20]
 		}, {
 			"index":	6,
-			"id":	"gnomes",
+			"id":	"fauni",
 			"name":	"Fauni",
 			"sprite":	"art/troops/fauni_00.png",
 			"portrait":	"art/portraits/troop_fauni.png",
@@ -3839,7 +3839,7 @@
 			"tier_counts":	[5, 10, 15, 20]
 		}, {
 			"index":	7,
-			"id":	"orcs",
+			"id":	"baleares",
 			"name":	"Baleares",
 			"sprite":	"art/troops/baleares_00.png",
 			"portrait":	"art/portraits/troop_baleares.png",
@@ -3859,7 +3859,7 @@
 			"tier_counts":	[5, 10, 12, 20]
 		}, {
 			"index":	8,
-			"id":	"archers",
+			"id":	"velites",
 			"name":	"Velites",
 			"sprite":	"art/troops/velites_00.png",
 			"portrait":	"art/portraits/troop_velites.png",
@@ -3879,7 +3879,7 @@
 			"tier_counts":	[5, 8, 12, 18]
 		}, {
 			"index":	9,
-			"id":	"elves",
+			"id":	"silvani",
 			"name":	"Silvani",
 			"sprite":	"art/troops/silvani_00.png",
 			"portrait":	"art/portraits/troop_silvani.png",
@@ -3899,7 +3899,7 @@
 			"tier_counts":	[5, 8, 10, 15]
 		}, {
 			"index":	10,
-			"id":	"pikemen",
+			"id":	"hastati",
 			"name":	"Hastati",
 			"sprite":	"art/troops/hastati_00.png",
 			"portrait":	"art/portraits/troop_hastati.png",
@@ -3919,7 +3919,7 @@
 			"tier_counts":	[0, 5, 8, 15]
 		}, {
 			"index":	11,
-			"id":	"nomads",
+			"id":	"numidae",
 			"name":	"Numidae",
 			"sprite":	"art/troops/numidae_00.png",
 			"portrait":	"art/portraits/troop_numidae.png",
@@ -3939,7 +3939,7 @@
 			"tier_counts":	[5, 8, 12, 18]
 		}, {
 			"index":	12,
-			"id":	"dwarves",
+			"id":	"ligures",
 			"name":	"Ligures",
 			"sprite":	"art/troops/ligures_00.png",
 			"portrait":	"art/portraits/troop_ligures.png",
@@ -3959,7 +3959,7 @@
 			"tier_counts":	[5, 6, 8, 12]
 		}, {
 			"index":	13,
-			"id":	"ghosts",
+			"id":	"manes",
 			"name":	"Manes",
 			"sprite":	"art/troops/manes_00.png",
 			"portrait":	"art/portraits/troop_manes.png",
@@ -3979,7 +3979,7 @@
 			"tier_counts":	[2, 4, 6, 8]
 		}, {
 			"index":	14,
-			"id":	"knights",
+			"id":	"praetoriani",
 			"name":	"Praetoriani",
 			"sprite":	"art/troops/praetoriani_00.png",
 			"portrait":	"art/portraits/troop_praetoriani.png",
@@ -3999,7 +3999,7 @@
 			"tier_counts":	[0, 2, 5, 8]
 		}, {
 			"index":	15,
-			"id":	"ogres",
+			"id":	"cyclopes",
 			"name":	"Cyclopes",
 			"sprite":	"art/troops/cyclopes_00.png",
 			"portrait":	"art/portraits/troop_cyclopes.png",
@@ -4019,7 +4019,7 @@
 			"tier_counts":	[2, 3, 5, 8]
 		}, {
 			"index":	16,
-			"id":	"barbarians",
+			"id":	"sarmatae",
 			"name":	"Sarmatae",
 			"sprite":	"art/troops/sarmatae_00.png",
 			"portrait":	"art/portraits/troop_sarmatae.png",
@@ -4039,7 +4039,7 @@
 			"tier_counts":	[2, 3, 5, 8]
 		}, {
 			"index":	17,
-			"id":	"trolls",
+			"id":	"antaei",
 			"name":	"Antaei",
 			"sprite":	"art/troops/antaei_00.png",
 			"portrait":	"art/portraits/troop_antaei.png",
@@ -4059,7 +4059,7 @@
 			"tier_counts":	[2, 3, 4, 6]
 		}, {
 			"index":	18,
-			"id":	"cavalry",
+			"id":	"equites",
 			"name":	"Equites",
 			"sprite":	"art/troops/equites_00.png",
 			"portrait":	"art/portraits/troop_equites.png",
@@ -4079,7 +4079,7 @@
 			"tier_counts":	[0, 2, 4, 6]
 		}, {
 			"index":	19,
-			"id":	"druids",
+			"id":	"druidae",
 			"name":	"Druidae",
 			"sprite":	"art/troops/druidae_00.png",
 			"portrait":	"art/portraits/troop_druidae.png",
@@ -4099,7 +4099,7 @@
 			"tier_counts":	[2, 3, 4, 6]
 		}, {
 			"index":	20,
-			"id":	"archmages",
+			"id":	"furiae",
 			"name":	"Furiae",
 			"sprite":	"art/troops/furiae_00.png",
 			"portrait":	"art/portraits/troop_furiae.png",
@@ -4119,7 +4119,7 @@
 			"tier_counts":	[2, 3, 4, 5]
 		}, {
 			"index":	21,
-			"id":	"vampires",
+			"id":	"striges",
 			"name":	"Striges",
 			"sprite":	"art/troops/striges_00.png",
 			"portrait":	"art/portraits/troop_striges.png",
@@ -4139,7 +4139,7 @@
 			"tier_counts":	[1, 2, 3, 5]
 		}, {
 			"index":	22,
-			"id":	"giants",
+			"id":	"gigantes",
 			"name":	"Gigantes",
 			"sprite":	"art/troops/gigantes_00.png",
 			"portrait":	"art/portraits/troop_gigantes.png",
@@ -4159,7 +4159,7 @@
 			"tier_counts":	[1, 2, 3, 5]
 		}, {
 			"index":	23,
-			"id":	"demons",
+			"id":	"empusae",
 			"name":	"Empusae",
 			"sprite":	"art/troops/empusae_00.png",
 			"portrait":	"art/portraits/troop_empusae.png",
@@ -4179,7 +4179,7 @@
 			"tier_counts":	[1, 2, 3, 4]
 		}, {
 			"index":	24,
-			"id":	"dragons",
+			"id":	"dracones",
 			"name":	"Dracones",
 			"sprite":	"art/troops/dracones_00.png",
 			"portrait":	"art/portraits/troop_dracones.png",
@@ -4219,7 +4219,7 @@
 			"tier_counts":	[0, 5, 10, 15]
 		}, {
 			"index":	26,
-			"id":	"elephants",
+			"id":	"elephanti",
 			"name":	"Elephanti",
 			"sprite":	"art/troops/elephanti_00.png",
 			"portrait":	"art/portraits/troop_elephanti.png",
@@ -4278,6 +4278,34 @@
 			"tier_counts":	[0, 0, 0, 0],
 			"anim":	["art/troops/athanatoi_00.png", "art/troops/athanatoi_01.png", "art/troops/athanatoi_02.png", "art/troops/athanatoi_03.png", "art/troops/athanatoi_04.png", "art/troops/athanatoi_05.png"]
 		}],
+	"troop_aliases":	{
+		"peasants":	"coloni",
+		"sprites":	"lares",
+		"militia":	"tirones",
+		"wolves":	"lupi",
+		"skeletons":	"larvae",
+		"zombies":	"lemures",
+		"gnomes":	"fauni",
+		"orcs":	"baleares",
+		"archers":	"velites",
+		"elves":	"silvani",
+		"pikemen":	"hastati",
+		"nomads":	"numidae",
+		"dwarves":	"ligures",
+		"ghosts":	"manes",
+		"knights":	"praetoriani",
+		"ogres":	"cyclopes",
+		"barbarians":	"sarmatae",
+		"trolls":	"antaei",
+		"cavalry":	"equites",
+		"druids":	"druidae",
+		"archmages":	"furiae",
+		"vampires":	"striges",
+		"giants":	"gigantes",
+		"demons":	"empusae",
+		"dragons":	"dracones",
+		"elephants":	"elephanti"
+	},
 	"spells":	[{
 			"index":	0,
 			"id":	"clone",
@@ -4375,10 +4403,10 @@
 			},
 			"starting_gold":	7500,
 			"starting_troops":	[{
-					"id":	"militia",
+					"id":	"tirones",
 					"count":	20
 				}, {
-					"id":	"archers",
+					"id":	"velites",
 					"count":	2
 				}],
 			"ranks":	[{
@@ -4434,10 +4462,10 @@
 			},
 			"starting_gold":	10000,
 			"starting_troops":	[{
-					"id":	"peasants",
+					"id":	"coloni",
 					"count":	20
 				}, {
-					"id":	"militia",
+					"id":	"tirones",
 					"count":	20
 				}],
 			"ranks":	[{
@@ -4493,10 +4521,10 @@
 			},
 			"starting_gold":	10000,
 			"starting_troops":	[{
-					"id":	"peasants",
+					"id":	"coloni",
 					"count":	30
 				}, {
-					"id":	"sprites",
+					"id":	"lares",
 					"count":	10
 				}],
 			"ranks":	[{
@@ -4552,7 +4580,7 @@
 			},
 			"starting_gold":	7500,
 			"starting_troops":	[{
-					"id":	"wolves",
+					"id":	"lupi",
 					"count":	20
 				}],
 			"ranks":	[{
@@ -4607,19 +4635,19 @@
 			"portrait":	"art/villains/catiline_00.png",
 			"anim":	["art/villains/catiline_00.png", "art/villains/catiline_01.png", "art/villains/catiline_02.png", "art/villains/catiline_03.png", "art/villains/catiline_04.png", "art/villains/catiline_05.png", "art/villains/catiline_06.png", "art/villains/catiline_07.png"],
 			"army":	[{
-					"troop":	"peasants",
+					"troop":	"coloni",
 					"count":	103
 				}, {
-					"troop":	"peasants",
+					"troop":	"coloni",
 					"count":	103
 				}, {
-					"troop":	"militia",
+					"troop":	"tirones",
 					"count":	34
 				}, {
-					"troop":	"militia",
+					"troop":	"tirones",
 					"count":	34
 				}, {
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	4
 				}]
 		}, {
@@ -4632,19 +4660,19 @@
 			"portrait":	"art/villains/spartacus_00.png",
 			"anim":	["art/villains/spartacus_00.png", "art/villains/spartacus_01.png", "art/villains/spartacus_02.png", "art/villains/spartacus_03.png", "art/villains/spartacus_04.png", "art/villains/spartacus_05.png", "art/villains/spartacus_06.png", "art/villains/spartacus_07.png"],
 			"army":	[{
-					"troop":	"peasants",
+					"troop":	"coloni",
 					"count":	128
 				}, {
-					"troop":	"peasants",
+					"troop":	"coloni",
 					"count":	128
 				}, {
-					"troop":	"militia",
+					"troop":	"tirones",
 					"count":	43
 				}, {
-					"troop":	"militia",
+					"troop":	"tirones",
 					"count":	43
 				}, {
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	5
 				}]
 		}, {
@@ -4657,19 +4685,19 @@
 			"portrait":	"art/villains/brennus_00.png",
 			"anim":	["art/villains/brennus_00.png", "art/villains/brennus_01.png", "art/villains/brennus_02.png", "art/villains/brennus_03.png", "art/villains/brennus_04.png", "art/villains/brennus_05.png", "art/villains/brennus_06.png", "art/villains/brennus_07.png"],
 			"army":	[{
-					"troop":	"peasants",
+					"troop":	"coloni",
 					"count":	128
 				}, {
-					"troop":	"militia",
+					"troop":	"tirones",
 					"count":	51
 				}, {
-					"troop":	"dwarves",
+					"troop":	"ligures",
 					"count":	10
 				}, {
-					"troop":	"dwarves",
+					"troop":	"ligures",
 					"count":	10
 				}, {
-					"troop":	"druids",
+					"troop":	"druidae",
 					"count":	2
 				}]
 		}, {
@@ -4682,19 +4710,19 @@
 			"portrait":	"art/villains/pyrrhus_00.png",
 			"anim":	["art/villains/pyrrhus_00.png", "art/villains/pyrrhus_01.png", "art/villains/pyrrhus_02.png", "art/villains/pyrrhus_03.png", "art/villains/pyrrhus_04.png", "art/villains/pyrrhus_05.png", "art/villains/pyrrhus_06.png", "art/villains/pyrrhus_07.png"],
 			"army":	[{
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	26
 				}, {
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	26
 				}, {
-					"troop":	"archers",
+					"troop":	"velites",
 					"count":	17
 				}, {
-					"troop":	"militia",
+					"troop":	"tirones",
 					"count":	51
 				}, {
-					"troop":	"elephants",
+					"troop":	"elephanti",
 					"count":	2
 				}]
 		}, {
@@ -4707,19 +4735,19 @@
 			"portrait":	"art/villains/alaric_00.png",
 			"anim":	["art/villains/alaric_00.png", "art/villains/alaric_01.png", "art/villains/alaric_02.png", "art/villains/alaric_03.png", "art/villains/alaric_04.png", "art/villains/alaric_05.png", "art/villains/alaric_06.png", "art/villains/alaric_07.png"],
 			"army":	[{
-					"troop":	"peasants",
+					"troop":	"coloni",
 					"count":	171
 				}, {
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	26
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	3
 				}, {
-					"troop":	"skeletons",
+					"troop":	"larvae",
 					"count":	68
 				}, {
-					"troop":	"zombies",
+					"troop":	"lemures",
 					"count":	68
 				}]
 		}, {
@@ -4732,19 +4760,19 @@
 			"portrait":	"art/villains/attila_00.png",
 			"anim":	["art/villains/attila_00.png", "art/villains/attila_01.png", "art/villains/attila_02.png", "art/villains/attila_03.png", "art/villains/attila_04.png", "art/villains/attila_05.png", "art/villains/attila_06.png", "art/villains/attila_07.png"],
 			"army":	[{
-					"troop":	"nomads",
+					"troop":	"numidae",
 					"count":	34
 				}, {
-					"troop":	"nomads",
+					"troop":	"numidae",
 					"count":	34
 				}, {
 					"troop":	"sagittarii",
 					"count":	34
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	5
 				}, {
-					"troop":	"cavalry",
+					"troop":	"equites",
 					"count":	17
 				}]
 		}, {
@@ -4757,19 +4785,19 @@
 			"portrait":	"art/villains/boudica_00.png",
 			"anim":	["art/villains/boudica_00.png", "art/villains/boudica_01.png", "art/villains/boudica_02.png", "art/villains/boudica_03.png", "art/villains/boudica_04.png", "art/villains/boudica_05.png", "art/villains/boudica_06.png", "art/villains/boudica_07.png"],
 			"army":	[{
-					"troop":	"peasants",
+					"troop":	"coloni",
 					"count":	256
 				}, {
-					"troop":	"peasants",
+					"troop":	"coloni",
 					"count":	256
 				}, {
-					"troop":	"dwarves",
+					"troop":	"ligures",
 					"count":	34
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	13
 				}, {
-					"troop":	"druids",
+					"troop":	"druidae",
 					"count":	10
 				}]
 		}, {
@@ -4782,19 +4810,19 @@
 			"portrait":	"art/villains/civilis_00.png",
 			"anim":	["art/villains/civilis_00.png", "art/villains/civilis_01.png", "art/villains/civilis_02.png", "art/villains/civilis_03.png", "art/villains/civilis_04.png", "art/villains/civilis_05.png", "art/villains/civilis_06.png", "art/villains/civilis_07.png"],
 			"army":	[{
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	51
 				}, {
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	51
 				}, {
 					"troop":	"sagittarii",
 					"count":	34
 				}, {
-					"troop":	"cavalry",
+					"troop":	"equites",
 					"count":	34
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	13
 				}]
 		}, {
@@ -4807,19 +4835,19 @@
 			"portrait":	"art/villains/vercingetorix_00.png",
 			"anim":	["art/villains/vercingetorix_00.png", "art/villains/vercingetorix_01.png", "art/villains/vercingetorix_02.png", "art/villains/vercingetorix_03.png", "art/villains/vercingetorix_04.png", "art/villains/vercingetorix_05.png", "art/villains/vercingetorix_06.png", "art/villains/vercingetorix_07.png"],
 			"army":	[{
-					"troop":	"dwarves",
+					"troop":	"ligures",
 					"count":	51
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	21
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	21
 				}, {
-					"troop":	"cavalry",
+					"troop":	"equites",
 					"count":	51
 				}, {
-					"troop":	"druids",
+					"troop":	"druidae",
 					"count":	26
 				}]
 		}, {
@@ -4832,19 +4860,19 @@
 			"portrait":	"art/villains/arminius_00.png",
 			"anim":	["art/villains/arminius_00.png", "art/villains/arminius_01.png", "art/villains/arminius_02.png", "art/villains/arminius_03.png", "art/villains/arminius_04.png", "art/villains/arminius_05.png", "art/villains/arminius_06.png", "art/villains/arminius_07.png"],
 			"army":	[{
-					"troop":	"elves",
+					"troop":	"silvani",
 					"count":	51
 				}, {
-					"troop":	"elves",
+					"troop":	"silvani",
 					"count":	51
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	13
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	13
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	13
 				}]
 		}, {
@@ -4857,16 +4885,16 @@
 			"portrait":	"art/villains/tacfarinas_00.png",
 			"anim":	["art/villains/tacfarinas_00.png", "art/villains/tacfarinas_01.png", "art/villains/tacfarinas_02.png", "art/villains/tacfarinas_03.png", "art/villains/tacfarinas_04.png", "art/villains/tacfarinas_05.png", "art/villains/tacfarinas_06.png", "art/villains/tacfarinas_07.png"],
 			"army":	[{
-					"troop":	"nomads",
+					"troop":	"numidae",
 					"count":	60
 				}, {
-					"troop":	"nomads",
+					"troop":	"numidae",
 					"count":	60
 				}, {
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	51
 				}, {
-					"troop":	"archers",
+					"troop":	"velites",
 					"count":	43
 				}, {
 					"troop":	"sagittarii",
@@ -4882,19 +4910,19 @@
 			"portrait":	"art/villains/jugurtha_00.png",
 			"anim":	["art/villains/jugurtha_00.png", "art/villains/jugurtha_01.png", "art/villains/jugurtha_02.png", "art/villains/jugurtha_03.png", "art/villains/jugurtha_04.png", "art/villains/jugurtha_05.png", "art/villains/jugurtha_06.png", "art/villains/jugurtha_07.png"],
 			"army":	[{
-					"troop":	"nomads",
+					"troop":	"numidae",
 					"count":	68
 				}, {
-					"troop":	"nomads",
+					"troop":	"numidae",
 					"count":	68
 				}, {
-					"troop":	"nomads",
+					"troop":	"numidae",
 					"count":	68
 				}, {
-					"troop":	"cavalry",
+					"troop":	"equites",
 					"count":	43
 				}, {
-					"troop":	"elephants",
+					"troop":	"elephanti",
 					"count":	7
 				}]
 		}, {
@@ -4907,19 +4935,19 @@
 			"portrait":	"art/villains/gildo_00.png",
 			"anim":	["art/villains/gildo_00.png", "art/villains/gildo_01.png", "art/villains/gildo_02.png", "art/villains/gildo_03.png", "art/villains/gildo_04.png", "art/villains/gildo_05.png", "art/villains/gildo_06.png", "art/villains/gildo_07.png"],
 			"army":	[{
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	68
 				}, {
-					"troop":	"cavalry",
+					"troop":	"equites",
 					"count":	51
 				}, {
 					"troop":	"sagittarii",
 					"count":	51
 				}, {
-					"troop":	"nomads",
+					"troop":	"numidae",
 					"count":	60
 				}, {
-					"troop":	"archers",
+					"troop":	"velites",
 					"count":	43
 				}]
 		}, {
@@ -4932,19 +4960,19 @@
 			"portrait":	"art/villains/hannibal_00.png",
 			"anim":	["art/villains/hannibal_00.png", "art/villains/hannibal_01.png", "art/villains/hannibal_02.png", "art/villains/hannibal_03.png", "art/villains/hannibal_04.png", "art/villains/hannibal_05.png", "art/villains/hannibal_06.png", "art/villains/hannibal_07.png"],
 			"army":	[{
-					"troop":	"elephants",
+					"troop":	"elephanti",
 					"count":	17
 				}, {
-					"troop":	"nomads",
+					"troop":	"numidae",
 					"count":	77
 				}, {
-					"troop":	"orcs",
+					"troop":	"baleares",
 					"count":	128
 				}, {
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	68
 				}, {
-					"troop":	"cavalry",
+					"troop":	"equites",
 					"count":	51
 				}]
 		}, {
@@ -4957,19 +4985,19 @@
 			"portrait":	"art/villains/mithridates_00.png",
 			"anim":	["art/villains/mithridates_00.png", "art/villains/mithridates_01.png", "art/villains/mithridates_02.png", "art/villains/mithridates_03.png", "art/villains/mithridates_04.png", "art/villains/mithridates_05.png", "art/villains/mithridates_06.png", "art/villains/mithridates_07.png"],
 			"army":	[{
-					"troop":	"pikemen",
+					"troop":	"hastati",
 					"count":	86
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	86
 				}, {
-					"troop":	"cavalry",
+					"troop":	"equites",
 					"count":	128
 				}, {
 					"troop":	"sagittarii",
 					"count":	86
 				}, {
-					"troop":	"dragons",
+					"troop":	"dracones",
 					"count":	21
 				}]
 		}, {
@@ -4982,7 +5010,7 @@
 			"portrait":	"art/villains/zenobia_00.png",
 			"anim":	["art/villains/zenobia_00.png", "art/villains/zenobia_01.png", "art/villains/zenobia_02.png", "art/villains/zenobia_03.png", "art/villains/zenobia_04.png", "art/villains/zenobia_05.png", "art/villains/zenobia_06.png", "art/villains/zenobia_07.png"],
 			"army":	[{
-					"troop":	"cavalry",
+					"troop":	"equites",
 					"count":	214
 				}, {
 					"troop":	"ifrit",
@@ -4991,10 +5019,10 @@
 					"troop":	"sagittarii",
 					"count":	128
 				}, {
-					"troop":	"demons",
+					"troop":	"empusae",
 					"count":	51
 				}, {
-					"troop":	"vampires",
+					"troop":	"striges",
 					"count":	51
 				}]
 		}, {
@@ -5007,16 +5035,16 @@
 			"portrait":	"art/villains/shapur_00.png",
 			"anim":	["art/villains/shapur_00.png", "art/villains/shapur_01.png", "art/villains/shapur_02.png", "art/villains/shapur_03.png", "art/villains/shapur_04.png", "art/villains/shapur_05.png", "art/villains/shapur_06.png", "art/villains/shapur_07.png"],
 			"army":	[{
-					"troop":	"cavalry",
+					"troop":	"equites",
 					"count":	342
 				}, {
-					"troop":	"elephants",
+					"troop":	"elephanti",
 					"count":	68
 				}, {
 					"troop":	"sagittarii",
 					"count":	256
 				}, {
-					"troop":	"dragons",
+					"troop":	"dracones",
 					"count":	26
 				}, {
 					"troop":	"athanatoi",
@@ -5648,7 +5676,7 @@
 		"calm_max_stacks":	2,
 		"kind_chance_curve":	[[[60, 90, 94, 98, 101], [20, 70, 82, 95, 99], [10, 20, 35, 50, 90], [3, 6, 8, 10, 40]], null, null, null],
 		"tier_chance_curve":	[[60, 90, 98, 101], [20, 70, 95, 99], [10, 20, 50, 90], [3, 6, 10, 40]],
-		"tier_troop_pool":	[["peasants", "wolves", "archers", "nomads", "barbarians", "archmages"], ["sprites", "gnomes", "elves", "trolls", "druids"], ["orcs", "dwarves", "ogres", "giants", "dragons"], ["skeletons", "zombies", "ghosts", "vampires", "demons"]]
+		"tier_troop_pool":	[["coloni", "lupi", "velites", "numidae", "sarmatae", "furiae"], ["lares", "fauni", "silvani", "antaei", "druidae"], ["baleares", "ligures", "cyclopes", "gigantes", "dracones"], ["larvae", "lemures", "manes", "striges", "empusae"]]
 	},
 	"contract":	{
 		"cycle_length":	5,

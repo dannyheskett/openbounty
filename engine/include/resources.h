@@ -1425,6 +1425,14 @@ typedef struct {
     int         troops_count;
     TroopDef   *troops;
 
+    // The troop ids a pack has renamed, each to the id it now uses
+    // (game.json "troop_aliases", {"old": "new"}). A save written before
+    // the rename loads through them (SaveGameRead). Heap, both
+    // troop_alias_count entries; none when the pack lists no aliases.
+    int         troop_alias_count;
+    char      (*troop_alias_from)[RES_ID_LEN];
+    char      (*troop_alias_to)[RES_ID_LEN];
+
     int         spells_count;
     SpellDef   *spells;               // heap, spells_count entries
 
@@ -1595,6 +1603,9 @@ typedef struct {
         char scene_column_capital[RES_PATH_LEN];
         char scene_column_shaft[RES_PATH_LEN];
         char scene_column_base[RES_PATH_LEN];
+        // The troop drawn in the alcove's troop slot when the pack has no
+        // alcove_figure of its own ("alcove_troop"; "" = none).
+        char alcove_troop[RES_ID_LEN];
         char alcove_figure[RES_PATH_LEN];
         int  alcove_figure_animation_count;
         char (*alcove_figure_animation)[RES_PATH_LEN]; // heap
@@ -1834,5 +1845,9 @@ typedef struct {
 // tokens are left in place. Safe with NULL/empty `src`.
 void resources_format_template(char *out, int out_sz, const char *src,
                                const ResTemplateVar *vars, int nvars);
+
+// The id a renamed troop now has ("troop_aliases"), or NULL when `id` is
+// not one of the pack's old ids.
+const char *resources_troop_alias(const Resources *res, const char *id);
 
 #endif

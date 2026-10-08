@@ -51,7 +51,7 @@ TEST rome_lairs_rise_with_the_province(void) {
     }
     // The last province's window starts above the mid-catalog troops and
     // reaches the elephants.
-    int elephants = ok ? troop_index(r, "elephants") : -1;
+    int elephants = ok ? troop_index(r, "elephanti") : -1;
     int last_min = zones > 0 ? r->zones[zones - 1].salt.dwelling_range_min : -1;
     int last_max = zones > 0 ? r->zones[zones - 1].salt.dwelling_range_max : -1;
     if (r) resources_free(r);

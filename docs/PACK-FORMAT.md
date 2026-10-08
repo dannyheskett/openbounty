@@ -39,7 +39,8 @@ All paths have been relative to the pack root. ✱ marks what a playable pack
 has supplied. The loader itself has refused only a manifest it cannot open or
 parse, a missing `render.mode`, a `font` block without a file or with a size
 outside 6..64, a tile size or buffer it cannot lay out, a villain with an
-invalid index (§2.9), a bad `tuning.temp_death`, missing string keys (§5,
+invalid index (§2.9), a bad `tuning.temp_death`, a bad `troop_aliases`
+entry, missing string keys (§5,
 counting the four required `world` strings of §2.5) and a malformed
 Introduction script (§2.4); any other absent block has parsed as empty or as
 its defaults.
@@ -64,6 +65,7 @@ its defaults.
 | `sprites`     | object ✱ | Texture-atlas paths (see §4). |
 | `tile_codes`  | object ✱ | Map-character → terrain mapping (§4.2). |
 | `troops`      | array  ✱ | Troop catalog. Each: `index` (§2.9), `id`, `name`, `sprite`, `portrait` (modern still, optional), `anim` (frames, §4.1), `skill_level`, `hit_points`, `move_rate`, `melee` `[min, max]`, `ranged` `[min, max, ammo]`, `recruit_cost`, `spoils_factor`, `abilities` (a `\|`-joined mask of `FLY`, `REGEN`, `MAGIC`, `IMMUNE`, `ABSORB`, `LEECH`, `SCYTHE`, `UNDEAD`), `dwelling` (singular: `plains`, `forest`, `hill`, `dungeon` or `castle`; a `castle` troop has been recruited only at the home castle and never hosted a salted dwelling), `max_population`, `growth_per_week`, `morale_group` (`A`..`E`, default `A`), `tier_counts` (up to four ints, one foe-garrison count per continent tier). OPENBOUNTY-SPEC §13. |
+| `troop_aliases` | object | Troop ids the pack has renamed: `{"old id": "new id", ...}`. A save written before the rename has loaded with every troop under its new id. Each new id has had to be a troop the pack defines, and no old id may still be one; either fault has refused the pack. Absent, none. |
 | `spells`      | array  ✱ | Spell catalog. Each: `index` (§2.9), `id`, `name`, `cost`, `kind` (`adventure`; any other value or none has meant `combat`), optional `description` (the modern spell pages' fallback when `spell_lore` / `spell_brief` lack the id). Combat spells have been bound by position and adventure spells by id (§2.9). OPENBOUNTY-SPEC §19. |
 | `artifacts`   | array  ✱ | Artifact catalog. Each: `index` (§2.9), `id`, `name`, `icon`, `power` (`increased_damage`, `quarter_protection`, `double_leadership`, `increase_commission`, `double_spell_power`, `double_max_spells`, `cheaper_boat_rental`; any other string has had no effect), `effect` (its one-line description), `puzzle_cell` (default -1), and its placement `zone` and `local_idx` (0 or 1, default 0). OPENBOUNTY-SPEC §20. |
 | `villains`    | array  ✱ | Villain catalog. Each: `index` (required, §2.9), `id`, `name`, `portrait`, optional `anim` (frames; absent, `<portrait-stem>_00..03`), `zone`, `reward`, `puzzle_cell`, `army` (entries of `troop` and `count`, the castle garrison). OPENBOUNTY-SPEC §21. |
@@ -428,7 +430,9 @@ borrowed as described:
   `alcove_figure_frame_ms` (a number; 0 = the screen's tick),
   `alcove_figure_place` (`x`, `y`, `w`, `h` in the backdrop's 240x102
   units), `alcove_portrait`: the temple and its keeper (absent, the hill
-  cave's backdrop and the `gnomes` troop in the troop slot).
+  cave's backdrop and the `alcove_troop` in the troop slot).
+- `alcove_troop`: the troop id drawn in the alcove's troop slot when the pack
+  has no `alcove_figure` (absent, none; `kings-bounty` has named `gnomes`).
 - `ending_win`, `ending_lose`: the ending pictures.
 - `siege_back_wall`, `siege_back_wall_left`, `siege_back_wall_right`,
   `siege_grid`, `field_grid`, `combat_ground` (`field` or `terrain`): the

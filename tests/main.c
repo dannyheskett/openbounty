@@ -93,6 +93,7 @@ SUITE_EXTERN(e2e_goto_walk_suite);
 SUITE_EXTERN(e2e_score_suite);
 SUITE_EXTERN(e2e_combat_input_suite);
 SUITE_EXTERN(e2e_save_suite);
+SUITE_EXTERN(e2e_rome_troop_ids_suite);
 SUITE_EXTERN(e2e_save_more_suite);
 SUITE_EXTERN(e2e_no_limits_suite);
 
@@ -181,6 +182,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(e2e_score_suite);
     RUN_SUITE(e2e_combat_input_suite);
     RUN_SUITE(e2e_save_suite);
+    RUN_SUITE(e2e_rome_troop_ids_suite);
     RUN_SUITE(e2e_save_more_suite);
     RUN_SUITE(e2e_no_limits_suite);
 
