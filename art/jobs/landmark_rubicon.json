@@ -1,0 +1,18 @@
+{
+ "id": "landmark_rubicon",
+ "prompt": "an isolated cut-out game sprite of a Roman boundary stone, a short carved stone pillar beside a small stone altar with a thin wisp of smoke, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
+ "style": "rd_pro__topdown",
+ "width": 96,
+ "height": 96,
+ "seed": 9300,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_note": "#63 event landmark: drawn on the vista's trigger tile over its ground, as the Temple of Ocean and the Pharos are. The map-object route the towns and dwellings use."
+}

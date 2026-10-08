@@ -1,0 +1,18 @@
+{
+ "id": "italia_tree_02",
+ "prompt": "an isolated cut-out game sprite of a single broad round chestnut tree with a lush mid green crown and a short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
+ "style": "rd_pro__topdown",
+ "width": 96,
+ "height": 96,
+ "seed": 9502,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_note": "#63 plan step 3: Italia's forest tree sprites (it kept none), so its forest can be built as a lattice with soft edges like the other sets. Kept in art/primitives/italia/trees."
+}

@@ -12,3 +12,6 @@ sea_turquoise, river_mud, river_teal.
 
 A surface whose colour has been close to the grass has collapsed into the grass in a chained
 set: word it in a colour far from the grass and check the plain tiles' mean colours.
+
+Mountain edges (#63): `zone` passes --ragged 6,20,34 to the mountain lattice, so a range's open sides end
+raggedly; the plain mountain tile is unchanged and seamcheck stays 0.

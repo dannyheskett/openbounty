@@ -574,7 +574,13 @@ been baked into the `.dat` when the map has been authored.
 Italia has been drawn by hand as a source grid, `art/maps/italia.txt` -- one
 character per tile: `~` sea, `.` grass, `,` grass variant, `f` forest, `^`
 mountain, `d` desert; overlays `r` / `R` / `M` river on grass / in forest / in
-mountains, `=` road, `H` bridge. `tools/mapbuild.py build` has baked it into
+mountains, `=` road, `H` bridge; `p` / `w` ploughed and wheat fields (grass
+to the engine, soft-edged into the grass round them); `P T S O K G` the
+vistas' landmarks on grass (the Pharos, the ocean temple, the Sibyl's cave,
+the Oppidum's gate, the Tophet's stelae, the Gordian cart); and the
+settlement set pieces (#63): `n` a farmhouse, `e` a well, `h` a shrine, `u` a
+ruin, solid on grass (`blocks_foot`), and `j` a jetty, a sea cell off one
+straight grass shore drawn as `dock_<side>` over that shore's water edge. `tools/mapbuild.py build` has baked it into
 `maps/italia.dat`: the edge variants (REQ-229a/e), the river and road pieces
 by their links, the mouths, the bridges. The `.dat` has never been edited by
 hand; the source has, and `scripts/check_maps.sh` has failed any `.dat` that
@@ -589,15 +595,29 @@ sides, a river ending in open ground, a forest- or mountain-banked river
 beside another terrain, and a sea tile whose different diagonal no water
 variant shows; `--strict`, which `scripts/check_maps.sh` has used, has made
 those errors. A land tile's corner no variant shows has been counted only.
-Forest and desert meeting the sea have kept their own ground to the coast,
-the sea's edge drawing the one shore line (a sand one, `water_sand_edge_NN`,
-where every land beside it has been desert); rock has kept its grass fringe,
-since cut square at the water a crag has read as a wall. The builder has
-scattered the feature tiles (flowers, shrubs and boulders on grass, wheat
-beside towns, boulders and scrub on sand) from a seed per zone, about one
-plain cell in fourteen of grass and sixteen of sand, three cells apart, never
-under an object nor beside a town, castle or event; they have been scenery,
-the ground's own terrain to the engine.
+Desert meeting the sea has kept its own ground to the coast, the sea's edge
+drawing the shore line as sand (`water_sand_edge_NN`, where every land beside
+it has been desert); forest and rock have kept their grass fringe, since
+drawn solid to the water they stop in a straight line at the tile's edge.
+`tools/maplint.py`, run by `scripts/check_maps.sh`, has failed any terrain
+shape the edge pieces draw badly, in the source or the built `.dat` -- a
+one-cell stair step, a strand in no 2x2 block, a cut corner, two masses side
+by side, a mass at the sea or within two cells of the world's edge outside the
+zone's intended coasts and edges (`art/maps/<zone>_lint_intended.json`, each
+with its reason; a field never; its `shape` list names the few other shapes
+the hero's reach depends on) -- beyond the findings still to clear in
+`art/maps/<zone>_lint_allow.json`, whose count has only fallen, and any change
+in the hero's reach from `art/maps/<zone>_reach.json`.
+
+The shell (modern) has drawn four cosmetic layers over the baked tiles,
+picked per cell so a map has looked the same every time (#63; the art from
+`romeart.py fills`, `aprons`, `details`, ART-PIPELINE): an inner-corner fill
+where a grass or sand cell has had a wood or range on two adjacent sides; an
+apron of stray trees or loose rocks along a wood's or range's side; now and
+then a bush or a stone on open ground; and every object, set piece and
+landmark drawn again on top. `tools/maprender.py --tiles` has drawn the
+same, and so has been the picture to review a map by. None of them has
+changed what a cell is.
 
 `tools/mapbuild.py place` has scattered the zone's chests and wandering
 armies from a fixed seed inside the region boxes in
@@ -622,11 +642,12 @@ shut, then with them bridged.
 **The two coves** (#66), which have given sailing a purpose on the
 peninsula itself. Two pockets on the Adriatic coast have been reachable only
 from the water, rented at Ancona's harbour: a winding channel into the
-Apennine cliffs east of the spine (in at column 43 of row 52, three cells
-west, two south, two west), whose last chamber has held the pinned Sibylline
-Fragment, and a winding grass path inside a ring of wood on the headland
-south of it (in at column 51 of row 58, four west, two south, two east),
-ending in a fixed chest. Only the entry cell of each has touched the sea, so
+Apennine cliffs east of the spine (in at column 42 of row 52, two cells west,
+one south, one south-west), whose last chamber, (39,54), has held the pinned
+Sibylline Fragment, and a grass
+path inside a ring of rock on the headland south of it (in at column 50 of
+row 58, two west, one south-west, one south), ending in a fixed chest at
+(47,60). Only the entry cell of each has touched the sea, so
 a boat has landed there and nowhere else along the channel; `check` has
 shown both ends unreachable on foot and reachable by boat, with every town
 and castle reached as before. A sign beside Ancona's harbour has said the

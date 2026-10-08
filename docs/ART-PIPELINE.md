@@ -215,21 +215,83 @@ generated from.
   the mask resized to the pack tile and filled with the new bases, so every
   edge has seamed with its neighbours by construction. Re-run it whenever a
   base changes; with a tile-set argument it has written a zone's folder.
-- **Feature tiles** (`grass_flowers`, `grass_boulders`, `grass_shrubs`,
-  `grass_wheat`, `desert_boulders`, `desert_scrub`, #63) — five feature
-  sprites from `rd_pro__topdown` at 96x96 with `remove_bg` and the magenta
-  background named (`art/jobs/feature_*.json`; the wheat and scrub runs kept
-  some magenta, keyed out to `02_keyed.png`), then `tools/romeart.py
-  features` has scaled each down inside a 12 px margin, alpha binary, onto
-  every set's own grass or desert. The tile's edges have stayed plain ground,
-  so a feature tile has joined anything its plain tile joins.
+- **Mountain edges end raggedly** (#63) — `romeart.py lattice --ragged S,A,B`:
+  on a mountain edge piece the rocks within A or B px of an open side
+  (alternately) are taken out and the middle edge crag left out, so a range
+  ends in an uneven outline instead of a straight line; strips and spits keep
+  their rows, straddlers keep their places (seamcheck 0), the plain tile is
+  unchanged. Forest edges are left as they were: thinned the same way, a wood
+  came out crenellated.
+- **Mountain edges set back and shadowed** (#63, plan step 3) — `--ragged
+  S,A,B,T,U`: the west and east edge crags set back T px (the top one) and U px
+  (the bottom one) from the open line, so a range's side steps in and out
+  (zone sets 12 and 28, Italia 0 and 28); and `compose`'s layout key
+  `"shadow": [dx, dy, alpha]` (`MOUNTAIN_SHADOW`, 2, 3, 0.35) lays a soft
+  contact shadow under an edge piece's sprites, faded to nothing within 4 px
+  of every tile line so it never makes a seam, and never on the plain tile, so
+  what is built from it still matches. `zone` builds both, and the mountain-
+  and forest-on-sand pieces (`<terrain>_sand_edge_NN`) as the same lattice over
+  the set's desert.
+- **Irrigated fields** (#63, plan step 5) — Africa's and Oriens' farmland
+  is a green irrigated field: `art/jobs/fields_africa_irrigated.json`
+  (`rd_tile__single_tile`, 48 px, run 2, doubled to 96) installed as each of
+  the two sets' `fields_wheat`, so the map's `w` code draws it with no new
+  tile code; its soft edges built with `romeart.py edges <pack> <set> --as
+  fields_wheat=desert`. Oriens' own job read as dark grass on its bright
+  grass and was not installed.
+- **Italia's forest from sprites** (#63) — eight Retro Diffusion trees
+  (`art/jobs/italia_tree_*.json`), colour-matched to the old forest and kept in
+  `art/primitives/italia/trees`; the forest is a lattice of one of them like
+  the other sets' (`art/primitives/italia/BUILD.md`).
+- **Inner-corner fills** (#63) — `romeart.py fills`: where a grass or sand
+  cell has a wood or range on two adjacent sides, the shell (modern) and
+  `maprender` have drawn `<terrain>[_sand]_fill_<ne|nw|se|sw>` into the
+  corner: the set's own lattice sprites continued into the cell, on a 288 px
+  canvas with the cell in the middle, so a concave corner has rounded off and
+  a staircase has read as a slope. Italia's forest, whose sprites are not
+  kept, has taken its island piece's clump.
+- **Interior variants** (#63) — `romeart.py interiors`: `forest_v1/v2` and
+  `mountain_v1/v2` per set, the plain tile's straddlers kept and its inner
+  sprites flipped or nudged, listed as the code's `variants` so a mass has
+  stopped repeating one arrangement.
+- **Mountain side variants** (#63) — `romeart.py edgevars`:
+  `mountain_edge_09/10_v1/_v2` per set, listed as those codes' `variants`, so
+  a long west or east side of a range stops repeating one tile: as the
+  interiors, every rock straddling the tile's lines kept, the rocks inside it
+  flipped and nudged and one in three near the open side left out.
+- **Aprons** (#63) — `romeart.py aprons`: a plain grass or sand cell beside a
+  wood or range has drawn, for that side, one of three
+  `<forest|mountain>_apron_<n|e|s|w>_<1..3>` or none (picked per cell by
+  `tilevar_pick` with seed `0xA960` + side, five ways, 1-3 drawn), so a
+  straight side has stopped reading as a cut-out line: one or two of the
+  set's own whole sprites (rocks not drawn to their frame edge; only the trees
+  the plain wood is made of) at full size, straddling the shared line, most of
+  each on the grass. Same 288 px canvas as the fills, drawn before them; every
+  object, set piece and landmark has been drawn again on top so none is
+  hidden. Roads, rivers, fields and pieces have drawn none. Thinning the edge
+  pieces' own west and east sides could not do it: their outer column is
+  rocks straddling the tile lines, which the neighbours draw too.
+- **Small detail** (#63) — `romeart.py details`: `detail_<1..4>` per set, a
+  bush, two bushes, a stone, two stones (the set's own whole sprites at about
+  half size, only the trees its woods are made of; Italia's bush from its
+  island clump), drawn by the shell and
+  `maprender` on about one plain grass or sand cell in twelve with no wood,
+  range or sea beside it (`tilevar_pick` seed `0xD7A1`, 48 ways, 1-4 drawn).
+  Cosmetic: the cell stays walkable grass.
+- **Settlement set pieces** (#63) — `art/jobs/piece_{dock,farmstead,ruin,shrine,well}.json`
+  (`rd_pro__topdown`, 96 px): a farmhouse, a ruin, a shrine and a well stand
+  on grass as solid tiles (`blocks_foot`, map chars `n u h e`); the jetty
+  (`j`) is sea off a straight grass shore, `dock_<n|e|s|w>` drawn over that
+  side's `water_edge` piece (the keyed deck set 6 px from the land side).
+  Placed round towns and castles and along roads, each kept only where the
+  build, `maplint` and the reach baseline all pass.
 - **Sand shores** (`water_sand_edge_NN`, #63) — not generated. Each zone
   set's `water_edge_NN` has been read pixel by pixel as sea or shore (nearest
   to the set's water or grass colours), and the shore part filled with the
   set's desert, so a sea whose coast is all sand has drawn a sand shore line
-  instead of a grass one. `tools/mapbuild.py build` has picked them; forest
-  and sand meeting the sea have kept their own ground to the coast, and rock
-  its grass fringe.
+  instead of a grass one. `tools/mapbuild.py build` has picked them; sand
+  meeting the sea has kept its own ground to the coast, and forest and rock
+  their grass fringe.
 - **Villain portraits** (`art/villains/<name>_00..07.png`) — villains have
   not been sprites: they have been opaque head-and-shoulders portraits drawn
   as faces in the contract view, the HUD contract chip and the puzzle grid.

@@ -1,0 +1,92 @@
+{
+ "coast": [
+  {
+   "box": [
+    11,
+    0,
+    24,
+    11
+   ],
+   "reason": "the rock ring of Hadrian's pocket on Britannia's north coast"
+  },
+  {
+   "box": [
+    43,
+    3,
+    63,
+    18
+   ],
+   "reason": "the wooded coast of Germania's north shore"
+  },
+  {
+   "box": [
+    52,
+    38,
+    63,
+    41
+   ],
+   "reason": "the Alps coming down to the Ligurian shore"
+  },
+  {
+   "box": [
+    5,
+    25,
+    16,
+    35
+   ],
+   "reason": "Sein, #222's sealed rock islet off Armorica, opened only by its vista's causeway"
+  },
+  {
+   "box": [
+    17,
+    42,
+    25,
+    43
+   ],
+   "reason": "the two rock heads walling the bridge-only pocket under the Pyrenees (two chests reached only by bridging the river): pulled back from the sea, the pocket opens"
+  }
+ ],
+ "edge": [
+  {
+   "box": [
+    11,
+    0,
+    24,
+    1
+   ],
+   "reason": "Hadrian's pocket on the map's north edge"
+  },
+  {
+   "box": [
+    62,
+    12,
+    63,
+    14
+   ],
+   "reason": "the Germanic forest running off the map's east edge"
+  },
+  {
+   "box": [
+    62,
+    32,
+    63,
+    39
+   ],
+   "reason": "the Alps running off the map's east edge"
+  }
+ ],
+ "shape": [
+  {
+   "box": [
+    12,
+    7,
+    13,
+    8
+   ],
+   "rules": [
+    "step"
+   ],
+   "reason": "the west wall of Hadrian's pocket where it meets the sea: every other outline needs a water edge piece the pack does not ship"
+  }
+ ]
+}

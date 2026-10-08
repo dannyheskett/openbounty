@@ -1,0 +1,56 @@
+{
+ "castle castle_oriens_1 (Antiochia)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_oriens_2 (Artaxata)": [
+  "NO",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_oriens_3 (Ctesiphon)": [
+  "NO",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_oriens_4 (Palmyra)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "the Augur": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town damascus": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town ephesus": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town nicomedia": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town tarsus": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ]
+}

@@ -120,6 +120,10 @@ def render_flat(rows, w, h, codes, scale):
     return img
 
 
+APRON_SEED = 0xA960       # src/map_render.c APRON_SEED: which apron a cell draws
+DETAIL_SEED = 0xD7A1      # src/map_render.c DETAIL_SEED: which open cells draw a detail
+
+
 def tilevar_pick(seed, x, y, n):
     """src/tilevar.c tilevar_pick, in 32-bit unsigned arithmetic."""
     if n <= 1:
@@ -192,6 +196,89 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_ar
             t = cache[art]
             if t is not None:
                 img.paste(t, (px, py), t)
+    def ter(x, y):
+        if 0 <= x < w and 0 <= y < h:
+            return codes.get(rows[y][x], {}).get("terrain", "grass")
+        return None
+
+    def overlay(name, x, y):
+        if name not in cache:
+            own = tile_set and (not set_arts or name in set_arts)
+            p = os.path.join(pack_dir, "art", "tiles", tile_set if own else "", name + ".png")
+            cache[name] = Image.open(p).convert("RGBA") if os.path.exists(p) else None
+        if cache[name] is not None:
+            f_ = cache[name]
+            if f_.width != TW * 3:
+                f_ = cache[name] = f_.resize((TW * 3, TH * 3), Image.NEAREST)
+            img.paste(f_, ((x - x0 - 1) * TW, (y - y0 - 1) * TH), f_)
+    # Small detail (#63), as src/map_render.c draw_details: one plain grass
+    # or sand cell in twelve with no wood, range or sea beside it.
+    def open_ground(x, y):
+        if not (0 <= x < w and 0 <= y < h):
+            return False
+        c = codes.get(rows[y][x], {})
+        return c.get("terrain") in ("grass", "desert") and c.get("art", "").startswith(("grass", "desert"))
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            v = tilevar_pick(DETAIL_SEED, x, y, 48)
+            if 1 <= v <= 4 and open_ground(x, y) and all(
+                    ter(x + dx, y + dy) not in ("forest", "mountain", "water")
+                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                name = f"detail_{v}"
+                if name not in cache:
+                    own = tile_set and (not set_arts or name in set_arts)
+                    p = os.path.join(pack_dir, "art", "tiles", tile_set if own else "", name + ".png")
+                    cache[name] = Image.open(p).convert("RGBA") if os.path.exists(p) else None
+                if cache[name] is not None:
+                    t = cache[name]
+                    if t.width != TW:
+                        t = cache[name] = t.resize((TW, TH), Image.NEAREST)
+                    img.paste(t, ((x - x0) * TW, (y - y0) * TH), t)
+    # Aprons (#63), as src/map_render.c draw_aprons: a plain grass or sand
+    # cell beside a wood or range gets one of that side's three aprons, or none.
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            art = codes.get(rows[y][x], {}).get("art", "")
+            if ter(x, y) not in ("grass", "desert") or not art.startswith(("grass", "desert")):
+                continue
+            for k, (side, (dx, dy)) in enumerate((("n", (0, -1)), ("e", (1, 0)), ("s", (0, 1)), ("w", (-1, 0)))):
+                a = ter(x + dx, y + dy)
+                if a not in ("forest", "mountain"):
+                    continue
+                v = tilevar_pick(APRON_SEED + k, x, y, 5)     # 0 and 4: none
+                if 1 <= v <= 3:
+                    overlay(f"{a}_apron_{side}_{v}", x, y)
+    # Inner-corner fills (#63), as src/map_render.c draws them: a grass or
+    # sand cell with a wood or range on two adjacent sides gets that
+    # terrain's fill in the corner between them.
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            here = ter(x, y)
+            if here not in ("grass", "desert"):
+                continue
+            for corner, (dx, dy) in (("ne", (1, -1)), ("nw", (-1, -1)), ("se", (1, 1)), ("sw", (-1, 1))):
+                a, b = ter(x + dx, y), ter(x, y + dy)
+                if a != b or a not in ("forest", "mountain"):
+                    continue
+                fam = "_sand" if here == "desert" else ""
+                name = f"{a}{fam}_fill_{corner}"
+                if name not in cache:
+                    own = tile_set and (not set_arts or name in set_arts)
+                    p = os.path.join(pack_dir, "art", "tiles", tile_set if own else "", name + ".png")
+                    cache[name] = Image.open(p).convert("RGBA") if os.path.exists(p) else None
+                if cache[name] is not None:
+                    f_ = cache[name]
+                    if f_.width != TW * 3:
+                        f_ = cache[name] = f_.resize((TW * 3, TH * 3), Image.NEAREST)
+                    img.paste(f_, ((x - x0 - 1) * TW, (y - y0 - 1) * TH), f_)
+    # an apron or fill may lean onto the cells round it: every landmark and set
+    # piece (a code over its own ground) is drawn again on top, as the shell does
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            c = codes.get(rows[y][x], {})
+            if c.get("ground") and cache.get(vary(c["art"], x, y)) is not None:
+                t = cache[vary(c["art"], x, y)]
+                img.paste(t, ((x - x0) * TW, (y - y0) * TH), t)
     return img
 
 

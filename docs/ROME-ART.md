@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-424 jobs. A job with a **Pack path** has produced that file in the pack; a
+444 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1128,6 +1128,18 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a small square plot of ripe golden wheat seen from directly above, neat parallel rows of grain, a thin border of brown earth around the plot, flat magenta background around the plot, solid magenta background
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=8814`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
 
+### fields_africa_irrigated
+
+- **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3611)
+- **prompt:** seamless tileable crop field seen from directly above, straight parallel rows of bright green barley running left to right with thin straight brown irrigation ditches between them, flat even lighting, low contrast, the same everywhere
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3611`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
+
+### fields_oriens_irrigated
+
+- **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3612)
+- **prompt:** seamless tileable crop field seen from directly above, straight parallel rows of fresh light green wheat running left to right with thin straight brown irrigation ditches between them, flat even lighting, low contrast, the same everywhere
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3612`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
+
 ### forest_native_block
 
 - **Engine:** Retro Diffusion rd_plus__topdown_map (192x136, seed 8971)
@@ -1158,6 +1170,84 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** muted moss green grass seen from directly above, dull and slightly grey, with a few darker scrub tufts scattered through it, low contrast, the same everywhere
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3421`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
 
+### italia_tree_00
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9500)
+- **prompt:** an isolated cut-out game sprite of a single holm oak with a dense round dark green crown and a short brown trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9500`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_01
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9501)
+- **prompt:** an isolated cut-out game sprite of a single round leafy oak with a full rich green crown and a short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9501`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_02
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9502)
+- **prompt:** an isolated cut-out game sprite of a single broad round chestnut tree with a lush mid green crown and a short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9502`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_03
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9503)
+- **prompt:** an isolated cut-out game sprite of a single small round young oak with a compact bright green crown and a thin trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9503`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_04
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9604)
+- **prompt:** an isolated cut-out game sprite of a single old wide oak with a broad dark green crown and a thick short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9604`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_05
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9505)
+- **prompt:** an isolated cut-out game sprite of a single round beech with a soft light green crown and a short grey trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9505`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_06
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9506)
+- **prompt:** an isolated cut-out game sprite of a single bushy round tree with a dense deep green crown and a short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9506`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_07
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9507)
+- **prompt:** an isolated cut-out game sprite of a single low round shrubby tree with a small full green crown and a short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9507`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### landmark_gordian
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9304)
+- **prompt:** an isolated cut-out game sprite of an old wooden ox cart with its yoke tied to a post by a huge tangled knot of rope, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9304`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### landmark_oppidum
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9302)
+- **prompt:** an isolated cut-out game sprite of a Gaulish hill-fort gate, a tall wooden gateway of logs with a timber walkway on top, closed, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9302`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### landmark_rubicon
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9300)
+- **prompt:** an isolated cut-out game sprite of a Roman boundary stone, a short carved stone pillar beside a small stone altar with a thin wisp of smoke, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9300`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### landmark_sibyl
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9301)
+- **prompt:** an isolated cut-out game sprite of a cave mouth in a small grey limestone outcrop, a dark arched opening with an oil lamp burning beside it, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9301`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### landmark_tophet
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9303)
+- **prompt:** an isolated cut-out game sprite of a small cluster of carved Punic stone stelae with rounded tops, of different heights, standing together, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9303`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
 ### obstacle_01
 
 - **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 8301)
@@ -1178,6 +1268,36 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/combat/obstacle_03.png`
 - **prompt:** an isolated cut-out game sprite of a short stub of ruined grey stone wall, a few brick courses standing with a jagged broken top and rubble at its foot, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=8321`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### piece_dock
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9400)
+- **prompt:** an isolated cut-out game sprite of a small wooden jetty, weathered planks on posts with a coil of rope and a mooring post, short and square, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9400`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### piece_farmstead
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9411)
+- **prompt:** an isolated cut-out game sprite of one single small Roman farmhouse: one whitewashed cottage with a red tiled roof and a small haystack leaning on its side, one building only, compact and chunky, the same size and scale as a stone well, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9411`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### piece_ruin
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9402)
+- **prompt:** an isolated cut-out game sprite of a ruined Roman villa corner, two broken white stone walls and a fallen column drum, weeds in the cracks, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9402`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### piece_shrine
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9403)
+- **prompt:** an isolated cut-out game sprite of a small roadside Roman shrine, a little stone niche on a plinth with a statuette and an offering bowl, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9403`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### piece_well
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9404)
+- **prompt:** an isolated cut-out game sprite of a round stone village well with a wooden crossbeam, a rope and a bucket, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9404`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
 
 ### roads32
 

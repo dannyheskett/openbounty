@@ -28,3 +28,6 @@ What `zone` has done with them, in order:
 
 Galliae has had no desert, so the desert names have fallen back to the master set. The *_teal,
 grass_deep and trees_green folders have been runs the build has not used.
+
+Mountain edges (#63): `zone` passes --ragged 6,20,34 to the mountain lattice, so a range's open sides end
+raggedly; the plain mountain tile is unchanged and seamcheck stays 0.

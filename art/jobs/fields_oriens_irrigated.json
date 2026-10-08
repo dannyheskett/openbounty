@@ -1,0 +1,17 @@
+{
+ "id": "fields_oriens_irrigated",
+ "prompt": "seamless tileable crop field seen from directly above, straight parallel rows of fresh light green wheat running left to right with thin straight brown irrigation ditches between them, flat even lighting, low contrast, the same everywhere",
+ "style": "rd_tile__single_tile",
+ "width": 48,
+ "height": 48,
+ "seed": 3612,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "bypass_prompt_expansion": true,
+ "_note": "#63 plan step 5: oriens's farmland is irrigated green fields, installed as the set's fields_wheat (2x2 of the 48 tile), its edges built with romeart.py edges --as fields_wheat=desert. Not installed: both runs read as dark grass on Oriens' bright grass; Oriens uses Africa's run 2 tile (fields_africa_irrigated).",
+ "_review_rule": "Judge as a 4x4 field of the 96 tile at 1:1 beside the set's grass."
+}

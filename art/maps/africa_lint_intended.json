@@ -1,0 +1,33 @@
+{
+ "coast": [
+  {
+   "box": [
+    0,
+    6,
+    5,
+    9
+   ],
+   "reason": "the Atlas meeting the sea at the Mulucha's mouth, the guardian's pass"
+  }
+ ],
+ "edge": [
+  {
+   "box": [
+    0,
+    6,
+    1,
+    14
+   ],
+   "reason": "the Atlas running off the map's west edge"
+  },
+  {
+   "box": [
+    42,
+    22,
+    56,
+    27
+   ],
+   "reason": "the desert rock walls of the southern chest pocket, against the map's south edge"
+  }
+ ]
+}

@@ -1,0 +1,134 @@
+{
+ "castle castle_italia_1 (Roma)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_italia_10 (Brundisium)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_italia_2 (Capua)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_italia_3 (Neapolis)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_italia_4 (Beneventum)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_italia_5 (Tarentum)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_italia_6 (Rhegium)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_italia_7 (Ariminum)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_italia_8 (Verona)": [
+  "NO",
+  "NO",
+  "yes",
+  "yes"
+ ],
+ "castle castle_italia_9 (Genua)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "the Augur": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town ancona": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town croton": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town cumae": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town mediolanum": [
+  "NO",
+  "NO",
+  "yes",
+  "yes"
+ ],
+ "town olbia": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town ostia": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town pisae": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town puteoli": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town ravenna": [
+  "NO",
+  "NO",
+  "yes",
+  "yes"
+ ],
+ "town roma": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town tarracina": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ]
+}

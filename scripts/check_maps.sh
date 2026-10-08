@@ -4,7 +4,13 @@
 #     hand-drawn source (art/maps/<zone>.txt), so nobody edits a .dat by hand
 #     and a builder change that would alter a map shows up here;
 #   - tools/mapbuild.py check (objects on walkable ground, docks, reach);
-#   - tools/mapcheck.py (one sea, no occupied pockets, the object budget).
+#   - tools/mapcheck.py (one sea, no occupied pockets, the object budget);
+#   - tools/maplint.py: no terrain shape the edge art draws badly (steps,
+#     strands, cut corners, masses side by side, masses at the sea or the
+#     world's edge outside the zone's intended coasts and edges), in the
+#     source or the built .dat, beyond the findings still to clear in the
+#     zone's baseline, and the hero's reach exactly as recorded in
+#     art/maps/<zone>_reach.json.
 # Exits non-zero on the first failure.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -27,5 +33,9 @@ while read -r zone map size; do
     echo "ok:   $zone builds from $src"
   fi
   python3 tools/mapbuild.py check "$PACK" "$zone" "$PACK/$map" | tail -1
+  if [ -f "art/maps/$zone.txt" ]; then
+    python3 tools/maplint.py "$PACK" "$zone" > "$tmp/lint.log" || { cat "$tmp/lint.log"; exit 1; }
+    head -1 "$tmp/lint.log"
+  fi
   python3 tools/mapcheck.py "$PACK" "$PACK/$map" "$size" "$zone" | tail -1
 done < "$tmp/zones.txt"

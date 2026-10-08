@@ -16,7 +16,7 @@
     grass <set> <out> ...  the base grass and its variants
     stitch <set> <terrain> <out>      a PixelLab corner set into 96 px tiles
     edges [pack] [tile-set]           the terrain edges over that set's bases
-    features [pack]                   the feature tiles: sprites on each set's ground
+    fills [pack]                      inner-corner fills for woods and ranges
     lattice <out.json> --sprites ...  a forest/mountain layout (border contract)
     seamcheck <layout.json>           check a layout against that contract
     compose <layout.json> <out>       the layout's tiles, sprites over ground
@@ -202,15 +202,20 @@ new T base where it is terrain and the new grass base elsewhere, so the
 edges seam with their bases by construction (ART-PIPELINE, terrain edges;
 OPENBOUNTY-SPEC REQ-229). No generation.
 
-    python3 tools/romeart.py edges [pack-dir] [tile-set]
+    python3 tools/romeart.py edges [pack-dir] [tile-set] [--as <art>=<terrain> ...]
 
 Default pack assets/glory-of-rome; with a tile set the bases are read from
-and the edges written to art/tiles/<set>/.
+and the edges written to art/tiles/<set>/. --as builds ONLY another base's
+edges, from a reference terrain's shapes (fields_wheat=desert: a wheat field
+fading into grass the way sand does), writing <art>_edge_01..12; the
+terrains' own edges are left alone.
     """
 
 
-    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
-    SET = argv[2] if len(argv) > 2 else ""
+    AS = [argv[i + 1].split("=", 1) for i, a in enumerate(argv) if a == "--as"]
+    pos = [a for i, a in enumerate(argv) if not a.startswith("--") and (i == 0 or argv[i - 1] != "--as")]
+    PACK = pos[1] if len(pos) > 1 else "assets/glory-of-rome"
+    SET = pos[2] if len(pos) > 2 else ""
     REF = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "art", "reference", "edges")
     TILES = os.path.join(PACK, "art", "tiles", SET)
     TERRAINS = ("water", "forest", "mountain", "desert")
@@ -238,6 +243,20 @@ and the edges written to art/tiles/<set>/.
         grass = Image.open(os.path.join(TILES, "grass.png")).convert("RGBA")
         g_cols = colours(os.path.join(REF, "grass.png"))
         n = 0
+        if AS:
+            for art, ref in AS:
+                base = Image.open(os.path.join(TILES, f"{art}.png")).convert("RGBA")
+                t_cols = colours(os.path.join(REF, f"{ref}.png"))
+                for name in sorted(os.listdir(REF)):
+                    if not name.startswith(f"{ref}_edge_"):
+                        continue
+                    m = mask_from(os.path.join(REF, name), t_cols, g_cols, base.size)
+                    out = grass.copy()
+                    out.paste(base, (0, 0), m)
+                    out.save(os.path.join(TILES, name.replace(f"{ref}_edge_", f"{art}_edge_")))
+                    n += 1
+            print(f"wrote {n} edge tiles to {TILES}")
+            return
         for t in TERRAINS:
             base = Image.open(os.path.join(TILES, f"{t}.png")).convert("RGBA")
             t_cols = colours(os.path.join(REF, f"{t}.png"))
@@ -255,59 +274,470 @@ and the edges written to art/tiles/<set>/.
 
 
 
+
 # ==========================================================================
-# features.py -- the feature tiles: a sprite on each set's own ground
+# fills.py -- inner-corner fills for woods and ranges
 # ==========================================================================
 
-def _features(argv):
-    """Composite the feature tiles (#63): a transparent feature sprite, scaled
-down and set inside a 12 px margin, on each tile set's own grass or desert.
-The tile's edges stay that set's plain ground, so a feature tile joins any
-neighbour the plain tile does, by construction. No generation: the sprites
-are build/art/feature_<name>/run01 (02_keyed.png where the magenta had to be
-keyed out, else 01_raw.png), from art/jobs/feature_*.json.
+def _fills(argv):
+    """Inner-corner fills (#63): where a grass (or sand) cell has a wood or
+range on two adjacent sides, the shell draws a fill of that terrain's own
+trees or rocks into the cell's corner, so a concave corner rounds off and a
+staircase reads as a slope.
 
-    python3 tools/romeart.py features [pack-dir]
+A fill is the set's own lattice continued into the cell: the whole sprites of
+the plain tile's arrangement whose ink centre lies in the cell within 50 px of
+the corner, drawn on a 288 px canvas with the cell in the middle (the shell
+draws it one cell up and left), so it joins the neighbours' trees and rocks
+and no sprite is cut. A set whose sprites are not kept (Italia's forest)
+takes the plain tile's own pixels within a ragged radius of the corner.
 
-Writes art/tiles/[<set>/]<ground>_<feature>.png for the shared set and every
-zone set, and prints them.
+    python3 tools/romeart.py fills [pack-dir]
+
+Writes art/tiles/[<set>/]<terrain>[_sand]_fill_<ne|nw|se|sw>.png.
     """
-    import os
+    import math, os, random, tempfile
     from PIL import Image
     PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
-    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     TILES = os.path.join(PACK, "art", "tiles")
-    # ground -> [(feature, size of its longer side in px)]
-    FEATURES = {"grass": [("flowers", 54), ("boulders", 52), ("shrubs", 50), ("wheat", 64)],
-                "desert": [("boulders", 52), ("scrub", 56)]}
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    CORNER = {"se": (96, 96), "ne": (96, 0), "sw": (0, 96), "nw": (0, 0)}
+    R = 50
+    n = 0
 
-    def sprite(name, side):
-        d = os.path.join(ROOT, "build", "art", f"feature_{name}", "run01")
-        p = os.path.join(d, "02_keyed.png")
-        im = Image.open(p if os.path.exists(p) else os.path.join(d, "01_raw.png")).convert("RGBA")
-        im = im.crop(im.getchannel("A").point(lambda a: 255 if a > 127 else 0).getbbox())
-        k = side / max(im.size)
-        im = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS)
-        a = im.getchannel("A").point(lambda a: 255 if a > 127 else 0)    # alpha is binary
-        im.putalpha(a)
-        return im
+    def lattice_for(zone, t):
+        prim = os.path.join(ROOT, "art", "primitives", zone)
+        spr = os.path.join(prim, "trees" if t == "forest" else "rocks")
+        if not os.path.isdir(spr):
+            return None, None
+        args = ["romeart", "", "--sprites", spr, "--name", t]
+        if t == "forest":
+            args += ["--crown", "1" if zone == "oriens" else "0"]
+        else:
+            args += ["--terrain", "mountain"]
+            sl = os.path.join(prim, "rock_slots.json")
+            if os.path.exists(sl):
+                args += ["--slots", sl]
+        tmp = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+        args[1] = tmp
+        import contextlib, io
+        with contextlib.redirect_stdout(io.StringIO()):
+            _forestlattice(args)
+        lay = json.load(open(tmp))
+        os.remove(tmp)
+        return lay["tiles"][t]["sprites"], spr
 
-    for s in ("", "galliae", "africa", "oriens"):
+    for s in ["", "galliae", "africa", "oriens"]:
         d = os.path.join(TILES, s)
-        for ground, feats in FEATURES.items():
-            base = os.path.join(d, f"{ground}.png")
-            if not os.path.exists(base):
+        zone = s or "italia"
+        for t in ("forest", "mountain"):
+            sprites, spr = lattice_for(zone, t)
+            for fam, ground in (("", "grass"), ("_sand", "desert")):
+                if not os.path.exists(os.path.join(d, f"{ground}.png")):
+                    continue
+                if fam and not os.path.exists(os.path.join(d, f"{t}_sand_edge_01.png")):
+                    continue
+                for corner, (cx, cy) in CORNER.items():
+                    out = Image.new("RGBA", (288, 288), (0, 0, 0, 0))
+                    if sprites:
+                        keep = []
+                        for (i, x, y) in sprites:
+                            im = Image.open(os.path.join(spr, f"tile_{i:02d}.png")).convert("RGBA")
+                            l, tp, r, b = im.getbbox()
+                            mx, my = x + (l + r) / 2, y + (tp + b) / 2
+                            if 0 <= mx < 96 and 0 <= my < 96 and math.hypot(mx - cx, my - cy) <= R:
+                                keep.append((y, x, im))
+                        for (y, x, im) in sorted(keep, key=lambda k: (k[0], k[1])):
+                            out.alpha_composite(im, (x + 96, y + 96))
+                    elif os.path.exists(os.path.join(d, f"{t}{fam}_edge_19.png")):
+                        # no sprites kept: the island piece's free-standing
+                        # clump (its pixels unlike the ground), set into the
+                        # corner with its middle 26 px in from the vertex
+                        isl = Image.open(os.path.join(d, f"{t}{fam}_edge_19.png")).convert("RGB")
+                        gr = Image.open(os.path.join(d, f"{ground}.png")).convert("RGB")
+                        ip, gp_ = isl.load(), gr.load()
+                        clump = Image.new("RGBA", isl.size, (0, 0, 0, 0)); cp = clump.load()
+                        for yy in range(isl.height):
+                            for xx in range(isl.width):
+                                if ip[xx, yy] != gp_[xx, yy]:
+                                    cp[xx, yy] = ip[xx, yy] + (255,)
+                        l, tp, r, b = clump.getbbox()
+                        clump = clump.crop((l, tp, r, b))
+                        mx = cx - 26 if cx else cx + 26
+                        my = cy - 26 if cy else cy + 26
+                        out.alpha_composite(clump, (int(mx - clump.width / 2) + 96, int(my - clump.height / 2) + 96))
+                    else:
+                        plain = Image.open(os.path.join(d, f"{t}.png")).convert("RGBA")
+                        rng = random.Random(f"{s}{fam}{t}{corner}")
+                        lobes = [rng.uniform(-7, 7) for _ in range(6)]
+                        pp, op = plain.load(), out.load()
+                        for y in range(96):
+                            for x in range(96):
+                                dx, dy = x - cx, y - cy
+                                a = math.atan2(abs(dy), abs(dx)) / (math.pi / 2) * (len(lobes) - 1)
+                                i0 = int(a); f = a - i0
+                                rad = 44 + lobes[i0] * (1 - f) + lobes[min(i0 + 1, len(lobes) - 1)] * f
+                                if math.hypot(dx, dy) <= rad:
+                                    op[x + 96, y + 96] = pp[x, y][:3] + (255,)
+                    a_ = out.getchannel("A").point(lambda v: 255 if v > 127 else 0)
+                    out.putalpha(a_)
+                    out.save(os.path.join(d, f"{t}{fam}_fill_{corner}.png"))
+                    n += 1
+    print(f"wrote {n} fills")
+
+
+
+def _aprons(argv):
+    """Aprons (#63): loose rocks and stray trees on the grass along a range's
+or a wood's side, so a straight side no longer reads as a cut-out line.
+
+Where a grass or sand cell has a wood or range beside it (north, east, south
+or west), the shell draws one of three aprons for that side into the cell, or
+none, picked per cell (src/map_render.c draw_aprons). An apron is one to
+three of the set's own rocks or trees at half size, straddling the shared
+line with most of each sprite on the grass, on a 288 px canvas with the cell
+in the middle (drawn one cell up and left, like the inner-corner fills). Its
+background is clear, so it stands on grass and sand alike. A set whose tree
+sprites are not kept (Italia's forest) takes the island piece's clump.
+
+    python3 tools/romeart.py aprons [pack-dir]
+
+Writes art/tiles/[<set>/]<forest|mountain>_apron_<n|e|s|w>_<1..3>.png.
+    """
+    import os, random
+    from PIL import Image
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    TILES = os.path.join(PACK, "art", "tiles")
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    n = 0
+
+    def whole(im):
+        # a sprite drawn to its frame edge (a ledge or crag cut square to
+        # straddle a tile line) would stand on the grass cut off
+        l, t, r, b = im.getbbox()
+        return l > 0 and t > 0 and r < im.width and b < im.height
+
+    def crop(im):
+        return im.crop(im.getbbox())
+
+    def half(im):
+        return crop(im)       # at full size: a bulge of the mass itself
+
+    for st in ["", "galliae", "africa", "oriens"]:
+        d = os.path.join(TILES, st)
+        zone = st or "italia"
+        for t in ("forest", "mountain"):
+            spr = os.path.join(ROOT, "art", "primitives", zone, "trees" if t == "forest" else "rocks")
+            if os.path.isdir(spr):
+                ims = {int(f[5:7]): Image.open(os.path.join(spr, f)).convert("RGBA")
+                       for f in sorted(os.listdir(spr)) if f.startswith("tile_") and f.endswith(".png")}
+                if t == "forest":
+                    # only the trees the wood itself is made of (its plain tile)
+                    args = ["romeart", "", "--sprites", spr, "--name", t,
+                            "--crown", "1" if zone == "oriens" else "0"]
+                    import contextlib, io, tempfile
+                    args[1] = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        _forestlattice(args)
+                    used = {i for (i, _, _) in json.load(open(args[1]))["tiles"][t]["sprites"]}
+                    os.remove(args[1])
+                    ims = {i: im for i, im in ims.items() if i in used}
+                pool = [half(im) for im in ims.values() if whole(im)]
+            else:
+                # the island piece's free-standing clump: its pixels unlike the grass
+                isl = Image.open(os.path.join(d, f"{t}_edge_19.png")).convert("RGB")
+                gr = Image.open(os.path.join(d, "grass.png")).convert("RGB")
+                ip, gp = isl.load(), gr.load()
+                clump = Image.new("RGBA", isl.size, (0, 0, 0, 0)); cp = clump.load()
+                for yy in range(isl.height):
+                    for xx in range(isl.width):
+                        if ip[xx, yy] != gp[xx, yy]:
+                            cp[xx, yy] = ip[xx, yy] + (255,)
+                pool = [half(clump), half(clump.transpose(Image.FLIP_LEFT_RIGHT))]
+            for side in "nesw":
+                for v in (1, 2, 3):
+                    rng = random.Random(f"apron-{zone}-{t}-{side}-{v}")
+                    out = Image.new("RGBA", (288, 288), (0, 0, 0, 0))
+                    placed, drawn = [], []
+                    for _ in range(rng.choice((1, 2, 2))):
+                        im = rng.choice(pool)
+                        if rng.random() < 0.5:
+                            im = im.transpose(Image.FLIP_LEFT_RIGHT)
+                        w, h = im.size
+                        along = w if side in "ns" else h
+                        for _try in range(20):
+                            u = rng.randint(4, 92)      # may lean onto the cells beside
+                            if all(abs(u - q) >= along * 0.55 for q in placed):
+                                break
+                        else:
+                            continue
+                        placed.append(u)
+                        dep = rng.randint(-10, 26)      # its middle this far onto the grass
+                        cx, cy = {"n": (96 + u, 96 + dep), "s": (96 + u, 192 - dep),
+                                  "w": (96 + dep, 96 + u), "e": (192 - dep, 96 + u)}[side]
+                        drawn.append((cy + h // 2, cx - w // 2, cy - h // 2, im))
+                    for (_, x_, y_, im) in sorted(drawn, key=lambda k: k[0]):   # back to front
+                        out.alpha_composite(im, (x_, y_))
+                    out.save(os.path.join(d, f"{t}_apron_{side}_{v}.png"))
+                    n += 1
+    print(f"wrote {n} aprons")
+
+
+def _details(argv):
+    """Small detail (#63): now and then a grass or sand cell draws a bush,
+a stone or two -- the set's own trees and rocks at half size -- so open
+country is not bare cloth. Cosmetic and walkable: the cell stays what it is.
+
+The shell draws detail_<1..4> on about one plain grass or sand cell in
+twelve with no wood, range or sea beside it, picked per cell
+(src/map_render.c draw_details; tools/maprender.py the same).
+
+    python3 tools/romeart.py details [pack-dir]
+
+Writes art/tiles/[<set>/]detail_<1..4>.png (one cell, 96 px).
+    """
+    import os, random
+    from PIL import Image
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    TILES = os.path.join(PACK, "art", "tiles")
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def whole(im):
+        l, t, r, b = im.getbbox()
+        return l > 0 and t > 0 and r < im.width and b < im.height
+
+    def small(im, f):
+        im = im.crop(im.getbbox())
+        return im.resize((max(1, int(im.width * f)), max(1, int(im.height * f))), Image.NEAREST)
+
+    def sprites(zone, kind):
+        d = os.path.join(ROOT, "art", "primitives", zone, kind)
+        if not os.path.isdir(d):
+            return []
+        ims = [Image.open(os.path.join(d, f)).convert("RGBA") for f in sorted(os.listdir(d))
+               if f.startswith("tile_") and f.endswith(".png")]
+        return [im for im in ims if whole(im)]
+
+    n = 0
+    for st in ["", "galliae", "africa", "oriens"]:
+        zone = st or "italia"
+        d = os.path.join(TILES, st)
+        trees = []
+        tdir = os.path.join(ROOT, "art", "primitives", zone, "trees")
+        if os.path.isdir(tdir):
+            # only the trees the set's woods are made of (its plain tile)
+            import contextlib, io, tempfile
+            tmp = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+            with contextlib.redirect_stdout(io.StringIO()):
+                _forestlattice(["romeart", tmp, "--sprites", tdir, "--name", "forest",
+                                "--crown", "1" if zone == "oriens" else "0"])
+            used = sorted({i for (i, _, _) in json.load(open(tmp))["tiles"]["forest"]["sprites"]})
+            os.remove(tmp)
+            trees = [im for im in (Image.open(os.path.join(tdir, f"tile_{i:02d}.png")).convert("RGBA")
+                                   for i in used) if whole(im)]
+        if not trees:
+            # Italia keeps no tree sprites: the island piece's clump
+            isl = Image.open(os.path.join(d, "forest_edge_19.png")).convert("RGB")
+            gr = Image.open(os.path.join(d, "grass.png")).convert("RGB")
+            ip, gp = isl.load(), gr.load()
+            c = Image.new("RGBA", isl.size, (0, 0, 0, 0)); cp = c.load()
+            for yy in range(isl.height):
+                for xx in range(isl.width):
+                    if ip[xx, yy] != gp[xx, yy]:
+                        cp[xx, yy] = ip[xx, yy] + (255,)
+            trees = [c]
+        rocks = sprites(zone, "rocks")
+        rng = random.Random(f"detail-{zone}")
+        # 1: a bush; 2: two bushes; 3: a stone; 4: two small stones
+        plan = {1: [(trees, 0.55)], 2: [(trees, 0.48), (trees, 0.4)],
+                3: [(rocks, 0.5)], 4: [(rocks, 0.4), (rocks, 0.32)]}
+        for v, parts in plan.items():
+            out = Image.new("RGBA", (96, 96), (0, 0, 0, 0))
+            spots = [(rng.randint(30, 50), rng.randint(34, 52)), (rng.randint(54, 70), rng.randint(50, 66))]
+            drawn = []
+            for (pool, f), (cx, cy) in zip(parts, spots):
+                im = small(rng.choice(pool), f)
+                if rng.random() < 0.5:
+                    im = im.transpose(Image.FLIP_LEFT_RIGHT)
+                drawn.append((cy + im.height // 2, cx - im.width // 2, cy - im.height // 2, im))
+            for (_, x_, y_, im) in sorted(drawn, key=lambda k: k[0]):
+                out.alpha_composite(im, (max(0, min(96 - im.width, x_)), max(0, min(96 - im.height, y_))))
+            out.save(os.path.join(d, f"detail_{v}.png"))
+            n += 1
+    print(f"wrote {n} details")
+
+
+def _edgevars(argv):
+    """Variants of each set's mountain west and east sides (#63), so a long
+side stops repeating one arrangement tile after tile: mountain_edge_09/10
+_v1 and _v2. As the interiors do, a variant keeps every rock that straddles
+the tile's lines (the neighbours draw those too, so tiles still join) and
+redraws the rocks fully inside the tile, each flipped or nudged a few pixels,
+one in three near the open side left out (seeded per set and variant). They
+are composed like the edge pieces themselves (compose, with the same contact
+shadow). Listed as the codes' `variants`, so the shell picks one per cell
+(src/tilevar.c).
+
+    python3 tools/romeart.py edgevars [pack-dir]
+
+Writes art/tiles/[<set>/]mountain_edge_<09|10>_v<1|2>.png.
+    """
+    import os, random, tempfile, contextlib, io, shutil
+    from PIL import Image
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    TILES = os.path.join(PACK, "art", "tiles")
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    n = 0
+    for st in ["", "galliae", "africa", "oriens"]:
+        zone = st or "italia"
+        d = os.path.join(TILES, st)
+        prim = os.path.join(ROOT, "art", "primitives", zone)
+        spr = os.path.join(prim, "rocks")
+        args = ["romeart", "", "--sprites", spr, "--terrain", "mountain", "--name", "mountain",
+                "--ragged", "4,20,34,0,28" if zone == "italia" else "6,20,34,12,28"]
+        sl = os.path.join(prim, "rock_slots.json")
+        if os.path.exists(sl):
+            args += ["--slots", sl]
+        tmp = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+        args[1] = tmp
+        with contextlib.redirect_stdout(io.StringIO()):
+            _forestlattice(args)
+        lay = json.load(open(tmp))
+        out_tiles = {}
+        extra = {}
+        for code, side in ((9, "E"), (10, "W")):
+            sprites = lay["tiles"][f"mountain_edge_{code:02d}"]["sprites"]
+            for v in (1, 2):
+                rng = random.Random(f"edgevar-{zone}-{code}-{v}")
+                places = []
+                for (i, x, y) in sprites:
+                    im = Image.open(os.path.join(spr, f"tile_{i:02d}.png")).convert("RGBA")
+                    l, tp, r, b = im.getbbox()
+                    inside = x + l >= 0 and y + tp >= 0 and x + r <= 96 and y + b <= 96
+                    if not inside:
+                        places.append([i, x, y]); continue
+                    near = (x + l < 30) if side == "W" else (x + r > 66)
+                    if near and rng.random() < 0.34:
+                        continue
+                    j = i
+                    if rng.random() < 0.5:
+                        j = 100 + i              # the flipped copy
+                        extra[j] = im.transpose(Image.FLIP_LEFT_RIGHT)
+                        jl, jt, jr, jb = extra[j].getbbox()
+                    else:
+                        jl, jt, jr, jb = l, tp, r, b
+                    nx = x + l - jl + rng.randint(-6, 6)
+                    ny = y + tp - jt + rng.randint(-5, 5)
+                    nx = max(-jl, min(96 - jr, nx)); ny = max(-jt, min(96 - jb, ny))
+                    places.append([j, nx, ny])
+                out_tiles[f"mountain_edge_{code:02d}_v{v}"] = {"wrap": "", "sprites": places}
+        sd = tempfile.mkdtemp()
+        for f in os.listdir(spr):
+            if f.startswith("tile_") and f.endswith(".png"):
+                shutil.copy(os.path.join(spr, f), sd)
+        for j, im in extra.items():
+            im.save(os.path.join(sd, f"tile_{j:02d}.png"))
+        outd = tempfile.mkdtemp()
+        json.dump({"sprites": sd, "grass": os.path.join(d, "grass.png"), "shadow": MOUNTAIN_SHADOW,
+                   "tiles": out_tiles}, open(tmp, "w"))
+        with contextlib.redirect_stdout(io.StringIO()):
+            _treetile(["romeart", tmp, outd])
+        for name in out_tiles:
+            shutil.copy(os.path.join(outd, name + ".png"), os.path.join(d, name + ".png")); n += 1
+        os.remove(tmp); shutil.rmtree(sd); shutil.rmtree(outd)
+    print(f"wrote {n} edge variants")
+
+# ==========================================================================
+# interiors.py -- plain forest and mountain variants, so a mass is no grid
+# ==========================================================================
+
+def _interiors(argv):
+    """Two more versions of each set's plain forest and mountain tile (#63),
+listed as that code's `variants` so the shell picks one per cell
+(src/tilevar.c) and a wood or range stops repeating one arrangement.
+
+A variant keeps the plain tile's sprites that straddle its borders -- the
+neighbours draw those too, so tiles still join -- and redraws only the
+sprites fully inside the tile, each flipped or nudged a few pixels within
+the tile (seeded per set and variant). Italia's forest, whose sprites are not kept, takes the
+plain tile's interior mirrored instead. No generation.
+
+    python3 tools/romeart.py interiors [pack-dir]
+
+Writes art/tiles/[<set>/]<terrain>_v1.png and _v2.png.
+    """
+    import os, random, tempfile, contextlib, io
+    from PIL import Image
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    TILES = os.path.join(PACK, "art", "tiles")
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    n = 0
+    for s in ["", "galliae", "africa", "oriens"]:
+        zone = s or "italia"
+        d = os.path.join(TILES, s)
+        prim = os.path.join(ROOT, "art", "primitives", zone)
+        for t in ("forest", "mountain"):
+            spr = os.path.join(prim, "trees" if t == "forest" else "rocks")
+            plain_p = os.path.join(d, f"{t}.png")
+            if not os.path.exists(plain_p):
                 continue
-            for name, side in feats:
-                t = Image.open(base).convert("RGBA")
-                sp = sprite(name, side)
-                x = (t.width - sp.width) // 2
-                y = (t.height - sp.height) // 2
-                assert x >= 12 and y >= 12, (name, sp.size)
-                t.alpha_composite(sp, (x, y))
-                out = os.path.join(d, f"{ground}_{name}.png")
-                t.convert("RGB").save(out)
-                print(out)
+            plain = Image.open(plain_p).convert("RGBA")
+            if not os.path.isdir(spr):
+                # no sprites: the interior mirrored, its 12 px border kept
+                for v, op in ((1, Image.FLIP_LEFT_RIGHT), (2, Image.FLIP_TOP_BOTTOM)):
+                    out = plain.copy()
+                    inner = plain.crop((12, 12, 84, 84)).transpose(op)
+                    out.paste(inner, (12, 12))
+                    out.save(os.path.join(d, f"{t}_v{v}.png")); n += 1
+                continue
+            args = ["romeart", "", "--sprites", spr, "--name", t]
+            if t == "forest":
+                args += ["--crown", "1" if zone == "oriens" else "0"]
+            else:
+                args += ["--terrain", "mountain"]
+                sl = os.path.join(prim, "rock_slots.json")
+                if os.path.exists(sl):
+                    args += ["--slots", sl]
+            tmp = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+            args[1] = tmp
+            with contextlib.redirect_stdout(io.StringIO()):
+                _forestlattice(args)
+            lay = json.load(open(tmp)); os.remove(tmp)
+            sprites = lay["tiles"][t]["sprites"]
+            ims = {}
+            def im(i):
+                if i not in ims:
+                    ims[i] = Image.open(os.path.join(spr, f"tile_{i:02d}.png")).convert("RGBA")
+                return ims[i]
+            ids = sorted(int(f[5:7]) for f in os.listdir(spr) if f.startswith("tile_") and f.endswith(".png"))
+            boxes = {i: im(i).getbbox() for i in ids}
+            ground = Image.open(os.path.join(d, "grass.png")).convert("RGBA")
+            for v in (1, 2):
+                rng = random.Random(f"{zone}-{t}-{v}")
+                out = ground.copy()
+                for (i, x, y) in sprites:
+                    l, tp, r, b = boxes[i]
+                    inside = x + l >= 0 and y + tp >= 0 and x + r <= 96 and y + b <= 96
+                    if not inside:
+                        # straddler: drawn exactly as the plain tile has it
+                        can = Image.new("RGBA", (288, 288)); can.alpha_composite(im(i), (x + 96, y + 96))
+                        out.alpha_composite(can.crop((96, 96, 192, 192)))
+                        continue
+                    # the same sprite (the set's art is one family per slot:
+                    # swapping in a bush or a cliff left holes), flipped and
+                    # nudged so the arrangement no longer repeats
+                    j = i
+                    sp = im(j)
+                    if rng.random() < 0.5:
+                        sp = sp.transpose(Image.FLIP_LEFT_RIGHT)
+                    jl, jt, jr, jb = sp.getbbox()
+                    nx = x + l - jl + rng.randint(-5, 5)
+                    ny = y + tp - jt + rng.randint(-4, 4)
+                    nx = max(-jl, min(96 - jr, nx)); ny = max(-jt, min(96 - jb, ny))
+                    can = Image.new("RGBA", (288, 288)); can.alpha_composite(sp, (nx + 96, ny + 96))
+                    out.alpha_composite(can.crop((96, 96, 192, 192)))
+                out.save(os.path.join(d, f"{t}_v{v}.png")); n += 1
+    print(f"wrote {n} interior variants")
 
 # ==========================================================================
 # stitch96.py -- stitch a PixelLab corner tileset into 96 px tiles
@@ -941,6 +1371,12 @@ Terminal sides:
          cliff face the row 12 rocks stand on.
 Codes 5..8 (diagonal-only) are plain lattice: nothing touches a corner.
 
+--ragged S,A,B (#63): terminal sides end raggedly instead of in a line. Every
+sprite fully inside the tile whose ink comes within A px (B px, alternating)
+of an open side's line is taken out, and small sprites S are laid loose in
+the gap, covering no straddler, fully inside the tile and 4 px clear of every
+line. Straddlers keep their places, so tiles still join (seamcheck).
+
 Codes are the engine's (OPENBOUNTY-SPEC REQ-229a). Output is a layout for
 romeart.py compose with wrap off, every sprite listed, negatives included.
     """
@@ -1108,11 +1544,18 @@ romeart.py compose with wrap off, every sprite listed, negatives included.
         # which cuts the corner back.
         for side, spec in (("W", EDGE_W), ("E", EDGE_E)):
             if side not in open_sides: continue
-            for (i, ins, place) in spec:
+            for k_, (i, ins, place) in enumerate(spec):
+                if RAGGED and place == "mid" and code < 13:
+                    continue          # a notch midway: the side is not one wall
                 if place == "top" and "N" in open_sides: continue
                 if place == "bottom" and "S" in open_sides: continue
                 l, t, r, b = bbox(i)
                 y = {"top": 1 - t, "mid": 48 - (t + b) // 2, "bottom": 95 - b}[place]
+                if RAGGED and code < 13:
+                    # set back from the open line, by two depths, so down a
+                    # side the outline steps in and out instead of standing
+                    # as a wall
+                    ins += {"top": RAG_TOP, "mid": 0, "bottom": RAG_BOT}[place]
                 x = -l + ins if side == "W" else 96 - r - ins
                 x = max(-l, min(96 - r, x))          # fully inside, whatever the inset
                 keep.append((i, x, y, 2))
@@ -1124,6 +1567,10 @@ romeart.py compose with wrap off, every sprite listed, negatives included.
             # Nothing may be drawn in front of a straddler that the neighbour
             # does not draw too, so the face cannot be in front.
             keep.append((LEDGE, (96 - (lR - lL)) // 2 - lL, ly, -1))
+        # strips and spits (two opposite sides open) keep their full rows: thinned
+        # from both sides they come apart into a string of beads
+        if RAGGED and open_sides and code < 13:
+            keep = ragged(keep, open_sides)
         for (i, x, y, _) in keep:
             assert not (crossings(i, x, y) & set(open_sides))
         # Draw order, the same in every tile: the face, the lower rows (which
@@ -1133,6 +1580,79 @@ romeart.py compose with wrap off, every sprite listed, negatives included.
         keep = sorted(set(keep), key=lambda p: (min(p[3], 0), p[2], p[1]))
         return {"wrap": "", "sprites": [[i, x, y] for (i, x, y, _) in keep]}
 
+
+    RAGGED = [int(v) for v in argv[argv.index("--ragged") + 1].split(",")] if "--ragged" in argv else None
+    # --ragged S,A,B[,T,U]: the west and east edge sprites set back T px (the
+    # top one) and U px (the bottom one) from the open line
+    RAG_TOP, RAG_BOT = (RAGGED[3:5] if RAGGED and len(RAGGED) >= 5 else (0, 0))
+    if RAGGED:
+        RAGGED = RAGGED[:3]
+
+    def ragged(keep, open_sides):
+        """Terminal sides end raggedly: every sprite fully inside the tile whose
+        ink comes within REACH px of an open side's line is taken out (a
+        straddler stays: both tiles draw it), and small loose sprites are laid
+        in the gap where they cover no straddler, fully inside the tile and
+        4 px clear of every line."""
+        small, reach_a, reach_b = RAGGED
+        strad = [ink(i, x, y) for (i, x, y, lay) in keep if crossings(i, x, y)]
+
+        def clear(box, others):
+            l, t, r, bb = box
+            return all(r <= a_ or l >= c_ or bb <= b_ or t >= d_ for (a_, b_, c_, d_) in others)
+        out, n = [], 0
+        for (i, x, y, lay) in keep:
+            l, t, r, bb = ink(i, x, y)
+            if crossings(i, x, y):
+                out.append((i, x, y, lay)); continue
+            if lay == 2:
+                # the side's own edge sprite (a crag, a snow peak): kept
+                out.append((i, x, y, lay)); continue
+            reach = reach_a if n % 2 == 0 else reach_b
+            n += 1
+            near = (("N" in open_sides and t < reach) or ("S" in open_sides and bb > 96 - reach) or
+                    ("W" in open_sides and l < reach) or ("E" in open_sides and r > 96 - reach))
+            if not near:
+                out.append((i, x, y, lay))
+        # loose sprites in the gap: try a grid of spots, keep the ones whose ink
+        # covers no straddler's ink and no other loose sprite
+        sl, st, sr, sb = bbox(small)
+        w, h = sr - sl, sb - st
+        inkpx = set()
+        for (i, x, y, lay) in keep:
+            if crossings(i, x, y):
+                a_ = alpha(i); l_, t_, r_, b_ = bbox(i)
+                for yy in range(t_, b_):
+                    for xx in range(l_, r_):
+                        if a_[xx, yy] > 0:
+                            inkpx.add((x + xx, y + yy))
+        sa = alpha(small)
+        mine = [(xx - sl, yy - st) for yy in range(st, sb) for xx in range(sl, sr) if sa[xx, yy] > 0]
+
+        def clear(box, others):
+            px_, py_ = box[0], box[1]
+            if others is strad:
+                return not any((px_ + dx_, py_ + dy_) in inkpx for dx_, dy_ in mine)
+            l, t, r, bb = box
+            return all(r <= a_ or l >= c_ or bb <= b_ or t >= d_ for (a_, b_, c_, d_) in others)
+        placed = []
+        spots = []
+        for side in "NESW":
+            if side not in open_sides:
+                continue
+            for f in (0.22, 0.5, 0.78):
+                c = int(96 * f)
+                spots.append({"N": (c - w // 2, 6), "S": (c - w // 2, 90 - h),
+                              "W": (6, c - h // 2), "E": (90 - w, c - h // 2)}[side])
+        for k, (px, py) in enumerate(spots):
+            if k % 2:                       # every other spot: a gap of grass
+                continue
+            px = max(4, min(92 - w, px)); py = max(4, min(92 - h, py))
+            box = (px, py, px + w, py + h)
+            if clear(box, strad) and clear(box, placed):
+                placed.append(box)
+                out.append((small, px - sl, py - st, 3))
+        return out
 
     check_lattice()
     lay = {"sprites": SPR, "grass": GRASS, "tiles": {}}
@@ -1222,6 +1742,26 @@ times over a row of grass, to check the horizontal seam and the south edge.
         places = entry["sprites"] if isinstance(entry, dict) else entry
         wrap = entry.get("wrap", "hv") if isinstance(entry, dict) else "hv"
         im = ground.copy()
+        if lay.get("shadow") and "_edge_" in name:
+            # a soft contact shadow on the ground under an edge piece's
+            # sprites (#63; the plain tile keeps none, so what is built from
+            # it -- variants, fills, river pieces -- still matches):
+            # their ink shifted dx, dy, blurred, at alpha a, and faded to
+            # nothing within 4 px of every tile line, so it never makes a
+            # seam with the neighbour
+            dx_, dy_, a_ = lay["shadow"]
+            ink = Image.new("RGBA", (96, 96))
+            for i, x, y in places:
+                blit(ink, sprite(i), x + dx_, y + dy_)
+            from PIL import ImageFilter
+            m = ink.getchannel("A").point(lambda v: 255 if v else 0).filter(ImageFilter.GaussianBlur(2))
+            mp = m.load()
+            for yy in range(96):
+                for xx in range(96):
+                    f = min(4, xx, yy, 95 - xx, 95 - yy) / 4
+                    mp[xx, yy] = int(mp[xx, yy] * a_ * f)
+            sh = Image.new("RGBA", (96, 96), (0, 0, 0, 0)); sh.putalpha(m)
+            im.alpha_composite(sh)
         # A sprite that crosses the bottom border continues at the top, drawn
         # first so it sits behind everything: that is what makes a tile repeat
         # downwards with its bottom edge matching its top.
@@ -2096,6 +2636,9 @@ def _zone_cfg(zone):
     return cfg
 
 
+MOUNTAIN_SHADOW = [2, 3, 0.35]     # compose's "shadow" for every set's mountain edges (#63)
+
+
 def cmd_zone(argv):
     """Build every tile of a continent's set into build/art/<zone>_tiles/out."""
     if not argv:
@@ -2139,12 +2682,17 @@ def cmd_zone(argv):
     for terrain, sprites, extra in (("forest", "trees", ["--crown", str(cfg["crown"])]),
                                     ("mountain", "rocks",
                                      ["--terrain", "mountain"] +
-                                     (["--slots", cfg["slots"]] if cfg["slots"] else []))):
+                                     (["--slots", cfg["slots"]] if cfg["slots"] else []) +
+                                     # ragged rock edges (#63), the loose rock rock 6,
+                                     # the side crags set back 12 and 28 px
+                                     ["--ragged", "6,20,34,12,28"])):
         lay = os.path.join(stage, f"{terrain}.json")
         _forestlattice(["romeart", lay, "--sprites", os.path.join(prim, sprites),
                         "--name", terrain] + extra)
         d = json.load(open(lay))
         d["grass"] = os.path.join(out, "grass.png")
+        if terrain == "mountain":
+            d["shadow"] = MOUNTAIN_SHADOW      # a soft contact shadow (#63)
         json.dump(d, open(lay, "w"), indent=1)
         _treetile(["romeart", lay, os.path.join(stage, terrain)])
         print(f"  {terrain}: ", end="")
@@ -2153,6 +2701,19 @@ def cmd_zone(argv):
             p = os.path.join(stage, terrain, f)
             if os.path.exists(p):
                 Image.open(p).save(os.path.join(out, f))
+        # The same pieces over the set's desert, where it has one: a wood or
+        # range whose open sides all face sand fades to sand (mapbuild picks
+        # <terrain>_sand_edge_NN, #63). Forest 07 and 08 are left out: their
+        # codes went to the vista landmarks.
+        if os.path.exists(os.path.join(out, "desert.png")):
+            d["grass"] = os.path.join(out, "desert.png")
+            json.dump(d, open(lay, "w"), indent=1)
+            _treetile(["romeart", lay, os.path.join(stage, terrain + "_sand")])
+            for k in range(1, 13):
+                if terrain == "forest" and k in (7, 8):
+                    continue
+                Image.open(os.path.join(stage, terrain + "_sand", f"{terrain}_edge_{k:02d}.png")).save(
+                    os.path.join(out, f"{terrain}_sand_edge_{k:02d}.png"))
 
     # 5. Roads and rivers, swept over this zone's grass; the rivers again over
     #    its forest and mountain for the pieces that run through them.
@@ -4672,7 +5233,11 @@ COMMANDS = {
     "grass": lambda a: _grassvar(["romeart"] + a),
     "stitch": lambda a: _stitch96(["romeart"] + a),
     "edges": lambda a: _tileedges(["romeart"] + a),
-    "features": lambda a: _features(["romeart"] + a),
+    "fills": lambda a: _fills(["romeart"] + a),
+    "aprons": lambda a: _aprons(["romeart"] + a),
+    "details": lambda a: _details(["romeart"] + a),
+    "edgevars": lambda a: _edgevars(["romeart"] + a),
+    "interiors": lambda a: _interiors(["romeart"] + a),
     "lattice": lambda a: _forestlattice(["romeart"] + a),
     "seamcheck": lambda a: _seamcheck(["romeart"] + a),
     "compose": lambda a: _treetile(["romeart"] + a),

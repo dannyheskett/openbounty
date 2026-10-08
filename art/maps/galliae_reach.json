@@ -1,0 +1,80 @@
+{
+ "castle castle_galliae_1 (Alesia)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_galliae_2 (Colonia Agrippina)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_galliae_3 (Eboracum)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_galliae_4 (Corduba)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_galliae_5 (Mons Graupius)": [
+  "NO",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_galliae_6 (Teutoburgium)": [
+  "NO",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "the Augur": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town emerita_augusta": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town londinium": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town lugdunum": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town lutetia": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town massilia": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town tarraco": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ]
+}

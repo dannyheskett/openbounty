@@ -10,6 +10,7 @@ Nothing is written unless an output path is named; `--help` only prints this.
 The SOURCE is the map. One character per tile, `#` lines are comments:
 
   terrain   ~ sea   . grass   , grass variant   f forest   ^ mountain   d desert
+            p ploughed field   w wheat field (farmland: grass to the engine)
   overlays  r river on grass   R river in forest   M river in mountains
             = road             H bridge (a road crossing a river)
 
@@ -33,11 +34,6 @@ The SOURCE is the map. One character per tile, `#` lines are comments:
     sprite covers the ground.
   - a river whose straight run leaves the map flows off it: the map's edge
     continues the run, so the piece is a straight, not a tapered end.
-  - feature tiles (grass_flowers/_boulders/_shrubs/_wheat, desert_boulders/
-    _scrub), where the pack declares them: from a seed per zone, on about one
-    plain grass cell in fourteen and one plain sand cell in sixteen, at least
-    three cells apart, never under an object nor beside a town, castle,
-    event or a tile an event changes; wheat only within two cells of a town.
 
 `build` also warns, naming each cell, about shapes the art draws badly:
 a river mouth without sea above and land below it (the mouth art's shape),
@@ -71,11 +67,29 @@ OPP = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e',
        'ne': 'sw', 'sw': 'ne', 'nw': 'se', 'se': 'nw'}
 
 BASE = {'~': 'water', '.': 'grass', ',': 'grass', 'f': 'forest',
-        '^': 'mountain', 'd': 'desert', 'P': 'grass', 'T': 'grass'}
+        '^': 'mountain', 'd': 'desert', 'P': 'grass', 'T': 'grass',
+        'S': 'grass', 'O': 'grass', 'K': 'grass', 'G': 'grass',
+        'p': 'fields_plough', 'w': 'fields_wheat',
+        'j': 'water', 'n': 'grass', 'u': 'grass', 'h': 'grass', 'e': 'grass'}
 # 'P': a landmark standing on grass -- the neighbours see grass, so no edge
 # art changes, and the tile draws the landmark (Africa's Pharos).
 PLAIN_ART = {'~': 'water', '.': 'grass', ',': 'grass_variant', 'f': 'forest',
-             '^': 'mountain', 'd': 'desert', 'P': 'pharos', 'T': 'temple_ocean'}
+             '^': 'mountain', 'd': 'desert', 'P': 'pharos', 'T': 'temple_ocean',
+             'S': 'landmark_sibyl', 'O': 'landmark_oppidum', 'K': 'landmark_tophet',
+             'G': 'landmark_gordian', 'p': 'fields_plough', 'w': 'fields_wheat',
+             'j': None, 'n': 'piece_farmstead', 'u': 'piece_ruin',
+             'h': 'piece_shrine', 'e': 'piece_well'}
+# j n u h e: settlement set pieces (#63). j, a jetty by a harbour town, is sea
+# off a straight shore: the neighbours see sea, and the tile draws dock_<side>
+# (the jetty from the land side) over that side's water_edge piece. n u h e, a
+# farmstead, a ruin, a shrine and a well, stand on grass (solid: blocks_foot).
+# p w: farmland (#63), ploughed and in wheat -- grass to the engine, its own
+# ground for the edges: a field fades into the grass round it the way sand
+# does (fields_<kind>_edge_01..12, romeart.py edges --as).
+# S O K G: the vistas' landmarks (#63) -- the Sibyl's cave, the Oppidum's gate,
+# the Tophet's stelae, the Gordian cart -- standing on grass like the Pharos.
+# The Rubicon's boundary stone stands on its road (a road cell beside the
+# crossing whose event is the Rubicon: see the road pass).
 RIVER = {'r': 'grass', 'R': 'forest', 'M': 'mountain', 'H': 'grass'}
 ROAD = {'=', 'H'}
 RIVER_PREFIX = {'grass': 'river_', 'forest': 'river_forest_',
@@ -166,7 +180,8 @@ def build(pack, zid, src, out, strict=False):
     objs = object_cells(g, zid)
     errors = []
     warnings = []
-    notes = []          # land-against-land corners: a notch, never an error
+    notes = []
+    wants_sand = set()      # sand-backed edge pieces the pack does not ship yet          # land-against-land corners: a notch, never an error
 
     def at(x, y):
         return rows[y][x] if 0 <= x < W and 0 <= y < H else None
@@ -180,6 +195,9 @@ def build(pack, zid, src, out, strict=False):
     future_bridge = {(fx["x"], fx["y"]) for ev in z.get("events", [])
                      for fx in ev.get("effects", [])
                      if "tile" in fx and codes.get(fx["tile"], {}).get("is_bridge")}
+
+    # the Rubicon's trigger is a road cell: its landmark is drawn over the road
+    landmark_on_road = {(ev["x"], ev["y"]) for ev in z.get("events", []) if ev.get("id") == "rubicon"}
 
     def links(x, y, kind):
         """The directions this cell's run continues in."""
@@ -312,6 +330,8 @@ def build(pack, zid, src, out, strict=False):
                                   f"has no piece")
                     continue
                 out_art[y][x] = 'road_' + p
+                if (x, y) in landmark_on_road and p == 'ew' and 'landmark_rubicon' in a2c:
+                    out_art[y][x] = 'landmark_rubicon'      # the stone on its road
                 for d in ex:
                     if len(d) != 2:
                         continue
@@ -374,17 +394,23 @@ def build(pack, zid, src, out, strict=False):
                     if 0 <= x + dx < W and 0 <= y + dy < H}
             full = {d for d, k in near.items() if k != t}
             # Every land edge has faded to grass, and the sea's own edge has
-            # drawn the shore: forest and sand meeting the sea have kept their
-            # own ground to the coast, so the shore is drawn once, not twice
-            # -- unless no variant shows what is left, when the old shape has
-            # stood. Rock has kept its fringe: cut square at the water, a crag
-            # has read as a wall.
-            diff = full if t in ('water', 'mountain') else \
-                {d for d in full if near[d] != 'water'}
+            # drawn the shore. Sand meeting the sea keeps its own ground to
+            # the coast, where the sea draws a sand shore (unless no variant
+            # shows what is left, when the old shape stands). Forest and rock
+            # keep their grass fringe: drawn solid to the water, they stop in
+            # a straight line at the tile's edge.
+            # ... and sand beside a wood or range that has sand edges leaves the
+            # edge to it, so no grass shows between them.
+            diff = {d for d in full if near[d] != 'water' and
+                    not (near[d] in ('forest', 'mountain') and f"{near[d]}_sand_edge_01" in a2c)} \
+                if t == 'desert' else full
             idx, why = (None, None) if not diff else edge_idx(t, diff)
             if diff and idx is None and diff != full:
                 diff = full
                 idx, why = edge_idx(t, diff)
+            if not diff and c == 'j':
+                errors.append(f"({x},{y}): a jetty in open sea; it wants one straight shore")
+                continue
             if not diff:
                 out_art[y][x] = PLAIN_ART[c]
                 continue
@@ -400,75 +426,27 @@ def build(pack, zid, src, out, strict=False):
                         f"({x},{y}): {t} edge on {sorted(card)} cannot "
                         f"show its different diagonal {lost}")
             family = f"{t}_edge"
-            # A sea whose shore is all sand has drawn a sand shore.
-            if t == 'water' and all(near[d] == 'desert' for d in diff) \
-                    and f"water_sand_edge_{idx:02d}" in a2c:
-                family = "water_sand_edge"
+            # A sea, wood or range whose every other neighbour is sand fades
+            # to sand, not grass: its *_sand_edge piece, where the pack has it.
+            if t in ('water', 'forest', 'mountain') and all(near[d] == 'desert' for d in diff) \
+                    and f"{t}_sand_edge_{idx:02d}" in a2c:
+                family = f"{t}_sand_edge"
+            elif t in ('forest', 'mountain') and all(near[d] == 'desert' for d in diff):
+                wants_sand.add(f"{t}_sand_edge_{idx:02d}")
             name = f"{family}_{idx:02d}"
+            if c == 'j':
+                side = next(iter(card)) if len(card) == 1 else None
+                if family != 'water_edge' or side is None or f"dock_{side}" not in a2c:
+                    errors.append(f"({x},{y}): a jetty wants one straight grass shore "
+                                  f"(has land on {sorted(diff)})")
+                else:
+                    out_art[y][x] = f"dock_{side}"
+                continue
             if name not in a2c:
                 errors.append(f"({x},{y}): {t} open on {sorted(diff)} wants "
                               f"{name}, which the pack does not ship")
                 continue
             out_art[y][x] = name
-
-    # Feature tiles: scenery on open ground, placed where nothing stands.
-    near_obj = set()
-
-    def keep(px, py, r=1):
-        for dy in range(-r, r + 1):
-            for dx in range(-r, r + 1):
-                near_obj.add((px + dx, py + dy))
-    towns = [t for t in g.get("towns", []) if t.get("zone") == zid]
-    for t in towns:
-        keep(t["x"], t["y"])
-        for k in ("gate", "boat"):
-            o = t.get(k) or {}
-            if o.get("x", -1) >= 0:
-                keep(o["x"], o["y"])
-    for c in (c for c in g.get("castles", []) if c.get("zone") == zid):
-        keep(c["x"], c["y"]); keep(c["x"], c["y"] + 1)
-    for k in ("chests", "wandering_armies", "signs", "dwellings"):
-        for o in z.get(k, []):
-            keep(o["x"], o["y"], 0)
-    for ev in z.get("events", []):
-        keep(ev["x"], ev["y"])
-        for fx in ev.get("effects", []):
-            if "x" in fx:
-                keep(fx["x"], fx["y"])
-    for k in ("magic_alcove", "hero_spawn", "home_spawn"):
-        if k in z:
-            keep(z[k]["x"], z[k]["y"])
-    for a in z.get("arrivals", {}).values():
-        keep(a["x"], a["y"])
-    town_cells = {(t["x"], t["y"]) for t in towns}
-    FEATURE = {'.': ('grass', 14, ['grass_flowers', 'grass_shrubs', 'grass_boulders']),
-               'd': ('desert', 16, ['desert_scrub', 'desert_boulders'])}
-    rng = random.Random(f"{zid}-features")
-    placed = []
-    for ch, (ground, every, pool) in FEATURE.items():
-        pool = [a for a in pool if a in a2c]
-        if not pool:
-            continue
-        # A feature tile's edges are its plain ground, so it may stand
-        # beside anything that ground may.
-        plain = [(x, y) for y in range(H) for x in range(W)
-                 if rows[y][x] == ch and out_art[y][x] == ground]
-        cells = [c for c in plain if c not in near_obj]
-        want = len(plain) // every
-        rng.shuffle(cells)
-        got = 0
-        for x, y in cells:
-            if got == want:
-                break
-            if any(max(abs(x - px), abs(y - py)) < 3 for px, py in placed):
-                continue
-            by_town = any(max(abs(x - tx), abs(y - ty)) <= 2 for tx, ty in town_cells)
-            if by_town and ground == 'grass' and 'grass_wheat' in a2c:
-                out_art[y][x] = 'grass_wheat'
-            else:
-                out_art[y][x] = rng.choice(pool)
-            placed.append((x, y))
-            got += 1
 
     for y in range(H):
         for x in range(W):
@@ -476,6 +454,9 @@ def build(pack, zid, src, out, strict=False):
             if a is not None and a not in a2c:
                 errors.append(f"({x},{y}): the pack has no tile code for {a}")
 
+    if wants_sand:
+        warnings.append("wood or rock on sand drawn with a grass fringe; the pack "
+                        "ships no " + ", ".join(sorted(wants_sand)))
     if notes:
         print(f"{len(notes)} note(s): land corners no edge variant shows "
               f"(a small notch), e.g. {notes[0]}")
@@ -517,7 +498,9 @@ def terrain_grid(pack, zid, path):
     rows = read_rows(path)
     if len(rows) != H or any(len(r) != W for r in rows):
         die(f"{path}: not {W}x{H}")
-    ter = [[c2e[c]["terrain"] if c in c2e else die(f"unknown byte {c!r}")
+    # a solid object on grass (a set piece) is no ground to stand on
+    ter = [[(("blocked" if c2e[c].get("blocks_foot") and c2e[c]["terrain"] in ("grass", "desert")
+              else c2e[c]["terrain"]) if c in c2e else die(f"unknown byte {c!r}"))
             for c in r] for r in rows]
     art = [[c2e[c]["art"] for c in r] for r in rows]
     return g, z, W, H, ter, art
@@ -698,8 +681,7 @@ def check(pack, zid, path):
 # ---- place -----------------------------------------------------------------
 
 # Arts a scattered object may stand on: open ground, whatever its look.
-OPEN_ARTS = ("grass", "grass_variant", "desert", "grass_flowers", "grass_boulders",
-             "grass_shrubs", "grass_wheat", "desert_boulders", "desert_scrub")
+OPEN_ARTS = ("grass", "grass_variant", "desert")
 
 
 def place(pack, zid, path, regions_path, add=False):
