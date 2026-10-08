@@ -483,6 +483,78 @@ Writes art/tiles/[<set>/]<forest|mountain>_apron_<n|e|s|w>_<1..3>.png.
     print(f"wrote {n} aprons")
 
 
+def _details(argv):
+    """Small detail (#63): now and then a grass or sand cell draws a bush,
+a stone or two -- the set's own trees and rocks at half size -- so open
+country is not bare cloth. Cosmetic and walkable: the cell stays what it is.
+
+The shell draws detail_<1..4> on about one plain grass or sand cell in
+twelve with no wood, range or sea beside it, picked per cell
+(src/map_render.c draw_details; tools/maprender.py the same).
+
+    python3 tools/romeart.py details [pack-dir]
+
+Writes art/tiles/[<set>/]detail_<1..4>.png (one cell, 96 px).
+    """
+    import os, random
+    from PIL import Image
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    TILES = os.path.join(PACK, "art", "tiles")
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def whole(im):
+        l, t, r, b = im.getbbox()
+        return l > 0 and t > 0 and r < im.width and b < im.height
+
+    def small(im, f):
+        im = im.crop(im.getbbox())
+        return im.resize((max(1, int(im.width * f)), max(1, int(im.height * f))), Image.NEAREST)
+
+    def sprites(zone, kind):
+        d = os.path.join(ROOT, "art", "primitives", zone, kind)
+        if not os.path.isdir(d):
+            return []
+        ims = [Image.open(os.path.join(d, f)).convert("RGBA") for f in sorted(os.listdir(d))
+               if f.startswith("tile_") and f.endswith(".png")]
+        return [im for im in ims if whole(im)]
+
+    n = 0
+    for st in ["", "galliae", "africa", "oriens"]:
+        zone = st or "italia"
+        d = os.path.join(TILES, st)
+        trees = sprites(zone, "trees") or sprites("galliae", "trees")[:0]
+        if not trees:
+            # Italia keeps no tree sprites: the island piece's clump
+            isl = Image.open(os.path.join(d, "forest_edge_19.png")).convert("RGB")
+            gr = Image.open(os.path.join(d, "grass.png")).convert("RGB")
+            ip, gp = isl.load(), gr.load()
+            c = Image.new("RGBA", isl.size, (0, 0, 0, 0)); cp = c.load()
+            for yy in range(isl.height):
+                for xx in range(isl.width):
+                    if ip[xx, yy] != gp[xx, yy]:
+                        cp[xx, yy] = ip[xx, yy] + (255,)
+            trees = [c]
+        rocks = sprites(zone, "rocks")
+        rng = random.Random(f"detail-{zone}")
+        # 1: a bush; 2: two bushes; 3: a stone; 4: two small stones
+        plan = {1: [(trees, 0.55)], 2: [(trees, 0.48), (trees, 0.4)],
+                3: [(rocks, 0.5)], 4: [(rocks, 0.4), (rocks, 0.32)]}
+        for v, parts in plan.items():
+            out = Image.new("RGBA", (96, 96), (0, 0, 0, 0))
+            spots = [(rng.randint(30, 50), rng.randint(34, 52)), (rng.randint(54, 70), rng.randint(50, 66))]
+            drawn = []
+            for (pool, f), (cx, cy) in zip(parts, spots):
+                im = small(rng.choice(pool), f)
+                if rng.random() < 0.5:
+                    im = im.transpose(Image.FLIP_LEFT_RIGHT)
+                drawn.append((cy + im.height // 2, cx - im.width // 2, cy - im.height // 2, im))
+            for (_, x_, y_, im) in sorted(drawn, key=lambda k: k[0]):
+                out.alpha_composite(im, (max(0, min(96 - im.width, x_)), max(0, min(96 - im.height, y_))))
+            out.save(os.path.join(d, f"detail_{v}.png"))
+            n += 1
+    print(f"wrote {n} details")
+
+
 # ==========================================================================
 # interiors.py -- plain forest and mountain variants, so a mass is no grid
 # ==========================================================================
@@ -5022,6 +5094,7 @@ COMMANDS = {
     "edges": lambda a: _tileedges(["romeart"] + a),
     "fills": lambda a: _fills(["romeart"] + a),
     "aprons": lambda a: _aprons(["romeart"] + a),
+    "details": lambda a: _details(["romeart"] + a),
     "interiors": lambda a: _interiors(["romeart"] + a),
     "lattice": lambda a: _forestlattice(["romeart"] + a),
     "seamcheck": lambda a: _seamcheck(["romeart"] + a),

@@ -125,6 +125,45 @@ void map_render_cell_ground(const Map *m, int mx, int my, Rectangle dst) {
                          dst, WHITE);
 }
 
+// Small detail (#63): about one plain grass or sand cell in twelve with no
+// wood, range or sea beside it draws detail_<1..4>, a
+// bush or a stone or two (romeart.py details). Cosmetic: the cell stays
+// walkable grass. tools/maprender.py draws the same.
+#define DETAIL_SEED 0xD7A1u
+static bool open_ground(const Map *m, int x, int y) {
+    const Tile *t = MapGetTile(m, x, y);
+    if (!t || t->interactive != INTERACT_NONE || t->is_bridge) return false;
+    if (t->terrain != TERRAIN_GRASS && t->terrain != TERRAIN_DESERT) return false;
+    const char *art = TileArt(m, t);
+    return art && (strncmp(art, "grass", 5) == 0 || strncmp(art, "desert", 6) == 0);
+}
+
+static void draw_details(const Map *m, const Fog *f, int cam_x, int cam_y,
+                         int ox, int oy, int x0, int x1, int y0, int y1) {
+    for (int ty = y0; ty <= y1; ty++) {
+        for (int tx = x0; tx <= x1; tx++) {
+            int mx = cam_x + tx, my = cam_y + ty;
+            if (!FogSeen(f, mx, my)) continue;
+            int v = tilevar_pick(DETAIL_SEED, mx, my, 48);
+            if (v < 1 || v > 4 || !open_ground(m, mx, my)) continue;
+            bool clear = true;
+            for (int k = 0; k < 4 && clear; k++) {
+                const Tile *n = MapGetTile(m, mx + (k == 0) - (k == 1), my + (k == 2) - (k == 3));
+                clear = !n || (n->terrain != TERRAIN_FOREST && n->terrain != TERRAIN_MOUNTAIN &&
+                               n->terrain != TERRAIN_WATER);
+            }
+            if (!clear) continue;
+            char stem[16], name[TILE_ART_NAME_LEN];
+            snprintf(stem, sizeof stem, "detail_%d", v);
+            Texture2D tex = tile_cache_get(MapTerrainArt(m, stem, name, sizeof name));
+            if (!tex.id) continue;
+            Rectangle dst = { (float)(ox + tx * CL_TILE_W), (float)(oy + ty * CL_TILE_H),
+                              (float)CL_TILE_W, (float)CL_TILE_H };
+            gfx_texture_draw(tex, (Rectangle){ 0, 0, (float)tex.width, (float)tex.height }, dst, WHITE);
+        }
+    }
+}
+
 // Aprons (#63): a plain grass or sand cell beside a wood or range draws, for
 // that side, one of the set's three aprons -- a stray tree or a loose rock or
 // two straddling the shared line -- or none, picked per cell, so a straight
@@ -243,6 +282,7 @@ void map_render_draw(const Game *g, const Map *m, const Fog *f,
         }
     }
     if (CL_IS_MODERN) {
+        draw_details(m, f, cam_x, cam_y, ox, oy, v.x0, v.x1, v.y0, v.y1);
         draw_aprons(m, f, cam_x, cam_y, ox, oy, v.x0, v.x1, v.y0, v.y1);
         draw_inner_fills(m, f, cam_x, cam_y, ox, oy, v.x0, v.x1, v.y0, v.y1);
         // an apron or fill may lean onto the cells round it: every object,

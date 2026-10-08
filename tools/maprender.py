@@ -121,6 +121,7 @@ def render_flat(rows, w, h, codes, scale):
 
 
 APRON_SEED = 0xA960       # src/map_render.c APRON_SEED: which apron a cell draws
+DETAIL_SEED = 0xD7A1      # src/map_render.c DETAIL_SEED: which open cells draw a detail
 
 
 def tilevar_pick(seed, x, y, n):
@@ -210,6 +211,29 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_ar
             if f_.width != TW * 3:
                 f_ = cache[name] = f_.resize((TW * 3, TH * 3), Image.NEAREST)
             img.paste(f_, ((x - x0 - 1) * TW, (y - y0 - 1) * TH), f_)
+    # Small detail (#63), as src/map_render.c draw_details: one plain grass
+    # or sand cell in twelve with no wood, range or sea beside it.
+    def open_ground(x, y):
+        if not (0 <= x < w and 0 <= y < h):
+            return False
+        c = codes.get(rows[y][x], {})
+        return c.get("terrain") in ("grass", "desert") and c.get("art", "").startswith(("grass", "desert"))
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            v = tilevar_pick(DETAIL_SEED, x, y, 48)
+            if 1 <= v <= 4 and open_ground(x, y) and all(
+                    ter(x + dx, y + dy) not in ("forest", "mountain", "water")
+                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                name = f"detail_{v}"
+                if name not in cache:
+                    own = tile_set and (not set_arts or name in set_arts)
+                    p = os.path.join(pack_dir, "art", "tiles", tile_set if own else "", name + ".png")
+                    cache[name] = Image.open(p).convert("RGBA") if os.path.exists(p) else None
+                if cache[name] is not None:
+                    t = cache[name]
+                    if t.width != TW:
+                        t = cache[name] = t.resize((TW, TH), Image.NEAREST)
+                    img.paste(t, ((x - x0) * TW, (y - y0) * TH), t)
     # Aprons (#63), as src/map_render.c draw_aprons: a plain grass or sand
     # cell beside a wood or range gets one of that side's three aprons, or none.
     for y in range(y0, y1 + 1):

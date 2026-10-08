@@ -245,6 +245,12 @@ generated from.
   hidden. Roads, rivers, fields and pieces have drawn none. Thinning the edge
   pieces' own west and east sides could not do it: their outer column is
   rocks straddling the tile lines, which the neighbours draw too.
+- **Small detail** (#63) — `romeart.py details`: `detail_<1..4>` per set, a
+  bush, two bushes, a stone, two stones (the set's own whole sprites at about
+  half size, Italia's bush from its island clump), drawn by the shell and
+  `maprender` on about one plain grass or sand cell in twelve with no wood,
+  range or sea beside it (`tilevar_pick` seed `0xD7A1`, 48 ways, 1-4 drawn).
+  Cosmetic: the cell stays walkable grass.
 - **Settlement set pieces** (#63) — `art/jobs/piece_{dock,farmstead,ruin,shrine,well}.json`
   (`rd_pro__topdown`, 96 px): a farmhouse, a ruin, a shrine and a well stand
   on grass as solid tiles (`blocks_foot`, map chars `n u h e`); the jetty
