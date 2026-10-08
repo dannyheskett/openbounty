@@ -233,6 +233,11 @@ generated from.
   `mountain_v1/v2` per set, the plain tile's straddlers kept and its inner
   sprites flipped or nudged, listed as the code's `variants` so a mass has
   stopped repeating one arrangement.
+- **Mountain side variants** (#63) — `romeart.py edgevars`:
+  `mountain_edge_09/10_v1/_v2` per set, listed as those codes' `variants`, so
+  a long west or east side of a range stops repeating one tile: as the
+  interiors, every rock straddling the tile's lines kept, the rocks inside it
+  flipped and nudged and one in three near the open side left out.
 - **Aprons** (#63) — `romeart.py aprons`: a plain grass or sand cell beside a
   wood or range has drawn, for that side, one of three
   `<forest|mountain>_apron_<n|e|s|w>_<1..3>` or none (picked per cell by
@@ -247,7 +252,8 @@ generated from.
   rocks straddling the tile lines, which the neighbours draw too.
 - **Small detail** (#63) — `romeart.py details`: `detail_<1..4>` per set, a
   bush, two bushes, a stone, two stones (the set's own whole sprites at about
-  half size, Italia's bush from its island clump), drawn by the shell and
+  half size, only the trees its woods are made of; Italia's bush from its
+  island clump), drawn by the shell and
   `maprender` on about one plain grass or sand cell in twelve with no wood,
   range or sea beside it (`tilevar_pick` seed `0xD7A1`, 48 ways, 1-4 drawn).
   Cosmetic: the cell stays walkable grass.

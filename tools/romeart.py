@@ -522,7 +522,19 @@ Writes art/tiles/[<set>/]detail_<1..4>.png (one cell, 96 px).
     for st in ["", "galliae", "africa", "oriens"]:
         zone = st or "italia"
         d = os.path.join(TILES, st)
-        trees = sprites(zone, "trees") or sprites("galliae", "trees")[:0]
+        trees = []
+        tdir = os.path.join(ROOT, "art", "primitives", zone, "trees")
+        if os.path.isdir(tdir):
+            # only the trees the set's woods are made of (its plain tile)
+            import contextlib, io, tempfile
+            tmp = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+            with contextlib.redirect_stdout(io.StringIO()):
+                _forestlattice(["romeart", tmp, "--sprites", tdir, "--name", "forest",
+                                "--crown", "1" if zone == "oriens" else "0"])
+            used = sorted({i for (i, _, _) in json.load(open(tmp))["tiles"]["forest"]["sprites"]})
+            os.remove(tmp)
+            trees = [im for im in (Image.open(os.path.join(tdir, f"tile_{i:02d}.png")).convert("RGBA")
+                                   for i in used) if whole(im)]
         if not trees:
             # Italia keeps no tree sprites: the island piece's clump
             isl = Image.open(os.path.join(d, "forest_edge_19.png")).convert("RGB")
@@ -554,6 +566,72 @@ Writes art/tiles/[<set>/]detail_<1..4>.png (one cell, 96 px).
             n += 1
     print(f"wrote {n} details")
 
+
+def _edgevars(argv):
+    """Variants of each set's mountain west and east sides (#63), so a long
+side stops repeating one arrangement tile after tile: mountain_edge_09/10
+_v1 and _v2. As the interiors do, a variant keeps every rock that straddles
+the tile's lines (the neighbours draw those too, so tiles still join) and
+redraws the rocks fully inside the tile, each flipped or nudged a few pixels,
+one in three near the open side left out (seeded per set and variant).
+Listed as the codes' `variants`, so the shell picks one per cell
+(src/tilevar.c).
+
+    python3 tools/romeart.py edgevars [pack-dir]
+
+Writes art/tiles/[<set>/]mountain_edge_<09|10>_v<1|2>.png.
+    """
+    import os, random, tempfile, contextlib, io
+    from PIL import Image
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    TILES = os.path.join(PACK, "art", "tiles")
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    n = 0
+    for st in ["", "galliae", "africa", "oriens"]:
+        zone = st or "italia"
+        d = os.path.join(TILES, st)
+        prim = os.path.join(ROOT, "art", "primitives", zone)
+        spr = os.path.join(prim, "rocks")
+        args = ["romeart", "", "--sprites", spr, "--terrain", "mountain", "--name", "mountain",
+                "--ragged", "4,20,34" if zone == "italia" else "6,20,34"]
+        sl = os.path.join(prim, "rock_slots.json")
+        if os.path.exists(sl):
+            args += ["--slots", sl]
+        tmp = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+        args[1] = tmp
+        with contextlib.redirect_stdout(io.StringIO()):
+            _forestlattice(args)
+        lay = json.load(open(tmp)); os.remove(tmp)
+        ims = {}
+
+        def im(i):
+            if i not in ims:
+                ims[i] = Image.open(os.path.join(spr, f"tile_{i:02d}.png")).convert("RGBA")
+            return ims[i]
+        ground = Image.open(os.path.join(d, "grass.png")).convert("RGBA")
+        for code, side in ((9, "E"), (10, "W")):
+            sprites = lay["tiles"][f"mountain_edge_{code:02d}"]["sprites"]
+            for v in (1, 2):
+                rng = random.Random(f"edgevar-{zone}-{code}-{v}")
+                out = ground.copy()
+                for (i, x, y) in sprites:
+                    l, tp, r, b = im(i).getbbox()
+                    inside = x + l >= 0 and y + tp >= 0 and x + r <= 96 and y + b <= 96
+                    sp, nx, ny = im(i), x, y
+                    if inside:
+                        near = (x + l < 30) if side == "W" else (x + r > 66)
+                        if near and rng.random() < 0.34:
+                            continue
+                        if rng.random() < 0.5:
+                            sp = sp.transpose(Image.FLIP_LEFT_RIGHT)
+                        jl, jt, jr, jb = sp.getbbox()
+                        nx = x + l - jl + rng.randint(-6, 6)
+                        ny = y + tp - jt + rng.randint(-5, 5)
+                        nx = max(-jl, min(96 - jr, nx)); ny = max(-jt, min(96 - jb, ny))
+                    can = Image.new("RGBA", (288, 288)); can.alpha_composite(sp, (nx + 96, ny + 96))
+                    out.alpha_composite(can.crop((96, 96, 192, 192)))
+                out.save(os.path.join(d, f"mountain_edge_{code:02d}_v{v}.png")); n += 1
+    print(f"wrote {n} edge variants")
 
 # ==========================================================================
 # interiors.py -- plain forest and mountain variants, so a mass is no grid
@@ -5095,6 +5173,7 @@ COMMANDS = {
     "fills": lambda a: _fills(["romeart"] + a),
     "aprons": lambda a: _aprons(["romeart"] + a),
     "details": lambda a: _details(["romeart"] + a),
+    "edgevars": lambda a: _edgevars(["romeart"] + a),
     "interiors": lambda a: _interiors(["romeart"] + a),
     "lattice": lambda a: _forestlattice(["romeart"] + a),
     "seamcheck": lambda a: _seamcheck(["romeart"] + a),
