@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-429 jobs. A job with a **Pack path** has produced that file in the pack; a
+434 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1208,6 +1208,36 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/combat/obstacle_03.png`
 - **prompt:** an isolated cut-out game sprite of a short stub of ruined grey stone wall, a few brick courses standing with a jagged broken top and rubble at its foot, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=8321`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### piece_dock
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9400)
+- **prompt:** an isolated cut-out game sprite of a small wooden jetty, weathered planks on posts with a coil of rope and a mooring post, short and square, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9400`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### piece_farmstead
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9411)
+- **prompt:** an isolated cut-out game sprite of one single small Roman farmhouse: one whitewashed cottage with a red tiled roof and a small haystack leaning on its side, one building only, compact and chunky, the same size and scale as a stone well, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9411`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### piece_ruin
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9402)
+- **prompt:** an isolated cut-out game sprite of a ruined Roman villa corner, two broken white stone walls and a fallen column drum, weeds in the cracks, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9402`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### piece_shrine
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9403)
+- **prompt:** an isolated cut-out game sprite of a small roadside Roman shrine, a little stone niche on a plinth with a statuette and an offering bowl, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9403`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### piece_well
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9404)
+- **prompt:** an isolated cut-out game sprite of a round stone village well with a wooden crossbeam, a rope and a bucket, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9404`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
 
 ### roads32
 

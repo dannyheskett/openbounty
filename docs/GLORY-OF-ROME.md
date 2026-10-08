@@ -574,7 +574,13 @@ been baked into the `.dat` when the map has been authored.
 Italia has been drawn by hand as a source grid, `art/maps/italia.txt` -- one
 character per tile: `~` sea, `.` grass, `,` grass variant, `f` forest, `^`
 mountain, `d` desert; overlays `r` / `R` / `M` river on grass / in forest / in
-mountains, `=` road, `H` bridge. `tools/mapbuild.py build` has baked it into
+mountains, `=` road, `H` bridge; `p` / `w` ploughed and wheat fields (grass
+to the engine, soft-edged into the grass round them); `P T S O K G` the
+vistas' landmarks on grass (the Pharos, the ocean temple, the Sibyl's cave,
+the Oppidum's gate, the Tophet's stelae, the Gordian cart); and the
+settlement set pieces (#63): `n` a farmhouse, `e` a well, `h` a shrine, `u` a
+ruin, solid on grass (`blocks_foot`), and `j` a jetty, a sea cell off one
+straight grass shore drawn as `dock_<side>` over that shore's water edge. `tools/mapbuild.py build` has baked it into
 `maps/italia.dat`: the edge variants (REQ-229a/e), the river and road pieces
 by their links, the mouths, the bridges. The `.dat` has never been edited by
 hand; the source has, and `scripts/check_maps.sh` has failed any `.dat` that
@@ -599,6 +605,16 @@ shape the edge pieces draw badly -- a one-cell stair step, a strand in no
 world's edge -- beyond the original cases listed in
 `art/maps/<zone>_lint_allow.json`, and any change in the hero's reach from
 `art/maps/<zone>_reach.json`.
+
+The shell (modern) has drawn four cosmetic layers over the baked tiles,
+picked per cell so a map has looked the same every time (#63; the art from
+`romeart.py fills`, `aprons`, `details`, ART-PIPELINE): an inner-corner fill
+where a grass or sand cell has had a wood or range on two adjacent sides; an
+apron of stray trees or loose rocks along a wood's or range's side; now and
+then a bush or a stone on open ground; and every object, set piece and
+landmark drawn again on top. `tools/maprender.py --tiles` has drawn the
+same, and so has been the picture to review a map by. None of them has
+changed what a cell is.
 
 `tools/mapbuild.py place` has scattered the zone's chests and wandering
 armies from a fixed seed inside the region boxes in
