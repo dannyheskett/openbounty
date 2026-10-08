@@ -222,6 +222,20 @@ generated from.
   their rows, straddlers keep their places (seamcheck 0), the plain tile is
   unchanged. Forest edges are left as they were: thinned the same way, a wood
   came out crenellated.
+- **Mountain edges set back and shadowed** (#63, plan step 3) — `--ragged
+  S,A,B,T,U`: the west and east edge crags set back T px (the top one) and U px
+  (the bottom one) from the open line, so a range's side steps in and out
+  (zone sets 12 and 28, Italia 0 and 28); and `compose`'s layout key
+  `"shadow": [dx, dy, alpha]` (`MOUNTAIN_SHADOW`, 2, 3, 0.35) lays a soft
+  contact shadow under an edge piece's sprites, faded to nothing within 4 px
+  of every tile line so it never makes a seam, and never on the plain tile, so
+  what is built from it still matches. `zone` builds both, and the mountain-
+  and forest-on-sand pieces (`<terrain>_sand_edge_NN`) as the same lattice over
+  the set's desert.
+- **Italia's forest from sprites** (#63) — eight Retro Diffusion trees
+  (`art/jobs/italia_tree_*.json`), colour-matched to the old forest and kept in
+  `art/primitives/italia/trees`; the forest is a lattice of one of them like
+  the other sets' (`art/primitives/italia/BUILD.md`).
 - **Inner-corner fills** (#63) — `romeart.py fills`: where a grass or sand
   cell has a wood or range on two adjacent sides, the shell (modern) and
   `maprender` have drawn `<terrain>[_sand]_fill_<ne|nw|se|sw>` into the

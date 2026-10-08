@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-434 jobs. A job with a **Pack path** has produced that file in the pack; a
+442 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1157,6 +1157,54 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3421)
 - **prompt:** muted moss green grass seen from directly above, dull and slightly grey, with a few darker scrub tufts scattered through it, low contrast, the same everywhere
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3421`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
+
+### italia_tree_00
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9500)
+- **prompt:** an isolated cut-out game sprite of a single holm oak with a dense round dark green crown and a short brown trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9500`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_01
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9501)
+- **prompt:** an isolated cut-out game sprite of a single round leafy oak with a full rich green crown and a short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9501`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_02
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9502)
+- **prompt:** an isolated cut-out game sprite of a single broad round chestnut tree with a lush mid green crown and a short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9502`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_03
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9503)
+- **prompt:** an isolated cut-out game sprite of a single small round young oak with a compact bright green crown and a thin trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9503`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_04
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9604)
+- **prompt:** an isolated cut-out game sprite of a single old wide oak with a broad dark green crown and a thick short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9604`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_05
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9505)
+- **prompt:** an isolated cut-out game sprite of a single round beech with a soft light green crown and a short grey trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9505`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_06
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9506)
+- **prompt:** an isolated cut-out game sprite of a single bushy round tree with a dense deep green crown and a short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9506`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### italia_tree_07
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9507)
+- **prompt:** an isolated cut-out game sprite of a single low round shrubby tree with a small full green crown and a short trunk, seen from the front and above like the other map objects, the crown round and filling most of the picture, made of many small bright green leaf clusters with crisp pixel leaf texture and dark green gaps between the clusters, bright grass-green highlights lit from the upper left, no black outline, a freestanding object with no ground and no shadow under it: only the flat magenta background shows below and around it, the whole tree complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9507`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
 
 ### landmark_gordian
 
