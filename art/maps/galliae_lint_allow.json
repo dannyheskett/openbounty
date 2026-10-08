@@ -84,24 +84,10 @@
   "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "edge",
-  "x": 62,
-  "y": 19,
-  "what": "forest within two cells of the world's edge",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
   "rule": "coast",
   "x": 17,
   "y": 20,
   "what": "mountain beside the sea",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "edge",
-  "x": 62,
-  "y": 20,
-  "what": "forest within two cells of the world's edge",
   "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
