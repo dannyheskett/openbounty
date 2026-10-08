@@ -238,34 +238,6 @@
   "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
-  "rule": "coast",
-  "x": 47,
-  "y": 84,
-  "what": "mountain beside the sea",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "coast",
-  "x": 47,
-  "y": 85,
-  "what": "mountain beside the sea",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "coast",
-  "x": 48,
-  "y": 85,
-  "what": "mountain beside the sea",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "coast",
-  "x": 48,
-  "y": 86,
-  "what": "mountain beside the sea",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
   "rule": "notch",
   "x": 32,
   "y": 108,
@@ -459,13 +431,6 @@
   "x": 43,
   "y": 77,
   "what": "forest stair step with (44,76)",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "step",
-  "x": 47,
-  "y": 85,
-  "what": "mountain stair step with (48,86)",
   "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {

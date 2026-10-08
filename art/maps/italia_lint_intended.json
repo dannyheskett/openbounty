@@ -53,6 +53,15 @@
     63
    ],
    "reason": "the Apennine cliffs and the rocky headland round the two boat-only coves south of Ancona"
+  },
+  {
+   "box": [
+    44,
+    83,
+    52,
+    87
+   ],
+   "reason": "the Calabrian ridge closing the toe from the western sea to the one pass, which guardian_calabria holds"
   }
  ],
  "edge": [
