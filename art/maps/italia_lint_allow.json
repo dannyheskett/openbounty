@@ -28,20 +28,6 @@
   "reason": "in the map before #63 (fd822ee)"
  },
  {
-  "rule": "notch",
-  "x": 28,
-  "y": 33,
-  "what": "mountain edge on ['s'] hides the ne corner",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
-  "rule": "notch",
-  "x": 29,
-  "y": 33,
-  "what": "mountain edge on ['n'] hides the sw corner",
-  "reason": "in the map before #63 (fd822ee)"
- },
- {
   "rule": "step",
   "x": 37,
   "y": 2,
