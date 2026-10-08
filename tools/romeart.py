@@ -42,14 +42,10 @@
   Paid (network):
     rdgen cost|run|reprocess <job>    Retro Diffusion generation
     rdgen balance                     the Retro Diffusion credit left
-    pltileset <out> <request.json>    one PixelLab create-tileset call
-    pltilespro <body.json> <out>      one PixelLab Tiles Pro call
-    sprites <job> <out>               a PixelLab rock/tree sprite batch
 
 THE PAID COMMANDS ARE THE ONLY ONES THAT REACH THE NETWORK, and they live in
-the last section of this file. rdgen run, pltileset, pltilespro and sprites
-spend money: each prints what it would post and what that costs, and posts
-only when given --run. rdgen cost and balance, and rdgen reprocess's free
+the last section of this file. rdgen run spends money: it prints what it
+would post and what that costs, and posts only when given --run. rdgen cost and balance, and rdgen reprocess's free
 downscale, charge nothing. Every prompt and setting a generation is given is
 recorded in art/jobs/*.json and docs/ROME-ART.md.
 
@@ -4398,276 +4394,10 @@ Needs oggenc.
 # PAID (NETWORK) -- every call that leaves this machine
 # ==========================================================================
 #
-# Nothing above this line reaches the network. The commands below do, and
-# four of them spend: rdgen run, pltileset, pltilespro and sprites. Each
-# describes what it would post and what that costs, and posts only with --run
-# (#143). rdgen cost, rdgen balance and rdgen reprocess (its free downscale)
-# are network calls that charge nothing.
-
-PIXELLAB_API = "https://api.pixellab.ai/v2"
-PIXELLAB_TOKEN = "~/.config/pixellab/token"
-
-
-def _pixellab(method, path, body=None, timeout=120):
-    """One PixelLab request: (HTTP status, the JSON reply -- or its text when
-    the reply is not JSON). Token at ~/.config/pixellab/token."""
-    import urllib.error
-    import urllib.request
-    tok = open(os.path.expanduser(PIXELLAB_TOKEN)).read().strip()
-    r = urllib.request.Request(
-        PIXELLAB_API + path,
-        data=json.dumps(body).encode() if body is not None else None,
-        method=method,
-        headers={"Authorization": "Bearer " + tok,
-                 "Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(r, timeout=timeout) as f:
-            return f.status, json.loads(f.read())
-    except urllib.error.HTTPError as e:
-        raw = e.read() or b"{}"
-        try:
-            return e.code, json.loads(raw)
-        except ValueError:
-            return e.code, raw.decode(errors="replace")[:500]
-
-
-def _download(url):
-    """A generated file from PixelLab's storage, which refuses urllib's own
-    user agent."""
-    import urllib.request
-    dl = urllib.request.Request(url, headers={"User-Agent": "curl/8"})
-    with urllib.request.urlopen(dl, timeout=120) as f:
-        return f.read()
-
-
-def _paid_gate(argv, what, body, cost="PixelLab quotes no price before a call"):
-    """True when argv carries --run. Otherwise print what would be posted,
-    its cost and the balance, post nothing, and return False."""
-    if "--run" in argv:
-        return True
-
-    def short(v):
-        if isinstance(v, str) and len(v) > 80:
-            return v[:40] + f"... ({len(v)} chars)"
-        if isinstance(v, dict):
-            return {k: short(x) for k, x in v.items()}
-        if isinstance(v, list):
-            return [short(x) for x in v]
-        return v
-    print(f"PAID: {what}")
-    print(json.dumps(short(body), indent=1))
-    print(f"cost: {cost}")
-    st, bal = _pixellab("GET", "/balance")
-    print("balance:", str(bal)[:200])
-    print("dry run; nothing posted (add --run to post and be charged)")
-    return False
-
-
-def cmd_sprites(argv):
-    """Run a PixelLab sprite-batch job (rocks, trees) and keep its sprites.
-
-    python3 tools/romeart.py sprites art/jobs/<zone>_o96_rocks.json art/primitives/<zone>/rocks [--run]   (PAID)
-
-The job file is the repo's own record: "description" (the shared prompt),
-"batches" (lists of four item descriptions, one POST /create-1-direction-object
-per list) and "_note". Each call is size 96, view top-down, and costs 20-40
-subscription generations. For every batch this writes body<N>.json (what was
-posted), meta<N>.json (the object as GET /v2/objects returned it) and the
-candidate frames as tile_<NN>.png numbered across batches, as
-art/primitives/africa/rocks was kept. Token at ~/.config/pixellab/token.
-Nothing is posted without --run (2026-09-27, Italia rocks for #67; before that
-the batches were posted by hand).
-    """
-    import io, time
-    if len(argv) < 2:
-        sys.exit("usage: romeart.py sprites <job.json> <out-dir> [--run]")
-    job_p, out = argv[0], argv[1]
-    job = json.load(open(job_p))
-    req = _pixellab
-
-    bodies = [{"description": job["description"], "size": 96, "view": "top-down", "item_descriptions": b} for b in job["batches"]]
-    print(f"{len(bodies)} calls, {sum(len(b) for b in job['batches'])} sprites, 20-40 generations per call")
-    if not _paid_gate(argv, f"{len(bodies)} x POST /create-1-direction-object", bodies,
-                      cost=f"20-40 subscription generations per call, {len(bodies)} calls"):
-        return
-    os.makedirs(out, exist_ok=True)
-    tile = 0
-    for n, body in enumerate(bodies):
-        json.dump(body, open(os.path.join(out, f"body{n}.json"), "w"), indent=1)
-        st, resp = req("POST", "/create-1-direction-object", body)
-        print(f"call {n}: HTTP {st} {str(resp)[:160]}")
-        if st not in (200, 202):
-            sys.exit("post failed")
-        oid = resp["object_id"]
-        meta = None
-        for _ in range(120):
-            time.sleep(10)
-            st, meta = req("GET", f"/objects/{oid}")
-            status = meta.get("status") if isinstance(meta, dict) else None
-            if status in ("completed", "review", "failed"):
-                break
-        json.dump(meta, open(os.path.join(out, f"meta{n}.json"), "w"), indent=1)
-        if not isinstance(meta, dict) or meta.get("status") == "failed":
-            sys.exit("generation failed")
-        urls = meta.get("frame_urls") or [u for k, u in sorted((meta.get("storage_urls") or {}).items())]
-        for u in urls:
-            im = Image.open(io.BytesIO(_download(u))).convert("RGBA")
-            im.save(os.path.join(out, f"tile_{tile:02d}.png")); print(f"  tile_{tile:02d}.png {im.size}"); tile += 1
-    st, bal = req("GET", "/balance"); print("balance:", str(bal)[:200])
-
-
-# ==========================================================================
-# pltileset.py -- one PixelLab create-tileset call
-# ==========================================================================
-
-def _pltileset(argv):
-    """Run one PixelLab create-tileset call and save its 16 tiles.
-
-    python3 tools/romeart.py pltileset <out-dir> <request.json> [--run]   (PAID)
-
-The request file is the JSON body (no images); keys starting with "_" are
-our own notes and are not sent. Token at ~/.config/pixellab/token.
-Writes submit.json, result.json, tile_NN.png, tiles_meta.json, sheet.png and
-a 7x6 mock (map_mock_1x.png / _3x.png) laid out by corner pattern, and prints
-the terrain ids (the lower id is what later sets chain to) and seam figures.
-"""
-    import base64, time
-    from PIL import ImageDraw, ImageChops, ImageStat
-
-    if len(argv) < 3:
-        sys.exit("usage: romeart.py pltileset <out-dir> <request.json> [--run]")
-    out, reqp = argv[1], argv[2]
-    body = json.load(open(reqp))
-    # A key starting with "_" is our own record, not part of the request -- the
-    # same convention rdgen uses. The API rejects an unknown field outright (422),
-    # so a job file's _note would make it unrunnable if it were posted.
-    body = {k: v for k, v in body.items() if not k.startswith("_")}
-    if not _paid_gate(argv, "POST /create-tileset", body):
-        return
-    os.makedirs(out, exist_ok=True)
-    json.dump(body, open(os.path.join(out, "request.json"), "w"), indent=1)
-    code, resp = _pixellab("POST", "/create-tileset", body)
-    print("HTTP", code, json.dumps(resp)[:300])
-    json.dump(resp, open(os.path.join(out, "submit.json"), "w"), indent=1)
-    tid = resp.get("tileset_id") if isinstance(resp, dict) else None
-    if not tid:
-        sys.exit("no tileset id")
-    s = None
-    for i in range(90):
-        time.sleep(10)
-        st, s = _pixellab("GET", f"/tilesets/{tid}", timeout=60)
-        if st == 200 and isinstance(s, dict) and s.get("tileset"):
-            print(f"done at {(i + 1) * 10}s"); break
-    json.dump(s, open(os.path.join(out, "result.json"), "w"), indent=1)
-    ts = s["tileset"]
-    print("terrain ids", s.get("metadata", {}).get("terrain_ids"))
-    imgs = []
-    for i, t in enumerate(ts["tiles"]):
-        data = base64.b64decode(t["image"]["base64"].split(",")[-1])
-        p = os.path.join(out, f"tile_{i:02d}.png"); open(p, "wb").write(data)
-        imgs.append((i, t, Image.open(p).convert("RGBA")))
-    json.dump([{k: v for k, v in t.items() if k != "image"} for _, t, _ in imgs], open(os.path.join(out, "tiles_meta.json"), "w"), indent=1)
-    T = imgs[0][2].width; S = 96 // T
-
-
-    def key(c):
-        return tuple({"upper": "u", "lower": "l"}.get(c[k], "t") for k in ("NW", "NE", "SW", "SE"))
-
-
-    by = {}
-    for _, t, im in imgs:
-        by.setdefault(key(t["corners"]), im)
-    grid = [["l"] * 8 for _ in range(7)]
-    for y in range(1, 4):
-        for x in range(1, 5):
-            grid[y][x] = "u"
-    grid[4][2] = "u"; grid[4][3] = "u"
-    mock = Image.new("RGB", (7 * T, 6 * T))
-    for cy in range(6):
-        for cx in range(7):
-            k = (grid[cy][cx], grid[cy][cx + 1], grid[cy + 1][cx], grid[cy + 1][cx + 1])
-            if k in by:
-                mock.paste(by[k].convert("RGB"), (cx * T, cy * T))
-    mock.save(os.path.join(out, "map_mock_1x.png"))
-    mock.resize((mock.width * S, mock.height * S), Image.NEAREST).save(os.path.join(out, "map_mock_3x.png"))
-
-
-    def diff(a, b):
-        return round(sum(ImageStat.Stat(ImageChops.difference(a, b)).mean) / 3, 1)
-
-
-    tiles = {"".join(k): im.convert("RGB") for k, im in by.items()}
-    rows = [diff(a.crop((T - 1, 0, T, T)), b.crop((0, 0, 1, T))) for ka, a in tiles.items() for kb, b in tiles.items() if ka[1] == kb[0] and ka[3] == kb[2]]
-    print("horizontal seam mean", round(sum(rows) / len(rows), 1), "max", max(rows))
-    if "uuuu" in tiles:
-        f = tiles["uuuu"]; print("upper self-seam v/h", diff(f.crop((0, 0, T, 1)), f.crop((0, T - 1, T, T))), diff(f.crop((0, 0, 1, T)), f.crop((T - 1, 0, T, T))))
-    cols = 4; rws = (len(imgs) + cols - 1) // cols
-    sheet = Image.new("RGB", (cols * (T * S + 8) + 8, rws * (T * S + 24) + 8), (40, 40, 40)); d = ImageDraw.Draw(sheet)
-    for n, (i, t, im) in enumerate(imgs):
-        x = 8 + (n % cols) * (T * S + 8); y = 8 + (n // cols) * (T * S + 24)
-        big = im.resize((T * S, T * S), Image.NEAREST); sheet.paste(big, (x, y + 16), big)
-        c = t["corners"]; d.text((x, y), f"{i} {c['NW'][0]}{c['NE'][0]}{c['SW'][0]}{c['SE'][0]}", fill=(230, 230, 230))
-    sheet.save(os.path.join(out, "sheet.png"))
-
-
-# ==========================================================================
-# pltilespro.py -- one PixelLab Tiles Pro call
-# ==========================================================================
-
-def _pltilespro(argv):
-    """One PixelLab Tiles Pro call (connectable terrain tileset) from a JSON body.
-
-    python3 tools/romeart.py pltilespro <body.json> <out-dir> [--run]   (PAID)
-
-Posts the body to /create-tiles-pro, polls /tiles-pro/{id}, downloads every
-tile as tile_<n>.png, writes meta.json (tile_rules, usage) and sheet.png.
-"""
-    import io, time
-
-    if len(argv) < 3:
-        sys.exit("usage: romeart.py pltilespro <body.json> <out-dir> [--run]")
-    req = _pixellab
-    body = json.load(open(argv[1]))
-    # "_"-prefixed keys are our own record, not part of the request (rdgen's
-    # convention). The API rejects unknown fields with a 422.
-    body = {k: v for k, v in body.items() if not k.startswith("_")}
-    out = argv[2]
-    if not _paid_gate(argv, "POST /create-tiles-pro", body):
-        return
-    os.makedirs(out, exist_ok=True)
-    st, resp = req("POST", "/create-tiles-pro", body)
-    print("post", st, json.dumps(resp)[:300])
-    if st != 202:
-        sys.exit(1)
-    tid = resp.get("tile_id") or resp.get("id") or resp.get("job_id")
-    if not tid:
-        print(resp); sys.exit(1)
-    while True:
-        time.sleep(10)
-        st, res = req("GET", f"/tiles-pro/{tid}")
-        print("poll", st, str(res)[:120])
-        if st == 200 and isinstance(res, dict) and res.get("storage_urls"):
-            break
-        if st not in (200, 423, 202):
-            sys.exit(1)
-    urls = res["storage_urls"]
-    tiles = {}
-    for name, url in urls.items():
-        im = Image.open(io.BytesIO(_download(url))).convert("RGBA")
-        im.save(os.path.join(out, name + ".png")); tiles[name] = im
-    json.dump({"tile_id": tid, "usage": res.get("usage"), "kind": res.get("kind"),
-               "tile_rules": res.get("tile_rules"), "body": body},
-              open(os.path.join(out, "meta.json"), "w"), indent=1)
-    names = sorted(tiles, key=lambda n: int(n.split("_")[-1]))
-    w, h = tiles[names[0]].size
-    cols = 4
-    rows = (len(names) + cols - 1) // cols
-    sheet = Image.new("RGBA", (cols * w, rows * h))
-    for i, n in enumerate(names):
-        sheet.paste(tiles[n], ((i % cols) * w, (i // cols) * h))
-    sheet.save(os.path.join(out, "sheet.png"))
-    print(len(names), "tiles", w, "x", h, "usage", res.get("usage"), "in", out)
-
+# Nothing above this line reaches the network. Retro Diffusion is the one
+# generator (PixelLab is no longer used): `rdgen run` quotes the cost and
+# posts only with --run (#143); rdgen cost, balance and reprocess (its free
+# downscale) charge nothing.
 
 # ==========================================================================
 # rdgen.py -- the Retro Diffusion driver
@@ -6546,7 +6276,6 @@ COMMANDS = {
     "map": cmd_map,
     "zone": cmd_zone, "install": cmd_install, "sheet": cmd_sheet,
     "icon": cmd_icon,
-    "sprites": cmd_sprites,   # paid (network)
     "slots": cmd_slots,
     "rebank": cmd_rebank,
     "fieldgrade": cmd_fieldgrade,
@@ -6578,8 +6307,6 @@ COMMANDS = {
     "introtheme": lambda a: _introtheme(["romeart"] + a),
     # paid (network): see the last section
     "rdgen": lambda a: _rdgen(["romeart"] + a),
-    "pltileset": lambda a: _pltileset(["romeart"] + a),
-    "pltilespro": lambda a: _pltilespro(["romeart"] + a),
 }
 
 
