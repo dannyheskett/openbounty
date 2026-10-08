@@ -505,13 +505,13 @@
 					"artifact":	"articles"
 				}, {
 					"id":	"chest_cove_mountain",
-					"x":	38,
+					"x":	39,
 					"y":	54,
 					"fixed":	true,
 					"artifact":	"book"
 				}, {
 					"id":	"chest_cove_forest",
-					"x":	49,
+					"x":	47,
 					"y":	60,
 					"fixed":	true
 				}, {
@@ -891,8 +891,8 @@
 					"y":	82,
 					"id":	"wandering_army_023"
 				}, {
-					"x":	49,
-					"y":	60,
+					"x":	48,
+					"y":	58,
 					"id":	"wandering_army_024"
 				}, {
 					"x":	13,

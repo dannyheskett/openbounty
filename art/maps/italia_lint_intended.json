@@ -20,24 +20,6 @@
   },
   {
    "box": [
-    42,
-    52,
-    46,
-    57
-   ],
-   "reason": "the Apennine cliffs round the boat-only Sibylline cove"
-  },
-  {
-   "box": [
-    49,
-    58,
-    51,
-    61
-   ],
-   "reason": "the ring of wood on the headland round the second boat-only cove"
-  },
-  {
-   "box": [
     7,
     66,
     17,
@@ -53,6 +35,24 @@
     97
    ],
    "reason": "Sardinia's coast of wood and rock all round, so a boat lands only at Olbia's harbour"
+  },
+  {
+   "box": [
+    24,
+    66,
+    35,
+    78
+   ],
+   "reason": "Capri, #222's rock islet in the bay south of Ostia, cliffs to the sea all round, landed on only at its east cell where its guardian stands"
+  },
+  {
+   "box": [
+    40,
+    48,
+    51,
+    63
+   ],
+   "reason": "the Apennine cliffs and the rocky headland round the two boat-only coves south of Ancona"
   }
  ],
  "edge": [
