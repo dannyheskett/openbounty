@@ -4237,6 +4237,46 @@
 			"morale_group":	"C",
 			"tier_counts":	[0, 1, 2, 3],
 			"anim":	["art/troops/elephanti_00.png", "art/troops/elephanti_01.png", "art/troops/elephanti_02.png", "art/troops/elephanti_03.png", "art/troops/elephanti_04.png", "art/troops/elephanti_05.png"]
+		}, {
+			"index":	27,
+			"id":	"ifrit",
+			"name":	"Ifrit",
+			"sprite":	"art/troops/ifrit_00.png",
+			"portrait":	"art/portraits/troop_ifrit.png",
+			"skill_level":	6,
+			"hit_points":	250,
+			"move_rate":	2,
+			"melee":	[30, 50],
+			"ranged":	[50, 0, 3],
+			"recruit_cost":	6000,
+			"spoils_factor":	600,
+			"abilities":	"FLY|IMMUNE|MAGIC",
+			"dwelling":	"",
+			"max_population":	0,
+			"growth_per_week":	0,
+			"morale_group":	"D",
+			"tier_counts":	[0, 0, 0, 0],
+			"anim":	["art/troops/ifrit_00.png", "art/troops/ifrit_01.png", "art/troops/ifrit_02.png", "art/troops/ifrit_03.png", "art/troops/ifrit_04.png", "art/troops/ifrit_05.png"]
+		}, {
+			"index":	28,
+			"id":	"athanatoi",
+			"name":	"Athanatoi",
+			"sprite":	"art/troops/athanatoi_00.png",
+			"portrait":	"art/portraits/troop_athanatoi.png",
+			"skill_level":	7,
+			"hit_points":	100,
+			"move_rate":	2,
+			"melee":	[20, 30],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	4000,
+			"spoils_factor":	400,
+			"abilities":	"ABSORB|REGEN|IMMUNE",
+			"dwelling":	"",
+			"max_population":	0,
+			"growth_per_week":	0,
+			"morale_group":	"D",
+			"tier_counts":	[0, 0, 0, 0],
+			"anim":	["art/troops/athanatoi_00.png", "art/troops/athanatoi_01.png", "art/troops/athanatoi_02.png", "art/troops/athanatoi_03.png", "art/troops/athanatoi_04.png", "art/troops/athanatoi_05.png"]
 		}],
 	"spells":	[{
 			"index":	0,
@@ -4568,19 +4608,19 @@
 			"anim":	["art/villains/catiline_00.png", "art/villains/catiline_01.png", "art/villains/catiline_02.png", "art/villains/catiline_03.png", "art/villains/catiline_04.png", "art/villains/catiline_05.png", "art/villains/catiline_06.png", "art/villains/catiline_07.png"],
 			"army":	[{
 					"troop":	"peasants",
-					"count":	6
+					"count":	103
 				}, {
 					"troop":	"peasants",
-					"count":	6
+					"count":	103
 				}, {
 					"troop":	"militia",
-					"count":	6
+					"count":	34
 				}, {
 					"troop":	"militia",
-					"count":	6
+					"count":	34
 				}, {
-					"troop":	"wolves",
-					"count":	6
+					"troop":	"pikemen",
+					"count":	4
 				}]
 		}, {
 			"index":	1,
@@ -4593,19 +4633,19 @@
 			"anim":	["art/villains/spartacus_00.png", "art/villains/spartacus_01.png", "art/villains/spartacus_02.png", "art/villains/spartacus_03.png", "art/villains/spartacus_04.png", "art/villains/spartacus_05.png", "art/villains/spartacus_06.png", "art/villains/spartacus_07.png"],
 			"army":	[{
 					"troop":	"peasants",
-					"count":	7
+					"count":	128
 				}, {
 					"troop":	"peasants",
-					"count":	7
+					"count":	128
 				}, {
 					"troop":	"militia",
-					"count":	7
+					"count":	43
+				}, {
+					"troop":	"militia",
+					"count":	43
 				}, {
 					"troop":	"pikemen",
-					"count":	4
-				}, {
-					"troop":	"wolves",
-					"count":	7
+					"count":	5
 				}]
 		}, {
 			"index":	2,
@@ -4618,19 +4658,19 @@
 			"anim":	["art/villains/brennus_00.png", "art/villains/brennus_01.png", "art/villains/brennus_02.png", "art/villains/brennus_03.png", "art/villains/brennus_04.png", "art/villains/brennus_05.png", "art/villains/brennus_06.png", "art/villains/brennus_07.png"],
 			"army":	[{
 					"troop":	"peasants",
-					"count":	8
+					"count":	128
 				}, {
-					"troop":	"nomads",
-					"count":	5
+					"troop":	"militia",
+					"count":	51
 				}, {
-					"troop":	"orcs",
-					"count":	8
+					"troop":	"dwarves",
+					"count":	10
 				}, {
-					"troop":	"wolves",
-					"count":	8
+					"troop":	"dwarves",
+					"count":	10
 				}, {
-					"troop":	"nomads",
-					"count":	5
+					"troop":	"druids",
+					"count":	2
 				}]
 		}, {
 			"index":	3,
@@ -4642,20 +4682,20 @@
 			"portrait":	"art/villains/pyrrhus_00.png",
 			"anim":	["art/villains/pyrrhus_00.png", "art/villains/pyrrhus_01.png", "art/villains/pyrrhus_02.png", "art/villains/pyrrhus_03.png", "art/villains/pyrrhus_04.png", "art/villains/pyrrhus_05.png", "art/villains/pyrrhus_06.png", "art/villains/pyrrhus_07.png"],
 			"army":	[{
-					"troop":	"nomads",
-					"count":	5
+					"troop":	"pikemen",
+					"count":	26
 				}, {
-					"troop":	"nomads",
-					"count":	5
-				}, {
-					"troop":	"orcs",
-					"count":	9
+					"troop":	"pikemen",
+					"count":	26
 				}, {
 					"troop":	"archers",
-					"count":	5
+					"count":	17
 				}, {
-					"troop":	"wolves",
-					"count":	9
+					"troop":	"militia",
+					"count":	51
+				}, {
+					"troop":	"elephants",
+					"count":	2
 				}]
 		}, {
 			"index":	4,
@@ -4668,19 +4708,19 @@
 			"anim":	["art/villains/alaric_00.png", "art/villains/alaric_01.png", "art/villains/alaric_02.png", "art/villains/alaric_03.png", "art/villains/alaric_04.png", "art/villains/alaric_05.png", "art/villains/alaric_06.png", "art/villains/alaric_07.png"],
 			"army":	[{
 					"troop":	"peasants",
-					"count":	10
+					"count":	171
 				}, {
-					"troop":	"elves",
-					"count":	6
+					"troop":	"pikemen",
+					"count":	26
 				}, {
 					"troop":	"barbarians",
 					"count":	3
 				}, {
-					"troop":	"gnomes",
-					"count":	10
+					"troop":	"skeletons",
+					"count":	68
 				}, {
-					"troop":	"druids",
-					"count":	3
+					"troop":	"zombies",
+					"count":	68
 				}]
 		}, {
 			"index":	5,
@@ -4692,20 +4732,20 @@
 			"portrait":	"art/villains/attila_00.png",
 			"anim":	["art/villains/attila_00.png", "art/villains/attila_01.png", "art/villains/attila_02.png", "art/villains/attila_03.png", "art/villains/attila_04.png", "art/villains/attila_05.png", "art/villains/attila_06.png", "art/villains/attila_07.png"],
 			"army":	[{
-					"troop":	"pikemen",
-					"count":	6
+					"troop":	"nomads",
+					"count":	34
 				}, {
-					"troop":	"archers",
-					"count":	6
+					"troop":	"nomads",
+					"count":	34
 				}, {
-					"troop":	"elves",
-					"count":	6
+					"troop":	"sagittarii",
+					"count":	34
 				}, {
 					"troop":	"barbarians",
-					"count":	3
+					"count":	5
 				}, {
 					"troop":	"cavalry",
-					"count":	3
+					"count":	17
 				}]
 		}, {
 			"index":	6,
@@ -4717,20 +4757,20 @@
 			"portrait":	"art/villains/boudica_00.png",
 			"anim":	["art/villains/boudica_00.png", "art/villains/boudica_01.png", "art/villains/boudica_02.png", "art/villains/boudica_03.png", "art/villains/boudica_04.png", "art/villains/boudica_05.png", "art/villains/boudica_06.png", "art/villains/boudica_07.png"],
 			"army":	[{
-					"troop":	"barbarians",
-					"count":	4
+					"troop":	"peasants",
+					"count":	256
 				}, {
-					"troop":	"elves",
-					"count":	7
-				}, {
-					"troop":	"gnomes",
-					"count":	12
+					"troop":	"peasants",
+					"count":	256
 				}, {
 					"troop":	"dwarves",
-					"count":	7
+					"count":	34
 				}, {
-					"troop":	"trolls",
-					"count":	4
+					"troop":	"barbarians",
+					"count":	13
+				}, {
+					"troop":	"druids",
+					"count":	10
 				}]
 		}, {
 			"index":	7,
@@ -4742,20 +4782,20 @@
 			"portrait":	"art/villains/civilis_00.png",
 			"anim":	["art/villains/civilis_00.png", "art/villains/civilis_01.png", "art/villains/civilis_02.png", "art/villains/civilis_03.png", "art/villains/civilis_04.png", "art/villains/civilis_05.png", "art/villains/civilis_06.png", "art/villains/civilis_07.png"],
 			"army":	[{
+					"troop":	"pikemen",
+					"count":	51
+				}, {
+					"troop":	"pikemen",
+					"count":	51
+				}, {
+					"troop":	"sagittarii",
+					"count":	34
+				}, {
+					"troop":	"cavalry",
+					"count":	34
+				}, {
 					"troop":	"barbarians",
-					"count":	4
-				}, {
-					"troop":	"elves",
-					"count":	7
-				}, {
-					"troop":	"dwarves",
-					"count":	7
-				}, {
-					"troop":	"druids",
-					"count":	4
-				}, {
-					"troop":	"trolls",
-					"count":	4
+					"count":	13
 				}]
 		}, {
 			"index":	8,
@@ -4767,20 +4807,20 @@
 			"portrait":	"art/villains/vercingetorix_00.png",
 			"anim":	["art/villains/vercingetorix_00.png", "art/villains/vercingetorix_01.png", "art/villains/vercingetorix_02.png", "art/villains/vercingetorix_03.png", "art/villains/vercingetorix_04.png", "art/villains/vercingetorix_05.png", "art/villains/vercingetorix_06.png", "art/villains/vercingetorix_07.png"],
 			"army":	[{
+					"troop":	"dwarves",
+					"count":	51
+				}, {
 					"troop":	"barbarians",
-					"count":	4
+					"count":	21
 				}, {
-					"troop":	"elves",
-					"count":	8
+					"troop":	"barbarians",
+					"count":	21
 				}, {
-					"troop":	"trolls",
-					"count":	4
+					"troop":	"cavalry",
+					"count":	51
 				}, {
 					"troop":	"druids",
-					"count":	4
-				}, {
-					"troop":	"gnomes",
-					"count":	14
+					"count":	26
 				}]
 		}, {
 			"index":	9,
@@ -4792,17 +4832,20 @@
 			"portrait":	"art/villains/arminius_00.png",
 			"anim":	["art/villains/arminius_00.png", "art/villains/arminius_01.png", "art/villains/arminius_02.png", "art/villains/arminius_03.png", "art/villains/arminius_04.png", "art/villains/arminius_05.png", "art/villains/arminius_06.png", "art/villains/arminius_07.png"],
 			"army":	[{
-					"troop":	"nomads",
-					"count":	8
+					"troop":	"elves",
+					"count":	51
 				}, {
-					"troop":	"orcs",
-					"count":	15
+					"troop":	"elves",
+					"count":	51
 				}, {
 					"troop":	"barbarians",
-					"count":	5
+					"count":	13
 				}, {
-					"troop":	"ogres",
-					"count":	5
+					"troop":	"barbarians",
+					"count":	13
+				}, {
+					"troop":	"barbarians",
+					"count":	13
 				}]
 		}, {
 			"index":	10,
@@ -4814,17 +4857,20 @@
 			"portrait":	"art/villains/tacfarinas_00.png",
 			"anim":	["art/villains/tacfarinas_00.png", "art/villains/tacfarinas_01.png", "art/villains/tacfarinas_02.png", "art/villains/tacfarinas_03.png", "art/villains/tacfarinas_04.png", "art/villains/tacfarinas_05.png", "art/villains/tacfarinas_06.png", "art/villains/tacfarinas_07.png"],
 			"army":	[{
-					"troop":	"pikemen",
-					"count":	9
+					"troop":	"nomads",
+					"count":	60
 				}, {
-					"troop":	"cavalry",
-					"count":	5
+					"troop":	"nomads",
+					"count":	60
+				}, {
+					"troop":	"pikemen",
+					"count":	51
 				}, {
 					"troop":	"archers",
-					"count":	9
+					"count":	43
 				}, {
-					"troop":	"ogres",
-					"count":	5
+					"troop":	"sagittarii",
+					"count":	43
 				}]
 		}, {
 			"index":	11,
@@ -4837,13 +4883,19 @@
 			"anim":	["art/villains/jugurtha_00.png", "art/villains/jugurtha_01.png", "art/villains/jugurtha_02.png", "art/villains/jugurtha_03.png", "art/villains/jugurtha_04.png", "art/villains/jugurtha_05.png", "art/villains/jugurtha_06.png", "art/villains/jugurtha_07.png"],
 			"army":	[{
 					"troop":	"nomads",
-					"count":	9
+					"count":	68
 				}, {
-					"troop":	"elves",
-					"count":	9
+					"troop":	"nomads",
+					"count":	68
 				}, {
-					"troop":	"druids",
-					"count":	5
+					"troop":	"nomads",
+					"count":	68
+				}, {
+					"troop":	"cavalry",
+					"count":	43
+				}, {
+					"troop":	"elephants",
+					"count":	7
 				}]
 		}, {
 			"index":	12,
@@ -4855,20 +4907,20 @@
 			"portrait":	"art/villains/gildo_00.png",
 			"anim":	["art/villains/gildo_00.png", "art/villains/gildo_01.png", "art/villains/gildo_02.png", "art/villains/gildo_03.png", "art/villains/gildo_04.png", "art/villains/gildo_05.png", "art/villains/gildo_06.png", "art/villains/gildo_07.png"],
 			"army":	[{
-					"troop":	"nomads",
-					"count":	10
-				}, {
-					"troop":	"giants",
-					"count":	1
-				}, {
-					"troop":	"barbarians",
-					"count":	6
-				}, {
-					"troop":	"ogres",
-					"count":	6
+					"troop":	"pikemen",
+					"count":	68
 				}, {
 					"troop":	"cavalry",
-					"count":	6
+					"count":	51
+				}, {
+					"troop":	"sagittarii",
+					"count":	51
+				}, {
+					"troop":	"nomads",
+					"count":	60
+				}, {
+					"troop":	"archers",
+					"count":	43
 				}]
 		}, {
 			"index":	13,
@@ -4880,20 +4932,20 @@
 			"portrait":	"art/villains/hannibal_00.png",
 			"anim":	["art/villains/hannibal_00.png", "art/villains/hannibal_01.png", "art/villains/hannibal_02.png", "art/villains/hannibal_03.png", "art/villains/hannibal_04.png", "art/villains/hannibal_05.png", "art/villains/hannibal_06.png", "art/villains/hannibal_07.png"],
 			"army":	[{
-					"troop":	"barbarians",
-					"count":	6
+					"troop":	"elephants",
+					"count":	17
 				}, {
-					"troop":	"archmages",
-					"count":	1
+					"troop":	"nomads",
+					"count":	77
+				}, {
+					"troop":	"orcs",
+					"count":	128
+				}, {
+					"troop":	"pikemen",
+					"count":	68
 				}, {
 					"troop":	"cavalry",
-					"count":	6
-				}, {
-					"troop":	"giants",
-					"count":	1
-				}, {
-					"troop":	"vampires",
-					"count":	1
+					"count":	51
 				}]
 		}, {
 			"index":	14,
@@ -4905,20 +4957,20 @@
 			"portrait":	"art/villains/mithridates_00.png",
 			"anim":	["art/villains/mithridates_00.png", "art/villains/mithridates_01.png", "art/villains/mithridates_02.png", "art/villains/mithridates_03.png", "art/villains/mithridates_04.png", "art/villains/mithridates_05.png", "art/villains/mithridates_06.png", "art/villains/mithridates_07.png"],
 			"army":	[{
-					"troop":	"barbarians",
-					"count":	6
+					"troop":	"pikemen",
+					"count":	86
 				}, {
-					"troop":	"giants",
-					"count":	1
+					"troop":	"barbarians",
+					"count":	86
 				}, {
 					"troop":	"cavalry",
-					"count":	6
+					"count":	128
 				}, {
-					"troop":	"archmages",
-					"count":	1
+					"troop":	"sagittarii",
+					"count":	86
 				}, {
 					"troop":	"dragons",
-					"count":	1
+					"count":	21
 				}]
 		}, {
 			"index":	15,
@@ -4930,20 +4982,20 @@
 			"portrait":	"art/villains/zenobia_00.png",
 			"anim":	["art/villains/zenobia_00.png", "art/villains/zenobia_01.png", "art/villains/zenobia_02.png", "art/villains/zenobia_03.png", "art/villains/zenobia_04.png", "art/villains/zenobia_05.png", "art/villains/zenobia_06.png", "art/villains/zenobia_07.png"],
 			"army":	[{
-					"troop":	"barbarians",
-					"count":	7
+					"troop":	"cavalry",
+					"count":	214
 				}, {
-					"troop":	"trolls",
-					"count":	7
+					"troop":	"ifrit",
+					"count":	26
+				}, {
+					"troop":	"sagittarii",
+					"count":	128
 				}, {
 					"troop":	"demons",
-					"count":	1
+					"count":	51
 				}, {
 					"troop":	"vampires",
-					"count":	1
-				}, {
-					"troop":	"dragons",
-					"count":	1
+					"count":	51
 				}]
 		}, {
 			"index":	16,
@@ -4955,20 +5007,20 @@
 			"portrait":	"art/villains/shapur_00.png",
 			"anim":	["art/villains/shapur_00.png", "art/villains/shapur_01.png", "art/villains/shapur_02.png", "art/villains/shapur_03.png", "art/villains/shapur_04.png", "art/villains/shapur_05.png", "art/villains/shapur_06.png", "art/villains/shapur_07.png"],
 			"army":	[{
+					"troop":	"cavalry",
+					"count":	342
+				}, {
+					"troop":	"elephants",
+					"count":	68
+				}, {
+					"troop":	"sagittarii",
+					"count":	256
+				}, {
 					"troop":	"dragons",
-					"count":	1
+					"count":	26
 				}, {
-					"troop":	"demons",
-					"count":	1
-				}, {
-					"troop":	"vampires",
-					"count":	1
-				}, {
-					"troop":	"barbarians",
-					"count":	7
-				}, {
-					"troop":	"archmages",
-					"count":	1
+					"troop":	"athanatoi",
+					"count":	128
 				}]
 		}],
 	"artifacts":	[{

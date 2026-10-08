@@ -15,6 +15,7 @@
 // round (the cast latch, AP-084). Charge possession never sustains.
 
 #include "exec.h"
+#include "autoplay.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -444,6 +445,105 @@ void exec_temp_death(ExecCtx *ctx) {
     GameTempDeath(ctx->g, ctx->map, ctx->fog, ctx->res);
 }
 
+// ---- siege notes (the [SIEGE] diagnostic) -------------------------------------
+// Every villain siege the search fights is noted here, keyed by the YES
+// prim's pre-combat world fingerprint. The fight is a pure function of that
+// state, so the note found under a committed prim's fingerprint is that
+// prim's own fight, whichever branch first ran it. Read only by
+// autoplay_print_sieges; nothing here feeds the planner.
+
+typedef struct {
+    uint32_t fp;
+    bool     used;
+    bool     won;
+    int      day;
+    long     gold;
+    long     hero_hp, hero_hp_after, garrison_hp;
+    char     villain[CAT_ID_LEN];
+    char     army[160], army_after[160];   // "count id" per stack
+} SiegeNote;
+
+#define SIEGE_NOTE_CAP 16384   // power of two
+static SiegeNote s_siege_notes[SIEGE_NOTE_CAP];
+
+void siege_notes_reset(void) {
+    memset(s_siege_notes, 0, sizeof s_siege_notes);
+}
+
+static SiegeNote *siege_note_slot(uint32_t fp) {
+    uint32_t i = fp & (SIEGE_NOTE_CAP - 1);
+    for (int n = 0; n < SIEGE_NOTE_CAP; n++, i = (i + 1) & (SIEGE_NOTE_CAP - 1))
+        if (!s_siege_notes[i].used || s_siege_notes[i].fp == fp)
+            return &s_siege_notes[i];
+    return NULL;   // full: the note is dropped
+}
+
+static long army_hp(const Game *g) {
+    long t = 0;
+    for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
+        if (!g->army[s].id[0] || g->army[s].count <= 0) continue;
+        const TroopDef *td = troop_by_id(g->army[s].id);
+        t += (long)g->army[s].count * (td ? td->hit_points : 1);
+    }
+    return t;
+}
+
+static void army_str(const Game *g, char *out, size_t cap) {
+    size_t n = 0;
+    out[0] = '\0';
+    for (int s = 0; s < GAME_ARMY_SLOTS && n < cap; s++) {
+        if (!g->army[s].id[0] || g->army[s].count <= 0) continue;
+        int w = snprintf(out + n, cap - n, "%s%d %s", n ? ", " : "",
+                         g->army[s].count, g->army[s].id);
+        if (w < 0) break;
+        n += (size_t)w;
+    }
+}
+
+static long garrison_hp(const CombatTarget *tgt) {
+    long t = 0;
+    for (int s = 0; tgt->garrison && s < tgt->garrison_slots; s++) {
+        const Unit *u = &tgt->garrison[s];
+        if (!u->id[0] || u->count <= 0) continue;
+        const TroopDef *td = troop_by_id(u->id);
+        t += (long)u->count * (td ? td->hit_points : 1);
+    }
+    return t;
+}
+
+static const char *castle_villain(const Game *g, const char *castle_id) {
+    for (int i = 0; castle_id && i < g->castle_count; i++)
+        if (strcmp(g->castles[i].id, castle_id) == 0)
+            return g->castles[i].owner_kind == CASTLE_OWNER_VILLAIN
+                       ? g->castles[i].villain_id : NULL;
+    return NULL;
+}
+
+void autoplay_print_sieges(void) {
+    const RecSink *rs = recsink();
+    if (!rs) return;
+    for (int i = 0; i < rs->count; i++) {
+        const RecPrim *p = &rs->prims[i];
+        if (p->kind != REC_ANSWER || p->flow != FLOW_SIEGE_VILLAIN ||
+            p->ans_kind != FLOW_ANS_YES)
+            continue;
+        const SiegeNote *n = siege_note_slot(p->fp);
+        if (!n || !n->used) {
+            printf("[SIEGE] (no note)\n");
+            continue;
+        }
+        // Signed: a fight can end with more HP than it began (a raised army).
+        long change = n->hero_hp_after - n->hero_hp;
+        printf("[SIEGE] day %3d %-14s %s  gold %7ld  hero %6ld HP  "
+               "garrison %6ld HP  change %+6ld (%+ld%%)\n",
+               n->day, n->villain, n->won ? "won " : "LOST", n->gold,
+               n->hero_hp, n->garrison_hp, change,
+               n->hero_hp ? change * 100 / n->hero_hp : 0);
+        printf("[SIEGE]     army before: %s\n", n->army);
+        printf("[SIEGE]     army after:  %s\n", n->army_after);
+    }
+}
+
 bool exec_fight(ExecCtx *ctx, bool want_fight, CombatResult *out_result) {
     Game *g = ctx->g;
     PendingFlow flow = pending_flow;
@@ -470,8 +570,27 @@ bool exec_fight(ExecCtx *ctx, bool want_fight, CombatResult *out_result) {
     // the prim once it is known.
     FlowAnswer yes = { FLOW_ANS_YES, 0 };
     RecPrim *ap = rec_push_answer(g, flow, yes, PLAYER_IO_COMBAT_NOT_RUN);
+    SiegeNote *note = NULL;
+    if (ap && flow == FLOW_SIEGE_VILLAIN && (note = siege_note_slot(ap->fp))) {
+        const char *vid = castle_villain(g, tgt.seed_key);
+        memset(note, 0, sizeof *note);
+        note->used = true;
+        note->fp = ap->fp;
+        note->day = ctx->res->time.days_per_difficulty
+                        [(int)g->character.difficulty] - g->stats.days_left;
+        note->hero_hp = army_hp(g);
+        note->gold = g->stats.gold;
+        army_str(g, note->army, sizeof note->army);
+        note->garrison_hp = garrison_hp(&tgt);
+        snprintf(note->villain, sizeof note->villain, "%s", vid ? vid : "?");
+    }
     CombatResult r = combat_run_headless_ex(g, mode, &tgt, COMBAT_MAX_ROUNDS,
                                             autoplay_combat_policy, NULL);
+    if (note) {
+        note->won = (r == COMBAT_RESULT_WIN);
+        note->hero_hp_after = army_hp(g);
+        army_str(g, note->army_after, sizeof note->army_after);
+    }
     PlayerIoCombatOutcome oc = (r == COMBAT_RESULT_WIN)
                                    ? PLAYER_IO_COMBAT_WON
                                    : PLAYER_IO_COMBAT_LOST;

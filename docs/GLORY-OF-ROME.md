@@ -214,27 +214,34 @@ cleared and the binding cause — gold, stock, leadership or reach.
 ### 3.3 The roster
 
 The table has been the catalog: index 0 the Emperor's first commission, index
-16 the last.
+16 the last. The armies have been sized against autoplay on seed 0 at normal,
+the one seed the tuning has used: 340 days, solved, against a target of 350
+(the armies before had taken 244). Italia has stayed the gentle opening,
+Coloni in stacks of over a hundred, and each province after has climbed.
+Oriens has matched the reference pack's last three in size and has fielded the
+two villain-only troops (§7.6), so the tricks that had taken Oriens with no
+losses (a Simulacrum-swollen stack of Striges whose leech healed every loss,
+and spells) no longer have (#200).
 
 | # | Villain | Zone | Reward | Army | The idea |
 |---|---|---|---|---|---|
-| 0 | **Catiline** | Italia | 5,000 | 6 Coloni, 6 Coloni, 6 Tirones, 6 Tirones, 6 Lupi | A conspiracy, not an army: debtors and disaffected veterans |
-| 1 | **Spartacus** | Italia | 6,000 | 7 Coloni, 7 Coloni, 7 Tirones, 4 Hastati, 7 Lupi | Slaves, with a hard core of trained gladiators |
-| 2 | **Brennus** | Italia | 7,000 | 8 Coloni, 5 Numidae, 8 Baleares, 8 Lupi, 5 Numidae | The Gallic host that sacked Rome in 390 BC |
-| 3 | **Pyrrhus** | Italia | 8,000 | 5 Numidae, 5 Numidae, 9 Baleares, 5 Velites, 9 Lupi | The Hellenistic king whose victories cost him more than defeats |
-| 4 | **Alaric** | Italia | 9,000 | 10 Coloni, 6 Silvani, 3 Sarmatae, 10 Fauni, 3 Druidae | The Goth who sacked Rome in 410 |
-| 5 | **Attila** | Italia | 10,000 | 6 Hastati, 6 Velites, 6 Silvani, 3 Sarmatae, 3 Equites | The Scourge of God, who marched on Italy in 452 |
-| 6 | **Boudica** | Galliae | 12,000 | 4 Sarmatae, 7 Silvani, 12 Fauni, 7 Ligures, 4 Antaei | A mass rising: numbers, poor equipment, druids behind it |
-| 7 | **Civilis** | Galliae | 14,000 | 4 Sarmatae, 7 Silvani, 7 Ligures, 4 Druidae, 4 Antaei | Batavian auxiliaries who mutinied against Rome |
-| 8 | **Vercingetorix** | Galliae | 16,000 | 4 Sarmatae, 8 Silvani, 4 Antaei, 4 Druidae, 14 Fauni | All Gaul united for the first time |
-| 9 | **Arminius** | Galliae | 18,000 | 8 Numidae, 15 Baleares, 5 Sarmatae, 5 Cyclopes | Teutoburg, the ambush that cost Rome three legions |
-| 10 | **Tacfarinas** | Africa | 20,000 | 9 Hastati, 5 Equites, 9 Velites, 5 Cyclopes | A Roman deserter turned desert raider |
-| 11 | **Jugurtha** | Africa | 25,000 | 9 Numidae, 9 Silvani, 5 Druidae | A king with real cavalry who bought Roman senators |
-| 12 | **Gildo** | Africa | 30,000 | 10 Numidae, 1 Gigantes, 6 Sarmatae, 6 Cyclopes, 6 Equites | The revolt that cut Rome's grain supply |
-| 13 | **Hannibal** | Africa | 35,000 | 6 Sarmatae, 1 Furiae, 6 Equites, 1 Gigantes, 1 Striges | The army Rome never solved in the field |
-| 14 | **Mithridates** | Oriens | 40,000 | 6 Sarmatae, 1 Gigantes, 6 Equites, 1 Furiae, 1 Dracones | Decades of war and the levies of half of Anatolia |
-| 15 | **Zenobia** | Oriens | 45,000 | 7 Sarmatae, 7 Antaei, 1 Empusae, 1 Striges, 1 Dracones | Palmyra's queen, who took the East from Rome |
-| 16 | **Shapur** | Oriens | 50,000 | 1 Dracones, 1 Empusae, 1 Striges, 7 Sarmatae, 1 Furiae | The Sassanid who took an emperor alive |
+| 0 | **Catiline** | Italia | 5,000 | 103 Coloni, 103 Coloni, 34 Tirones, 34 Tirones, 4 Hastati | A conspiracy, not an army: debtors and disaffected veterans |
+| 1 | **Spartacus** | Italia | 6,000 | 128 Coloni, 128 Coloni, 43 Tirones, 43 Tirones, 5 Hastati | Slaves, with a hard core of trained gladiators |
+| 2 | **Brennus** | Italia | 7,000 | 128 Coloni, 51 Tirones, 10 Ligures, 10 Ligures, 2 Druidae | The Gallic host that sacked Rome in 390 BC |
+| 3 | **Pyrrhus** | Italia | 8,000 | 26 Hastati, 26 Hastati, 17 Velites, 51 Tirones, 2 Elephanti | The Hellenistic king whose victories cost him more than defeats |
+| 4 | **Alaric** | Italia | 9,000 | 171 Coloni, 26 Hastati, 3 Sarmatae, 68 Larvae, 68 Lemures | The Goth who sacked Rome in 410 |
+| 5 | **Attila** | Italia | 10,000 | 34 Numidae, 34 Numidae, 34 Sagittarii, 5 Sarmatae, 17 Equites | The Scourge of God, who marched on Italy in 452 |
+| 6 | **Boudica** | Galliae | 12,000 | 256 Coloni, 256 Coloni, 34 Ligures, 13 Sarmatae, 10 Druidae | A mass rising: numbers, poor equipment, druids behind it |
+| 7 | **Civilis** | Galliae | 14,000 | 51 Hastati, 51 Hastati, 34 Sagittarii, 34 Equites, 13 Sarmatae | Batavian auxiliaries who mutinied against Rome |
+| 8 | **Vercingetorix** | Galliae | 16,000 | 51 Ligures, 21 Sarmatae, 21 Sarmatae, 51 Equites, 26 Druidae | All Gaul united for the first time |
+| 9 | **Arminius** | Galliae | 18,000 | 51 Silvani, 51 Silvani, 13 Sarmatae, 13 Sarmatae, 13 Sarmatae | Teutoburg, the ambush that cost Rome three legions |
+| 10 | **Tacfarinas** | Africa | 20,000 | 60 Numidae, 60 Numidae, 51 Hastati, 43 Velites, 43 Sagittarii | A Roman deserter turned desert raider |
+| 11 | **Jugurtha** | Africa | 25,000 | 68 Numidae, 68 Numidae, 68 Numidae, 43 Equites, 7 Elephanti | A king with real cavalry who bought Roman senators |
+| 12 | **Gildo** | Africa | 30,000 | 68 Hastati, 51 Equites, 51 Sagittarii, 60 Numidae, 43 Velites | The revolt that cut Rome's grain supply |
+| 13 | **Hannibal** | Africa | 35,000 | 17 Elephanti, 77 Numidae, 128 Baleares, 68 Hastati, 51 Equites | The army Rome never solved in the field |
+| 14 | **Mithridates** | Oriens | 40,000 | 86 Hastati, 86 Sarmatae, 128 Equites, 86 Sagittarii, 21 Dracones | Decades of war and the levies of half of Anatolia |
+| 15 | **Zenobia** | Oriens | 45,000 | 214 Equites, 26 Ifrit, 128 Sagittarii, 51 Empusae, 51 Striges | Palmyra's queen, who took the East from Rome |
+| 16 | **Shapur** | Oriens | 50,000 | 342 Equites, 68 Elephanti, 256 Sagittarii, 26 Dracones, 128 Athanatoi | The Sassanid who took an emperor alive |
 
 ---
 
@@ -351,9 +358,10 @@ famous case — which has been exactly the Barbarian class's position.
 
 ## 7. Troops
 
-Twenty-seven troops in five dwelling families: the reference pack's
-twenty-five, renamed, and two Roman additions (Sagittarii and Elephanti, §7.1
-and §7.2). The renamed stat lines have been the reference pack's, with three
+Twenty-nine troops. Twenty-seven have come in five dwelling families: the
+reference pack's twenty-five, renamed, and two Roman additions (Sagittarii and
+Elephanti, §7.1 and §7.2). Two more have been villain-only, sold by no
+dwelling (Ifrit and Athanatoi, §7.6). The renamed stat lines have been the reference pack's, with three
 exceptions: the Velites have recruited at a plains dwelling rather than the
 castle, with wandering-army tiers of 5/8/12/18 rather than 0/5/10/15, and the
 Praetoriani, like every castle troop, have had no population cap. Names have
@@ -418,7 +426,21 @@ Rome has supplied this tier natively; none of it has been borrowed fantasy.
 | 21 | vampires | **Striges** | 5/30/1, `FLY\|LEECH\|UNDEAD` | Screech-owl blood-drinkers — a genuine Roman vampire, and `FLY\|LEECH` has been the myth verbatim |
 | 23 | demons | **Empusae** | 6/50/1, `FLY\|SCYTHE` | Shape-shifting devourers in Hecate's service |
 
-### 7.6 Consequences worth noting
+### 7.6 Hostes — the villains' own (no dwelling)
+
+No dwelling has sold these, no wandering army has drawn them, and no tier pool
+has held them. They have been fielded only in Oriens's last two garrisons, so
+the hero has never recruited or cloned one. Each has been a mix of existing
+abilities no other troop has had, chosen to break the two tricks the hero had
+used to take Oriens with no losses: a Striges stack swollen by Simulacrum,
+whose leech healed every loss, and spells (#200).
+
+| # | Base | Roman | SL/HP/MV | Why |
+|---|---|---|---|---|
+| 27 | — | **Ifrit** | 6/250/2, magic 50, 3 shots, `FLY\|IMMUNE\|MAGIC` | Zenobia's: the fire-jinn of the Arabian desert, the "something far worse than armoured horsemen" her crimes have promised. Its bolts have never missed and have drawn no retaliation, and no hero spell has touched it |
+| 28 | — | **Athanatoi** | 7/100/2, `ABSORB\|REGEN\|IMMUNE` | Shapur's: the Persian royal guard, the Immortals, kept at strength by stepping a new man into every gap. Every troop they have killed has joined them, their wounded have healed every round, and no spell has touched them |
+
+### 7.7 Consequences worth noting
 
 **Dwelling names.** The engine's `dwelling` field has stayed
 `plains` / `forest` / `hill` / `dungeon` / `castle` — those have been matched
@@ -430,7 +452,8 @@ recruited at the Emperor's seat and has had no dwelling screen.
 **Morale groups.** The five groups have been the reference pack's letters, A
 to E, which has been all the morale chart has read; the game has shown no label for
 them. Baleares, human slingers, have sat in group D with wolves and dragons,
-and Gigantes in group C with allied peoples.
+and Gigantes in group C with allied peoples. The two villain-only troops have sat in
+group D; only the hero's side has had morale, so it has never been read.
 
 **Field obstacles.** An open-field battle has stamped an obstacle (rubble, a
 bramble or a broken wall) in each cell of the middle three columns at 12%
@@ -456,7 +479,7 @@ These have been the engine's limits, and they have bound the design.
   needed comfortably more than six castles.
 - **No catalog limits.** Troops, villains, artifacts and spells have been
   sized from the pack (`tests/e2e/test_no_limits.c` has loaded a pack far past
-  this one's 27 / 17 / 8 / 14).
+  this one's 29 / 17 / 8 / 14).
 - **The puzzle grid has been fixed at 5 × 5 = 25 cells**, and 17 villains + 8
   artifacts have filled it exactly. Changing either count would break it.
 

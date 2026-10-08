@@ -69,6 +69,7 @@ bool autoplay_run(const AutoplayConfig *cfg, AutoplayResult *out) {
 
     ledger_reset();
     recruit_exclusions_reset();
+    siege_notes_reset();
     // The day budget comes ENTIRELY from the chosen difficulty (the pack's
     // days_per_difficulty knob); there is no bespoke override. Every real
     // difficulty is a whole multiple of week_days, so the weekly economy

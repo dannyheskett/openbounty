@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-444 jobs. A job with a **Pack path** has produced that file in the pack; a
+450 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1668,6 +1668,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a head-and-shoulders portrait, the face filling the frame, of an Antaeus, a massive grey stone-skinned giant brute with a heavy brow and small pale glowing eyes, cracked rocky skin, huge shoulders, a barren rocky wasteland behind him
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/antaei_00.png"]`, `seed=9994`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
 
+### troop_portrait_athanatoi
+
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9314)
+- **Pack path:** `art/portraits/troop_athanatoi.png`
+- **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Persian Immortal of the royal guard, a bearded man with a tall fluted gold cap and gold earrings, a purple and gold patterned robe, the hilt and curved steel blade of a huge scimitar raised beside him, the top of a wicker shield at his shoulder, the stone columns of a Persian palace behind him
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["build/art/athanatoi/run05/01_raw.png"]`, `seed=9314`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+
 ### troop_portrait_baleares
 
 - **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9988)
@@ -1751,6 +1758,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/portraits/troop_hastati.png`
 - **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Roman legionary of the hastati, a young soldier in a bronze helmet with a tall red feather crest, a mail and bronze chest plate over a red tunic, a red curved rectangular shield with a gold emblem and a spear, a legion camp with tents behind him
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/hastati_00.png"]`, `seed=9973`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+
+### troop_portrait_ifrit
+
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9212)
+- **Pack path:** `art/portraits/troop_ifrit.png`
+- **prompt:** a head-and-shoulders portrait, the face filling the frame, of an Ifrit, a fire jinn with deep red skin, curved black horns and glowing yellow eyes, gold bands on its arms, flames rising off its shoulders, a night desert of dunes and a burning sky behind it
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["build/art/ifrit/run01/01_raw.png"]`, `seed=9212`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
 
 ### troop_portrait_lares
 
@@ -2536,6 +2550,19 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** both enormous fists rise together from his sides up above his head, then slam straight down in front of him to the ground with the shoulders following, then lift back to where they started, both feet stay planted, the hunched back stays hunched
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/antaei/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=5502`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
 
+### athanatoi
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 9305)
+- **prompt:** a Persian Immortal of the royal guard seen from the side facing right, a bearded soldier in a long flowing robe of gold with a purple pattern, a tall fluted gold cap, gold earrings and bracelets, a huge curved scimitar with a broad shining steel blade and a gold hilt held down at his side in his right hand, its point near the ground, a tall rectangular wicker shield on his left arm in front of him on the right side of the picture, no spear, nothing on his back, standing straight with his feet on the ground
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9305`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### athanatoi_attack
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 9313)
+- **Pack path:** `art/troops/athanatoi_00..05.png`
+- **prompt:** raises the huge curved scimitar and slashes it down and forward to the right past the wicker shield, then recovers, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=6`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/athanatoi/run05/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=9313`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
 ### baleares
 
 - **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 6154)
@@ -2673,6 +2700,19 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/troops/gigantes_00..03.png`
 - **prompt:** he swings the boulder back to his left side in both hands, then hurls it sideways across his body to the right and the boulder flies off straight ahead to the right, his arms following through in front of him, then his arms drop back to his hip, both feet stay planted
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/gigantes/run03/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=6232`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
+### ifrit
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 9201)
+- **prompt:** a fire jinn of the Arabian desert seen from the side facing right, a tall muscular man-shaped spirit with deep red skin and glowing yellow eyes, curved black horns, his body fading below the waist into a column of orange and yellow flame instead of legs, gold bands on his bare arms, a ball of white-hot fire held up in his right hand, floating a little above the ground
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9201`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### ifrit_attack
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 9211)
+- **Pack path:** `art/troops/ifrit_00..05.png`
+- **prompt:** hurls the ball of white-hot fire forward to the right from its raised hand, the flame of its body flaring, smooth loop
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=6`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/ifrit/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=9211`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
 
 ### lares
 
