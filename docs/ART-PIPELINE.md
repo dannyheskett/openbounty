@@ -222,6 +222,36 @@ generated from.
   their rows, straddlers keep their places (seamcheck 0), the plain tile is
   unchanged. Forest edges are left as they were: thinned the same way, a wood
   came out crenellated.
+- **Inner-corner fills** (#63) — `romeart.py fills`: where a grass or sand
+  cell has a wood or range on two adjacent sides, the shell (modern) and
+  `maprender` have drawn `<terrain>[_sand]_fill_<ne|nw|se|sw>` into the
+  corner: the set's own lattice sprites continued into the cell, on a 288 px
+  canvas with the cell in the middle, so a concave corner has rounded off and
+  a staircase has read as a slope. Italia's forest, whose sprites are not
+  kept, has taken its island piece's clump.
+- **Interior variants** (#63) — `romeart.py interiors`: `forest_v1/v2` and
+  `mountain_v1/v2` per set, the plain tile's straddlers kept and its inner
+  sprites flipped or nudged, listed as the code's `variants` so a mass has
+  stopped repeating one arrangement.
+- **Aprons** (#63) — `romeart.py aprons`: a plain grass or sand cell beside a
+  wood or range has drawn, for that side, one of three
+  `<forest|mountain>_apron_<n|e|s|w>_<1..3>` or none (picked per cell by
+  `tilevar_pick` with seed `0xA960` + side, five ways, 1-3 drawn), so a
+  straight side has stopped reading as a cut-out line: one or two of the
+  set's own whole sprites (rocks not drawn to their frame edge; only the trees
+  the plain wood is made of) at full size, straddling the shared line, most of
+  each on the grass. Same 288 px canvas as the fills, drawn before them; every
+  object, set piece and landmark has been drawn again on top so none is
+  hidden. Roads, rivers, fields and pieces have drawn none. Thinning the edge
+  pieces' own west and east sides could not do it: their outer column is
+  rocks straddling the tile lines, which the neighbours draw too.
+- **Settlement set pieces** (#63) — `art/jobs/piece_{dock,farmstead,ruin,shrine,well}.json`
+  (`rd_pro__topdown`, 96 px): a farmhouse, a ruin, a shrine and a well stand
+  on grass as solid tiles (`blocks_foot`, map chars `n u h e`); the jetty
+  (`j`) is sea off a straight grass shore, `dock_<n|e|s|w>` drawn over that
+  side's `water_edge` piece (the keyed deck set 6 px from the land side).
+  Placed round towns and castles and along roads, each kept only where the
+  build, `maplint` and the reach baseline all pass.
 - **Sand shores** (`water_sand_edge_NN`, #63) — not generated. Each zone
   set's `water_edge_NN` has been read pixel by pixel as sea or shore (nearest
   to the set's water or grass colours), and the shore part filled with the

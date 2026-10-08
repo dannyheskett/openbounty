@@ -387,6 +387,102 @@ Writes art/tiles/[<set>/]<terrain>[_sand]_fill_<ne|nw|se|sw>.png.
 
 
 
+def _aprons(argv):
+    """Aprons (#63): loose rocks and stray trees on the grass along a range's
+or a wood's side, so a straight side no longer reads as a cut-out line.
+
+Where a grass or sand cell has a wood or range beside it (north, east, south
+or west), the shell draws one of three aprons for that side into the cell, or
+none, picked per cell (src/map_render.c draw_aprons). An apron is one to
+three of the set's own rocks or trees at half size, straddling the shared
+line with most of each sprite on the grass, on a 288 px canvas with the cell
+in the middle (drawn one cell up and left, like the inner-corner fills). Its
+background is clear, so it stands on grass and sand alike. A set whose tree
+sprites are not kept (Italia's forest) takes the island piece's clump.
+
+    python3 tools/romeart.py aprons [pack-dir]
+
+Writes art/tiles/[<set>/]<forest|mountain>_apron_<n|e|s|w>_<1..3>.png.
+    """
+    import os, random
+    from PIL import Image
+    PACK = argv[1] if len(argv) > 1 else "assets/glory-of-rome"
+    TILES = os.path.join(PACK, "art", "tiles")
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    n = 0
+
+    def whole(im):
+        # a sprite drawn to its frame edge (a ledge or crag cut square to
+        # straddle a tile line) would stand on the grass cut off
+        l, t, r, b = im.getbbox()
+        return l > 0 and t > 0 and r < im.width and b < im.height
+
+    def crop(im):
+        return im.crop(im.getbbox())
+
+    def half(im):
+        return crop(im)       # at full size: a bulge of the mass itself
+
+    for st in ["", "galliae", "africa", "oriens"]:
+        d = os.path.join(TILES, st)
+        zone = st or "italia"
+        for t in ("forest", "mountain"):
+            spr = os.path.join(ROOT, "art", "primitives", zone, "trees" if t == "forest" else "rocks")
+            if os.path.isdir(spr):
+                ims = {int(f[5:7]): Image.open(os.path.join(spr, f)).convert("RGBA")
+                       for f in sorted(os.listdir(spr)) if f.startswith("tile_") and f.endswith(".png")}
+                if t == "forest":
+                    # only the trees the wood itself is made of (its plain tile)
+                    args = ["romeart", "", "--sprites", spr, "--name", t,
+                            "--crown", "1" if zone == "oriens" else "0"]
+                    import contextlib, io, tempfile
+                    args[1] = tempfile.NamedTemporaryFile(suffix=".json", delete=False).name
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        _forestlattice(args)
+                    used = {i for (i, _, _) in json.load(open(args[1]))["tiles"][t]["sprites"]}
+                    os.remove(args[1])
+                    ims = {i: im for i, im in ims.items() if i in used}
+                pool = [half(im) for im in ims.values() if whole(im)]
+            else:
+                # the island piece's free-standing clump: its pixels unlike the grass
+                isl = Image.open(os.path.join(d, f"{t}_edge_19.png")).convert("RGB")
+                gr = Image.open(os.path.join(d, "grass.png")).convert("RGB")
+                ip, gp = isl.load(), gr.load()
+                clump = Image.new("RGBA", isl.size, (0, 0, 0, 0)); cp = clump.load()
+                for yy in range(isl.height):
+                    for xx in range(isl.width):
+                        if ip[xx, yy] != gp[xx, yy]:
+                            cp[xx, yy] = ip[xx, yy] + (255,)
+                pool = [half(clump), half(clump.transpose(Image.FLIP_LEFT_RIGHT))]
+            for side in "nesw":
+                for v in (1, 2, 3):
+                    rng = random.Random(f"apron-{zone}-{t}-{side}-{v}")
+                    out = Image.new("RGBA", (288, 288), (0, 0, 0, 0))
+                    placed, drawn = [], []
+                    for _ in range(rng.choice((1, 2, 2))):
+                        im = rng.choice(pool)
+                        if rng.random() < 0.5:
+                            im = im.transpose(Image.FLIP_LEFT_RIGHT)
+                        w, h = im.size
+                        along = w if side in "ns" else h
+                        for _try in range(20):
+                            u = rng.randint(4, 92)      # may lean onto the cells beside
+                            if all(abs(u - q) >= along * 0.55 for q in placed):
+                                break
+                        else:
+                            continue
+                        placed.append(u)
+                        dep = rng.randint(-10, 26)      # its middle this far onto the grass
+                        cx, cy = {"n": (96 + u, 96 + dep), "s": (96 + u, 192 - dep),
+                                  "w": (96 + dep, 96 + u), "e": (192 - dep, 96 + u)}[side]
+                        drawn.append((cy + h // 2, cx - w // 2, cy - h // 2, im))
+                    for (_, x_, y_, im) in sorted(drawn, key=lambda k: k[0]):   # back to front
+                        out.alpha_composite(im, (x_, y_))
+                    out.save(os.path.join(d, f"{t}_apron_{side}_{v}.png"))
+                    n += 1
+    print(f"wrote {n} aprons")
+
+
 # ==========================================================================
 # interiors.py -- plain forest and mountain variants, so a mass is no grid
 # ==========================================================================
@@ -4925,6 +5021,7 @@ COMMANDS = {
     "stitch": lambda a: _stitch96(["romeart"] + a),
     "edges": lambda a: _tileedges(["romeart"] + a),
     "fills": lambda a: _fills(["romeart"] + a),
+    "aprons": lambda a: _aprons(["romeart"] + a),
     "interiors": lambda a: _interiors(["romeart"] + a),
     "lattice": lambda a: _forestlattice(["romeart"] + a),
     "seamcheck": lambda a: _seamcheck(["romeart"] + a),
