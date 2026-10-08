@@ -995,7 +995,7 @@ flagged (§38).
   arrived in the boat, as any water spawn does. Gate spells and defeat have
   still overridden the landing afterwards. `glory-of-rome` has declared an
   arrival for every neighbour, each a sea tile touching the coast beside the
-  port a ship from there would make for; `tools/mapbuild.py check` has
+  port a ship from there would make for; `tools/romeart.py map check` has
   required each to be on the open sea and touching land, and counted its sea
   as sailed when proving the gates. `kings-bounty` has declared none.
 
@@ -1203,7 +1203,7 @@ flagged (§38).
   (spits, attached on the remaining side), `19` all four (an island). Water
   has been 0-based (`12`..`18`). `glory-of-rome` has shipped all seven for
   forest and mountain and the two strips and the island for water; its four
-  zones have contained no other shape. `tools/mapbuild.py build` has assigned
+  zones have contained no other shape. `tools/romeart.py map build` has assigned
   them when it bakes a map from its source; the art has come from the same
   lattice and stitching tools as the twelve, so every side that is open has been a
   terminal edge and every closed side the standard interface.

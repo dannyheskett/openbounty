@@ -1,5 +1,5 @@
 # Africa -- 64x28. The source of maps/africa.dat.
-# Build: tools/mapbuild.py build assets/glory-of-rome africa art/maps/africa.txt assets/glory-of-rome/maps/africa.dat
+# Build: tools/romeart.py map build assets/glory-of-rome africa art/maps/africa.txt assets/glory-of-rome/maps/africa.dat
 # ~ sea  . grass  , grass variant  f forest  ^ mountain  d desert
 # r river  R river in forest  M river in mountains  = road  H bridge
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

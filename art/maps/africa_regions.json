@@ -1,5 +1,5 @@
 {
- "_note": "Where tools/mapbuild.py place scatters Africa's chests and wandering armies. Boxes are inclusive tile ranges; only open grass and sand inside them is used. The two static guardians are placed by \"fixed\".",
+ "_note": "Where tools/romeart.py map place scatters Africa's chests and wandering armies. Boxes are inclusive tile ranges; only open grass and sand inside them is used. The two static guardians are placed by \"fixed\".",
  "seed": 2028,
  "spacing": 1,
  "fixed": {

@@ -245,7 +245,7 @@ generated from.
   the other sets' (`art/primitives/italia/BUILD.md`).
 - **Inner-corner fills** (#63) — `romeart.py fills`: where a grass or sand
   cell has a wood or range on two adjacent sides, the shell (modern) and
-  `maprender` have drawn `<terrain>[_sand]_fill_<ne|nw|se|sw>` into the
+  `romeart.py map render --tiles` have drawn `<terrain>[_sand]_fill_<ne|nw|se|sw>` into the
   corner: the set's own lattice sprites continued into the cell, on a 288 px
   canvas with the cell in the middle, so a concave corner has rounded off and
   a staircase has read as a slope. Italia's forest, whose sprites are not
@@ -275,7 +275,7 @@ generated from.
   bush, two bushes, a stone, two stones (the set's own whole sprites at about
   half size, only the trees its woods are made of; Italia's bush from its
   island clump), drawn by the shell and
-  `maprender` on about one plain grass or sand cell in twelve with no wood,
+  `map render --tiles` on about one plain grass or sand cell in twelve with no wood,
   range or sea beside it (`tilevar_pick` seed `0xD7A1`, 48 ways, 1-4 drawn).
   Cosmetic: the cell stays walkable grass.
 - **Settlement set pieces** (#63) — `art/jobs/piece_{dock,farmstead,ruin,shrine,well}.json`
@@ -284,12 +284,12 @@ generated from.
   (`j`) is sea off a straight grass shore, `dock_<n|e|s|w>` drawn over that
   side's `water_edge` piece (the keyed deck set 6 px from the land side).
   Placed round towns and castles and along roads, each kept only where the
-  build, `maplint` and the reach baseline all pass.
+  build, `map lint` and the reach baseline all pass.
 - **Sand shores** (`water_sand_edge_NN`, #63) — not generated. Each zone
   set's `water_edge_NN` has been read pixel by pixel as sea or shore (nearest
   to the set's water or grass colours), and the shore part filled with the
   set's desert, so a sea whose coast is all sand has drawn a sand shore line
-  instead of a grass one. `tools/mapbuild.py build` has picked them; sand
+  instead of a grass one. `tools/romeart.py map build` has picked them; sand
   meeting the sea has kept its own ground to the coast, and forest and rock
   their grass fringe.
 - **Villain portraits** (`art/villains/<name>_00..07.png`) — villains have

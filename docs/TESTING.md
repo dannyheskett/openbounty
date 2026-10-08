@@ -51,7 +51,7 @@ change that has moved a legacy pixel has failed there.
 | Gameplay rules | Autoplay on a few worlds of each pack: `./build/release/openbounty --pack <pack> --autoplay --headless --seed N` (exit 0 = solved); for a wider sweep, `--validate-pack LO HI` |
 | The Glory of Rome screens | `make release`, then `./build/release/openbounty --pack glory-of-rome --gallery <dir>`: every screen to PNG, with the tap check (`[tapcheck] FAIL` has failed the run) |
 | King's Bounty screens | The same gallery with `--pack kings-bounty`, and `test_legacy_freeze` |
-| A Rome map | `make check-maps` (`scripts/check_maps.sh`): each `.dat` rebuilt from its `art/maps` source byte for byte, then `tools/mapbuild.py check` and `tools/mapcheck.py` on every zone |
+| A Rome map | `make check-maps` (`scripts/check_maps.sh`): each `.dat` rebuilt from its `art/maps` source byte for byte, then `romeart.py map check`, `map lint` and `map sanity` on every zone |
 | The save format | The round-trip suites and the golden fixture (`OPENBOUNTY-SPEC.md` §27) |
 
 ## Continuous integration

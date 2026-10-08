@@ -128,7 +128,7 @@ void map_render_cell_ground(const Map *m, int mx, int my, Rectangle dst) {
 // Small detail (#63): about one plain grass or sand cell in twelve with no
 // wood, range or sea beside it draws detail_<1..4>, a
 // bush or a stone or two (romeart.py details). Cosmetic: the cell stays
-// walkable grass. tools/maprender.py draws the same.
+// walkable grass. `tools/romeart.py map render --tiles` draws the same.
 #define DETAIL_SEED 0xD7A1u
 static bool open_ground(const Map *m, int x, int y) {
     const Tile *t = MapGetTile(m, x, y);
@@ -168,7 +168,7 @@ static void draw_details(const Map *m, const Fog *f, int cam_x, int cam_y,
 // that side, one of the set's three aprons -- a stray tree or a loose rock or
 // two straddling the shared line -- or none, picked per cell, so a straight
 // side stops reading as a cut-out line (romeart.py aprons). Drawn like the
-// inner-corner fills: 3x3 cells, the cell in the middle. tools/maprender.py
+// inner-corner fills: 3x3 cells, the cell in the middle. `romeart.py map render`
 // draws the same.
 #define APRON_SEED 0xA960u
 static void draw_aprons(const Map *m, const Fog *f, int cam_x, int cam_y,

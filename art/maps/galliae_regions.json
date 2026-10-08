@@ -1,5 +1,5 @@
 {
- "_note": "Where tools/mapbuild.py place scatters Galliae's chests and wandering armies. Boxes are inclusive tile ranges; only walkable plain grass inside them is used. The two static guardians are placed by \"fixed\".",
+ "_note": "Where tools/romeart.py map place scatters Galliae's chests and wandering armies. Boxes are inclusive tile ranges; only walkable plain grass inside them is used. The two static guardians are placed by \"fixed\".",
  "seed": 2027,
  "spacing": 2,
  "fixed": {

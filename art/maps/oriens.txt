@@ -1,5 +1,5 @@
 # Oriens -- 64x44. The source of maps/oriens.dat.
-# Build: tools/mapbuild.py build assets/glory-of-rome oriens art/maps/oriens.txt assets/glory-of-rome/maps/oriens.dat
+# Build: tools/romeart.py map build assets/glory-of-rome oriens art/maps/oriens.txt assets/glory-of-rome/maps/oriens.dat
 # ~ sea  . grass  , grass variant  f forest  ^ mountain  d desert
 # r river  R river in forest  M river in mountains  = road  H bridge
 ........^^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^..........

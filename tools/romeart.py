@@ -59,16 +59,83 @@ fill excepted -- see its notes). Each section below is one step, and each
 encodes a contract set by measurement (the lattice border rule, the road
 sweep's joining pattern, the edge masks, the grass variants' shared border).
 """
+import argparse
 import glob
 import json
 import math
 import os
 import random
 import sys
+from collections import deque
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PACK = "assets/glory-of-rome"
+
+
+# ==========================================================================
+# Core: JSON files and game.json edited as text
+# ==========================================================================
+
+def load_json(path):
+    with open(path) as f:
+        return json.load(f)
+
+
+def save_json(path, obj, sort_keys=False):
+    """The repo's JSON layout: indent 1, a final newline."""
+    with open(path, "w") as f:
+        json.dump(obj, f, indent=1, sort_keys=sort_keys)
+        f.write("\n")
+
+
+# game.json is cJSON's formatted print, hand-edited in places, so it is never
+# re-printed whole: an edit replaces one value in the text and the result is
+# checked to still parse.
+
+def cj_obj(o, depth):
+    """One flat object as cJSON prints it inside an array at this depth."""
+    pad = "\t" * (depth + 1)
+    body = ",\n".join(f"{pad}{json.dumps(k, ensure_ascii=False)}:\t"
+                      f"{json.dumps(v, ensure_ascii=False) if isinstance(v, str) else json.dumps(v)}"
+                      for k, v in o.items())
+    return "{\n" + body + "\n" + "\t" * depth + "}"
+
+
+def gj_zone_array_span(text, zid, key):
+    """(start, end) of a zone's `key` array in game.json's text, '[' to ']'."""
+    zi = text.find(f'\n\t\t\t"id":\t"{zid}",')
+    if zi < 0:
+        sys.exit(f"romeart: game.json has no zone '{zid}' in the expected layout")
+    nxt = text.find('\n\t\t}, {\n', zi)
+    nxt = nxt if nxt >= 0 else len(text)
+    ki = text.find(f'\n\t\t\t"{key}":\t', zi, nxt)
+    if ki < 0:
+        sys.exit(f"romeart: game.json's zone '{zid}' has no {key} array")
+    start = text.index("[", ki)
+    if text.startswith("[]", start):
+        return start, start + 1
+    return start, text.index("\n\t\t\t\t}]", start) + len("\n\t\t\t\t}]") - 1
+
+
+def gj_set_zone_array(text, zid, key, objs, append=False):
+    """Replace a zone's array of flat objects, or append to it."""
+    s, e = gj_zone_array_span(text, zid, key)
+    items = ", ".join(cj_obj(o, 4) for o in objs)
+    if not append:
+        return text[:s] + "[" + items + "]" + text[e + 1:]
+    if not objs:
+        return text
+    if text[s:e + 1] == "[]":
+        return text[:s] + "[" + items + "]" + text[e + 1:]
+    return text[:e] + ", " + items + text[e:]
+
+
+def gj_write(pack, text):
+    json.loads(text)                       # still valid JSON
+    with open(os.path.join(pack, "game.json"), "w", encoding="utf-8") as f:
+        f.write(text)
 
 
 # ==========================================================================
@@ -490,7 +557,7 @@ country is not bare cloth. Cosmetic and walkable: the cell stays what it is.
 
 The shell draws detail_<1..4> on about one plain grass or sand cell in
 twelve with no wood, range or sea beside it, picked per cell
-(src/map_render.c draw_details; tools/maprender.py the same).
+(src/map_render.c draw_details; `map render --tiles` the same).
 
     python3 tools/romeart.py details [pack-dir]
 
@@ -2702,7 +2769,7 @@ def cmd_zone(argv):
             if os.path.exists(p):
                 Image.open(p).save(os.path.join(out, f))
         # The same pieces over the set's desert, where it has one: a wood or
-        # range whose open sides all face sand fades to sand (mapbuild picks
+        # range whose open sides all face sand fades to sand (`map build` picks
         # <terrain>_sand_edge_NN, #63). Forest 07 and 08 are left out: their
         # codes went to the vista landmarks.
         if os.path.exists(os.path.join(out, "desert.png")):
@@ -5221,7 +5288,1262 @@ assets/.
 
 
 
+# ==========================================================================
+# Maps: the zone maps, from hand-drawn source to the .dat the engine loads
+# ==========================================================================
+#
+#   map build  <pack> <zone> <source.txt> <out.dat> [--strict]
+#   map check  <pack> <zone> <map.dat>
+#   map lint   <pack> <zone> [--update-allow] [--update-reach] [--all]
+#   map sanity <pack> <map.dat> [WxH] [zone]
+#   map render <pack> <map.dat> <out.png> [--tiles] [--zone Z] ...
+#   map place  <pack> <zone> <map.dat> <regions.json> [--add] [--write]
+#   map zones  <pack>              each zone's id, map file and size
+#
+# THE SOURCE is the map, art/maps/<zone>.txt: one character per tile, `#`
+# lines are comments.
+#   terrain   ~ sea  . grass  , grass variant  f forest  ^ mountain  d desert
+#             p ploughed field  w wheat field (farmland: grass to the engine)
+#   overlays  r river on grass  R river in forest  M river in mountains
+#             = road  H bridge (a road crossing a river)
+#   pieces    P T S O K G landmarks on grass; j a jetty (sea off a straight
+#             shore, drawn as dock_<side>); n u h e farmstead, ruin, shrine,
+#             well (solid set pieces on grass)
+#
+# `build` bakes every look into the .dat (GLORY-OF-ROME 10.6.1: nothing about
+# a map's look is computed at game time): terrain edges by REQ-229a/e
+# (cardinals before diagonals, the outside counting as the same terrain),
+# rivers and roads by their links, bridges, river mouths. A shape the pack
+# ships no piece for is an error naming the cell; shapes the art draws badly
+# are warnings, errors under --strict. scripts/check_maps.sh rebuilds every
+# map and fails if the shipped .dat differs, so a .dat is never hand-edited.
+#
+# A map file is latin-1: one byte per tile, a tile_codes key being the byte
+# itself or a "\xNN" escape (engine/resources.c resolves them the same way).
+
+MAP_DIRS4 = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0)}
+MAP_DIRS8 = dict(MAP_DIRS4, ne=(1, -1), se=(1, 1), sw=(-1, 1), nw=(-1, -1))
+MAP_OPP = {'n': 's', 's': 'n', 'e': 'w', 'w': 'e',
+           'ne': 'sw', 'sw': 'ne', 'nw': 'se', 'se': 'nw'}
+
+# Source character -> the terrain its neighbours see, and -> the art of a cell
+# no edge changes. Landmarks and set pieces are grass to their neighbours; a
+# jetty (j) is sea, drawn as the dock over that side's shore.
+MAP_BASE = {'~': 'water', '.': 'grass', ',': 'grass', 'f': 'forest',
+            '^': 'mountain', 'd': 'desert', 'P': 'grass', 'T': 'grass',
+            'S': 'grass', 'O': 'grass', 'K': 'grass', 'G': 'grass',
+            'p': 'fields_plough', 'w': 'fields_wheat',
+            'j': 'water', 'n': 'grass', 'u': 'grass', 'h': 'grass', 'e': 'grass'}
+MAP_PLAIN = {'~': 'water', '.': 'grass', ',': 'grass_variant', 'f': 'forest',
+             '^': 'mountain', 'd': 'desert', 'P': 'pharos', 'T': 'temple_ocean',
+             'S': 'landmark_sibyl', 'O': 'landmark_oppidum', 'K': 'landmark_tophet',
+             'G': 'landmark_gordian', 'p': 'fields_plough', 'w': 'fields_wheat',
+             'j': None, 'n': 'piece_farmstead', 'u': 'piece_ruin',
+             'h': 'piece_shrine', 'e': 'piece_well'}
+MAP_RIVER = {'r': 'grass', 'R': 'forest', 'M': 'mountain', 'H': 'grass'}
+MAP_ROAD = {'=', 'H'}
+MAP_RIVER_PREFIX = {'grass': 'river_', 'forest': 'river_forest_',
+                    'mountain': 'river_mountain_'}
+# REQ-229a: two edge families, water 0-based, the rest 1-based; REQ-229e:
+# strips, spits and the island, keyed by the open cardinals.
+MAP_WATER_IDX = {'n': 10, 's': 11, 'e': 8, 'w': 9, 'ne_c': 0, 'nw_c': 1,
+                 'sw_c': 2, 'se_c': 3, 'ne': 5, 'se': 4, 'sw': 6, 'nw': 7}
+MAP_OTHER_IDX = {'n': 11, 's': 12, 'e': 9, 'w': 10, 'ne_c': 3, 'nw_c': 1,
+                 'sw_c': 2, 'se_c': 4, 'ne': 6, 'se': 5, 'sw': 7, 'nw': 8}
+MAP_SPIT_IDX = {frozenset('ns'): 13, frozenset('ew'): 14, frozenset('nes'): 15,
+                frozenset('esw'): 16, frozenset('swn'): 17, frozenset('wne'): 18,
+                frozenset('nesw'): 19}
+MAP_CURVES = {frozenset('ns'): 'ns', frozenset('ew'): 'ew', frozenset('ne'): 'ne',
+              frozenset('es'): 'es', frozenset('sw'): 'sw', frozenset('wn'): 'wn'}
+MAP_JOINS = {('n', 'sw'), ('n', 'se'), ('s', 'nw'), ('s', 'ne'),
+             ('e', 'nw'), ('e', 'sw'), ('w', 'ne'), ('w', 'se')}
+MAP_OPEN_ARTS = ("grass", "grass_variant", "desert")   # where `place` may scatter
+
+
+def map_die(msg):
+    sys.exit(f"romeart map: {msg}")
+
+
+def code_char(key):
+    """A tile_codes key's map byte: the key itself, or its "\\xNN" escape."""
+    if len(key) == 4 and key[0] == "\\" and key[1] in "xX":
+        try:
+            return chr(int(key[2:], 16))
+        except ValueError:
+            return None
+    return key if len(key) == 1 else None
+
+
+def load_game(pack):
+    with open(os.path.join(pack, "game.json")) as f:
+        return json.load(f)
+
+
+def tile_codes(g):
+    """(art name -> map byte, map byte -> its tile_codes entry)."""
+    a2c, c2e = {}, {}
+    for k, v in g["tile_codes"].items():
+        c = code_char(k)
+        if c is None:
+            continue
+        c2e[c] = v
+        a2c.setdefault(v["art"], c)
+    return a2c, c2e
+
+
+def zone_of(g, zid):
+    for z in g["zones"]:
+        if z["id"] == zid:
+            return z
+    map_die(f"no zone '{zid}'")
+
+
+def read_rows(path, pad=False):
+    """A map file's rows, comments and blank lines dropped; pad=True fills short
+    rows with grass, as the engine does."""
+    with open(path, encoding="latin-1") as f:
+        rows = [l.rstrip("\n").rstrip("\r") for l in f if l.strip() and not l.startswith("#")]
+    if pad and rows:
+        w = max(len(r) for r in rows)
+        rows = [r.ljust(w, ".") for r in rows]
+    return rows
+
+
+def zone_objects(g, zid):
+    """[(x, y, kind, label)] for everything the pack places in a zone, a castle
+    at its gate; plus the town docks and the tiles a vista lays."""
+    objs, docks, vistas = [], [], set()
+    for t in g.get("towns", []):
+        if t.get("zone") == zid:
+            objs.append((t["x"], t["y"], "town", "town " + t["id"]))
+            if t.get("boat", {}).get("x", -1) >= 0:
+                docks.append((t["boat"]["x"], t["boat"]["y"]))
+    for c in g.get("castles", []):
+        if c.get("zone") == zid:
+            objs.append((c.get("gate_x", c.get("x")), c.get("gate_y", c.get("y")),
+                         "castle", "castle " + c["id"]))
+    for z in g.get("zones", []):
+        if z.get("id") != zid:
+            continue
+        for key, kind in (("chests", "chest"), ("signs", "sign"),
+                          ("dwellings", "dwelling"), ("wandering_armies", "army")):
+            objs += [(o["x"], o["y"], kind, kind) for o in z.get(key, []) if "x" in o and "y" in o]
+        for ev in z.get("events", []):
+            vistas |= {(fx["x"], fx["y"]) for fx in ev.get("effects", []) if "x" in fx and "y" in fx}
+    return objs, docks, vistas
+
+
+# ---- map build -------------------------------------------------------------
+
+def map_build(pack, zid, src, out, strict=False):
+    g = load_game(pack)
+    a2c, _ = tile_codes(g)
+    z = zone_of(g, zid)
+    W, H = z["width"], z["height"]
+    rows = read_rows(src)
+    if len(rows) != H or any(len(r) != W for r in rows):
+        map_die(f"{src}: want {W}x{H}, have {len(rows)} rows of "
+                f"{sorted({len(r) for r in rows})}")
+    for y, r in enumerate(rows):
+        for x, c in enumerate(r):
+            if c not in MAP_BASE and c not in MAP_RIVER and c not in MAP_ROAD:
+                map_die(f"({x},{y}): unknown source character {c!r}")
+    # towns and castles: their sprites cover the road under them
+    objs = {(t["x"], t["y"]) for t in z.get("towns", [])} | {(c["x"], c["y"]) for c in z.get("castles", [])}
+    errors, warnings, notes = [], [], []
+    wants_sand = set()      # sand-backed edge pieces the pack does not ship
+
+    def at(x, y):
+        return rows[y][x] if 0 <= x < W and 0 <= y < H else None
+
+    def inside(x, y):
+        return 0 <= x < W and 0 <= y < H
+
+    # A tile an event turns into a bridge (the Rubicon's) is road to its
+    # neighbours, so the roads either side point at the crossing to come; the
+    # Rubicon's own trigger cell draws its boundary stone over the road.
+    codes = g["tile_codes"]
+    future_bridge = {(fx["x"], fx["y"]) for ev in z.get("events", [])
+                     for fx in ev.get("effects", [])
+                     if "tile" in fx and codes.get(fx["tile"], {}).get("is_bridge")}
+    landmark_on_road = {(ev["x"], ev["y"]) for ev in z.get("events", []) if ev.get("id") == "rubicon"}
+
+    def links(x, y, kind):
+        """The directions this cell's run continues in. Rivers link only
+        orthogonally (movement is 8-way with no corner rule, so a diagonal
+        river would let the hero step across it); a road takes a diagonal
+        only where the run does not turn the corner itself."""
+        if kind == 'river':
+            member = lambda x, y: (at(x, y) or '') in MAP_RIVER
+        else:
+            member = lambda x, y: (at(x, y) or '') in MAP_ROAD or (x, y) in future_bridge
+        out = {d for d, (dx, dy) in MAP_DIRS4.items() if member(x + dx, y + dy)}
+        for d, (dx, dy) in MAP_DIRS8.items():
+            if len(d) != 2 or not member(x + dx, y + dy) or member(x + dx, y) or member(x, y + dy):
+                continue
+            if kind == 'road':
+                out.add(d)
+            else:
+                errors.append(f"({x},{y}): river links diagonally to "
+                              f"({x + dx},{y + dy}) -- make it a corner")
+        return out
+
+    def piece(ex):
+        orth = {d for d in ex if len(d) == 1}
+        diag = {d for d in ex if len(d) == 2}
+        if len(ex) == 1 and orth:
+            return next(iter(orth))
+        if len(ex) == 2 and len(orth) == 2:
+            return MAP_CURVES.get(frozenset(orth))
+        if len(ex) == 2 and len(diag) == 2:
+            return {frozenset(('ne', 'sw')): 'nesw', frozenset(('nw', 'se')): 'nwse'}.get(frozenset(diag))
+        if len(ex) == 2 and len(orth) == 1 and len(diag) == 1:
+            o, c = next(iter(orth)), next(iter(diag))
+            if (o, c) in MAP_JOINS:
+                return f"{o}_{c}"
+        return None
+
+    out_art = [[None] * W for _ in range(H)]
+    cls = [[MAP_BASE.get(rows[y][x]) or MAP_RIVER.get(rows[y][x]) or 'grass'
+            for x in range(W)] for y in range(H)]          # terrain class for edges
+    companions = {}                                         # (x, y) -> road corners
+
+    for y in range(H):
+        for x in range(W):
+            c = rows[y][x]
+            if c in MAP_RIVER and c != 'H':
+                ex = links(x, y, 'river')
+                prefix = MAP_RIVER_PREFIX[MAP_RIVER[c]]
+                sea = [d for d, (dx, dy) in MAP_DIRS4.items() if at(x + dx, y + dy) == '~']
+                if len(ex) == 1 and len(sea) >= 1:
+                    # A river ending against the sea is its mouth. The mouth
+                    # art has the open sea on its outflow side and along its
+                    # top, land along its foot; _s is drawn the other way up.
+                    inflow = next(iter(ex))
+                    north, south = at(x, y - 1), at(x, y + 1)
+                    flip = south == '~' and north != '~'
+                    if inflow == 'w' and 'e' in sea:
+                        out_art[y][x] = 'river_mouth_e' + ('_s' if flip else '')
+                    elif inflow == 'e' and 'w' in sea:
+                        out_art[y][x] = 'river_mouth_w' + ('_s' if flip else '')
+                    else:
+                        errors.append(f"({x},{y}): river meets the sea from the "
+                                      f"{inflow}; the pack has mouths for east "
+                                      f"and west only")
+                    if (north == '~') == (south == '~'):
+                        warnings.append(f"({x},{y}): river mouth wants the sea on "
+                                        f"one of its north and south sides, land "
+                                        f"on the other (has {north!r} and {south!r})")
+                    cls[y][x] = 'water'      # a coast tile: its neighbours see sea
+                    continue
+                if len(ex) == 1:
+                    o = MAP_OPP[next(iter(ex))]
+                    if not inside(x + MAP_DIRS4[o][0], y + MAP_DIRS4[o][1]):
+                        ex = ex | {o}          # the run flows off the map: a straight
+                    elif c == 'r' and not any(
+                            at(x + dx, y + dy) in ('^', 'f')
+                            for d, (dx, dy) in MAP_DIRS4.items() if d != next(iter(ex))):
+                        warnings.append(f"({x},{y}): river ends in open ground, "
+                                        f"not at the sea, the map's edge or a "
+                                        f"source in the mountains or woods")
+                if c in 'RM':
+                    for d, (dx, dy) in MAP_DIRS4.items():
+                        n = at(x + dx, y + dy)
+                        if n is None or n in MAP_RIVER or n == 'H':
+                            continue
+                        if MAP_BASE.get(n) != MAP_RIVER[c]:
+                            warnings.append(f"({x},{y}): {MAP_RIVER[c]}-banked river "
+                                            f"has {n!r} to its {d}; its drawn bank "
+                                            f"meets it in a seam")
+                            break
+                p = piece(ex)
+                if p is None:
+                    errors.append(f"({x},{y}): river with exits {sorted(ex)} "
+                                  f"has no piece")
+                    continue
+                out_art[y][x] = prefix + p
+            elif c == 'H':
+                rex, oex = links(x, y, 'river'), links(x, y, 'road')
+                if rex == {'e', 'w'} and oex == {'n', 's'}:
+                    out_art[y][x] = 'bridge_river_ns'
+                elif rex == {'n', 's'} and oex == {'e', 'w'}:
+                    out_art[y][x] = 'bridge_river_ew'
+                else:
+                    errors.append(f"({x},{y}): bridge needs a straight river "
+                                  f"and the road across it at right angles "
+                                  f"(river {sorted(rex)}, road {sorted(oex)})")
+            elif c == '=':
+                ex = links(x, y, 'road')
+                p = piece(ex)
+                if p is None:
+                    if (x, y) in objs:         # any number of exits under a town
+                        out_art[y][x] = 'grass'
+                        continue
+                    errors.append(f"({x},{y}): road with exits {sorted(ex)} "
+                                  f"has no piece")
+                    continue
+                out_art[y][x] = 'road_' + p
+                if (x, y) in landmark_on_road and p == 'ew' and 'landmark_rubicon' in a2c:
+                    out_art[y][x] = 'landmark_rubicon'
+                for d in ex:
+                    if len(d) != 2:
+                        continue
+                    dx, dy = MAP_DIRS8[d]
+                    # the corner a diagonal crosses, seen from each flank
+                    for fx, fy, corner in ((x + dx, y, ('s' if dy > 0 else 'n') + ('w' if dx > 0 else 'e')),
+                                           (x, y + dy, ('n' if dy > 0 else 's') + ('e' if dx > 0 else 'w'))):
+                        companions.setdefault((fx, fy), set()).add(corner)
+
+    for (x, y), corners in companions.items():
+        c = at(x, y)
+        if c is None or c in MAP_ROAD or c in MAP_RIVER:
+            continue
+        if len(corners) > 1:
+            errors.append(f"({x},{y}): two diagonals cross this cell's corners "
+                          f"{sorted(corners)}; there is no piece")
+        elif MAP_BASE.get(c) != 'grass':
+            errors.append(f"({x},{y}): a road diagonal's corner falls on "
+                          f"{MAP_BASE.get(c)}; its companion needs grass")
+        else:
+            out_art[y][x] = 'road_c_' + next(iter(corners))
+
+    def edge_idx(t, diff):
+        """(index, None) for the edge piece showing these different
+        neighbours, or (None, why) when the families have none."""
+        card = frozenset(d for d in diff if len(d) == 1)
+        m = MAP_WATER_IDX if t == 'water' else MAP_OTHER_IDX
+        for pair in ('ne', 'nw', 'sw', 'se'):
+            if card == frozenset(pair):
+                return m[pair + '_c'], None
+        if len(card) == 1:
+            return m[next(iter(card))], None
+        if not card:
+            dg = sorted(d for d in diff if len(d) == 2)
+            if len(dg) == 1:
+                return m[dg[0]], None
+            return None, f"{t} with open diagonals {dg} only; no variant"
+        if card in MAP_SPIT_IDX:
+            return MAP_SPIT_IDX[card] - (1 if t == 'water' else 0), None
+        return None, f"{t} open on {sorted(card)}; no variant"
+
+    for y in range(H):
+        for x in range(W):
+            if out_art[y][x] is not None:
+                continue
+            c = rows[y][x]
+            if c not in MAP_BASE:
+                continue            # an overlay whose error is already listed
+            t = MAP_BASE[c]
+            if t == 'grass':
+                out_art[y][x] = MAP_PLAIN[c]
+                continue
+            near = {d: cls[y + dy][x + dx] for d, (dx, dy) in MAP_DIRS8.items()
+                    if 0 <= x + dx < W and 0 <= y + dy < H}
+            full = {d for d, k in near.items() if k != t}
+            # Land edges fade to grass and the sea's edge draws the shore. Sand
+            # keeps its ground to the coast (the sea draws a sand shore) and
+            # leaves its edge to a wood or range that has sand edges, unless no
+            # piece shows what is left, when the full shape stands.
+            diff = {d for d in full if near[d] != 'water' and
+                    not (near[d] in ('forest', 'mountain') and f"{near[d]}_sand_edge_01" in a2c)} \
+                if t == 'desert' else full
+            idx, why = (None, None) if not diff else edge_idx(t, diff)
+            if diff and idx is None and diff != full:
+                diff = full
+                idx, why = edge_idx(t, diff)
+            if not diff:
+                if c == 'j':
+                    errors.append(f"({x},{y}): a jetty in open sea; it wants one straight shore")
+                else:
+                    out_art[y][x] = MAP_PLAIN[c]
+                continue
+            if idx is None:
+                errors.append(f"({x},{y}): {why}")
+                continue
+            card = frozenset(d for d in diff if len(d) == 1)
+            if card:
+                lost = sorted(d for d in diff if len(d) == 2 and d[0] not in card and d[1] not in card)
+                if lost:
+                    (warnings if t == 'water' else notes).append(
+                        f"({x},{y}): {t} edge on {sorted(card)} cannot "
+                        f"show its different diagonal {lost}")
+            # A sea, wood or range whose every other neighbour is sand fades to
+            # sand: its *_sand_edge piece, where the pack has it.
+            family = f"{t}_edge"
+            if t in ('water', 'forest', 'mountain') and all(near[d] == 'desert' for d in diff) \
+                    and f"{t}_sand_edge_{idx:02d}" in a2c:
+                family = f"{t}_sand_edge"
+            elif t in ('forest', 'mountain') and all(near[d] == 'desert' for d in diff):
+                wants_sand.add(f"{t}_sand_edge_{idx:02d}")
+            name = f"{family}_{idx:02d}"
+            if c == 'j':
+                side = next(iter(card)) if len(card) == 1 else None
+                if family != 'water_edge' or side is None or f"dock_{side}" not in a2c:
+                    errors.append(f"({x},{y}): a jetty wants one straight grass shore "
+                                  f"(has land on {sorted(diff)})")
+                else:
+                    out_art[y][x] = f"dock_{side}"
+                continue
+            if name not in a2c:
+                errors.append(f"({x},{y}): {t} open on {sorted(diff)} wants "
+                              f"{name}, which the pack does not ship")
+                continue
+            out_art[y][x] = name
+
+    errors += [f"({x},{y}): the pack has no tile code for {out_art[y][x]}"
+               for y in range(H) for x in range(W)
+               if out_art[y][x] is not None and out_art[y][x] not in a2c]
+    if wants_sand:
+        warnings.append("wood or rock on sand drawn with a grass fringe; the pack "
+                        "ships no " + ", ".join(sorted(wants_sand)))
+    if notes:
+        print(f"{len(notes)} note(s): land corners no edge variant shows "
+              f"(a small notch), e.g. {notes[0]}")
+    for label, items in (("warning", warnings), ("error", errors)):
+        if not items:
+            continue
+        print(f"{len(items)} {label}(s):")
+        for w in items[:60]:
+            print("  " + w)
+        if len(items) > 60:
+            print(f"  ... and {len(items) - 60} more")
+        if label == "warning" and strict:
+            errors += warnings
+    if errors:
+        sys.exit(1)
+
+    with open(out, "w", encoding="latin-1") as f:
+        f.write(f"# {z.get('name', zid)} -- {W}x{H}.\n#\n"
+                f"# BUILT by tools/romeart.py map build from {os.path.relpath(src)}.\n"
+                f"# Do not edit this file: edit the source and rebuild.\n"
+                f"# Check: tools/romeart.py map check {pack} {zid} <this file>\n")
+        for y in range(H):
+            f.write("".join(a2c[out_art[y][x]] for x in range(W)) + "\n")
+    print(f"wrote {out} ({W}x{H})")
+
+
+# ---- map check: objects on walkable ground, docks, and the hero's reach -----
+
+def map_grid(pack, zid, path):
+    g = load_game(pack)
+    _, c2e = tile_codes(g)
+    z = zone_of(g, zid)
+    W, H = z["width"], z["height"]
+    rows = read_rows(path)
+    if len(rows) != H or any(len(r) != W for r in rows):
+        map_die(f"{path}: not {W}x{H}")
+    # a solid object on grass (a set piece) is no ground to stand on
+    ter = [[(("blocked" if c2e[c].get("blocks_foot") and c2e[c]["terrain"] in ("grass", "desert")
+              else c2e[c]["terrain"]) if c in c2e else map_die(f"unknown byte {c!r}"))
+            for c in r] for r in rows]
+    art = [[c2e[c]["art"] for c in r] for r in rows]
+    return g, z, W, H, ter, art
+
+
+def walkable(t):
+    return t in ("grass", "desert")
+
+
+def map_reach(W, H, ter, start, docks, open_rivers, arrivals=()):
+    """Tiles the hero can stand on: foot from the spawn, then every landing on
+    the water body of a dock the hero has reached (a boat sails only the water
+    it was rented on), until nothing new is reached. A hero sailing in lands at
+    an arrival, so that water body is sailed from the start. Also returns the
+    water connected to the map's edge (the open sea)."""
+    def ok(x, y):
+        t = ter[y][x]
+        return walkable(t) or (open_rivers and t == "river")
+
+    def body(seed):
+        out, q = {seed}, deque([seed])
+        while q:
+            x, y = q.popleft()
+            for dx, dy in MAP_DIRS8.values():
+                n = (x + dx, y + dy)
+                if 0 <= n[0] < W and 0 <= n[1] < H and n not in out and ter[n[1]][n[0]] == "water":
+                    out.add(n); q.append(n)
+        return out
+
+    sea = set()
+    for y in range(H):
+        for x in range(W):
+            if (x in (0, W - 1) or y in (0, H - 1)) and ter[y][x] == "water" and (x, y) not in sea:
+                sea |= body((x, y))
+    seen, q, sailed, first = {start}, deque([start]), set(), set()
+    for a in arrivals:
+        if ter[a[1]][a[0]] == "water" and a not in first:
+            first |= body(a)
+    while True:
+        while q:
+            x, y = q.popleft()
+            for dx, dy in MAP_DIRS8.values():
+                n = (x + dx, y + dy)
+                if 0 <= n[0] < W and 0 <= n[1] < H and n not in seen and ok(*n):
+                    seen.add(n); q.append(n)
+        waters, first = first, set()
+        sailed |= waters
+        for t, d in docks:
+            if d in sea and d not in sailed and any(
+                    (t[0] + dx, t[1] + dy) in seen or t in seen for dx, dy in MAP_DIRS8.values()):
+                waters |= body(d)
+                sailed |= body(d)
+        if not waters:
+            break
+        for y in range(H):
+            for x in range(W):
+                if ok(x, y) and (x, y) not in seen and any(
+                        (x + dx, y + dy) in waters for dx, dy in MAP_DIRS8.values()):
+                    seen.add((x, y)); q.append((x, y))
+    return seen, sea
+
+
+def map_reach_table(pack, zid, path):
+    """(problems, [(place, reached with guardians standing, beaten, rivers
+    bridged, vistas played)], terrain counts, W, H) for `map check` and the
+    reach baseline `map lint` compares against."""
+    g, z, W, H, ter, art = map_grid(pack, zid, path)
+    towns = [t for t in g["towns"] if t.get("zone") == zid]
+    castles = [c for c in g["castles"] if c.get("zone") == zid]
+    bad, points = [], {}
+
+    def stand(x, y, what):
+        if not (0 <= x < W and 0 <= y < H):
+            bad.append(f"{what} ({x},{y}) is off the map")
+        elif not walkable(ter[y][x]):
+            bad.append(f"{what} ({x},{y}) stands on {ter[y][x]} ({art[y][x]})")
+
+    for t in towns:
+        stand(t["x"], t["y"], f"town {t['id']}")
+        gt = t.get("gate") or {}
+        if gt.get("x", -1) >= 0:
+            stand(gt["x"], gt["y"], f"town {t['id']} gate")
+        points["town " + t["id"]] = (t["x"], t["y"])
+    for c in castles:
+        stand(c["x"], c["y"], f"castle {c['id']}")
+        stand(c["x"], c["y"] + 1, f"castle {c['id']} gate")
+        points[f"castle {c['id']} ({c.get('name', '')})"] = (c["x"], c["y"] + 1)
+    for k in ("signs", "chests", "wandering_armies"):
+        for o in z.get(k, []):
+            stand(o["x"], o["y"], f"{k[:-1]} {o.get('id', '')}")
+    stand(z["magic_alcove"]["x"], z["magic_alcove"]["y"], "the Augur")
+    stand(z["hero_spawn"]["x"], z["hero_spawn"]["y"], "the spawn")
+    points["the Augur"] = (z["magic_alcove"]["x"], z["magic_alcove"]["y"])
+
+    docks = []
+    for t in towns:
+        b = t.get("boat") or {}
+        if b.get("x", -1) >= 0:
+            if ter[b["y"]][b["x"]] != "water":
+                bad.append(f"town {t['id']} dock ({b['x']},{b['y']}) is not water")
+            docks.append(((t["x"], t["y"]), (b["x"], b["y"])))
+    start = (z["hero_spawn"]["x"], z["hero_spawn"]["y"])
+    # A static army (a guardian) holds its tile until beaten; a vista's tiles
+    # (the Rubicon's bridge) exist only once it has played.
+    held = [r[:] for r in ter]
+    for a in z.get("wandering_armies", []):
+        if a.get("static"):
+            held[a["y"]][a["x"]] = "forest"
+    arrivals = [(a["x"], a["y"]) for a in z.get("arrivals", {}).values()]
+    fired = [r[:] for r in ter]
+    for ev in z.get("events", []):
+        for fx in ev.get("effects", []):
+            code = g["tile_codes"].get(fx.get("tile"))
+            if "tile" in fx and code:
+                fired[fx["y"]][fx["x"]] = ("grass" if code.get("is_bridge") else
+                                           "river" if code.get("terrain") == "river"
+                                           else code.get("terrain", "grass"))
+    guarded, _ = map_reach(W, H, held, start, docks, False, arrivals)
+    shut, sea = map_reach(W, H, ter, start, docks, False, arrivals)
+    open_, _ = map_reach(W, H, ter, start, docks, True, arrivals)
+    played, _ = map_reach(W, H, fired, start, docks, False, arrivals)
+    bad += [f"dock {d} is not on the open sea" for t, d in docks if d not in sea]
+    for frm, a in z.get("arrivals", {}).items():
+        x, y = a["x"], a["y"]
+        if (x, y) not in sea:
+            bad.append(f"arrival from {frm} ({x},{y}) is not on the open sea")
+        elif not any(0 <= x + dx < W and 0 <= y + dy < H and walkable(ter[y + dy][x + dx])
+                     for dx, dy in MAP_DIRS8.values()):
+            bad.append(f"arrival from {frm} ({x},{y}) touches no land")
+    missing = [n for n in z.get("neighbors", []) if n not in z.get("arrivals", {})]
+    if z.get("arrivals") and missing:
+        bad.append(f"no arrival from {', '.join(missing)}")
+
+    def reached(seen, p):        # a town is entered from its tile or one beside it
+        return p in seen or any((p[0] + dx, p[1] + dy) in seen for dx, dy in MAP_DIRS8.values())
+    table = [(name, [reached(s, p) for s in (guarded, shut, open_, played)])
+             for name, p in sorted(points.items(), key=lambda kv: (kv[1][1], kv[1][0]))]
+    counts = {}
+    for row in ter:
+        for t in row:
+            counts[t] = counts.get(t, 0) + 1
+    return bad, table, counts, W, H
+
+
+def map_check(pack, zid, path):
+    bad, table, counts, W, H = map_reach_table(pack, zid, path)
+    print(f"{zid}: {W}x{H}")
+    print(f"  {'':44s} guardians    guardians    rivers        vistas")
+    print(f"  {'':44s} standing     beaten       bridged       played")
+    yn = lambda b: 'yes' if b else 'NO '
+    for name, r in table:
+        print(f"  {name:44s} {yn(r[0]):12s} {yn(r[1]):12s} {yn(r[2]):13s} {'yes' if r[3] else 'NO'}")
+    print("  terrain: " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
+    print(f"  walkable {sum(v for k, v in counts.items() if walkable(k))}")
+    if bad:
+        print(f"{len(bad)} problem(s):")
+        for b in bad:
+            print("  " + b)
+        sys.exit(1)
+    print("OK")
+
+
+# ---- map lint: shapes the edge art draws badly, and the reach baseline -----
+#
+#   step    a one-cell stair step (two same-turned corners diagonally adjacent)
+#   strand  a mass cell in no 2x2 block of its mass (strand, spur, lone cell)
+#   notch   an edge that cannot show its different diagonal (a cut corner)
+#   pair    two different masses side by side (edges fade only to grass)
+#   coast   a mass beside the sea outside the zone's intended coasts
+#   edge    a mass within two cells of the world's edge outside intended edges
+#   dat     a finding in the built .dat's terrain the source does not have
+#
+# The masses are forest f, mountain ^ and farmland p/w (farmland never at the
+# sea or the edge). art/maps/<zone>_lint_intended.json lists the coasts, edges
+# and shapes kept on purpose; <zone>_lint_allow.json the findings still to
+# clear (only unlisted ones fail, so the count can only fall);
+# <zone>_reach.json the reach `map check` reports, which must not change.
+
+LINT_MASS = {'f': 'forest', '^': 'mountain', 'p': 'field', 'w': 'field'}
+
+
+def lint_findings(rows, intended=None):
+    H, W = len(rows), len(rows[0])
+    inside = lambda boxes, x, y: any(b[0] <= x <= b[2] and b[1] <= y <= b[3] for b in boxes)
+    coast_ok = [e["box"] for e in (intended or {}).get("coast", [])]
+    edge_ok = [e["box"] for e in (intended or {}).get("edge", [])]
+    at = lambda x, y: rows[y][x] if 0 <= x < W and 0 <= y < H else None
+    kind = lambda c: None if c is None else ('field-' + c if c in 'pw' else LINT_MASS.get(c))
+    out, corners = [], {}
+    for y in range(H):
+        for x in range(W):
+            k = kind(rows[y][x])
+            if not k:
+                continue
+            same = lambda dx, dy: kind(at(x + dx, y + dy)) == k or at(x + dx, y + dy) is None
+            open4 = {d for d, (dx, dy) in MAP_DIRS4.items() if not same(dx, dy)}
+            if not any(all(kind(at(x + ox + i, y + oy + j)) == k for i in (0, 1) for j in (0, 1))
+                       for ox in (-1, 0) for oy in (-1, 0)):
+                out.append(("strand", x, y, f"{k} cell in no 2x2 block of {k}"))
+            if open4:
+                for d, (dx, dy) in MAP_DIRS8.items():
+                    if len(d) == 2 and not same(dx, dy) and d[0] not in open4 and d[1] not in open4:
+                        out.append(("notch", x, y, f"{k} edge on {sorted(open4)} hides the {d} corner"))
+            for pair in (('n', 'e'), ('n', 'w'), ('s', 'e'), ('s', 'w')):
+                if open4 == set(pair):
+                    corners[(x, y)] = (k, pair)
+            for d in ('e', 's'):                     # each pair once
+                k2 = kind(at(x + MAP_DIRS4[d][0], y + MAP_DIRS4[d][1]))
+                if k2 and k2 != k:
+                    out.append(("pair", x, y, f"{k} beside {k2} to the {d}"))
+            if any(at(x + dx, y + dy) == '~' for dx, dy in MAP_DIRS8.values()) and \
+                    (k.startswith('field') or not inside(coast_ok, x, y)):
+                out.append(("coast", x, y, f"{k} beside the sea"))
+            if min(x, y, W - 1 - x, H - 1 - y) < 2 and \
+                    (k.startswith('field') or not inside(edge_ok, x, y)):
+                out.append(("edge", x, y, f"{k} within two cells of the world's edge"))
+    shape_ok = [(e["box"], set(e["rules"])) for e in (intended or {}).get("shape", [])]
+    for (x, y), (k, pair) in corners.items():
+        # the next step of a staircase: the corner cell diagonally beyond,
+        # along the outline, turned the same way
+        ddx, ddy = (1 if 'e' in pair else -1), (1 if 'n' in pair else -1)
+        for nx, ny in ((x + ddx, y + ddy), (x - ddx, y - ddy)):
+            if corners.get((nx, ny)) == (k, pair) and (nx, ny) > (x, y):
+                out.append(("step", x, y, f"{k} stair step with ({nx},{ny})"))
+    return [f for f in out if not any(f[0] in rules and inside([b], f[1], f[2]) for b, rules in shape_ok)]
+
+
+def lint_dat_rows(g, dat):
+    """The built .dat as source characters for the masses: forest f, mountain
+    ^, sea ~, farmland p / w by its art, everything else grass."""
+    _, c2e = tile_codes(g)
+    out = []
+    for line in open(dat, "rb").read().decode("latin-1").split("\n"):
+        line = line.rstrip("\r")
+        if not line or line.startswith("#"):
+            continue
+        r = []
+        for c in line:
+            e = c2e.get(c, {})
+            art, ter = e.get("art", ""), e.get("terrain", "grass")
+            r.append('p' if art.startswith("fields_plough") else 'w' if art.startswith("fields_wheat")
+                     else {'forest': 'f', 'mountain': '^', 'water': '~'}.get(ter, '.'))
+        out.append(''.join(r))
+    w = max(len(r) for r in out)
+    return [r.ljust(w, '.') for r in out]
+
+
+def map_lint(pack, zid, update_allow=False, update_reach=False, show_all=False):
+    g = load_game(pack)
+    z = zone_of(g, zid)
+    maps = os.path.join(ROOT, "art", "maps")
+    dat = os.path.join(pack, z["map"])
+    allow_p, reach_p = (os.path.join(maps, f"{zid}_{k}.json") for k in ("lint_allow", "reach"))
+    int_p = os.path.join(maps, f"{zid}_lint_intended.json")
+    intended = load_json(int_p) if os.path.exists(int_p) else {}
+    found = lint_findings(read_rows(os.path.join(maps, f"{zid}.txt")), intended)
+    src_keys = {(r, x, y) for r, x, y, _ in found}
+    found += [("dat", x, y, f"the built .dat has a {r} the source does not ({w})")
+              for r, x, y, w in lint_findings(lint_dat_rows(g, dat), intended)
+              if (r, x, y) not in src_keys]
+    allow = load_json(allow_p) if os.path.exists(allow_p) else []
+    allowed = {(e["rule"], e["x"], e["y"]) for e in allow}
+    new = [f for f in found if (f[0], f[1], f[2]) not in allowed]
+    gone = [e for e in allow if (e["rule"], e["x"], e["y"]) not in {(f[0], f[1], f[2]) for f in found}]
+    if update_allow:
+        old = {(e["rule"], e["x"], e["y"]): e.get("reason", "") for e in allow}
+        allow = [{"rule": r, "x": x, "y": y, "what": w,
+                  "reason": old.get((r, x, y), "baseline: still to clear")} for r, x, y, w in found]
+        save_json(allow_p, allow)
+        print(f"{zid}: recorded {len(allow)} findings still to clear in {os.path.relpath(allow_p, ROOT)}")
+        new, gone = [], []
+
+    reach = {" ".join(name.split()): ["yes" if b else "NO" for b in r]
+             for name, r in map_reach_table(pack, zid, dat)[1]}
+    if update_reach:
+        save_json(reach_p, reach, sort_keys=True)
+        print(f"{zid}: recorded the reach baseline ({len(reach)} places)")
+    if not os.path.exists(reach_p):
+        sys.exit(f"romeart: no reach baseline {os.path.relpath(reach_p, ROOT)} (record it with --update-reach)")
+    base = load_json(reach_p)
+    reach_bad = [f"{k}: {base.get(k)} -> {reach.get(k)}" for k in sorted(set(base) | set(reach))
+                 if base.get(k) != reach.get(k)]
+
+    by = {}
+    for r, *_ in found:
+        by[r] = by.get(r, 0) + 1
+    print(f"{zid}: {len(found)} findings ({', '.join(f'{k} {v}' for k, v in sorted(by.items())) or 'none'}), "
+          f"{len(found) - len(new)} still to clear, {len(new)} new; reach "
+          f"{'unchanged' if not reach_bad else 'CHANGED'}")
+    shown = found if show_all else new
+    for r, x, y, w in shown[:80]:
+        print(f"  {r:6s} ({x},{y}) {w}")
+    if len(shown) > 80:
+        print(f"  ... and {len(shown) - 80} more")
+    for e in gone[:20]:
+        print(f"  fixed  ({e['x']},{e['y']}) {e['rule']}: drop it from the allow list")
+    for b in reach_bad:
+        print(f"  REACH  {b}")
+    return 1 if new or reach_bad else 0
+
+
+# ---- map sanity: the map rules of GLORY-OF-ROME section 10 -----------------
+#
+# In order of how badly each breaks the game: (1) dimensions and every code
+# known; (2) no town dock on a landlocked water body -- the boat trap: boats
+# spawn only at a dock and a boat on enclosed water is unrecoverable, while a
+# pond nothing launches into is harmless; (3) no OCCUPIED walkable pocket --
+# empty islands are fine, and a pocket walled by a river (the bridge spell) or
+# opened by a vista is a gate, not a trap; (4) room for the zone's object
+# budget. Without a zone, (2) and (3) only warn.
+
+def map_flood(cells, w, h, start, member):
+    seen, q = {start}, deque([start])
+    while q:
+        x, y = q.popleft()
+        for dx, dy in MAP_DIRS8.values():
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in seen and member(cells[ny][nx]):
+                seen.add((nx, ny)); q.append((nx, ny))
+    return seen
+
+
+def map_sanity(pack, map_path, declared=None, zone_id=None):
+    g = load_game(pack)
+    _, codes = tile_codes(g)
+    objects, docks, vista_tiles = zone_objects(g, zone_id) if zone_id else ([], [], set())
+    rows = read_rows(map_path, pad=True)
+    if not rows:
+        print("FAIL: map is empty")
+        return 1
+    h, w = len(rows), len(rows[0])
+    fails = []
+    if declared:
+        dw, dh = (int(v) for v in declared.lower().split("x"))
+        if (w, h) != (dw, dh):
+            fails.append(f"dimensions are {w}x{h}, declaration says {dw}x{dh}")
+    unknown = sorted({c for r in rows for c in r} - set(codes))
+    if unknown:
+        print("FAIL:", f"tile codes not in game.json: {' '.join(repr(c) for c in unknown)}")
+        return 1
+    terr = lambda c: codes[c].get("terrain")
+    # a river blocks the foot as a wall does; a bridge over either is walkable
+    walk = lambda c: codes[c].get("is_bridge") or not (codes[c].get("blocks_foot") or terr(c) == "river")
+    is_water = lambda c: terr(c) == "water"
+    near = lambda r, test: any(test(x + dx, y + dy) for (x, y) in r for dx in (-1, 0, 1) for dy in (-1, 0, 1))
+
+    water = [(x, y) for y in range(h) for x in range(w) if is_water(rows[y][x])]
+    sea = set()
+    if not water:
+        fails.append("no water at all -- the zone cannot be sailed to or from")
+    else:
+        edge = [(x, y) for (x, y) in water if x in (0, w - 1) or y in (0, h - 1)]
+        if not edge:
+            fails.append("no water touches the map edge -- there is no open sea")
+        else:
+            sea = map_flood(rows, w, h, edge[0], is_water)
+            orphan = set(water) - sea
+            if orphan:
+                trapped = [d for d in docks if d in orphan]
+                if trapped:
+                    fails.append(f"town dock(s) on a landlocked water body (BOAT TRAP): {trapped}")
+                else:
+                    print(f"  note: {len(orphan)} enclosed water tile(s) "
+                          f"(decorative ponds; harmless -- no dock launches into them)")
+                if not zone_id:
+                    print("  note: no zone id given, so dock placement was not checked against these")
+
+    land = [(x, y) for y in range(h) for x in range(w) if walk(rows[y][x]) and not is_water(rows[y][x])]
+    if not land:
+        fails.append("no walkable land")
+    else:
+        unvisited, regions = set(land), []
+        while unvisited:
+            r = map_flood(rows, w, h, next(iter(unvisited)),
+                          lambda c: walk(c) and not is_water(c)) & set(land)
+            regions.append(r)
+            unvisited -= r
+        regions.sort(key=len, reverse=True)
+        if len(regions) > 1:
+            small = regions[1:]
+            sizes = sorted((len(r) for r in small), reverse=True)
+            print(f"  note: {len(small)} landmass(es) besides the mainland "
+                  f"(sizes {sizes[:12]}{' ...' if len(sizes) > 12 else ''})")
+            landlocked = []
+            for r in small:
+                on_it = [o[3] for o in objects if (o[0], o[1]) in r]
+                if not on_it:
+                    continue
+                # Disembarking lands the hero on any coastal tile (REQ-243), so
+                # a region touching the open sea needs no dock of its own.
+                coastal = near(r, lambda x, y: (x, y) in sea)
+                by_river = near(r, lambda x, y: 0 <= x < w and 0 <= y < h and terr(rows[y][x]) == "river")
+                by_vista = near(r, lambda x, y: (x, y) in vista_tiles)
+                if not coastal and by_vista:
+                    print(f"  note: a {len(r)}-tile pocket with {len(on_it)} objective(s) is opened "
+                          f"by a vista -- its tiles are laid when the vista plays")
+                elif not coastal and by_river:
+                    print(f"  note: a {len(r)}-tile pocket with {len(on_it)} objective(s) is walled "
+                          f"by a river -- reached with the bridge spell or by flight")
+                elif not coastal:
+                    landlocked.append((len(r), on_it))
+            fails += [f"objective(s) {what} sit in a {size}-tile INLAND POCKET "
+                      f"with no coast -- reachable only by flight or gate" for size, what in landlocked]
+            if not docks and any(near(r, lambda x, y: (x, y) in sea)
+                                 for r in small if any((o[0], o[1]) in r for o in objects)):
+                print("  note: island objectives exist and are coastal, but the zone declares no "
+                      "town dock -- one town must be able to rent a boat or they cannot be reached")
+
+    open_land = sum(1 for (x, y) in land if terr(rows[y][x]) in ("grass", "desert"))
+    if open_land < 21 * 4:
+        fails.append(f"only {open_land} open walkable tiles; section 10.7 needs "
+                     f"room for >=21 chest placeholders plus castles and towns")
+    counts = {}
+    for r in rows:
+        for c in r:
+            counts[terr(c)] = counts.get(terr(c), 0) + 1
+    total = w * h
+    print(f"{os.path.basename(map_path)}: {w}x{h} = {total} tiles")
+    for t in sorted(counts, key=lambda k: -counts[k]):
+        print(f"  {t:<9}{counts[t]:>6}  {100.0*counts[t]/total:5.1f}%")
+    print(f"  {'walkable':<9}{len(land):>6}  {100.0*len(land)/total:5.1f}%")
+    if fails:
+        print()
+        for f in fails:
+            print("FAIL:", f)
+        return 1
+    print("\nOK: one sea, no pockets, budget has room.")
+    return 0
+
+
+# ---- map render: a map to an image, flat or in the pack's own tiles --------
+#
+# Flat: one colour block per tile, close to the engine's minimap palette, for
+# judging coastlines and shapes. --tiles: the real tile art at the pack's
+# tile size, each code's cosmetic variant picked per cell as src/tilevar.c
+# picks it, with the details, aprons and inner-corner fills src/map_render.c
+# draws -- what the zone looks like in the game.
+
+MAP_TERRAIN_RGB = {"grass": (72, 132, 48), "forest": (28, 78, 32), "mountain": (120, 108, 96),
+                   "water": (36, 68, 140), "river": (58, 118, 196), "desert": (198, 176, 104)}
+MAP_OBJECT_RGB = {"town": (240, 220, 80), "castle": (230, 90, 70), "chest": (250, 250, 250),
+                  "sign": (170, 140, 90), "dwelling": (210, 120, 210), "army": (255, 40, 40)}
+APRON_SEED = 0xA960       # src/map_render.c APRON_SEED: which apron a cell draws
+DETAIL_SEED = 0xD7A1      # src/map_render.c DETAIL_SEED: which open cells draw a detail
+
+
+def tilevar_pick(seed, x, y, n):
+    """src/tilevar.c tilevar_pick, in 32-bit unsigned arithmetic."""
+    if n <= 1:
+        return 0
+    M = 0xFFFFFFFF
+    h = (seed ^ 0x9E3779B9) & M
+    h ^= (x * 0x85EBCA6B) & M
+    h ^= h >> 13
+    h ^= (y * 0xC2B2AE35) & M
+    h ^= h >> 16
+    h = (h * 0x27D4EB2F) & M
+    h ^= h >> 15
+    return h % n
+
+
+def render_flat(rows, w, h, codes, scale):
+    img = Image.new("RGB", (w * scale, h * scale), (0, 0, 0))
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            c = codes.get(rows[y][x], {})
+            terr = c.get("terrain", "grass")
+            rgb = MAP_TERRAIN_RGB.get(terr, (255, 0, 255))
+            if c.get("blocks_foot") and terr != "water":
+                rgb = tuple(int(v * 0.82) for v in rgb)       # walls a shade darker
+            for dy in range(scale):
+                for dx in range(scale):
+                    px[x * scale + dx, y * scale + dy] = rgb
+    return img
+
+
+def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_arts=None,
+                 seed=0, box=None):
+    TW, TH = cell
+    x0, y0, x1, y1 = box or (0, 0, w - 1, h - 1)
+    img = Image.new("RGB", ((x1 - x0 + 1) * TW, (y1 - y0 + 1) * TH), (0, 0, 0))
+    cache = {}
+    var = {}           # art stem -> its variants, the first code with any winning (tilevar_init)
+    for v in codes.values():
+        if v.get("variants") and v.get("art") and v["art"] not in var:
+            var[v["art"]] = v["variants"]
+
+    def vary(art, x, y):
+        names = var.get(art)
+        if not names:
+            return art
+        k = tilevar_pick(seed, x, y, len(names) + 1)     # 0 = the base art
+        return art if k == 0 else names[k - 1]
+
+    def tile(name, size=None, warn=False):
+        """A tile by art stem, as src/tile_cache.c resolves it: the zone's set
+        (only the names in its tile_set_arts, when it lists any), else the
+        master set; scaled to `size` once."""
+        if name not in cache:
+            own = tile_set and (not set_arts or name in set_arts)
+            p = os.path.join(pack_dir, "art", "tiles", tile_set if own else "", name + ".png")
+            cache[name] = Image.open(p).convert("RGBA") if os.path.exists(p) else None
+            if cache[name] is None and warn:
+                print(f"  warn: no art for tile '{name}' (looked for {p})")
+        t = cache[name]
+        if t is not None and size and t.width != size[0]:
+            t = cache[name] = t.resize(size, Image.NEAREST)
+        return t
+
+    def ter(x, y):
+        return codes.get(rows[y][x], {}).get("terrain", "grass") if 0 <= x < w and 0 <= y < h else None
+
+    cells = [(x, y) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)]
+    at = lambda x, y, dx=0, dy=0: ((x - x0 + dx) * TW, (y - y0 + dy) * TH)
+    for x, y in cells:
+        c = codes.get(rows[y][x], {})
+        if not c.get("art"):
+            continue
+        if c.get("ground"):                      # a landmark over its own ground
+            ground = vary(c["ground"], x, y)
+            own = tile_set and (not set_arts or ground in set_arts)
+            gp = os.path.join(pack_dir, "art", "tiles", tile_set if own else "", ground + ".png")
+            if os.path.exists(gp):
+                gt = Image.open(gp).convert("RGBA")
+                img.paste(gt, at(x, y), gt)
+        t = tile(vary(c["art"], x, y), warn=True)
+        if t is not None:
+            img.paste(t, at(x, y), t)
+
+    def open_ground(x, y):
+        if not (0 <= x < w and 0 <= y < h):
+            return False
+        c = codes.get(rows[y][x], {})
+        return c.get("terrain") in ("grass", "desert") and c.get("art", "").startswith(("grass", "desert"))
+    # small detail: one plain grass or sand cell in twelve with no wood, range
+    # or sea beside it (draw_details)
+    for x, y in cells:
+        v = tilevar_pick(DETAIL_SEED, x, y, 48)
+        if 1 <= v <= 4 and open_ground(x, y) and all(
+                ter(x + dx, y + dy) not in ("forest", "mountain", "water")
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+            t = tile(f"detail_{v}", (TW, TH))
+            if t is not None:
+                img.paste(t, at(x, y), t)
+    # aprons: a plain grass or sand cell beside a wood or range gets one of that
+    # side's three aprons, or none (draw_aprons)
+    for x, y in cells:
+        art = codes.get(rows[y][x], {}).get("art", "")
+        if ter(x, y) not in ("grass", "desert") or not art.startswith(("grass", "desert")):
+            continue
+        for k, (side, (dx, dy)) in enumerate((("n", (0, -1)), ("e", (1, 0)), ("s", (0, 1)), ("w", (-1, 0)))):
+            a = ter(x + dx, y + dy)
+            v = tilevar_pick(APRON_SEED + k, x, y, 5)     # 0 and 4: none
+            if a in ("forest", "mountain") and 1 <= v <= 3:
+                t = tile(f"{a}_apron_{side}_{v}", (TW * 3, TH * 3))
+                if t is not None:
+                    img.paste(t, at(x, y, -1, -1), t)
+    # inner-corner fills: a grass or sand cell with a wood or range on two
+    # adjacent sides gets that terrain's fill in the corner between them
+    for x, y in cells:
+        here = ter(x, y)
+        if here not in ("grass", "desert"):
+            continue
+        for corner, (dx, dy) in (("ne", (1, -1)), ("nw", (-1, -1)), ("se", (1, 1)), ("sw", (-1, 1))):
+            a, b = ter(x + dx, y), ter(x, y + dy)
+            if a == b and a in ("forest", "mountain"):
+                t = tile(f"{a}{'_sand' if here == 'desert' else ''}_fill_{corner}", (TW * 3, TH * 3))
+                if t is not None:
+                    img.paste(t, at(x, y, -1, -1), t)
+    # an apron or fill may lean onto its neighbours: every landmark and set
+    # piece (a code over its own ground) is drawn again on top, as the shell does
+    for x, y in cells:
+        c = codes.get(rows[y][x], {})
+        if c.get("ground") and cache.get(vary(c["art"], x, y)) is not None:
+            t = cache[vary(c["art"], x, y)]
+            img.paste(t, at(x, y), t)
+    return img
+
+
+def map_render(a):
+    g = load_game(a.pack)
+    _, codes = tile_codes(g)
+    rows = read_rows(a.map, pad=True)
+    w, h = len(rows[0]), len(rows)
+    box = tuple(int(v) for v in a.crop.split(",")) if a.crop else (0, 0, w - 1, h - 1)
+    if len(box) != 4 or not (0 <= box[0] <= box[2] < w and 0 <= box[1] <= box[3] < h):
+        sys.exit(f"romeart map: --crop wants X0,Y0,X1,Y1 inside {w}x{h}")
+    if a.tiles:
+        z = next((z for z in g.get("zones", []) if a.zone and z.get("id") == a.zone), {})
+        r = g.get("render", {})
+        cell = (int(r.get("tile_w", 48)), int(r.get("tile_h", 34)))
+        img = render_tiles(rows, w, h, codes, a.pack, z.get("tile_set", ""), cell,
+                           set(z.get("tile_set_arts", [])) or None, a.seed, box)
+    else:
+        cell = (a.scale, a.scale)
+        img = render_flat(rows, w, h, codes, a.scale).crop(
+            (box[0] * a.scale, box[1] * a.scale, (box[2] + 1) * a.scale, (box[3] + 1) * a.scale))
+    ox, oy = box[0], box[1]
+    if a.grid and cell[0] >= 6:
+        d = ImageDraw.Draw(img)
+        for x in range(0, w + 1, 10):
+            d.line([((x - ox) * cell[0], 0), ((x - ox) * cell[0], img.height)], fill=(255, 255, 255), width=1)
+        for y in range(0, h + 1, 10):
+            d.line([(0, (y - oy) * cell[1]), (img.width, (y - oy) * cell[1])], fill=(255, 255, 255), width=1)
+    if a.zone and not a.no_objects:
+        d = ImageDraw.Draw(img)
+        objs = zone_objects(g, a.zone)[0]
+        r = max(2, cell[0] // 3)
+        for (x, y, kind, _) in objs:
+            if box[0] <= x <= box[2] and box[1] <= y <= box[3]:
+                cx, cy = (x - ox) * cell[0] + cell[0] // 2, (y - oy) * cell[1] + cell[1] // 2
+                d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=MAP_OBJECT_RGB.get(kind, (255, 255, 255)),
+                          outline=(0, 0, 0))
+        print(f"overlaid {len(objs)} objects for zone {a.zone}")
+    if a.shrink > 1:
+        img = img.resize((img.width // a.shrink, img.height // a.shrink), Image.LANCZOS)
+    img.save(a.out)
+    print(f"wrote {a.out}  {img.width}x{img.height}  ({w}x{h} tiles, {'art' if a.tiles else 'flat'})")
+
+
+# ---- map place: scatter a zone's chests and armies inside region boxes -----
+
+def map_place(pack, zid, path, regions_path, add=False):
+    """regions.json: {"seed": N, "spacing": r, "fixed": {"<id>": [x, y]},
+    "regions": [{"name", "box": [x0,y0,x1,y1], "chests": n, "armies": n}, ...]}
+
+    A static army (a guardian) and a "fixed" chest keep what they are and go
+    where "fixed" puts them; every other chest and army is re-scattered, from
+    the fixed seed, on open grass or sand. With add, every chest and army
+    stays where it is and a region's counts are totals: only what it still
+    lacks is placed, numbered on from the zone's highest id. Towns, castles,
+    signs, dwellings, events and the tiles an event changes are kept clear."""
+    g, z, W, H, ter, art = map_grid(pack, zid, path)
+    spec = load_json(regions_path)
+    rng = random.Random(spec["seed"])
+    spacing = spec.get("spacing", 2)
+    taken = set()
+
+    def mark(x, y, r):
+        taken.update((x + dx, y + dy) for dy in range(-r, r + 1) for dx in range(-r, r + 1))
+
+    for t in (t for t in g["towns"] if t.get("zone") == zid):
+        mark(t["x"], t["y"], 1)
+        gt = t.get("gate") or {}
+        if gt.get("x", -1) >= 0:
+            mark(gt["x"], gt["y"], 1)
+    for c in (c for c in g["castles"] if c.get("zone") == zid):
+        mark(c["x"], c["y"], 1); mark(c["x"], c["y"] + 1, 1)
+    for o in z.get("signs", []) + z.get("dwellings", []):
+        mark(o["x"], o["y"], 1)
+    for ev in z.get("events", []):
+        mark(ev["x"], ev["y"], 1)
+        for fx in ev.get("effects", []):
+            if "x" in fx:
+                mark(fx["x"], fx["y"], 1)
+
+    def pinned(objs, test, what):
+        out = []
+        for o in objs:
+            if test(o):
+                if o["id"] not in spec.get("fixed", {}):
+                    map_die(f"{what} {o['id']} needs a place in \"fixed\"")
+                o = dict(o)
+                o["x"], o["y"] = spec["fixed"][o["id"]]
+                out.append(o)
+                mark(o["x"], o["y"], 1)
+        return out
+    fixed_chests = pinned(z.get("chests", []), lambda c: c.get("fixed"), "fixed chest")
+    fixed = pinned(z.get("wandering_armies", []), lambda a: a.get("static"), "static army")
+    for k in ("magic_alcove", "hero_spawn"):
+        mark(z[k]["x"], z[k]["y"], 1)
+
+    inbox = lambda box, x, y: box[0] <= x <= box[2] and box[1] <= y <= box[3]
+    # With add, what each region already holds counts against its total. An
+    # object in several overlapping boxes goes to whichever is furthest short.
+    have = [{"chests": 0, "armies": 0} for _ in spec["regions"]]
+    if add:
+        for kind, objs in (("chests", [c for c in z.get("chests", []) if not c.get("fixed")]),
+                           ("armies", [a for a in z.get("wandering_armies", []) if not a.get("static")])):
+            shared = []
+            for o in objs:
+                mark(o["x"], o["y"], spacing)
+                hits = [i for i, reg in enumerate(spec["regions"]) if inbox(reg["box"], o["x"], o["y"])]
+                if len(hits) == 1:
+                    have[hits[0]][kind] += 1
+                elif hits:
+                    shared.append(hits)
+            for hits in shared:
+                i = max(hits, key=lambda i: (spec["regions"][i].get(kind, 0) - have[i][kind], -i))
+                have[i][kind] += 1
+
+    free = lambda x, y: 0 <= x < W and 0 <= y < H and (x, y) not in taken and art[y][x] in MAP_OPEN_ARTS
+    found = {"chests": [], "armies": []}
+    spill = {"chests": 0, "armies": 0}
+    # The zone wants what its regions add up to: what a full region spilled
+    # before counts where it landed, so a second run adds nothing.
+    left = {k: sum(r.get(k, 0) for r in spec["regions"]) - sum(h[k] for h in have) for k in found}
+    for reg, held in zip(spec["regions"], have):
+        x0, y0, x1, y1 = reg["box"]
+        cells = [(x, y) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)]
+        rng.shuffle(cells)
+        for kind in ("chests", "armies"):
+            n = max(0, min(reg.get(kind, 0) - held[kind], left[kind]))
+            left[kind] -= n
+            got = 0
+            for x, y in cells:
+                if got == n:
+                    break
+                if free(x, y):
+                    found[kind].append((x, y)); mark(x, y, spacing); got += 1
+            if got < n:
+                if not add:
+                    map_die(f"region {reg['name']}: room for {got} of {n} {kind}")
+                print(f"  region {reg['name']}: room for {got} of {n} {kind}; "
+                      f"the rest go to the zone's other regions")
+                spill[kind] += n - got
+    if any(spill.values()):        # anywhere in the zone's regions there is room
+        cells = sorted({(x, y) for reg in spec["regions"]
+                        for y in range(reg["box"][1], reg["box"][3] + 1)
+                        for x in range(reg["box"][0], reg["box"][2] + 1)})
+        rng.shuffle(cells)
+        for kind in ("chests", "armies"):
+            for x, y in cells:
+                if spill[kind] == 0:
+                    break
+                if free(x, y):
+                    found[kind].append((x, y)); mark(x, y, spacing); spill[kind] -= 1
+            if spill[kind]:
+                map_die(f"no room in any region for {spill[kind]} more {kind}")
+
+    def next_num(objs, prefix):
+        nums = [int(o["id"][len(prefix):]) for o in objs
+                if o.get("id", "").startswith(prefix) and o["id"][len(prefix):].isdigit()]
+        return max(nums) + 1 if nums else 0
+    chests, armies = found["chests"], found["armies"]
+    if add:
+        c0 = max(1, next_num(z.get("chests", []), "chest_"))
+        a0 = next_num(z.get("wandering_armies", []), "wandering_army_")
+        return ([{"id": f"chest_{c0 + i}", "x": x, "y": y} for i, (x, y) in enumerate(chests)],
+                [{"x": x, "y": y, "id": f"wandering_army_{a0 + i:03d}"} for i, (x, y) in enumerate(armies)])
+    return ([{"id": f"chest_{i + 1}", "x": x, "y": y} for i, (x, y) in enumerate(chests)] + fixed_chests,
+            fixed + [{"x": x, "y": y, "id": f"wandering_army_{i:03d}"} for i, (x, y) in enumerate(armies)])
+
+
+def cmd_map(argv):
+    ap = argparse.ArgumentParser(prog="romeart.py map", description="The zone maps (see the Maps section).")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("build", help="bake a zone's source into its .dat")
+    p.add_argument("pack"); p.add_argument("zone"); p.add_argument("src"); p.add_argument("out")
+    p.add_argument("--strict", action="store_true", help="every warning is an error")
+    p = sub.add_parser("check", help="objects on walkable ground, docks, the hero's reach")
+    p.add_argument("pack"); p.add_argument("zone"); p.add_argument("map")
+    p = sub.add_parser("lint", help="shapes the edge art draws badly, and the reach baseline")
+    p.add_argument("pack"); p.add_argument("zone")
+    p.add_argument("--update-allow", action="store_true", help="record every finding as still to clear")
+    p.add_argument("--update-reach", action="store_true", help="record the current reach as the baseline")
+    p.add_argument("--all", action="store_true", help="print every finding, allowed or not")
+    p = sub.add_parser("sanity", help="one sea, no occupied pockets, the object budget")
+    p.add_argument("pack"); p.add_argument("map"); p.add_argument("size", nargs="?", help="WxH")
+    p.add_argument("zone", nargs="?")
+    p = sub.add_parser("render", help="a map to an image, flat or in the pack's tiles")
+    p.add_argument("pack"); p.add_argument("map"); p.add_argument("out")
+    p.add_argument("--scale", type=int, default=8, help="flat: pixels per tile")
+    p.add_argument("--zone", help="overlay this zone's objects and use its tile set")
+    p.add_argument("--grid", action="store_true", help="a line every ten tiles")
+    p.add_argument("--tiles", action="store_true", help="the real tile art")
+    p.add_argument("--seed", type=int, default=0, help="game seed for the tile variants")
+    p.add_argument("--crop", help="X0,Y0,X1,Y1: keep only that tile box")
+    p.add_argument("--shrink", type=int, default=1, help="scale the picture down N times")
+    p.add_argument("--no-objects", action="store_true", help="no object markers")
+    p = sub.add_parser("zones", help="each zone's id, map file and size, one per line")
+    p.add_argument("pack")
+    p = sub.add_parser("place", help="scatter chests and armies inside region boxes")
+    p.add_argument("pack"); p.add_argument("zone"); p.add_argument("map"); p.add_argument("regions")
+    p.add_argument("--add", action="store_true", help="keep what stands; place only what is lacking")
+    p.add_argument("--write", action="store_true", help="write them into game.json")
+    a = ap.parse_args(argv)
+    if a.cmd == "zones":
+        for z in load_game(a.pack)["zones"]:
+            print(z["id"], z["map"], f'{z["width"]}x{z["height"]}')
+    elif a.cmd == "build":
+        map_build(a.pack, a.zone, a.src, a.out, a.strict)
+    elif a.cmd == "check":
+        map_check(a.pack, a.zone, a.map)
+    elif a.cmd == "lint":
+        sys.exit(map_lint(a.pack, a.zone, a.update_allow, a.update_reach, a.all))
+    elif a.cmd == "sanity":
+        sys.exit(map_sanity(a.pack, a.map, a.size, a.zone))
+    elif a.cmd == "render":
+        map_render(a)
+    elif a.cmd == "place":
+        chests, armies = map_place(a.pack, a.zone, a.map, a.regions, a.add)
+        verb = "added" if a.add else "placed"
+        if a.write:
+            text = open(os.path.join(a.pack, "game.json"), encoding="utf-8").read()
+            for key, objs in (("wandering_armies", armies), ("chests", chests)):
+                text = gj_set_zone_array(text, a.zone, key, objs, append=a.add)
+            gj_write(a.pack, text)
+            print(f"{verb} {len(chests)} chests and {len(armies)} armies; wrote game.json")
+        else:
+            print(f"{verb} {len(chests)} chests and {len(armies)} armies (not written)")
+            print("  " + json.dumps(chests))
+            print("  " + json.dumps(armies))
+
+
+
 COMMANDS = {
+    "map": cmd_map,
     "zone": cmd_zone, "install": cmd_install, "sheet": cmd_sheet,
     "icon": cmd_icon,
     "sprites": cmd_sprites,   # paid (network)
