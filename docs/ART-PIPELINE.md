@@ -5,10 +5,14 @@ in **`docs/ROME-ART.md`**, generated from `art/jobs/*.json` by
 `tools/romeart.py prompts`. This file has been the *routes* (which engine,
 which settings, and why); that file has been the *record*.
 
-Every step has run through one script, `tools/romeart.py` (#143): generation,
-compositing, review and the record. Its paid commands (`rdgen run`,
-`pltileset`, `pltilespro`, `sprites`) have been the only ones to reach the
-network, and each has posted only when given `--run`.
+Every step has run through one script, `tools/romeart.py` (#143, #226):
+generation, compositing, the maps, review and the record;
+`romeart.py <command> --help` has documented each command. Its one paid
+command, `rdgen run`, has been the only one to reach the network for a
+charge, and it has posted only when given `--run`. Every shipped art file has
+had a recorded way to be made -- a job, a recipe or a kept source -- and
+`romeart.py provenance check --rebuild` has held the pack to it (see
+[The record](#the-record)).
 
 A troop has been two calls: the still, then its animation. `ROME-ART.md` has
 held the prompt for each artwork; this file has been how to run them.
@@ -111,14 +115,18 @@ down to 96x96 through the API's k-centroid tool,
 `/edit/tools/k_centroid_downscale` (`romeart.py rdgen`'s `k_centroid`, free, area-weighted),
 not a local resample and not a crop. The tool has flattened the frame onto
 white, so the alpha has been put back from the 128 frame's own mask,
-area-averaged to 96 and thresholded at half. Watch the animation, then:
+area-averaged to 96 and thresholded at half. Watch the animation
+(`romeart.py loopreview <run>`, or `romeart.py review <out> <runs...>` for a
+page of several), then install the frames and the portrait:
 
 ```
-cp build/art/<id>/run01/frame_0N.png assets/glory-of-rome/art/troops/<name>_0N.png
+python3 tools/romeart.py troop install <id> build/art/<id>_attack/runNN [build/art/troop_portrait_<id>/runNN]
 ```
 
-and keep both job files under `art/jobs/`, which `ROME-ART.md` has been
-generated from.
+It has written `art/troops/<id>_NN.png` and the 96 px portrait, pointed the
+troop's `sprite`, `portrait` and `anim` at them in `game.json`, and named
+those files in the jobs' `"pack"` lists. Keep the job files under
+`art/jobs/`, which `ROME-ART.md` has been generated from.
 
 ---
 
@@ -162,12 +170,14 @@ generated from.
     waves, the tile style has drawn a block face with a lit top edge.
   - **Mountain, Italia** — not a texture, since a 48 px tile interior has
     read as rounded domes with a dark split (#67). Italia's mountain has been
-    built the way the other continents' have: eight PixelLab rock sprites (`romeart.py sprites`,
-    `art/jobs/italia_o96_rocks.json`) composed by the lattice into the
-    interior and the 19 edges with a searched slot arrangement
-    (`romeart.py slots`, `art/primitives/italia/rock_slots.json`), and the
-    river bands carried onto the new interior (`romeart.py rebank`), all
-    recorded in `art/primitives/italia/BUILD.md`.
+    built the way the other continents' have: eight PixelLab rock sprites
+    (`art/jobs/italia_o96_rocks.json`, made before PixelLab was retired)
+    composed by the lattice into the interior and the 19 edges with a
+    searched slot arrangement (`romeart.py slots`,
+    `art/primitives/italia/rock_slots.json`), and the river bands carried
+    onto the new interior (`romeart.py rebank`). The layout is committed as
+    `art/layouts/mountain96.json`, so `romeart.py compose` rebuilds the
+    shipped tiles; all recorded in `art/primitives/italia/BUILD.md`.
 - **Object tiles** (the per-zone towns, the castle, the four dwellings) —
   `rd_pro__topdown`, 96x96, `figure: false`, `remove_bg: true` with the
   magenta background named in the prompt, **no reference image**. Of
@@ -206,8 +216,8 @@ generated from.
   across the river piece, so the deck has joined the road by construction; over
   the water a straight deck between two 5 px parapets (the road's stone mixed
   40/60 with pale travertine, a dark outer line, a joint every 8 px); and the
-  deck's shadow on the water, 3 px at 0.6. Style `c` has been installed in
-  every province; `zone` has run it as its sixth step.
+  deck's shadow on the water, 3 px at 0.6. `zone` has built them for every
+  province.
 - **Terrain edges** — not generated. `tools/romeart.py edges` has
   composited each from the installed base and grass tiles: the original
   48x34 edge tile under `art/reference/edges/` has been read as a shape (each
@@ -234,15 +244,18 @@ generated from.
   the set's desert.
 - **Irrigated fields** (#63, plan step 5) — Africa's and Oriens' farmland
   is a green irrigated field: `art/jobs/fields_africa_irrigated.json`
-  (`rd_tile__single_tile`, 48 px, run 2, doubled to 96) installed as each of
-  the two sets' `fields_wheat`, so the map's `w` code draws it with no new
+  (`rd_tile__single_tile`, 48 px, run 2, doubled to 96), kept as
+  `art/primitives/africa/pieces/fields_wheat.png` and taken by both sets'
+  `zone` as their `fields_wheat`, so the map's `w` code draws it with no new
   tile code; its soft edges built with `romeart.py edges <pack> <set> --as
   fields_wheat=desert`. Oriens' own job read as dark grass on its bright
   grass and was not installed.
 - **Italia's forest from sprites** (#63) — eight Retro Diffusion trees
-  (`art/jobs/italia_tree_*.json`), colour-matched to the old forest and kept in
+  (`art/jobs/italia_tree_*.json`), colour-matched to the old forest by hand
+  (`romeart.py colormatch` has been that step since) and kept in
   `art/primitives/italia/trees`; the forest is a lattice of one of them like
-  the other sets' (`art/primitives/italia/BUILD.md`).
+  the other sets', its layout committed as `art/layouts/forest96_italia.json`
+  (`art/primitives/italia/BUILD.md`).
 - **Inner-corner fills** (#63) — `romeart.py fills`: where a grass or sand
   cell has a wood or range on two adjacent sides, the shell (modern) and
   `romeart.py map render --tiles` have drawn `<terrain>[_sand]_fill_<ne|nw|se|sw>` into the
@@ -282,14 +295,18 @@ generated from.
   (`rd_pro__topdown`, 96 px): a farmhouse, a ruin, a shrine and a well stand
   on grass as solid tiles (`blocks_foot`, map chars `n u h e`); the jetty
   (`j`) is sea off a straight grass shore, `dock_<n|e|s|w>` drawn over that
-  side's `water_edge` piece (the keyed deck set 6 px from the land side).
+  side's `water_edge` piece. `romeart.py dock` has built the four from the
+  generated deck kept as `art/primitives/pieces/dock_deck.png`: keyed off its
+  magenta (`romeart.py key`: red and blue both over green by 80), cropped to
+  its ink, centred along the shore and set 6 px from the land side.
   Placed round towns and castles and along roads, each kept only where the
   build, `map lint` and the reach baseline all pass.
 - **Sand shores** (`water_sand_edge_NN`, #63) — not generated. Each zone
   set's `water_edge_NN` has been read pixel by pixel as sea or shore (nearest
   to the set's water or grass colours), and the shore part filled with the
   set's desert, so a sea whose coast is all sand has drawn a sand shore line
-  instead of a grass one. `tools/romeart.py map build` has picked them; sand
+  instead of a grass one (`romeart.py shore`, codes 0-13 and 18, the master
+  set and every set with desert; `zone` runs it). `tools/romeart.py map build` has picked them; sand
   meeting the sea has kept its own ground to the coast, and forest and rock
   their grass fringe.
 - **Villain portraits** (`art/villains/<name>_00..07.png`) — villains have
@@ -345,27 +362,23 @@ generated from.
   picture edge to edge, no frame, no border". The one allowed edge treatment
   has been a villain portrait's flat colour bar, and only when it is
   identical on all eight frames of that villain.
-- **Combat set** (`art/combat/*`) — not generated. `romeart.py siegewalls` has
-  remade the original 48x34 pieces at 96: each original pixel classified
-  into a material, the map scaled to the cell, and every material re-rendered
-  at pixel scale (three-tone brick courses over a grout, two-tone merlons over
-  the black shadow band, a lighter top face, the moat as a smooth shape with a
-  clean dark bank, rubble scattered at the breach), so layout and features
-  have matched the original exactly. It has also drawn the top-down back wall
-  band the shell has placed above the siege board (`sprites.ui.siege_back_wall`,
-  `_left`, `_right`), with the moat turning the corners on a curve and the
-  wall bands mitred. The API has not been able to make generated wall pieces
-  that join, and a whole-board picture has been too coarse under the 256 cap.
-  Rome has drawn its siege from the grid below instead, so it has shipped
-  none of these pieces.
+- **Combat set** (`art/combat/castle_spike.png`, `cursor_01..04.png`) — not
+  generated. `romeart.py combat` has redrawn the reference pack's 48x34
+  burst and cursors at 96: each original pixel classified into a material,
+  the map scaled to the cell and re-rendered at pixel scale, the boundaries
+  between colours dithered so nothing reads as 2x blocks; the cursors' rings
+  redrawn from their ink boxes. The wall pieces it once drew are gone: the
+  API could not make generated wall pieces that join, so Rome has drawn its
+  siege from the grid below. The obstacles have been generated
+  (`art/jobs/obstacle_0N.json`).
 - **Siege grid** (`art/combat/siege/cell_<x>_<y>.png`, 36 cells at 32) —
   the whole siege board plus its back band as one picture, sliced into cells
   (`sprites.ui.siege_grid`, REQ-165c). Route: `rd_plus__topdown_map` (the
   only style that has drawn a true overhead plan; `rd_plus__environment` has
   composed a perspective scene every time) at 384, first from a prompt to get
   the castle, then **img2img** on the 6x6 board composed from the sliced
-  pieces (`romeart.py siegeslice` recipe mode, the band included, k-centroid to
-  384x384, `strength` 0.55) so the layout has been fixed by the source and the
+  pieces (by `siegeslice`'s since-removed recipe mode, the band included,
+  k-centroid to 384x384, `strength` 0.55) so the layout has been fixed by the source and the
   engine has repainted one continuous field over it
   (`art/jobs/siege_scene_grass_a.json`, returned at 192). Then
   `romeart.py siegeslice --grid` has written the 36 cells untouched at 32; the
@@ -470,8 +483,10 @@ generated from.
   recording from Freesound, trimmed and made mono WAV (`assets/glory-of-rome/audio/CREDITS.txt`).
 - **Recolouring** — when a set reads fine but its colours vanish against the
   grass, recolour the approved frames locally in HSV rather than
-  regenerating: every opaque pixel except the pale highlights takes the new
-  hue, and the pose and motion stay exactly as approved.
+  regenerating: `romeart.py colormatch <src> <ref> <out> [--keep-hue LO,HI]`
+  moves every opaque pixel's mean hue, saturation and value to a reference's,
+  leaving a hue range (a trunk's browns) alone, so the pose and motion stay
+  exactly as approved.
 
 ---
 
@@ -527,42 +542,30 @@ python3 tools/romeart.py rdgen reprocess art/jobs/<id>.json        # re-cut and 
 - The task id has been written to disk before polling.
 - `raw_only: true` has delivered the image exactly as returned.
 - Token from `~/.config/retrodiffusion/token`. No environment variables.
-- Nothing has written into `assets/`; approved finals have been copied by
-  hand.
-- Review on a page: `art.html` at the repo root has shown the whole pack and
-  refreshed from disk.
+- Every paid run has been appended to its job file's `"runs"` (the run
+  folder, the request id, the cost, the date).
+- `rdgen` has written nothing into `assets/`: approved finals have gone in
+  through `romeart.py troop install` (or, for other art, as the job's notes
+  say), and the job's `"pack"` list has named what it made.
+- Review on a page: `romeart.py review <out> <runs...>` for chosen runs;
+  `art.html` at the repo root has shown the whole pack and refreshed from disk.
 
 ---
 
-## Terrain sets: the other API
+## Terrain sets: PixelLab (retired)
 
-Retro Diffusion has made every figure, object and screen in the pack. It has
-not made the **terrain** that one surface fades into another over. That has
-come from PixelLab, and the two have been separate routes with separate
-tokens and separate commands. One engine per kind of art has still held: RD
-has owned sprites and screens, PixelLab has owned terrain sets.
-
-```
-python3 tools/romeart.py pltileset  build/art/<id> art/jobs/<id>.json --run   # create-tileset
-python3 tools/romeart.py pltilespro art/jobs/<id>.json build/art/<id> --run   # Tiles Pro sets
-```
-
-- Without `--run` each has printed the request it would post and the balance,
-  and posted nothing; PixelLab has quoted no price before a call.
-
-- Token from `~/.config/pixellab/token`. No environment variables.
-- A `create-tileset` job has named a **lower** terrain and an **upper** one
-  and the transition between them, and returned 16 tiles: the two plain
-  surfaces and every corner combination. `tile_size` has been 16 or 32.
-- `lower_base_tile_id` has chained the set to a terrain some earlier set has
-  already produced, so two sets have shared one grass instead of each
-  inventing its own. The terrain ids have been printed on every run;
-  `art/jobs/t32_cobble_203.json` has chained to `d1de924b`.
-- **The seed has not reproduced a set.** Re-running a job unchanged has
-  returned different pixels, down to a different brown with no colour in
-  common. So a set in the pack has not been rebuildable from its job file:
-  every job file has carried a `_note` saying what it produced, and the
-  `_note` has been the only record there is.
+Retro Diffusion has made every figure, object and screen in the pack. The
+**terrain** that one surface fades into another over -- the 16 px corner sets
+under `art/primitives/<zone>/` (sea, desert, cobble, river, grass) and the
+tree and rock sprite batches -- came from PixelLab, which is no longer used;
+its commands have been removed from `romeart.py`. The primitives it made
+have been committed, so every zone set has rebuilt from them (`zone`), and
+its job files (`create-tileset`'s lower and upper terrains and their
+transition; the sprite batches) have stayed under `art/jobs/` as the record
+of how they were made. Its seed did not reproduce a set -- a re-run returned
+different pixels -- so the kept primitives, not the jobs, have been the
+inputs. A new terrain set would be a Retro Diffusion corner set in the same
+`tiles_meta.json` shape.
 
 ### Roads
 
@@ -570,7 +573,7 @@ Roads have not been a terrain set the game loads. `tools/romeart.py sweep`
 has **swept** the set into the 24 road pieces the pack ships:
 
 ```
-python3 tools/romeart.py sweep <set-dir> <out-dir> --sweep [--rim N] [--rim-shade F]
+python3 tools/romeart.py sweep <set-dir> <out-dir> [--prefix road|river|...] [--grass GROUND] [--rim N] [--rim-shade F]
 ```
 
 Every piece has been a signed-distance shape -- a straight band, a true
@@ -585,6 +588,31 @@ a prompt:
   along the road has had to come from `--rim` / `--rim-shade`, which have painted it
   after the fact.
 - Every straight exit has been the same 32 px band and every diagonal the
-  same corner triangle, so any piece has joined any other. The sweep has
-  checked that contract on every run and printed how many sides carry an
-  unexpected pattern, and that count has had to be `0`.
+  same corner triangle, so any piece has joined any other, by construction:
+  at every border each shape's distance has equalled the straight band's.
+
+---
+
+## The record
+
+Every file under `assets/glory-of-rome/art/` has been accounted for one of
+four ways, and `romeart.py provenance check` (run by `scripts/check_maps.sh`,
+so by `make check-maps` and CI) has failed on any file none of them names and
+on any claim naming a file that is not there:
+
+- **a job** -- a job file's `"pack"` list has named it: that generation's
+  output, downscaled, cropped or framed as the job's notes say
+  (`provenance normalise` has filled the lists from the older free-text
+  `_pack_path`, which stays for reading);
+- **a recipe** -- a command has composited it from committed inputs:
+  `zone`/`install` for the zone sets, `compose` of the committed Italia
+  layouts, `fills`, `aprons`, `details`, `interiors`, `edgevars`, `shore`,
+  `dock`, `edges --as` for the farmland, `siegeslice`, `combat`,
+  `classpicker`, `splashtitle --words`, `pingpong`; `--rebuild` has re-run
+  every deterministic one into a copy of the pack and compared every pixel;
+- **a source** -- kept as made, its input lost, with the reason (the master
+  set's PixelLab-era sea, desert, roads and rivers; the art made for #38
+  before the job record);
+- **external** -- the font, its licence beside it.
+
+`romeart.py provenance list` has printed each file and what claims it.
