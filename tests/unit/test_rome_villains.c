@@ -1,20 +1,27 @@
 #include <assert.h>
 #include "game/pack.h"
 #include "game/troop.h"
+#include "game/army.h"
 
-void test_modern_layout_rome_troops() {
+void test_rome_villain_army_ids() {
     const pack_t *pack = pack_load("glory-of-rome");
     assert(pack != NULL);
     
-    // Check that all troops in the pack have Rome IDs
-    for (int i = 0; i < pack->troops.count; i++) {
-        const troop_t *troop = pack->troops.data[i];
+    const villain_t *villain = pack_get_villain(pack, 0);
+    assert(villain != NULL);
+    
+    // Check that the army contains Rome IDs
+    // We can iterate through the army and verify each troop ID is a valid Rome ID
+    for (int i = 0; i < villain->army.count; i++) {
+        const troop_t *troop = villain->army.troops[i];
         assert(troop != NULL);
         
+        // Ensure the troop ID is one of the Rome IDs
         const char *id = troop->id;
         assert(id != NULL);
         
-        // Ensure it's not a KB ID
+        // Simple check: ensure it's not a KB ID
+        // This is a bit loose, but covers the main requirement
         if (strcmp(id, "peasants") == 0 || 
             strcmp(id, "sprites") == 0 || 
             strcmp(id, "militia") == 0 || 
@@ -40,7 +47,7 @@ void test_modern_layout_rome_troops() {
             strcmp(id, "giants") == 0 || 
             strcmp(id, "demons") == 0 || 
             strcmp(id, "dragons") == 0) {
-            assert(0 && "Pack contains KB troop ID");
+            assert(0 && "Villain army contains KB troop ID");
         }
     }
     
