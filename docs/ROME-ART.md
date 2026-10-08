@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-442 jobs. A job with a **Pack path** has produced that file in the pack; a
+444 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1127,6 +1127,18 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 8814)
 - **prompt:** a small square plot of ripe golden wheat seen from directly above, neat parallel rows of grain, a thin border of brown earth around the plot, flat magenta background around the plot, solid magenta background
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=8814`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### fields_africa_irrigated
+
+- **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3611)
+- **prompt:** seamless tileable crop field seen from directly above, straight parallel rows of bright green barley running left to right with thin straight brown irrigation ditches between them, flat even lighting, low contrast, the same everywhere
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3611`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
+
+### fields_oriens_irrigated
+
+- **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3612)
+- **prompt:** seamless tileable crop field seen from directly above, straight parallel rows of fresh light green wheat running left to right with thin straight brown irrigation ditches between them, flat even lighting, low contrast, the same everywhere
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3612`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
 
 ### forest_native_block
 

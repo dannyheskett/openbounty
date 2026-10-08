@@ -232,6 +232,13 @@ generated from.
   what is built from it still matches. `zone` builds both, and the mountain-
   and forest-on-sand pieces (`<terrain>_sand_edge_NN`) as the same lattice over
   the set's desert.
+- **Irrigated fields** (#63, plan step 5) — Africa's and Oriens' farmland
+  is a green irrigated field: `art/jobs/fields_africa_irrigated.json`
+  (`rd_tile__single_tile`, 48 px, run 2, doubled to 96) installed as each of
+  the two sets' `fields_wheat`, so the map's `w` code draws it with no new
+  tile code; its soft edges built with `romeart.py edges <pack> <set> --as
+  fields_wheat=desert`. Oriens' own job read as dark grass on its bright
+  grass and was not installed.
 - **Italia's forest from sprites** (#63) — eight Retro Diffusion trees
   (`art/jobs/italia_tree_*.json`), colour-matched to the old forest and kept in
   `art/primitives/italia/trees`; the forest is a lattice of one of them like
