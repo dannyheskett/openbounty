@@ -642,7 +642,8 @@ shut, then with them bridged.
 peninsula itself. Two pockets on the Adriatic coast have been reachable only
 from the water, rented at Ancona's harbour: a winding channel into the
 Apennine cliffs east of the spine (in at column 42 of row 52, two cells west,
-one south, one south-west), ending in a fixed chest at (39,54), and a grass
+one south, one south-west), whose last chamber, (39,54), has held the pinned
+Sibylline Fragment, and a grass
 path inside a ring of rock on the headland south of it (in at column 50 of
 row 58, two west, one south-west, one south), ending in a fixed chest at
 (47,60). Only the entry cell of each has touched the sea, so
