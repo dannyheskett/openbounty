@@ -22,20 +22,6 @@
  },
  {
   "rule": "notch",
-  "x": 32,
-  "y": 8,
-  "what": "forest edge on ['e'] hides the sw corner",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "notch",
-  "x": 32,
-  "y": 9,
-  "what": "forest edge on ['w'] hides the ne corner",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "notch",
   "x": 19,
   "y": 24,
   "what": "mountain edge on ['s'] hides the ne corner",
@@ -288,51 +274,9 @@
  },
  {
   "rule": "step",
-  "x": 11,
-  "y": 4,
-  "what": "forest stair step with (12,5)",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "step",
   "x": 32,
   "y": 4,
   "what": "mountain stair step with (33,3)",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "step",
-  "x": 31,
-  "y": 6,
-  "what": "forest stair step with (32,7)",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "step",
-  "x": 34,
-  "y": 7,
-  "what": "forest stair step with (35,6)",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "step",
-  "x": 25,
-  "y": 8,
-  "what": "forest stair step with (26,7)",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "step",
-  "x": 8,
-  "y": 10,
-  "what": "forest stair step with (9,11)",
-  "reason": "baseline: still to clear (#63 plan, step 1)"
- },
- {
-  "rule": "step",
-  "x": 11,
-  "y": 19,
-  "what": "forest stair step with (12,20)",
   "reason": "baseline: still to clear (#63 plan, step 1)"
  },
  {
