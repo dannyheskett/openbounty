@@ -1288,8 +1288,9 @@ flagged (§38).
   and `sprites.ui.alcove_figure_animation` have named the location backdrop
   and the figure's frames. Each has been optional and each has fallen back to
   the reference pack's choice: the hills-dwelling tile, the hill cave's
-  backdrop and the `gnomes` troop sprite, which is what `kings-bounty`
-  has shown. The figure has cycled on the troop tick and filled the same
+  backdrop and the troop `sprites.ui.alcove_troop` names, `gnomes` in
+  `kings-bounty`, which is what it has shown (no troop id has been
+  hard-coded in the shell). The figure has cycled on the troop tick and filled the same
   tile-shaped slot a troop strip does, so the backdrop geometry has been one
   rule for both. The location kind `SCREEN_LOC_ALCOVE` (7,
   `src/screens/alcove.c`) has existed so the screen has asked for its own
@@ -2457,7 +2458,11 @@ golden-digest regression tests have pinned the formulas.
   `engine/include/savegame.h`). Catalog references have used string ids
   (`"troop": "knights"`), so saves have been human-readable and
   pack-portable. Read/write has been `engine/savegame.c`; the full-state
-  snapshot builder `engine/state_serialize.c`.
+  snapshot builder `engine/state_serialize.c`. A pack that has renamed a
+  troop has listed the old id in `troop_aliases`, and `SaveGameRead` has
+  mapped every troop id it loaded (army, castle and foe garrisons, a foe's
+  `requires_troop`, dwellings) through them, so a save written before the
+  rename has played on (#228).
 - **REQ-411.** Save slots: 10 (`SAVE_SLOT_COUNT` in
   `engine/include/savepath.h`). Filenames: `save_0.dat` … `save_9.dat`.
 - **REQ-412.** Save directory (`engine/savepath.c`):

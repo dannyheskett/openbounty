@@ -4515,6 +4515,7 @@
 			"forest_backdrop":	"art/ui/backdrop_forest.png",
 			"hillcave_backdrop":	"art/ui/backdrop_hillcave.png",
 			"dungeon_backdrop":	"art/ui/backdrop_dungeon.png",
+			"alcove_troop":	"gnomes",
 			"ending_win":	"art/ui/end_win_screen.png",
 			"ending_lose":	"art/ui/end_lose_screen.png",
 			"view_icons_extra":	["art/ui/inventory_zone_continentia.png", "art/ui/inventory_zone_forestria.png", "art/ui/inventory_zone_archipelia.png", "art/ui/inventory_zone_saharia.png"],

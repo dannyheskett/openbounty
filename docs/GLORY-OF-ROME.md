@@ -370,6 +370,12 @@ thing that flies, a line with a ranged attack a thing that shoots, and
 `MAGIC`, `REGEN`, `ABSORB`, `LEECH`, `SCYTHE` and `IMMUNE` have each named
 something the myth actually does.
 
+**Ids.** Each troop's id has been its Roman name in lower case (`coloni`,
+`praetoriani`, `striges`, `elephanti`). No King's Bounty id has stayed in the
+pack: the "Base" column below has named the reference troop each line came
+from, not an id the pack uses. The old ids have been kept only in
+`troop_aliases`, so a save from before the rename has loaded (#228).
+
 ### 7.1 Castra — the legion (castle family)
 
 Recruited only at the Emperor's seat.

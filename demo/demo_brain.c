@@ -273,10 +273,12 @@ static void demo_temp_death(Game *g, Map *map, Fog *fog, const Resources *res) {
         g->army[i].count = 0;
     }
     g->stats.siege_weapons = 0;
-    const TroopDef *peas = troop_by_id("peasants");
-    if (peas) {
-        snprintf(g->army[0].id, sizeof g->army[0].id, "%s", peas->id);
-        g->army[0].count = 20;
+    // The engine's own consolation army (tuning.temp_death): the pack's
+    // troop and count, the cheapest troop when the pack names none.
+    const TroopDef *cons = troop_by_id(res->tuning.temp_death_troop);
+    if (cons) {
+        snprintf(g->army[0].id, sizeof g->army[0].id, "%s", cons->id);
+        g->army[0].count = res->tuning.temp_death_count;
     }
     g->boat.has_boat = false;
     g->boat.x = g->boat.y = -1;

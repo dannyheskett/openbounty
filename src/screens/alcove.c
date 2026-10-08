@@ -31,7 +31,9 @@ static double s_last_tick = 0.0;
 void screen_alcove_open(Game *g) {
     if (!g) return;
     loc_deal_clear();   // modern: a fresh visit shows no old deal
-    const TroopDef *t = troop_by_id("gnomes");
+    // The pack's alcove troop (King's Bounty's gnomes), drawn when the pack
+    // has no alcove figure of its own.
+    const TroopDef *t = g->res ? troop_by_id(g->res->sprites.alcove_troop) : NULL;
     s_fallback_troop_idx = t ? t->index : -1;
     s_frame = 0;
     s_last_tick = 0.0;
