@@ -25,7 +25,10 @@ masses: forest (f), mountain (^) and farmland (p, w).
 The intended coasts and edges are hand-kept in
 art/maps/<zone>_lint_intended.json, {"coast": [...], "edge": [...]}, each
 entry {"box": [x0, y0, x1, y1], "reason": "..."}: a wooded or rocky shore, a
-range running off the map, drawn that way on purpose.
+range running off the map, drawn that way on purpose. Its "shape" list,
+entries {"box": [...], "rules": [...], "reason": "..."}, names the few other
+shapes kept on purpose -- cells the hero's reach depends on -- with the rules
+they are allowed to break.
 
 and on any change in what the hero can reach, against art/maps/<zone>_reach.json
 (the four columns `mapbuild.py check` prints).
@@ -109,6 +112,7 @@ def findings(rows, intended=None):
             if min(x, y, W - 1 - x, H - 1 - y) < 2 and \
                     (k.startswith('field') or not inside(edge_ok, x, y)):
                 out.append(("edge", x, y, f"{k} within two cells of the world's edge"))
+    shape_ok = [(e["box"], set(e["rules"])) for e in (intended or {}).get("shape", [])]
     for (x, y), (k, pair) in corners.items():
         # the next step of a staircase: the corner cell diagonally beyond,
         # along the outline, turned the same way
@@ -117,7 +121,7 @@ def findings(rows, intended=None):
         for nx, ny in ((x + ddx, y + ddy), (x - ddx, y - ddy)):
             if corners.get((nx, ny)) == (k, pair) and (nx, ny) > (x, y):
                 out.append(("step", x, y, f"{k} stair step with ({nx},{ny})"))
-    return out
+    return [f for f in out if not any(f[0] in rules and inside([b], f[1], f[2]) for b, rules in shape_ok)]
 
 
 def dat_rows(pack, g, dat):

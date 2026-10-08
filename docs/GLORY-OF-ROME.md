@@ -604,7 +604,8 @@ shape the edge pieces draw badly, in the source or the built `.dat` -- a
 one-cell stair step, a strand in no 2x2 block, a cut corner, two masses side
 by side, a mass at the sea or within two cells of the world's edge outside the
 zone's intended coasts and edges (`art/maps/<zone>_lint_intended.json`, each
-with its reason; a field never) -- beyond the findings still to clear in
+with its reason; a field never; its `shape` list names the few other shapes
+the hero's reach depends on) -- beyond the findings still to clear in
 `art/maps/<zone>_lint_allow.json`, whose count has only fallen, and any change
 in the hero's reach from `art/maps/<zone>_reach.json`.
 

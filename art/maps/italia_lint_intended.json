@@ -83,5 +83,33 @@
    ],
    "reason": "the Alps and the Maritime Alps run off the map's north and west edges"
   }
+ ],
+ "shape": [
+  {
+   "box": [
+    31,
+    27,
+    31,
+    29
+   ],
+   "rules": [
+    "notch",
+    "strand"
+   ],
+   "reason": "the marsh wood's stub at the Rubicon's mouth: without it a boat lands on the Po coast and the Rubicon gate is bypassed"
+  },
+  {
+   "box": [
+    36,
+    0,
+    38,
+    2
+   ],
+   "rules": [
+    "pair",
+    "step"
+   ],
+   "reason": "where the Alps meet the Adriatic marsh wood: opening these cells lets the hero round the Alps into the Po plain"
+  }
  ]
 }
