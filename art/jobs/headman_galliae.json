@@ -16,5 +16,15 @@
   ],
   "_pack_path": "art/ui/headman_galliae_00..07.png",
   "_animation": "breathes slowly and strokes his moustache once, his body, staff, cloak and feet all completely still, smooth loop",
-  "_note": "The town's head townsperson (2026-09-13), one per continent, standing on the town backdrop in the tile-sized slot the troop used to fill. The alcove figure's route: the pack's trained troop style at 96x96, magenta removed, no crop."
+  "_note": "The town's head townsperson (2026-09-13), one per continent, standing on the town backdrop in the tile-sized slot the troop used to fill. The alcove figure's route: the pack's trained troop style at 96x96, magenta removed, no crop.",
+  "pack": [
+    "art/ui/headman_galliae_00.png",
+    "art/ui/headman_galliae_01.png",
+    "art/ui/headman_galliae_02.png",
+    "art/ui/headman_galliae_03.png",
+    "art/ui/headman_galliae_04.png",
+    "art/ui/headman_galliae_05.png",
+    "art/ui/headman_galliae_06.png",
+    "art/ui/headman_galliae_07.png"
+  ]
 }

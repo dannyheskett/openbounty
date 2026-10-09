@@ -15,5 +15,8 @@
     96,
     96
   ],
-  "_pack_path": "art/troops/lares_00.png"
+  "_pack_path": "art/troops/lares_00.png",
+  "pack": [
+    "art/troops/lares_00.png"
+  ]
 }

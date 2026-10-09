@@ -17,5 +17,11 @@
     96
   ],
   "_pack_path": "art/classes/sibylla_walk_00..03.png",
-  "_note": "Class hero walk (2026-09-06): custom action on the class's mounted still, four frames, prompt expansion on, tag prompt. Chosen over the named walking action on a Legatus test: the legs step more clearly. Declared in the class's hero.walk; the flat array mirrors when facing west."
+  "_note": "Class hero walk (2026-09-06): custom action on the class's mounted still, four frames, prompt expansion on, tag prompt. Chosen over the named walking action on a Legatus test: the legs step more clearly. Declared in the class's hero.walk; the flat array mirrors when facing west.",
+  "pack": [
+    "art/classes/sibylla_walk_00.png",
+    "art/classes/sibylla_walk_01.png",
+    "art/classes/sibylla_walk_02.png",
+    "art/classes/sibylla_walk_03.png"
+  ]
 }

@@ -14,18 +14,14 @@ out from its own grass:
 deterministic, so the calmed file kept here is the one that shipped.)
 
 `galliae.png`, `africa.png` and `oriens.png` are windows of the calmed
-painting, flipped and colour-graded for each land (#64). The
-grade is deterministic; these calls reproduce the files exactly:
+painting, flipped and colour-graded for each land (#64); the grades are
+`FIELD_GRADES` in tools/romeart.py, and deterministic. One command grades the
+three and cuts every zone's 30 field cells into the pack:
 
-    python3 tools/romeart.py fieldgrade art/fields/italia_calm.png art/fields/galliae.png --window 208,268,696,580 --flip h   --hue 6   --sat 1.20 --val 0.86
-    python3 tools/romeart.py fieldgrade art/fields/italia_calm.png art/fields/africa.png  --window 352,448,696,580 --flip v   --hue -12 --sat 0.90 --val 1.05 --tint 214,190,138,0.12
-    python3 tools/romeart.py fieldgrade art/fields/italia_calm.png art/fields/oriens.png  --window 340,248,696,580 --flip 180 --hue -5  --sat 0.62 --val 1.02 --tint 190,178,158,0.10
+    python3 tools/romeart.py fields
 
 The windows are the top-left-most, bottom-right-most and top-right-most
 696 x 580 windows (6:5) whose whole edge is content rather than the white
 margin, searched on a 4 px grid, so the three compositions differ from
-Italia's centred one and from each other.
-
-Cells, for any zone:
-
-    python3 tools/romeart.py siegeslice art/fields/<zone>.png assets/glory-of-rome/art/combat/field --field <zone>
+Italia's centred one and from each other. A single grade by hand:
+`romeart.py fieldgrade <src> <out> --window x,y,w,h [--flip] [--hue] [--sat] [--val] [--tint]`.

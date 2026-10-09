@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/tiles/wandering_army_africa.png",
-  "_note": "Per-zone wandering army (2026-09-06), object route: rd_pro__topdown, 96x96, magenta removed, no reference, one warrior beside a standard in the zone's own style. The Galliae one is the shared run02 (horned helmet, round shield, skull standard) renamed. run02: the API's remove_bg left magenta on run01, seed incremented. next run: the planted standard floated with no ground under it; now held in the warrior's hand, seed incremented."
+  "_note": "Per-zone wandering army (2026-09-06), object route: rd_pro__topdown, 96x96, magenta removed, no reference, one warrior beside a standard in the zone's own style. The Galliae one is the shared run02 (horned helmet, round shield, skull standard) renamed. run02: the API's remove_bg left magenta on run01, seed incremented. next run: the planted standard floated with no ground under it; now held in the warrior's hand, seed incremented.",
+  "pack": [
+    "art/tiles/wandering_army_africa.png"
+  ]
 }

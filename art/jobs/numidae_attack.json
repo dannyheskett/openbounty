@@ -16,5 +16,11 @@
   "target": [
     96,
     96
+  ],
+  "pack": [
+    "art/troops/numidae_00.png",
+    "art/troops/numidae_01.png",
+    "art/troops/numidae_02.png",
+    "art/troops/numidae_03.png"
   ]
 }

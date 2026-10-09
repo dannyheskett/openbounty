@@ -17,5 +17,15 @@
     96
   ],
   "_pack_path": "art/ui/headman_italia_00..07.png",
-  "_note": "Head townsperson idle loop (2026-09-13): the alcove figure's loop route, eight frames at 96 on run01, alpha kept."
+  "_note": "Head townsperson idle loop (2026-09-13): the alcove figure's loop route, eight frames at 96 on run01, alpha kept.",
+  "pack": [
+    "art/ui/headman_italia_00.png",
+    "art/ui/headman_italia_01.png",
+    "art/ui/headman_italia_02.png",
+    "art/ui/headman_italia_03.png",
+    "art/ui/headman_italia_04.png",
+    "art/ui/headman_italia_05.png",
+    "art/ui/headman_italia_06.png",
+    "art/ui/headman_italia_07.png"
+  ]
 }

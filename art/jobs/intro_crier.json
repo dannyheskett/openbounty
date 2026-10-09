@@ -15,5 +15,23 @@
   64
  ],
  "_pack_path": "art/intro/crier_00..07.png and art/intro/crier_decree_00..07.png (via intro_crier_gesture and intro_crier_decree)",
- "_note": "2026-10-03, Introduction (#154) scenes 2 and 5: the crier, after Dan's reference (the HBO Rome newsreader in spirit): the figure route at 64, magenta removed, hands empty. The troop style refuses canvases under 64 (invalid_style_dimensions, no charge). run11 is the still under intro_crier_gesture and intro_crier_decree, which redraw it at 56."
+ "_note": "2026-10-03, Introduction (#154) scenes 2 and 5: the crier, after Dan's reference (the HBO Rome newsreader in spirit): the figure route at 64, magenta removed, hands empty. The troop style refuses canvases under 64 (invalid_style_dimensions, no charge). run11 is the still under intro_crier_gesture and intro_crier_decree, which redraw it at 56.",
+ "pack": [
+  "art/intro/crier_00.png",
+  "art/intro/crier_01.png",
+  "art/intro/crier_02.png",
+  "art/intro/crier_03.png",
+  "art/intro/crier_04.png",
+  "art/intro/crier_05.png",
+  "art/intro/crier_06.png",
+  "art/intro/crier_07.png",
+  "art/intro/crier_decree_00.png",
+  "art/intro/crier_decree_01.png",
+  "art/intro/crier_decree_02.png",
+  "art/intro/crier_decree_03.png",
+  "art/intro/crier_decree_04.png",
+  "art/intro/crier_decree_05.png",
+  "art/intro/crier_decree_06.png",
+  "art/intro/crier_decree_07.png"
+ ]
 }

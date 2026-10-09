@@ -298,7 +298,7 @@ static Terrain terrain_from_name(const char *s) {
 // (see utf16_literal_to_utf8). The escape keeps game.json plain ASCII and
 // valid UTF-8 while still naming any of the 256 codes. A map file that uses
 // one is no longer ASCII -- the reader is byte-wise, so such a file is latin-1
-// (tools/mapcheck.py and its neighbours read them that way).
+// (tools/romeart.py's map commands read them that way).
 //
 // Returns the code, or -1 if the key names none.
 int resources_tile_code_from_key(const char *key) {

@@ -17,5 +17,11 @@
     96,
     96
   ],
-  "_pack_path": "art/troops/baleares_00..03.png"
+  "_pack_path": "art/troops/baleares_00..03.png",
+  "pack": [
+    "art/troops/baleares_00.png",
+    "art/troops/baleares_01.png",
+    "art/troops/baleares_02.png",
+    "art/troops/baleares_03.png"
+  ]
 }

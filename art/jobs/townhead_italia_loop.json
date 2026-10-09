@@ -17,5 +17,15 @@
     128
   ],
   "_pack_path": "art/portraits/townhead_italia_00..07.png",
-  "_note": "Head townsperson portrait loop (2026-09-13): custom action on run01, eight frames at 128, each frame centre-cropped to 96."
+  "_note": "Head townsperson portrait loop (2026-09-13): custom action on run01, eight frames at 128, each frame centre-cropped to 96.",
+  "pack": [
+    "art/portraits/townhead_italia_00.png",
+    "art/portraits/townhead_italia_01.png",
+    "art/portraits/townhead_italia_02.png",
+    "art/portraits/townhead_italia_03.png",
+    "art/portraits/townhead_italia_04.png",
+    "art/portraits/townhead_italia_05.png",
+    "art/portraits/townhead_italia_06.png",
+    "art/portraits/townhead_italia_07.png"
+  ]
 }

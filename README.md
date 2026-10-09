@@ -855,7 +855,7 @@ Interactive tiles (signs, towns, castles, chests, dwellings, foes,
 artifacts, telecaves, navmaps, orbs) have not been in the .dat file:
 `stamp_objects` and `stamp_placements` have applied them from the zone's
 JSON arrays + the salt-time placements at zone load. The Glory of Rome's `.dat`
-files have been built from sources in `art/maps/` by `tools/mapbuild.py`.
+files have been built from sources in `art/maps/` by `tools/romeart.py map build`.
 
 ---
 
@@ -907,10 +907,12 @@ engine binary itself: `./build/debug/openbounty --pack-dir <src> <out_zip>`.
 
 The game and its build have used no Python. The rest of `tools/` has been
 The Glory of Rome authoring tools, which the build has never run: `romeart.py`,
-the one art pipeline script (tile compositing, screen and combat art,
-animation review, the art record, the launcher icon, and the paid-API calls,
-which have posted only with `--run`); and `mapbuild.py`, `mapcheck.py` and
-`maprender.py` (maps). `capture.sh` and `walkthrough.sh` have
+the one art and map script (`romeart.py --help` lists every command): the
+terrain tiles and each zone's whole set, the maps (build, check, lint, render,
+placing and moving objects), screen and combat art, review pages, the art
+record (`provenance check`, run by `make check-maps`), and Retro Diffusion
+generation, which has posted only with `--run`. It needs the Python packages
+pinned in `scripts/requirements-art.txt`. `capture.sh` and `walkthrough.sh` have
 driven a running window for screenshots; `detcheck.sh` has checked
 determinism.
 

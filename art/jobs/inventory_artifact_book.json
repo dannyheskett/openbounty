@@ -13,5 +13,8 @@
     104
   ],
   "_pack_path": "art/ui/inventory_artifact_book.png",
-  "_note": "Inventory icon (2026-09-06): opaque framed card like the original pack's, drawn in the inventory belt and the puzzle grid at the tile size; rd_pro__default, the screen engine, 96x96, no references. run02: no words on anything (Dan): lettering, banner and the Gallic cockerel removed; seed incremented. Regenerated without a painted frame (2026-09-06): the shell draws the frame (sprites.ui.panel_frame). 2026-09-07: generated at 104 and centre-cropped to 96 with tools/cropcentre.py to drop a one-pixel border (Dan's order)."
+  "_note": "Inventory icon (2026-09-06): opaque framed card like the original pack's, drawn in the inventory belt and the puzzle grid at the tile size; rd_pro__default, the screen engine, 96x96, no references. run02: no words on anything (Dan): lettering, banner and the Gallic cockerel removed; seed incremented. Regenerated without a painted frame (2026-09-06): the shell draws the frame (sprites.ui.panel_frame). 2026-09-07: generated at 104 and centre-cropped to 96 with romeart.py crop to drop a one-pixel border (Dan's order).",
+  "pack": [
+    "art/ui/inventory_artifact_book.png"
+  ]
 }

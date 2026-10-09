@@ -15,5 +15,8 @@
   "bypass_prompt_expansion": true,
   "seed": 6210,
   "_note": "First job file this troop has ever had: the shipped furiae sprite predates the job record, so its prompt was never written down. Made 2026-09-20 in the adversarial troop review, where the sprite read as a black blob at map size -- the dark wings, dark robe and unlit face merged into one silhouette. The rewrite gives her ash-grey skin, a pale underlayer at hem and sleeves and an orange torch flame, so the figure separates from its own wings. Troop route, the settings the good troops use (sagittarii, sarmatae): 96 px, figure, background removed, expansion off.",
-  "_pack_path": "art/troops/furiae_00.png"
+  "_pack_path": "art/troops/furiae_00.png",
+  "pack": [
+    "art/troops/furiae_00.png"
+  ]
 }

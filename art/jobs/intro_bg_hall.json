@@ -13,5 +13,8 @@
   102
  ],
  "_pack_path": "art/intro/bg_hall.png",
- "_note": "2026-10-05, Introduction (#154) scene 4: the wide shot of the audience hall for the commission, the dais bare so Trajan on his curule stool (intro_trajan_seated_loop) sits on it as a sprite. run01 is installed."
+ "_note": "2026-10-05, Introduction (#154) scene 4: the wide shot of the audience hall for the commission, the dais bare so Trajan on his curule stool (intro_trajan_seated_loop) sits on it as a sprite. run01 is installed.",
+ "pack": [
+  "art/intro/bg_hall.png"
+ ]
 }

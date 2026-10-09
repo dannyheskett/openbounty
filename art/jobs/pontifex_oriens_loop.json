@@ -17,5 +17,15 @@
     128
   ],
   "_pack_path": "art/portraits/pontifex_oriens_00..07.png",
-  "_note": "Town portrait loop (2026-09-13), the villain route: custom action on the untouched approved still (run01), eight frames at 128, prompt expansion on; each frame is then centre-cropped to 96 with tools/cropcentre.py (Dan-approved for these 8)."
+  "_note": "Town portrait loop (2026-09-13), the villain route: custom action on the untouched approved still (run01), eight frames at 128, prompt expansion on; each frame is then centre-cropped to 96 with romeart.py crop (Dan-approved for these 8).",
+  "pack": [
+    "art/portraits/pontifex_oriens_00.png",
+    "art/portraits/pontifex_oriens_01.png",
+    "art/portraits/pontifex_oriens_02.png",
+    "art/portraits/pontifex_oriens_03.png",
+    "art/portraits/pontifex_oriens_04.png",
+    "art/portraits/pontifex_oriens_05.png",
+    "art/portraits/pontifex_oriens_06.png",
+    "art/portraits/pontifex_oriens_07.png"
+  ]
 }

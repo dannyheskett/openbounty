@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/tiles/artifact_ring.png",
-  "_note": "Map object on the object route (2026-09-06): rd_pro__topdown, 96x96, magenta named and removed, no reference, freestanding with no ground."
+  "_note": "Map object on the object route (2026-09-06): rd_pro__topdown, 96x96, magenta named and removed, no reference, freestanding with no ground.",
+  "pack": [
+    "art/tiles/artifact_ring.png"
+  ]
 }

@@ -13,5 +13,8 @@
     170
   ],
   "_pack_path": "art/ui/end_lose_screen.png",
-  "_note": "Ending lose screen, screen-shaped route: rd_pro__default at the 144x170 design size (RD Pro caps a side at 256, so x2 = 288x340 does not fit; the shell scales it by an exact 2x), opaque, no references since there is no figure. Worklist prompt plus 'no people anywhere'. run02 adds the fallen legionaries' gear in the mud (snapped gladius, dented helmet, split scutum, bent pilum, mail), seed incremented."
+  "_note": "Ending lose screen, screen-shaped route: rd_pro__default at the 144x170 design size (RD Pro caps a side at 256, so x2 = 288x340 does not fit; the shell scales it by an exact 2x), opaque, no references since there is no figure. Worklist prompt plus 'no people anywhere'. run02 adds the fallen legionaries' gear in the mud (snapped gladius, dented helmet, split scutum, bent pilum, mail), seed incremented.",
+  "pack": [
+    "art/ui/end_lose_screen.png"
+  ]
 }

@@ -16,5 +16,15 @@
   ],
   "_pack_path": "art/ui/headman_oriens_00..07.png",
   "_animation": "breathes slowly and lifts his chin a little and lowers it, his body, staff, robe and feet all completely still, smooth loop",
-  "_note": "The town's head townsperson (2026-09-13), one per continent, standing on the town backdrop in the tile-sized slot the troop used to fill. The alcove figure's route: the pack's trained troop style at 96x96, magenta removed, no crop."
+  "_note": "The town's head townsperson (2026-09-13), one per continent, standing on the town backdrop in the tile-sized slot the troop used to fill. The alcove figure's route: the pack's trained troop style at 96x96, magenta removed, no crop.",
+  "pack": [
+    "art/ui/headman_oriens_00.png",
+    "art/ui/headman_oriens_01.png",
+    "art/ui/headman_oriens_02.png",
+    "art/ui/headman_oriens_03.png",
+    "art/ui/headman_oriens_04.png",
+    "art/ui/headman_oriens_05.png",
+    "art/ui/headman_oriens_06.png",
+    "art/ui/headman_oriens_07.png"
+  ]
 }

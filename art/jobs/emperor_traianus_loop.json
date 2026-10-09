@@ -17,5 +17,15 @@
     128
   ],
   "_pack_path": "art/portraits/emperor_traianus_00..07.png",
-  "_note": "Loop (2026-09-13): custom action on run01, eight frames at 128, each frame centre-cropped to 96."
+  "_note": "Loop (2026-09-13): custom action on run01, eight frames at 128, each frame centre-cropped to 96.",
+  "pack": [
+    "art/portraits/emperor_traianus_00.png",
+    "art/portraits/emperor_traianus_01.png",
+    "art/portraits/emperor_traianus_02.png",
+    "art/portraits/emperor_traianus_03.png",
+    "art/portraits/emperor_traianus_04.png",
+    "art/portraits/emperor_traianus_05.png",
+    "art/portraits/emperor_traianus_06.png",
+    "art/portraits/emperor_traianus_07.png"
+  ]
 }

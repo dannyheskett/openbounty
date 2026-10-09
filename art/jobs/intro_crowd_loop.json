@@ -17,5 +17,8 @@
   56
  ],
  "_pack_path": "art/intro/crowd_00.png",
- "_note": "2026-10-03, Introduction (#154) scenes 2 and 5: custom action, eight frames at 240x56, expansion on, alpha kept. Only frame 00 is installed: Dan ordered the crowd still, so intro.json draws crowd_00 as nineteen cropped columns with staggered heights. run01 is installed."
+ "_note": "2026-10-03, Introduction (#154) scenes 2 and 5: custom action, eight frames at 240x56, expansion on, alpha kept. Only frame 00 is installed: Dan ordered the crowd still, so intro.json draws crowd_00 as nineteen cropped columns with staggered heights. run01 is installed.",
+ "pack": [
+  "art/intro/crowd_00.png"
+ ]
 }

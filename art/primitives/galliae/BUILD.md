@@ -1,33 +1,31 @@
-# Galliae terrain: how the tiles in assets/glory-of-rome/art/tiles/galliae/ have been built
+# Galliae terrain: how the tiles in assets/glory-of-rome/art/tiles/galliae/ are built
 
     python3 tools/romeart.py zone galliae       # builds build/art/galliae_tiles/out
-    python3 tools/romeart.py install galliae    # copies it into the pack, lists it in game.json
+    python3 tools/romeart.py install galliae    # copies what changed into the pack, lists it in game.json
 
-Primitives (PixelLab; jobs in art/jobs/galliae_*): grass, sea, cobble and river create-tileset
-sets (sea, cobble and river chained to the grass, terrain id 83f91c7d), and the trees and rocks
-sprite batches (POST /create-1-direction-object, size 96, view top-down, four
-item_descriptions per call; tools/ has had no driver for those).
+`zone` builds every tile the set ships, the same pixels each time; `provenance check --rebuild`
+(scripts/check_maps.sh, CI) rebuilds it and compares it with the pack.
 
-What `zone` has done with them, in order:
+Primitives (PixelLab, retired; jobs in art/jobs/galliae_*): grass, sea, cobble and river corner sets
+(sea, cobble and river chained to the grass, terrain id 83f91c7d), the trees and rocks sprite batches,
+and pieces/: the causeway road bridges over Galliae's water (bridge_h, bridge_v, drawn for the Sein in #218).
+
+What `zone` does with them, in order:
 
     grass.png          the grass set's plain lower tile, 32 px, laid 3x3
-    grass_01..10       romeart.py grass, --count 10 --seed 9 --patch-rate 0.3 --patch-size 1;
-                       grass_variant is grass_01
-    water*             romeart.py stitch over the sea set, --seed 3
-    forest*            romeart.py lattice over trees, crown 0 (copper beech): seamcheck 0
-    mountain*          romeart.py lattice over rocks with rock_slots.json: rocks 0,1,3,4,5,6
-                       (2 and 7 are cut off at their frame), the arrangement with seamcheck 0
-                       and the fewest grass pixels showing (36)
-    road_*, river_*    romeart.py sweep --rim 2 --rim-shade 0.8 over grass.png; the rivers
-                       again over forest.png and mountain.png (river_forest_*, river_mountain_*)
-    bridge_river_*     romeart.py bridge over the built road and river pieces, style c: the
-                       road's own cobbles across the river between pale parapets, a shadow
-                       on the water (Africa and Oriens the same, Italia from
-                       its installed tiles)
-    river_mouth_e      romeart.py mouth over water_edge_02.png; river_mouth_w is its mirror
+    water*             stitch over the sea set, --seed 3
+    forest*            the lattice over trees, crown 0 (copper beech): seamcheck 0
+    mountain*          the lattice over rocks with rock_slots.json: rocks 0,1,3,4,5,6 (2 and 7 run to
+                       their frame), the arrangement with seamcheck 0 and the fewest grass pixels (36);
+                       ragged edges 6,20,34 with the side crags set back 12 and 28 px, and the contact
+                       shadow (#63)
+    road_*, river_*    sweep --rim 2 --rim-shade 0.8 over grass.png; the rivers again over forest.png and
+                       mountain.png (river_forest_*, river_mountain_*)
+    bridge_river_*     bridge: the road's own cobbles across the river between pale parapets, a shadow
+                       on the water
+    river_mouth_*      mouth over water_edge_02.png; _w its mirror; _e_s and _w_s drawn the other way up
+    fields_*           the master set's ploughed and wheat bases; their edges by edges --as ...=desert
+    bridge_h, _v       pieces/
+    the passes         fills, aprons, details, interiors, edgevars over the set's own sprites
 
-Galliae has had no desert, so the desert names have fallen back to the master set. The *_teal,
-grass_deep and trees_green folders have been runs the build has not used.
-
-Mountain edges (#63): `zone` passes --ragged 6,20,34 to the mountain lattice, so a range's open sides end
-raggedly; the plain mountain tile is unchanged and seamcheck stays 0.
+Galliae has no desert, so the desert names fall back to the master set.

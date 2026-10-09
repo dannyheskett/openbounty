@@ -17,5 +17,11 @@
     96
   ],
   "_pack_path": "art/troops/velites_00..03.png",
-  "_note": "2026-09-07: job copied whole from silvani_attack (the approved archer release loop); only the still, seed and motion sentence differ. Still is velites run03, at rest, javelin upright. run06: javelin kept in hand on every frame at Dan's order; nothing else changed."
+  "_note": "2026-09-07: job copied whole from silvani_attack (the approved archer release loop); only the still, seed and motion sentence differ. Still is velites run03, at rest, javelin upright. run06: javelin kept in hand on every frame at Dan's order; nothing else changed.",
+  "pack": [
+    "art/troops/velites_00.png",
+    "art/troops/velites_01.png",
+    "art/troops/velites_02.png",
+    "art/troops/velites_03.png"
+  ]
 }

@@ -17,5 +17,15 @@
     128
   ],
   "_pack_path": "art/portraits/praefectus_castrorum_00..07.png",
-  "_note": "Loop (2026-09-13): custom action on run01, eight frames at 128, each frame cropped to 96 from the top row (a centre crop cut the top of his head, as with Traianus)."
+  "_note": "Loop (2026-09-13): custom action on run01, eight frames at 128, each frame cropped to 96 from the top row (a centre crop cut the top of his head, as with Traianus).",
+  "pack": [
+    "art/portraits/praefectus_castrorum_00.png",
+    "art/portraits/praefectus_castrorum_01.png",
+    "art/portraits/praefectus_castrorum_02.png",
+    "art/portraits/praefectus_castrorum_03.png",
+    "art/portraits/praefectus_castrorum_04.png",
+    "art/portraits/praefectus_castrorum_05.png",
+    "art/portraits/praefectus_castrorum_06.png",
+    "art/portraits/praefectus_castrorum_07.png"
+  ]
 }

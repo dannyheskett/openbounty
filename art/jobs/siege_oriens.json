@@ -14,5 +14,15 @@
   ],
   "_pack_path": "art/portraits/siege_oriens_00..07.png",
   "_animation": "turning the gear slowly in his fingers, eyes on it, static background, smooth loop",
-  "_note": "Town detail portrait (2026-09-13): boat master (Boat detail) or siege engineer (Siege works detail), one per continent. Same route as the informants and priests: still at 128, eight-frame loop at 128, each frame centre-cropped to 96 (Dan-approved for town portraits)."
+  "_note": "Town detail portrait (2026-09-13): boat master (Boat detail) or siege engineer (Siege works detail), one per continent. Same route as the informants and priests: still at 128, eight-frame loop at 128, each frame centre-cropped to 96 (Dan-approved for town portraits).",
+  "pack": [
+    "art/portraits/siege_oriens_00.png",
+    "art/portraits/siege_oriens_01.png",
+    "art/portraits/siege_oriens_02.png",
+    "art/portraits/siege_oriens_03.png",
+    "art/portraits/siege_oriens_04.png",
+    "art/portraits/siege_oriens_05.png",
+    "art/portraits/siege_oriens_06.png",
+    "art/portraits/siege_oriens_07.png"
+  ]
 }

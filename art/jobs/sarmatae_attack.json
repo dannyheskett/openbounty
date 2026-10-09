@@ -16,5 +16,13 @@
   "target": [
     96,
     96
+  ],
+  "pack": [
+    "art/troops/sarmatae_00.png",
+    "art/troops/sarmatae_01.png",
+    "art/troops/sarmatae_02.png",
+    "art/troops/sarmatae_03.png",
+    "art/troops/sarmatae_04.png",
+    "art/troops/sarmatae_05.png"
   ]
 }

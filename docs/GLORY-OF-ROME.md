@@ -609,7 +609,7 @@ vistas' landmarks on grass (the Pharos, the ocean temple, the Sibyl's cave,
 the Oppidum's gate, the Tophet's stelae, the Gordian cart); and the
 settlement set pieces (#63): `n` a farmhouse, `e` a well, `h` a shrine, `u` a
 ruin, solid on grass (`blocks_foot`), and `j` a jetty, a sea cell off one
-straight grass shore drawn as `dock_<side>` over that shore's water edge. `tools/mapbuild.py build` has baked it into
+straight grass shore drawn as `dock_<side>` over that shore's water edge. `tools/romeart.py map build` has baked it into
 `maps/italia.dat`: the edge variants (REQ-229a/e), the river and road pieces
 by their links, the mouths, the bridges. The `.dat` has never been edited by
 hand; the source has, and `scripts/check_maps.sh` has failed any `.dat` that
@@ -628,7 +628,7 @@ Desert meeting the sea has kept its own ground to the coast, the sea's edge
 drawing the shore line as sand (`water_sand_edge_NN`, where every land beside
 it has been desert); forest and rock have kept their grass fringe, since
 drawn solid to the water they stop in a straight line at the tile's edge.
-`tools/maplint.py`, run by `scripts/check_maps.sh`, has failed any terrain
+`tools/romeart.py map lint`, run by `scripts/check_maps.sh`, has failed any terrain
 shape the edge pieces draw badly, in the source or the built `.dat` -- a
 one-cell stair step, a strand in no 2x2 block, a cut corner, two masses side
 by side, a mass at the sea or within two cells of the world's edge outside the
@@ -644,11 +644,11 @@ picked per cell so a map has looked the same every time (#63; the art from
 where a grass or sand cell has had a wood or range on two adjacent sides; an
 apron of stray trees or loose rocks along a wood's or range's side; now and
 then a bush or a stone on open ground; and every object, set piece and
-landmark drawn again on top. `tools/maprender.py --tiles` has drawn the
+landmark drawn again on top. `tools/romeart.py map render --tiles` has drawn the
 same, and so has been the picture to review a map by. None of them has
 changed what a cell is.
 
-`tools/mapbuild.py place` has scattered the zone's chests and wandering
+`tools/romeart.py map place` has scattered the zone's chests and wandering
 armies from a fixed seed inside the region boxes in
 `art/maps/italia_regions.json`, clear of towns, castles, signs, dwellings,
 events and the tiles an event changes; `--write` has written them into
@@ -662,8 +662,8 @@ coast facing Ostia, the Augur inland on the road between the town and the
 trail, a mountain ridge down its east side, a river from the ridge to the
 western sea, and a coast of wood and rock all round, so that a boat has
 landed only at Olbia's harbour, the two grass cells beside the town. A sign
-at the trail's head has said what the road has guarded. `tools/mapbuild.py
-check` has proved every object stands on walkable ground and every dock is on
+at the trail's head has said what the road has guarded. `tools/romeart.py
+map check` has proved every object stands on walkable ground and every dock is on
 the open sea, and printed what the hero reaches from the spawn on foot and by
 boat -- a boat has sailed only the water it has been rented on -- first with every river
 shut, then with them bridged.
@@ -695,7 +695,7 @@ casting the bridge by hand: holding the Pontifex rite and stepping onto the
 crossing at (31,31) has spent one charge, played the scene
 (`art/scenes/rubicon.png`: a legion crossing far off) and left a bridge at
 (30,30) for good. The sign has read it as a sacred boundary no army crosses
-without the gods' leave, in either direction. `mapbuild.py check` has carried
+without the gods' leave, in either direction. `romeart.py map check` has carried
 a "vistas played" column for it.
 
 **Galliae** has been built the same way, from `art/maps/galliae.txt` and
@@ -765,10 +765,10 @@ the province's others, measured by the recruit cost of its stacks.
 
 ### 10.6.2 The checker
 
-`tools/mapcheck.py` has enforced all of the above:
+`tools/romeart.py map sanity` has enforced all of the above:
 
 ```sh
-tools/mapcheck.py <pack-dir> <map.dat> [WxH] [zone-id]
+tools/romeart.py map sanity <pack-dir> <map.dat> [WxH] [zone-id]
 ```
 
 It has verified dimensions and tile codes, flagged a dock on landlocked

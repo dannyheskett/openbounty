@@ -16,5 +16,8 @@
     "assets/glory-of-rome/art/troops/lemures_00.png"
   ],
   "_pack_path": "art/portraits/troop_lemures.png",
-  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. run02: run01 drew a lemur (the animal); prompt rewritten as a restless dead man, no 'lemur' word, new seed."
+  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. run02: run01 drew a lemur (the animal); prompt rewritten as a restless dead man, no 'lemur' word, new seed.",
+  "pack": [
+    "art/portraits/troop_lemures.png"
+  ]
 }

@@ -16,5 +16,15 @@
   ],
   "_pack_path": "art/ui/praefectus_castrorum_figure_00..07.png",
   "_animation": "breathes slowly and taps the vine-staff once against his palm, his body, helmet and feet all completely still, smooth loop",
-  "_note": "Camp prefect standing on the home castle backdrop (2026-09-13): head townsperson figure route, troop style at 96, magenta removed, no crop."
+  "_note": "Camp prefect standing on the home castle backdrop (2026-09-13): head townsperson figure route, troop style at 96, magenta removed, no crop.",
+  "pack": [
+    "art/ui/praefectus_castrorum_figure_00.png",
+    "art/ui/praefectus_castrorum_figure_01.png",
+    "art/ui/praefectus_castrorum_figure_02.png",
+    "art/ui/praefectus_castrorum_figure_03.png",
+    "art/ui/praefectus_castrorum_figure_04.png",
+    "art/ui/praefectus_castrorum_figure_05.png",
+    "art/ui/praefectus_castrorum_figure_06.png",
+    "art/ui/praefectus_castrorum_figure_07.png"
+  ]
 }

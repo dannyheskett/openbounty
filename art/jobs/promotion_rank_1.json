@@ -13,5 +13,8 @@
     170
   ],
   "_pack_path": "art/ui/promotion_rank_1.png",
-  "_note": "Promotion image (2026-09-13), first promotion award: silver phalerae: the modern home castle's Promotion page, the same 144x170 size and route as end_win_screen / end_lose_screen (rd_pro__default, opaque, drawn at the pack's UI scale beside the text). No class shown; no reference images."
+  "_note": "Promotion image (2026-09-13), first promotion award: silver phalerae: the modern home castle's Promotion page, the same 144x170 size and route as end_win_screen / end_lose_screen (rd_pro__default, opaque, drawn at the pack's UI scale beside the text). No class shown; no reference images.",
+  "pack": [
+    "art/ui/promotion_rank_1.png"
+  ]
 }

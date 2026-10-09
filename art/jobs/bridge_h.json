@@ -13,5 +13,8 @@
     96
   ],
   "_pack_path": "art/tiles/bridge_h.png",
-  "_note": "Bridge tile (2026-09-06): a road, as in the original pack. Opaque square of stone paving with a kerb along the two edges the road does not cross, so tiles stack end to end. Object engine, no background removal, no water."
+  "_note": "Bridge tile (2026-09-06): a road, as in the original pack. Opaque square of stone paving with a kerb along the two edges the road does not cross, so tiles stack end to end. Object engine, no background removal, no water.",
+  "pack": [
+    "art/tiles/bridge_h.png"
+  ]
 }

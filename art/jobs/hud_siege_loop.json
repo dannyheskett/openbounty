@@ -17,5 +17,11 @@
     96
   ],
   "_pack_path": "art/ui/hud_siege_00..03.png",
-  "_note": "HUD panel loop (2026-09-06): custom action on the opaque framed still, four frames, expansion on, tag prompt; the sidebar cycles it at two frames a second. run02: from the frameless still. Re-run from the inset-free ballista still. 2026-09-07: re-run on the siege tower still."
+  "_note": "HUD panel loop (2026-09-06): custom action on the opaque framed still, four frames, expansion on, tag prompt; the sidebar cycles it at two frames a second. run02: from the frameless still. Re-run from the inset-free ballista still. 2026-09-07: re-run on the siege tower still.",
+  "pack": [
+    "art/ui/hud_siege_00.png",
+    "art/ui/hud_siege_01.png",
+    "art/ui/hud_siege_02.png",
+    "art/ui/hud_siege_03.png"
+  ]
 }

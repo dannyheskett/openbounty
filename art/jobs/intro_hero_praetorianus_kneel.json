@@ -17,5 +17,15 @@
   48
  ],
  "_pack_path": "art/intro/hero_praetorianus_kneel_00..07.png",
- "_note": "2026-10-04, Introduction (#154) scene 4: the Praetorianus kneeling before Trajan at 48, animated from the standing still as the move down to the kneel; the intro plays it once and holds the last frame. run03 is installed."
+ "_note": "2026-10-04, Introduction (#154) scene 4: the Praetorianus kneeling before Trajan at 48, animated from the standing still as the move down to the kneel; the intro plays it once and holds the last frame. run03 is installed.",
+ "pack": [
+  "art/intro/hero_praetorianus_kneel_00.png",
+  "art/intro/hero_praetorianus_kneel_01.png",
+  "art/intro/hero_praetorianus_kneel_02.png",
+  "art/intro/hero_praetorianus_kneel_03.png",
+  "art/intro/hero_praetorianus_kneel_04.png",
+  "art/intro/hero_praetorianus_kneel_05.png",
+  "art/intro/hero_praetorianus_kneel_06.png",
+  "art/intro/hero_praetorianus_kneel_07.png"
+ ]
 }

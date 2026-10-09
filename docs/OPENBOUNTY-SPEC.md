@@ -995,7 +995,7 @@ flagged (§38).
   arrived in the boat, as any water spawn does. Gate spells and defeat have
   still overridden the landing afterwards. `glory-of-rome` has declared an
   arrival for every neighbour, each a sea tile touching the coast beside the
-  port a ship from there would make for; `tools/mapbuild.py check` has
+  port a ship from there would make for; `tools/romeart.py map check` has
   required each to be on the open sea and touching land, and counted its sea
   as sailed when proving the gates. `kings-bounty` has declared none.
 
@@ -1203,7 +1203,7 @@ flagged (§38).
   (spits, attached on the remaining side), `19` all four (an island). Water
   has been 0-based (`12`..`18`). `glory-of-rome` has shipped all seven for
   forest and mountain and the two strips and the island for water; its four
-  zones have contained no other shape. `tools/mapbuild.py build` has assigned
+  zones have contained no other shape. `tools/romeart.py map build` has assigned
   them when it bakes a map from its source; the art has come from the same
   lattice and stitching tools as the twelve, so every side that is open has been a
   terminal edge and every closed side the standard interface.
@@ -1274,9 +1274,11 @@ flagged (§38).
   byte determinism have never seen it. The ground drawn under an object has
   gone through the same pick. Every variant has had to join every other and
   the base at any edge, which the pack has guaranteed by keeping variant edges
-  identical to the base (`tools/romeart.py grass` has built them so). Neither
-  shipped pack has declared variants: `glory-of-rome`'s first set
-  (`grass_01..10`, one blob on plain grass each) has been removed (#63).
+  identical to the base: a variant has redrawn only the sprites fully inside
+  the tile and kept every one that straddles a tile line (`tools/romeart.py
+  interiors`, `edgevars`). `glory-of-rome` has declared `forest_v1/_v2`,
+  `mountain_v1/_v2` and `mountain_edge_09/10_v1/_v2` (#63); its first set,
+  `grass_01..10`, has been removed (#221). `kings-bounty` has declared none.
 
 ## 10. Salt: per-zone object placement
 

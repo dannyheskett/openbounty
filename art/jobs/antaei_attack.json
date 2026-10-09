@@ -16,5 +16,11 @@
   "target": [
     96,
     96
+  ],
+  "pack": [
+    "art/troops/antaei_00.png",
+    "art/troops/antaei_01.png",
+    "art/troops/antaei_02.png",
+    "art/troops/antaei_03.png"
   ]
 }

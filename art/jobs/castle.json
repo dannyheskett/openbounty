@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/tiles/castle.png",
-  "_note": "Map object on the town route (2026-09-06): rd_pro__topdown, 96x96, magenta named and removed, no reference image, a facing cue, freestanding with no ground. Expansion bypassed as for the towns (the expansion finding is for the animation engine). run02: run01 filled the frame to the top and left with the corner towers cut off; seed incremented, the fortress described smaller in the picture."
+  "_note": "Map object on the town route (2026-09-06): rd_pro__topdown, 96x96, magenta named and removed, no reference image, a facing cue, freestanding with no ground. Expansion bypassed as for the towns (the expansion finding is for the animation engine). run02: run01 filled the frame to the top and left with the corner towers cut off; seed incremented, the fortress described smaller in the picture.",
+  "pack": [
+    "art/tiles/castle.png"
+  ]
 }

@@ -14,5 +14,5 @@
   96,
   96
  ],
- "_note": "#63 settlement set piece: a map object round towns and along roads (the parent-and-children placement Songs of Conquest uses), on the map-object route. Installed as dock_n/s/e/w.png: the keyed deck cropped to its box and set 6px from the land side of a 96x96 tile, drawn over that side's water_edge piece (mapbuild 'j')."
+ "_note": "#63 settlement set piece: a map object round towns and along roads (the parent-and-children placement Songs of Conquest uses), on the map-object route. Installed as dock_n/s/e/w.png: the keyed deck cropped to its box and set 6px from the land side of a 96x96 tile, drawn over that side's water_edge piece (map build's 'j')."
 }

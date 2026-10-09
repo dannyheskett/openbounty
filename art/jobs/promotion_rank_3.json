@@ -13,5 +13,8 @@
     170
   ],
   "_pack_path": "art/ui/promotion_rank_3.png",
-  "_note": "Promotion image (2026-09-13), third promotion award: the ivory eagle sceptre (scipio eburneus) of the triumphal honours -- the golden laurel crown was the Emperor's alone. The modern home castle's Promotion page, 144x170 like end_win_screen / end_lose_screen, rd_pro__default, no class shown, no reference images."
+  "_note": "Promotion image (2026-09-13), third promotion award: the ivory eagle sceptre (scipio eburneus) of the triumphal honours -- the golden laurel crown was the Emperor's alone. The modern home castle's Promotion page, 144x170 like end_win_screen / end_lose_screen, rd_pro__default, no class shown, no reference images.",
+  "pack": [
+    "art/ui/promotion_rank_3.png"
+  ]
 }

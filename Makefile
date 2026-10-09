@@ -959,7 +959,7 @@ test: $(OUT_TEST)
 	@./$(OUT_TEST)
 
 # The Glory of Rome maps: each .dat is what its art/maps source builds, and
-# mapbuild's and mapcheck's rules hold (what CI's linux job runs).
+# the map checks of tools/romeart.py hold (what CI's linux job runs).
 check-maps:
 	@scripts/check_maps.sh assets/glory-of-rome
 

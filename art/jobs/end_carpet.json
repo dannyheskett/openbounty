@@ -15,5 +15,8 @@
     96
   ],
   "_pack_path": "art/ui/end_carpet.png",
-  "_note": "Win-cartoon carpet tile (2026-09-06): drawn as a column of stacked tiles over the grass tile, so it is a transparent strip that runs top to bottom on purpose; object route otherwise."
+  "_note": "Win-cartoon carpet tile (2026-09-06): drawn as a column of stacked tiles over the grass tile, so it is a transparent strip that runs top to bottom on purpose; object route otherwise.",
+  "pack": [
+    "art/ui/end_carpet.png"
+  ]
 }

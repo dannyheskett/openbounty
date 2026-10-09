@@ -17,5 +17,15 @@
     96
   ],
   "_pack_path": "art/villains/tacfarinas_00..07.png",
-  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif. Re-run from the bar-free still run02."
+  "_note": "Villain face loop (2026-09-05), the route proven on Hannibal: custom action on the untouched approved still, eight frames, prompt expansion on, the worklist row's tag prompt. Judged by pixels changed outside the face and the 3x gif. Re-run from the bar-free still run02.",
+  "pack": [
+    "art/villains/tacfarinas_00.png",
+    "art/villains/tacfarinas_01.png",
+    "art/villains/tacfarinas_02.png",
+    "art/villains/tacfarinas_03.png",
+    "art/villains/tacfarinas_04.png",
+    "art/villains/tacfarinas_05.png",
+    "art/villains/tacfarinas_06.png",
+    "art/villains/tacfarinas_07.png"
+  ]
 }

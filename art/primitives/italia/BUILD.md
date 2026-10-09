@@ -1,35 +1,36 @@
-# Italia mountain: how art/tiles/mountain*.png and river_mountain_* have been built (#67)
-Italia's grass, sea, river and forest tiles have been the master set the zone builds
-(Galliae/Africa/Oriens) start from. Its mountain has been built here from rock sprites, as the
-other zones' have, rather than as a tile texture (#67).
-    python3 tools/romeart.py sprites art/jobs/italia_o96_rocks.json art/primitives/italia/rocks --run
-    python3 tools/romeart.py slots art/primitives/italia/rocks art/primitives/italia/rock_slots.json --tries 500 --seed 3 --straddle 4567
-    python3 tools/romeart.py lattice art/layouts/mountain96.json --sprites art/primitives/italia/rocks --terrain mountain --name mountain --slots art/primitives/italia/rock_slots.json --ragged 4,20,34
-    python3 tools/romeart.py compose art/layouts/mountain96.json build/art/italia_mountain/A
-    python3 tools/romeart.py rebank <old mountain.png> <new mountain.png> assets/glory-of-rome/art/tiles river_mountain
-rocks: eight PixelLab sprites, two calls of four (grey limestone, moss, snow caps); 0-3 run to
-their frame edge, so the straddling slots take 4-7 (--straddle). The arrangement kept has been
-formation A: seamcheck 0, 14 grass pixels showing in the interior tile (Galliae shipped with 36).
-The river_mountain_* tiles keep their river bands (every pixel that differed from the old interior)
-laid on the new interior, since Italia's river primitives were never kept either.
+# Italia: the master set's forest and mountain (#63, #67)
 
---ragged 4,20,34 (#63): the edge pieces' terminal sides end raggedly -- rocks within 20 or 34 px of an
-open line taken out, alternately, the middle edge crag left out for a notch, strips and spits kept
-whole -- so a range no longer stops in a straight line. The plain tile is unchanged.
+Italia's set is the master set (assets/glory-of-rome/art/tiles/): the zone sets start from its names, and
+a zone takes from it what it does not draw itself. Its sea, desert, roads and rivers were stitched and swept
+in #38-#67 from PixelLab corner sets that were not kept, so they are kept as made. Its forest and mountain
+are lattices of the sprites kept here, their layouts committed, so `compose` rebuilds them exactly
+(`provenance check --rebuild`):
 
-# Italia forest: tree sprites and lattice (#63, plan step 3)
+    python3 tools/romeart.py compose art/layouts/forest96_italia.json build/art/italia_forest
+    python3 tools/romeart.py compose art/layouts/mountain96.json build/art/italia_mountain
 
-Italia's forest had been a texture tile with no sprites kept, so its edges could not be rebuilt the
-way the other sets' are. Eight trees were generated on Retro Diffusion (art/jobs/italia_tree_00..07,
-rd_pro__topdown 96 px, $0.18 each; 00 and 04 run twice), their leaves matched to the old forest.png
-in hue, saturation and value (trunks set brown), and kept here as trees/tile_00..07. The forest is
-now a lattice of tree 1, like the other sets' woods:
+How the layouts were made:
 
     python3 tools/romeart.py lattice art/layouts/forest96_italia.json --sprites art/primitives/italia/trees --name forest --crown 1
-    python3 tools/romeart.py compose art/layouts/forest96_italia.json build/art/italia_forest
-    python3 tools/romeart.py rebank <old forest.png> <new forest.png> assets/glory-of-rome/art/tiles river_forest
-    python3 tools/romeart.py fills; python3 tools/romeart.py interiors; python3 tools/romeart.py aprons; python3 tools/romeart.py details
+    python3 tools/romeart.py slots art/primitives/italia/rocks art/primitives/italia/rock_slots.json --tries 500 --seed 3 --straddle 4567
+    python3 tools/romeart.py lattice art/layouts/mountain96.json --sprites art/primitives/italia/rocks --terrain mountain --name mountain \
+        --slots art/primitives/italia/rock_slots.json --ragged 4,20,34,0,28 --shadow 2,3,0.35
 
-The mountain edges are composed with a soft contact shadow (romeart MOUNTAIN_SHADOW) and the
-side crags set back (--ragged 4,20,34,0,28: the top crag cannot move, it meets a north straddler);
-`romeart.py edgevars` then rebuilds the mountain side variants the same way.
+rocks: eight PixelLab sprites (art/jobs/italia_o96_rocks.json), two calls of four (grey limestone, moss,
+snow caps); 0-3 run to their frame edge, so the straddling slots take 4-7 (--straddle). The arrangement
+kept is seamcheck 0 with 14 grass pixels showing in the plain tile. --ragged 4,20,34,0,28: rocks within 20
+or 34 px of an open line taken out, alternately, the middle crag left out for a notch, the bottom crag set
+back 28 px (the top one cannot move: it meets a north straddler); strips and spits kept whole.
+
+trees: eight Retro Diffusion trees (art/jobs/italia_tree_00..07, rd_pro__topdown 96 px), their leaves
+matched to the old forest by hand in hue, saturation and value and the trunks set brown (`colormatch` is
+that step now); the forest is a lattice of tree 1.
+
+The river_forest_* and river_mountain_* pieces kept their river bands (every pixel unlike the old
+interior) laid on the new interiors with `rebank`; the old interiors were not kept, so those pieces are
+kept as made. The set passes then run over all four sets:
+
+    python3 tools/romeart.py fills; python3 tools/romeart.py interiors; python3 tools/romeart.py aprons
+    python3 tools/romeart.py details; python3 tools/romeart.py edgevars; python3 tools/romeart.py shore
+    python3 tools/romeart.py dock
+    python3 tools/romeart.py edges assets/glory-of-rome '' --as fields_wheat=desert --as fields_plough=desert
