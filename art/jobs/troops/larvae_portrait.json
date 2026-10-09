@@ -1,5 +1,5 @@
 {
-  "id": "troop_portrait_larvae",
+  "id": "troops/larvae_portrait",
   "prompt": "a head-and-shoulders portrait, the face filling the frame, of an undead Roman skeleton warrior, a grinning bare skull with empty eye sockets, a ragged brown cloth hanging from its bony shoulders, a rusty sword, a dark crypt with bones behind it",
   "style": "rd_pro__default",
   "width": 128,
@@ -15,9 +15,9 @@
   "reference_image_paths": [
     "assets/glory-of-rome/art/troops/larvae_00.png"
   ],
-  "_pack_path": "art/portraits/troop_larvae.png",
+  "_pack_path": "art/troops/larvae_portrait.png",
   "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation.",
   "pack": [
-    "art/portraits/troop_larvae.png"
+    "art/troops/larvae_portrait.png"
   ]
 }

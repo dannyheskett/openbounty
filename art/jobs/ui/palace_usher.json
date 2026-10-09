@@ -1,5 +1,5 @@
 {
- "id": "palace_usher_loop",
+ "id": "ui/palace_usher",
  "prompt": "breathes slowly and tips the staff of office once, his body, head and feet completely still, smooth loop",
  "style": "rd_advanced_animation__custom_action",
  "width": 96,
@@ -7,7 +7,7 @@
  "seed": 9971,
  "frames_duration": 8,
  "return_spritesheet": true,
- "input_image_path": "build/art/palace_usher/run01/01_raw.png",
+ "input_image_path": "build/art/ui/palace_usher_still/run01/01_raw.png",
  "input_image_keep_alpha": true,
  "bypass_prompt_expansion": true,
  "raw_only": true,

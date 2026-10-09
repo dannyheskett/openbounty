@@ -1,5 +1,5 @@
 {
- "id": "intro_crier_decree",
+ "id": "intro/crier_decree",
  "prompt": "unrolling a scroll with both hands and reading it aloud, feet still",
  "style": "rd_advanced_animation__custom_action",
  "width": 56,
@@ -7,7 +7,7 @@
  "seed": 15606,
  "frames_duration": 8,
  "return_spritesheet": true,
- "input_image_path": "build/art/intro_crier/run11/01_raw.png",
+ "input_image_path": "build/art/intro/crier_still/run11/01_raw.png",
  "input_image_keep_alpha": true,
  "bypass_prompt_expansion": false,
  "raw_only": true,

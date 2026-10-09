@@ -1,5 +1,5 @@
 {
-  "id": "castle_palatium",
+  "id": "tiles/castle_palatium",
   "prompt": "an isolated cut-out game sprite of the imperial palace on the Palatine hill of Rome, a grand white marble palace with a long facade of tall Corinthian columns, a great central audience hall under a gilded bronze dome, purple imperial banners hanging between the columns, a golden eagle standard above the entrance, red terracotta roofs on the wings, the palace seen from the front and above with its great doors facing the viewer, a short stretch of paved road in front of the doors that starts and ends at the palace, the road the only ground drawn, no wall, fence or gate, only the flat magenta background around and below the palace, the whole palace complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
   "style": "rd_pro__topdown",
   "width": 96,

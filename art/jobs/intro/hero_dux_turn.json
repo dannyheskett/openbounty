@@ -1,5 +1,5 @@
 {
- "id": "intro_hero_dux_turn",
+ "id": "intro/hero_dux_turn",
  "prompt": "turning from facing right to face forward toward the viewer, ending standing still facing the viewer",
  "style": "rd_advanced_animation__custom_action",
  "width": 48,

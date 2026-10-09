@@ -21,5 +21,6 @@
  },
  "upper_description": "deep blue sea water with gentle waves",
  "transition_description": "shoreline with pale shallow water and wet sand",
- "transition_size": 0.0
+ "transition_size": 0.0,
+ "id": "primitives/history/t32_water"
 }

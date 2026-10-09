@@ -1,5 +1,5 @@
 {
-  "id": "grass",
+  "id": "tiles/grass",
   "prompt": "muted moss green grass seen from directly above, dull and slightly grey with only a few short specks of paler olive and dark bottle green, low contrast, the same everywhere",
   "style": "rd_tile__single_tile",
   "width": 48,

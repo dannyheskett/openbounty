@@ -1,5 +1,5 @@
 {
- "id": "backdrop_town_africa",
+ "id": "ui/backdrop_town_africa",
  "_note": "The town screen backdrop for africa (REQ-221d: a zone names its own). Same route as every location backdrop: rd_pro__default at 240x102, opaque, no reference image. The original backdrop_town.png stays as Rome's own, named by the town.",
  "prompt": "an empty street in a North African town, whitewashed and sand-coloured walls, flat roofs, a horseshoe arch, date palms above a courtyard wall, hard bright sunlight and short shadows, dust in the air, the street deserted, no people anywhere",
  "style": "rd_pro__default",

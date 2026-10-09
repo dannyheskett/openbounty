@@ -21,5 +21,6 @@
  "upper_description": "clear bright blue river water with pale ripples and a gentle current, seen from above",
  "transition_description": "a narrow muddy bank where the river meets the meadow grass",
  "transition_size": 0.0,
- "_note": "Oriens river (2026-09-19): t32_river_203 chained to the Oriens grass (d584193b); the other surface worded in a colour far from the grass so it does not collapse into it. Re-roll: previous ('calm deep blue river water, a little silty, with a gentle current and soft ripples, seen from above') kept in art/primitives/oriens/river_dark. Output kept in art/primitives/oriens/river."
+ "_note": "Oriens river (2026-09-19): t32_river_203 chained to the Oriens grass (d584193b); the other surface worded in a colour far from the grass so it does not collapse into it. Re-roll: previous ('calm deep blue river water, a little silty, with a gentle current and soft ripples, seen from above') kept in art/primitives/oriens/river_dark. Output kept in art/primitives/oriens/river.",
+ "id": "primitives/oriens_river"
 }

@@ -21,5 +21,6 @@
  "upper_description": "warm tan sand dunes with rippled crests and soft shadows, no grass",
  "transition_description": "dry sandy earth with sparse tufts of grass",
  "transition_size": 0.0,
- "_note": "Oriens desert (2026-09-19): t32_desert_203 chained to the Oriens grass (d584193b); the other surface worded in a colour far from the grass so it does not collapse into it. Re-roll: previous ('pale pinkish-ochre Arabian sand with soft rippled dunes, no grass') kept in art/primitives/oriens/desert_pink. Output kept in art/primitives/oriens/desert."
+ "_note": "Oriens desert (2026-09-19): t32_desert_203 chained to the Oriens grass (d584193b); the other surface worded in a colour far from the grass so it does not collapse into it. Re-roll: previous ('pale pinkish-ochre Arabian sand with soft rippled dunes, no grass') kept in art/primitives/oriens/desert_pink. Output kept in art/primitives/oriens/desert.",
+ "id": "primitives/oriens_desert"
 }

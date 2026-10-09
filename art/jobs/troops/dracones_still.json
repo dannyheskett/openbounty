@@ -1,5 +1,5 @@
 {
-  "id": "dracones",
+  "id": "troops/dracones_still",
   "_note": "The dragons slot. Neutral stance per the pipeline: neck drawn back and jaws closed, so the lunge is the travel the animation spends. The troop style appends the full-length profile, game-sprite and magenta-background clauses. 2026-09-07: re-posed to fill the frame like the Gigantes (Dan).",
   "prompt": "a great scaled dragon standing on four clawed feet, wings spread wide, its long neck held back in a curve and its jaws closed, dark green scales with a pale belly, the figure huge and filling the whole square from edge to edge",
   "style": "user__glory_of_rome_troops_bac676cd",

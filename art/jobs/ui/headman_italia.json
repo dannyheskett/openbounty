@@ -1,5 +1,5 @@
 {
-  "id": "headman_italia_loop",
+  "id": "ui/headman_italia",
   "prompt": "breathes slowly and turns his head a little to one side and back, his body, arms, toga and feet all completely still, smooth loop",
   "style": "rd_advanced_animation__custom_action",
   "width": 96,
@@ -7,7 +7,7 @@
   "seed": 9701,
   "frames_duration": 8,
   "return_spritesheet": true,
-  "input_image_path": "build/art/headman_italia/run01/01_raw.png",
+  "input_image_path": "build/art/ui/headman_italia_still/run01/01_raw.png",
   "input_image_keep_alpha": true,
   "bypass_prompt_expansion": true,
   "raw_only": true,

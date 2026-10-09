@@ -1,5 +1,5 @@
 {
- "id": "backdrop_town_italia",
+ "id": "ui/backdrop_town_italia",
  "_note": "The town screen backdrop for italia (REQ-221d: a zone names its own). Same route as every location backdrop: rd_pro__default at 240x102, opaque, no reference image. The original backdrop_town.png stays as Rome's own, named by the town.",
  "prompt": "an empty street in a small Italian country town, stuccoed walls in ochre and rose, terracotta roofs, a stone well and a vine on a trellis, cypresses and low hills beyond the roofs, warm afternoon light, the street deserted, no people anywhere",
  "style": "rd_pro__default",

@@ -1,5 +1,5 @@
 {
-  "id": "siege_galliae",
+  "id": "characters/siege_galliae_still",
   "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Gallic carpenter engineer in a leather apron with a heavy wooden mallet on his shoulder, a timber siege tower rising in a forest clearing behind him",
   "style": "rd_pro__default",
   "width": 128,
@@ -12,17 +12,7 @@
     128,
     128
   ],
-  "_pack_path": "art/portraits/siege_galliae_00..07.png",
+  "_pack_path": "art/characters/siege_galliae_00..07.png",
   "_animation": "wiping his brow, a tired satisfied breath, static background, smooth loop",
-  "_note": "Town detail portrait (2026-09-13): boat master (Boat detail) or siege engineer (Siege works detail), one per continent. Same route as the informants and priests: still at 128, eight-frame loop at 128, each frame centre-cropped to 96 (Dan-approved for town portraits).",
-  "pack": [
-    "art/portraits/siege_galliae_00.png",
-    "art/portraits/siege_galliae_01.png",
-    "art/portraits/siege_galliae_02.png",
-    "art/portraits/siege_galliae_03.png",
-    "art/portraits/siege_galliae_04.png",
-    "art/portraits/siege_galliae_05.png",
-    "art/portraits/siege_galliae_06.png",
-    "art/portraits/siege_galliae_07.png"
-  ]
+  "_note": "Town detail portrait (2026-09-13): boat master (Boat detail) or siege engineer (Siege works detail), one per continent. Same route as the informants and priests: still at 128, eight-frame loop at 128, each frame centre-cropped to 96 (Dan-approved for town portraits)."
 }

@@ -1,5 +1,5 @@
 {
-  "id": "water",
+  "id": "tiles/water",
   "prompt": "flat rippled sea surface seen from directly above, medium blue with small short pale cyan dashes scattered evenly, no waves, no bands, no shore, the same everywhere",
   "style": "rd_tile__single_tile",
   "width": 48,

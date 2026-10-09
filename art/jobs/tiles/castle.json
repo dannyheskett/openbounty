@@ -1,5 +1,5 @@
 {
-  "id": "castle",
+  "id": "tiles/castle",
   "prompt": "an isolated cut-out game sprite of a small compact Roman fortress, gleaming white marble walls in ashlar courses, square corner towers with flat red tile roofs, crenellated battlements, a monumental gatehouse framed by columns under a triangular pediment, a golden legionary eagle standard above the gate, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
   "style": "rd_pro__topdown",
   "width": 96,

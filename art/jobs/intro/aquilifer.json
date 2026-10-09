@@ -1,5 +1,5 @@
 {
- "id": "intro_aquilifer_fall",
+ "id": "intro/aquilifer",
  "prompt": "staggers back and falls to the ground, the golden eagle standard toppling down with him",
  "style": "rd_advanced_animation__custom_action",
  "width": 96,
@@ -7,7 +7,7 @@
  "seed": 15513,
  "frames_duration": 6,
  "return_spritesheet": true,
- "input_image_path": "build/art/intro_aquilifer/run01/01_raw.png",
+ "input_image_path": "build/art/intro/aquilifer_still/run01/01_raw.png",
  "input_image_keep_alpha": true,
  "bypass_prompt_expansion": false,
  "raw_only": true,

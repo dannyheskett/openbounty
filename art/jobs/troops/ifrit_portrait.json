@@ -1,5 +1,5 @@
 {
- "id": "troop_portrait_ifrit",
+ "id": "troops/ifrit_portrait",
  "prompt": "a head-and-shoulders portrait, the face filling the frame, of an Ifrit, a fire jinn with deep red skin, curved black horns and glowing yellow eyes, gold bands on its arms, flames rising off its shoulders, a night desert of dunes and a burning sky behind it",
  "style": "rd_pro__default",
  "width": 128,
@@ -13,11 +13,11 @@
   128
  ],
  "reference_image_paths": [
-  "build/art/ifrit/run01/01_raw.png"
+  "build/art/troops/ifrit_still/run01/01_raw.png"
  ],
- "_pack_path": "art/portraits/troop_ifrit.png",
+ "_pack_path": "art/troops/ifrit_portrait.png",
  "_note": "Static troop portrait (2026-10-08, #200), the settled portrait route: 128 still with the troop's own sprite as reference, resized whole to 96.",
  "pack": [
-  "art/portraits/troop_ifrit.png"
+  "art/troops/ifrit_portrait.png"
  ]
 }

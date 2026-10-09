@@ -21,5 +21,6 @@
  "upper_description": "deep blue Aegean sea water with gentle waves",
  "transition_description": "shoreline with pale shallow water and wet sand",
  "transition_size": 0.0,
- "_note": "Oriens sea (2026-09-19): t32_water_203 chained to the Oriens grass (d584193b); the other surface worded in a colour far from the grass so it does not collapse into it. Output kept in art/primitives/oriens/sea."
+ "_note": "Oriens sea (2026-09-19): t32_water_203 chained to the Oriens grass (d584193b); the other surface worded in a colour far from the grass so it does not collapse into it. Output kept in art/primitives/oriens/sea.",
+ "id": "primitives/oriens_sea"
 }

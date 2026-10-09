@@ -1,5 +1,5 @@
 {
-  "id": "rail_map",
+  "id": "ui/rail_map",
   "prompt": "a partly unrolled parchment scroll showing a brown ink coastline, its rolled ends visible at the left and right, lying on a grey flagstone shelf, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
   "style": "rd_pro__default",
   "width": 96,

@@ -14,5 +14,6 @@
    "dark red round crown, thick trunk"
   ]
  ],
- "_note": "Galliae autumn trees (2026-09-19), replacing the green run (kept in art/primitives/galliae/trees_green; job galliae_o96_trees.json). Output in art/primitives/galliae/trees."
+ "_note": "Galliae autumn trees (2026-09-19), replacing the green run (kept in art/primitives/galliae/trees_green; job galliae_o96_trees.json). Output in art/primitives/galliae/trees.",
+ "id": "primitives/galliae_trees_autumn"
 }

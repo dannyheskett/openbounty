@@ -1,8 +1,8 @@
 {
-  "id": "charontes_attack",
+  "id": "history/charontes_attack",
   "style": "rd_advanced_animation__custom_action",
   "prompt": "he takes the rhomphaia in both hands and chops the long blade down and forward in a wide arc to the right, the way he faces, from upright beside his shoulder until the blade is out in front of him at knee height, then lifts it back to upright, the same weapon the whole time, both feet stay planted and the wings stay spread, smooth loop, no motion blur and no streaks",
-  "input_image_path": "build/art/charontes/run02/01_raw.png",
+  "input_image_path": "build/art/history/charontes/run02/01_raw.png",
   "input_image_keep_alpha": true,
   "width": 96,
   "height": 96,

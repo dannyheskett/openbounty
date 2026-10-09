@@ -1,5 +1,5 @@
 {
-  "id": "boatmaster_oriens_loop",
+  "id": "characters/boatmaster_oriens",
   "prompt": "eyes narrowing shrewdly, a small smile, static background, smooth loop",
   "style": "rd_advanced_animation__custom_action",
   "width": 128,
@@ -7,7 +7,7 @@
   "seed": 9604,
   "frames_duration": 8,
   "return_spritesheet": true,
-  "input_image_path": "build/art/boatmaster_oriens/run01/01_raw.png",
+  "input_image_path": "build/art/characters/boatmaster_oriens_still/run01/01_raw.png",
   "input_image_keep_alpha": false,
   "bypass_prompt_expansion": false,
   "raw_only": true,
@@ -16,16 +16,16 @@
     128,
     128
   ],
-  "_pack_path": "art/portraits/boatmaster_oriens_00..07.png",
+  "_pack_path": "art/characters/boatmaster_oriens_00..07.png",
   "_note": "Town detail portrait loop (2026-09-13): custom action on run01, eight frames at 128, each frame centre-cropped to 96.",
   "pack": [
-    "art/portraits/boatmaster_oriens_00.png",
-    "art/portraits/boatmaster_oriens_01.png",
-    "art/portraits/boatmaster_oriens_02.png",
-    "art/portraits/boatmaster_oriens_03.png",
-    "art/portraits/boatmaster_oriens_04.png",
-    "art/portraits/boatmaster_oriens_05.png",
-    "art/portraits/boatmaster_oriens_06.png",
-    "art/portraits/boatmaster_oriens_07.png"
+    "art/characters/boatmaster_oriens_00.png",
+    "art/characters/boatmaster_oriens_01.png",
+    "art/characters/boatmaster_oriens_02.png",
+    "art/characters/boatmaster_oriens_03.png",
+    "art/characters/boatmaster_oriens_04.png",
+    "art/characters/boatmaster_oriens_05.png",
+    "art/characters/boatmaster_oriens_06.png",
+    "art/characters/boatmaster_oriens_07.png"
   ]
 }

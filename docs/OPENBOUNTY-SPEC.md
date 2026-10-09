@@ -1255,7 +1255,7 @@ flagged (§38).
   PixelLab terrain set, filling each piece's signed-distance shape with the
   set's road tile and leaving the pack's own grass outside (see
   docs/ART-PIPELINE.md). Rome's surface has been cobblestone, from
-  `art/jobs/t32_cobble_203.json`, with a two-pixel edging course a shade
+  `art/jobs/primitives/italia_cobble.json`, with a two-pixel edging course a shade
   darker than the paving painted by the sweep's `--rim` / `--rim-shade` --
   the set's own transition tiles have been discarded, so an edging described
   in a prompt has never reached the game. An end's last stretch has been cut off at a

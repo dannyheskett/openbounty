@@ -1,5 +1,5 @@
 {
-  "id": "obstacle_01",
+  "id": "combat/obstacle_01",
   "prompt": "an isolated cut-out game sprite of a heap of fallen grey ashlar rubble, broken stone blocks piled on each other, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
   "style": "rd_pro__topdown",
   "width": 96,

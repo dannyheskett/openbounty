@@ -1,5 +1,5 @@
 {
- "id": "intro_hero_dux",
+ "id": "intro/hero_dux_walk_still",
  "prompt": "a grizzled grey-bearded barbarian warlord standing, a thick fur cloak over chain mail, a hand axe at his belt, leather boots, facing right",
  "style": "user__glory_of_rome_troops_bac676cd",
  "width": 64,
@@ -15,19 +15,5 @@
   64
  ],
  "_pack_path": "art/intro/hero_dux_walk_00..03.png and art/intro/hero_dux_kneel_00..07.png (via intro_hero_dux_walk and intro_hero_dux_kneel)",
- "_note": "2026-10-04, Introduction (#154): the Dux on foot, after the class portrait (art/classes/dux.png); the figure route at 64, the troop style's smallest canvas. run01 is the still under the walk and kneel.",
- "pack": [
-  "art/intro/hero_dux_kneel_00.png",
-  "art/intro/hero_dux_kneel_01.png",
-  "art/intro/hero_dux_kneel_02.png",
-  "art/intro/hero_dux_kneel_03.png",
-  "art/intro/hero_dux_kneel_04.png",
-  "art/intro/hero_dux_kneel_05.png",
-  "art/intro/hero_dux_kneel_06.png",
-  "art/intro/hero_dux_kneel_07.png",
-  "art/intro/hero_dux_walk_00.png",
-  "art/intro/hero_dux_walk_01.png",
-  "art/intro/hero_dux_walk_02.png",
-  "art/intro/hero_dux_walk_03.png"
- ]
+ "_note": "2026-10-04, Introduction (#154): the Dux on foot, after the class portrait (art/classes/dux_portrait.png); the figure route at 64, the troop style's smallest canvas. run01 is the still under the walk and kneel."
 }

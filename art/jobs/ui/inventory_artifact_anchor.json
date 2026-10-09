@@ -1,5 +1,5 @@
 {
-  "id": "inventory_artifact_anchor",
+  "id": "ui/inventory_artifact_anchor",
   "prompt": "a bronze anchor with a trident-shaped crossbar, painted as a small game inventory icon, the object large and centred on a plain dark parchment background that fills the whole picture edge to edge, no frame, no border, no inset panel, no inner rectangle, the background one continuous surface right to every edge, no writing, no lettering, no banner, no ribbon",
   "style": "rd_pro__default",
   "width": 96,

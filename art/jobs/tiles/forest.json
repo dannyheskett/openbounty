@@ -1,5 +1,5 @@
 {
-  "id": "forest",
+  "id": "tiles/forest",
   "prompt": "dense forest canopy seen from directly above, many tiny round tree tops of mid green over very dark green shadow, the same everywhere",
   "style": "rd_tile__single_tile",
   "width": 48,

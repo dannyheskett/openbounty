@@ -1,5 +1,5 @@
 {
-  "id": "canopy_tile",
+  "id": "history/canopy_tile",
   "prompt": "dense dark green broadleaf forest canopy seen from directly above, tightly packed round tree tops, the same everywhere",
   "style": "rd_tile__single_tile",
   "width": 32,

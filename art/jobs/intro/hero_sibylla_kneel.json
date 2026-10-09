@@ -1,5 +1,5 @@
 {
- "id": "intro_hero_sibylla_kneel",
+ "id": "intro/hero_sibylla_kneel",
  "prompt": "kneeling on one knee with the head bowed, breathing slowly, smooth loop",
  "style": "rd_advanced_animation__custom_action",
  "width": 48,
@@ -7,7 +7,7 @@
  "seed": 15662,
  "frames_duration": 8,
  "return_spritesheet": true,
- "input_image_path": "build/art/intro_hero_sibylla/run01/01_raw.png",
+ "input_image_path": "build/art/intro/hero_sibylla_walk_still/run01/01_raw.png",
  "input_image_keep_alpha": true,
  "bypass_prompt_expansion": false,
  "raw_only": true,

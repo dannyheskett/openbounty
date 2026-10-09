@@ -1,5 +1,5 @@
 {
- "id": "piece_farmstead",
+ "id": "tiles/piece_farmstead",
  "prompt": "an isolated cut-out game sprite of one single small Roman farmhouse: one whitewashed cottage with a red tiled roof and a small haystack leaning on its side, one building only, compact and chunky, the same size and scale as a stone well, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
  "style": "rd_pro__topdown",
  "width": 96,

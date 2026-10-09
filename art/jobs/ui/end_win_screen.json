@@ -1,15 +1,15 @@
 {
-  "id": "end_win_screen",
+  "id": "ui/end_win_screen",
   "prompt": "the recovered golden legionary eagle standard in strict side profile, the same eagle as the reference, mounted on top of a tall standard pole and carried upright at the head of a procession of Roman legionaries in crested helmets and red cloaks marching in a line up broad marble steps toward Imperator Trajan, who stands at the top in a laurel crown and a purple toga over a gilded cuirass with his arms open to receive it, the eagle the brightest thing in the scene; behind and far below, a vast crowd fills the Roman Forum to the horizon, rendered tiny and indistinct, a dense sea of small heads with no faces, in muted tones, temples and columns beyond, a clear sky",
   "style": "rd_pro__default",
   "width": 144,
   "height": 170,
   "seed": 6205,
   "reference_image_paths": [
-    "assets/glory-of-rome/art/classes/legatus.png",
-    "assets/glory-of-rome/art/classes/praetorianus.png",
-    "assets/glory-of-rome/art/classes/sibylla.png",
-    "assets/glory-of-rome/art/classes/dux.png",
+    "assets/glory-of-rome/art/classes/legatus_portrait.png",
+    "assets/glory-of-rome/art/classes/praetorianus_portrait.png",
+    "assets/glory-of-rome/art/classes/sibylla_portrait.png",
+    "assets/glory-of-rome/art/classes/dux_portrait.png",
     "assets/glory-of-rome/art/ui/end_lose_screen.png"
   ],
   "bypass_prompt_expansion": true,

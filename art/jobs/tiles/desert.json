@@ -1,5 +1,5 @@
 {
-  "id": "desert",
+  "id": "tiles/desert",
   "prompt": "dry desert sand seen from directly above, pale tan ground with many short streaks of darker tan and near-white in clear contrast, the same everywhere",
   "style": "rd_tile__single_tile",
   "width": 48,

@@ -1,5 +1,5 @@
 {
-  "id": "hud_contract_silhouette",
+  "id": "ui/hud_contract_silhouette",
   "prompt": "a black silhouette of a hooded bust against a deep blue background, painted as a small game sidebar panel, the picture filling the whole square edge to edge, no frame, no border, no writing, no lettering",
   "style": "rd_pro__default",
   "width": 96,

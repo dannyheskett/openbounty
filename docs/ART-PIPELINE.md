@@ -1,7 +1,7 @@
 # The Glory of Rome — art pipeline
 
 Every prompt behind the pack, with its engine and settings, has been collected
-in **`docs/ROME-ART.md`**, generated from `art/jobs/*.json` by
+in **`docs/ROME-ART.md`**, generated from `art/jobs/**/*.json` by
 `tools/romeart.py prompts`. This file has been the *routes* (which engine,
 which settings, and why); that file has been the *record*.
 
@@ -51,7 +51,7 @@ The prompt has been the subject only.
 ```
 
 ```
-python3 tools/romeart.py rdgen run art/jobs/velites.json --run
+python3 tools/romeart.py rdgen run art/jobs/troops/velites_still.json --run
 ```
 
 Describe a neutral stance with the weapon at rest, not the action: "a javelin
@@ -93,7 +93,7 @@ reads at 1:1 over grass.
   declare them. The API guide has given **six for a single action** and eight
   for a breathing loop; an attack at four frames has ended with an empty hand
   where six has had room for the return. Use six for attacks. The installed
-  `art/jobs/velites_attack.json` has carried four frames and expansion off;
+  `art/jobs/troops/velites.json` has carried four frames and expansion off;
   the recipe above has been the settled one.
 - `bypass_prompt_expansion` — **leave expansion on** (`false`) for
   animations; see "Prompt expansion" below.
@@ -120,10 +120,10 @@ area-averaged to 96 and thresholded at half. Watch the animation
 page of several), then install the frames and the portrait:
 
 ```
-python3 tools/romeart.py troop install <id> build/art/<id>_attack/runNN [build/art/troop_portrait_<id>/runNN]
+python3 tools/romeart.py troop install <id> build/art/troops/<id>/runNN [build/art/troops/<id>_portrait/runNN]
 ```
 
-It has written `art/troops/<id>_NN.png` and the 96 px portrait, pointed the
+It has written `art/troops/<id>_NN.png` and the 96 px `art/troops/<id>_portrait.png`, pointed the
 troop's `sprite`, `portrait` and `anim` at them in `game.json`, and named
 those files in the jobs' `"pack"` lists. Keep the job files under
 `art/jobs/`, which `ROME-ART.md` has been generated from.
@@ -151,7 +151,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
   the bronze cuirass…". The four figures have sat one per column, left to
   right, in manifest order.
 - **Location backdrops** — `figure: false`, `target [240, 102]`; the job has
-  been `art/jobs/backdrop_castle.json`, and the others have differed only in
+  been `art/jobs/ui/backdrop_castle.json`, and the others have differed only in
   id, prompt and seed.
 - **Base terrain** (grass, grass_variant, forest, desert, water; not the
   mountain, see below) —
@@ -171,7 +171,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
   - **Mountain, Italia** — not a texture, since a 48 px tile interior has
     read as rounded domes with a dark split (#67). Italia's mountain has been
     built the way the other continents' have: eight PixelLab rock sprites
-    (`art/jobs/italia_o96_rocks.json`, made before PixelLab was retired)
+    (`art/jobs/primitives/italia_rocks.json`, made before PixelLab was retired)
     composed by the lattice into the interior and the 19 edges with a
     searched slot arrangement (`romeart.py slots`,
     `art/primitives/italia/rock_slots.json`), and the river bands carried
@@ -243,7 +243,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
   and forest-on-sand pieces (`<terrain>_sand_edge_NN`) as the same lattice over
   the set's desert.
 - **Irrigated fields** (#63, plan step 5) — Africa's and Oriens' farmland
-  is a green irrigated field: `art/jobs/fields_africa_irrigated.json`
+  is a green irrigated field: `art/jobs/primitives/africa_fields_irrigated.json`
   (`rd_tile__single_tile`, 48 px, run 2, doubled to 96), kept as
   `art/primitives/africa/pieces/fields_wheat.png` and taken by both sets'
   `zone` as their `fields_wheat`, so the map's `w` code draws it with no new
@@ -251,7 +251,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
   fields_wheat=desert`. Oriens' own job read as dark grass on its bright
   grass and was not installed.
 - **Italia's forest from sprites** (#63) — eight Retro Diffusion trees
-  (`art/jobs/italia_tree_*.json`), colour-matched to the old forest by hand
+  (`art/jobs/primitives/italia_tree_*.json`), colour-matched to the old forest by hand
   (`romeart.py colormatch` has been that step since) and kept in
   `art/primitives/italia/trees`; the forest is a lattice of one of them like
   the other sets', its layout committed as `art/layouts/forest96_italia.json`
@@ -291,7 +291,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
   `map render --tiles` on about one plain grass or sand cell in twelve with no wood,
   range or sea beside it (`tilevar_pick` seed `0xD7A1`, 48 ways, 1-4 drawn).
   Cosmetic: the cell stays walkable grass.
-- **Settlement set pieces** (#63) — `art/jobs/piece_{dock,farmstead,ruin,shrine,well}.json`
+- **Settlement set pieces** (#63) — `art/jobs/primitives/dock_deck.json and art/jobs/tiles/piece_{farmstead,ruin,shrine,well}.json`
   (`rd_pro__topdown`, 96 px): a farmhouse, a ruin, a shrine and a well stand
   on grass as solid tiles (`blocks_foot`, map chars `n u h e`); the jetty
   (`j`) is sea off a straight grass shore, `dock_<n|e|s|w>` drawn over that
@@ -370,7 +370,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
   redrawn from their ink boxes. The wall pieces it once drew are gone: the
   API could not make generated wall pieces that join, so Rome has drawn its
   siege from the grid below. The obstacles have been generated
-  (`art/jobs/obstacle_0N.json`).
+  (`art/jobs/combat/obstacle_0N.json`).
 - **Siege grid** (`art/combat/siege/cell_<x>_<y>.png`, 36 cells at 32) —
   the whole siege board plus its back band as one picture, sliced into cells
   (`sprites.ui.siege_grid`, REQ-165c). Route: `rd_plus__topdown_map` (the
@@ -380,7 +380,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
   pieces (by `siegeslice`'s since-removed recipe mode, the band included,
   k-centroid to 384x384, `strength` 0.55) so the layout has been fixed by the source and the
   engine has repainted one continuous field over it
-  (`art/jobs/siege_scene_grass_a.json`, returned at 192). Then
+  (`art/jobs/combat/siege/cell.json`, returned at 192). Then
   `romeart.py siegeslice --grid` has written the 36 cells untouched at 32; the
   shell has scaled each to the 96 cell. Why not pieces: a per-code piece
   has repeated in every cell of its code, so a gatehouse, two different broken
@@ -451,7 +451,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
   offset for every frame of a set so the loop does not jitter. Animate the
   scaled still at 96 with no padding; the padded 128 route has shrunk a
   figure to three quarters.
-- **The Introduction** (#154, `art/intro/`, the jobs `art/jobs/intro_*.json`)
+- **The Introduction** (#154, `art/intro/`, the jobs `art/jobs/intro/*.json`)
   — backgrounds, sprites and text, the way the 80s and 90s intros were built.
   Every set has been a 240x102 backdrop on the screen route with "no people" in
   the prompt, except the Curia, whose senators have been painted on their benches;
@@ -590,6 +590,32 @@ a prompt:
 - Every straight exit has been the same 32 px band and every diagonal the
   same corner triangle, so any piece has joined any other, by construction:
   at every border each shape's distance has equalled the straight band's.
+
+---
+
+## Naming
+
+One rule names every piece of art and the job that made it:
+
+- **Art:** `art/<kind>/<subject>[_<variant>][_NN].png`. The kind is the folder
+  (`troops`, `villains`, `characters`, `classes`, `intro`, `ui`, `scenes`,
+  `combat`, `sprites`); the subject is the game's own id (a troop, villain,
+  class or character id); a kind's main art takes no variant (a troop's frames
+  `hastati_NN`, a villain's face `alaric_NN`, a character's face
+  `pontifex_galliae_NN`), anything else does (`hastati_portrait`, `dux_hero`,
+  `dux_walk_NN`, `dux_portrait`). `_NN` numbers frames. Tiles keep their own
+  names, which the map builder and tile codes key on.
+- **Jobs:** `art/jobs/<kind>/<name>.json`, named after what they make: a series
+  by its stem (`troops/hastati.json` makes `troops/hastati_NN.png`), a single
+  file by its whole name (`combat/obstacle_01.json`). A still an animation
+  starts from is `<name>_still.json`; an input to kept art (a primitive, an
+  emblem a recipe composes) sits under `art/jobs/primitives/` or beside the art
+  it feeds; a job whose output does not ship is under a `history/` folder and
+  claims nothing. A job's `id` is its path under `art/jobs`, and its runs land
+  in `build/art/<id>/runNN/`.
+
+`romeart.py provenance check` fails on a job claiming a file not named after
+it, and on a file two jobs claim.
 
 ---
 

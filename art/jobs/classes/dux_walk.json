@@ -1,5 +1,5 @@
 {
-  "id": "hero_dux_walk",
+  "id": "classes/dux_walk",
   "prompt": "horse walking to the right, steady steps, rider still, smooth loop",
   "style": "rd_advanced_animation__custom_action",
   "width": 96,

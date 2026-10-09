@@ -21,5 +21,6 @@
  "upper_description": "clear cool river water, grey-blue, with a gentle current and soft ripples, seen from above",
  "transition_description": "a narrow muddy bank where the river meets the meadow grass",
  "transition_size": 0.0,
- "_note": "Galliae river (2026-09-19): t32_river_203 with the grass chained to the Galliae grass (011fafa4) and the descriptions in the review table. Re-run on the approved prairie grass (83f91c7d); the run on the teal grass is kept in art/primitives/galliae/river_teal. Output kept in art/primitives/galliae/river."
+ "_note": "Galliae river (2026-09-19): t32_river_203 with the grass chained to the Galliae grass (011fafa4) and the descriptions in the review table. Re-run on the approved prairie grass (83f91c7d); the run on the teal grass is kept in art/primitives/galliae/river_teal. Output kept in art/primitives/galliae/river.",
+ "id": "primitives/galliae_river"
 }

@@ -16,5 +16,6 @@
  "text_guidance_scale": 8.0,
  "transition_size": 0.0,
  "seed": 3101,
- "_note": "Africa grass (2026-09-19): t32_moss_a (the Italia grass) with the two descriptions and seed changed and no colour swatch. Output kept in art/primitives/africa/grass."
+ "_note": "Africa grass (2026-09-19): t32_moss_a (the Italia grass) with the two descriptions and seed changed and no colour swatch. Output kept in art/primitives/africa/grass.",
+ "id": "primitives/africa_grass"
 }

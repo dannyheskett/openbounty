@@ -1,5 +1,5 @@
 {
-  "id": "troop_portrait_manes",
+  "id": "troops/manes_portrait",
   "prompt": "a head-and-shoulders portrait, the face filling the frame, of a manes, a ghostly spirit of the dead in a tattered glowing blue hooded shroud, a hollow shadowed face with faint pale eyes, reaching spectral hands, a dark underworld mist behind it",
   "style": "rd_pro__default",
   "width": 128,
@@ -15,9 +15,9 @@
   "reference_image_paths": [
     "assets/glory-of-rome/art/troops/manes_00.png"
   ],
-  "_pack_path": "art/portraits/troop_manes.png",
+  "_pack_path": "art/troops/manes_portrait.png",
   "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation.",
   "pack": [
-    "art/portraits/troop_manes.png"
+    "art/troops/manes_portrait.png"
   ]
 }

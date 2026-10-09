@@ -1,5 +1,5 @@
 {
- "id": "landmark_gordian",
+ "id": "tiles/landmark_gordian",
  "prompt": "an isolated cut-out game sprite of an old wooden ox cart with its yoke tied to a post by a huge tangled knot of rope, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
  "style": "rd_pro__topdown",
  "width": 96,

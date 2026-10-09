@@ -1,5 +1,5 @@
 {
-  "id": "title_battle_left",
+  "id": "ui/title_battle_still",
   "prompt": "left half of a battle: Roman legionaries with red shields and an eagle standard charge right. Grass field, pale sky.",
   "style": "rd_pro__default",
   "width": 200,
@@ -15,7 +15,7 @@
   "_pack_path": "art/ui/title_battle_left.png",
   "_note": "Title battle left half (2026-09-13): two 200x256 halves on rd_pro__default seed 6611, joined side by side to 400x256 and drawn 2x on the 800x532 title screen; Dan's plan. run02: simpler prompt, both run01 halves as reference images so the sky and grass match.",
   "reference_image_paths": [
-    "build/art/title_battle_left/run01/01_raw.png",
-    "build/art/title_battle_right/run01/01_raw.png"
+    "build/art/ui/title_battle_still/run01/01_raw.png",
+    "build/art/history/title_battle_right/run01/01_raw.png"
   ]
 }

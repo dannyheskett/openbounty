@@ -1,5 +1,5 @@
 {
-  "id": "troop_portrait_druidae",
+  "id": "troops/druidae_portrait",
   "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Celtic druid, an old white-bearded man with a crown of oak leaves in his white hair, a white robe, a gnarled wooden staff wound with ivy, a sacred oak grove behind him",
   "style": "rd_pro__default",
   "width": 128,
@@ -15,9 +15,9 @@
   "reference_image_paths": [
     "assets/glory-of-rome/art/troops/druidae_00.png"
   ],
-  "_pack_path": "art/portraits/troop_druidae.png",
+  "_pack_path": "art/troops/druidae_portrait.png",
   "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation.",
   "pack": [
-    "art/portraits/troop_druidae.png"
+    "art/troops/druidae_portrait.png"
   ]
 }

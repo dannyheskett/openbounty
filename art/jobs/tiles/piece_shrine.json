@@ -1,5 +1,5 @@
 {
- "id": "piece_shrine",
+ "id": "tiles/piece_shrine",
  "prompt": "an isolated cut-out game sprite of a small roadside Roman shrine, a little stone niche on a plinth with a statuette and an offering bowl, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
  "style": "rd_pro__topdown",
  "width": 96,

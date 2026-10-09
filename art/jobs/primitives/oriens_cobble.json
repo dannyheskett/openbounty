@@ -21,5 +21,6 @@
  "upper_description": "road paved with dark grey basalt blocks, even and flat",
  "transition_description": "a single edging course of darker set stones where the paving meets the grass",
  "transition_size": 0.0,
- "_note": "Oriens cobble (2026-09-19): t32_cobble_203 chained to the Oriens grass (d584193b); the other surface worded in a colour far from the grass so it does not collapse into it. Output kept in art/primitives/oriens/cobble."
+ "_note": "Oriens cobble (2026-09-19): t32_cobble_203 chained to the Oriens grass (d584193b); the other surface worded in a colour far from the grass so it does not collapse into it. Output kept in art/primitives/oriens/cobble.",
+ "id": "primitives/oriens_cobble"
 }

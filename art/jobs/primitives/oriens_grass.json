@@ -16,5 +16,6 @@
  "text_guidance_scale": 8.0,
  "transition_size": 0.0,
  "seed": 4111,
- "_note": "Oriens grass, second run (2026-09-19, Dan: tall grass like a rice paddy). The first ('Anatolian steppe grass, short and dry, silvery grey-green with small patches of ochre earth', seed 4101: close to Galliae, a busy 32 px repeat) is kept in art/primitives/oriens/grass_steppe. Output kept in art/primitives/oriens/grass."
+ "_note": "Oriens grass, second run (2026-09-19, Dan: tall grass like a rice paddy). The first ('Anatolian steppe grass, short and dry, silvery grey-green with small patches of ochre earth', seed 4101: close to Galliae, a busy 32 px repeat) is kept in art/primitives/oriens/grass_steppe. Output kept in art/primitives/oriens/grass.",
+ "id": "primitives/oriens_grass"
 }

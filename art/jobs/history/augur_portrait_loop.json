@@ -1,5 +1,5 @@
 {
-  "id": "augur_portrait_loop",
+  "id": "history/augur_portrait_loop",
   "prompt": "the raven turns its head, the augur's eyes lift slowly to the sky and back, static background, smooth loop",
   "style": "rd_advanced_animation__custom_action",
   "width": 128,
@@ -7,7 +7,7 @@
   "seed": 9931,
   "frames_duration": 8,
   "return_spritesheet": true,
-  "input_image_path": "build/art/augur_portrait/run01/01_raw.png",
+  "input_image_path": "build/art/characters/augur/run01/01_raw.png",
   "input_image_keep_alpha": false,
   "bypass_prompt_expansion": false,
   "raw_only": true,
@@ -16,6 +16,6 @@
     128,
     128
   ],
-  "_pack_path": "art/portraits/augur_portrait_00..07.png",
+  "_pack_path": "art/characters/augur_00..07.png",
   "_note": "Augur portrait loop (2026-09-13): custom action on run01, eight frames at 128, cropped to 96."
 }

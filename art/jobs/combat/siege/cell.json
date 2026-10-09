@@ -1,5 +1,5 @@
 {
-  "id": "siege_scene_grass_a",
+  "id": "combat/siege/cell",
   "prompt": "an orthographic strategy game battlefield map seen from directly overhead, a castle courtyard of flat plain bright lush green grass with nothing on it, thick grey stone battlement walls along the top edge, down the left and right edges and along the bottom, the bottom wall broken open in the middle where the gate was, a straight path of grey paving stones lined with stone kerbs running up from the breach into the courtyard, a moat of blue water below the bottom wall, everything square and aligned to the picture edges, no trees, no bushes, no rocks, no people, no text",
   "style": "rd_plus__topdown_map",
   "width": 384,

@@ -21,5 +21,6 @@
  },
  "upper_description": "dry pale yellow-green meadow grass, sparse and sun-bleached, seen from above",
  "transition_description": "soft uneven blend where the lush green grass thins into the dry pale grass",
- "transition_size": 0.0
+ "transition_size": 0.0,
+ "id": "primitives/history/t16_drygrass"
 }

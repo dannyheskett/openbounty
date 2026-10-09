@@ -66,10 +66,10 @@ the size in the "authored" column.
 |---|---|
 | terrain and map objects | `art/tiles/` (a zone with `tile_set` draws its terrain from `art/tiles/<set>/` instead; objects stay shared) |
 | zone terrain sets | `art/tiles/africa/`, `galliae/`, `oriens/` |
-| troop sprites and their animation frames | `art/troops/` |
+| troop sprites, their animation frames and portraits | `art/troops/` (`<troop>_NN`, `<troop>_portrait`) |
 | villain portraits and frames | `art/villains/` |
-| character portraits and frames | `art/portraits/` |
-| hero figures and walk frames | `art/classes/` |
+| the people met in town: portraits and frames | `art/characters/` |
+| class portraits, hero figures and walk frames | `art/classes/` (`<class>_portrait`, `_hero`, `_walk_NN`) |
 | boat frames | `art/sprites/` |
 | obstacles, castle spike, cursors | `art/combat/` |
 | HUD panels, inventory icons, location figures | `art/ui/` |

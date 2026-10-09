@@ -1,5 +1,5 @@
 {
- "id": "intro_crier_gesture",
+ "id": "intro/crier",
  "prompt": "proclaiming with empty hands, raising one arm then pointing to the crowd, feet still, smooth loop",
  "style": "rd_advanced_animation__custom_action",
  "width": 56,
@@ -7,7 +7,7 @@
  "seed": 15561,
  "frames_duration": 8,
  "return_spritesheet": true,
- "input_image_path": "build/art/intro_crier/run11/01_raw.png",
+ "input_image_path": "build/art/intro/crier_still/run11/01_raw.png",
  "input_image_keep_alpha": true,
  "bypass_prompt_expansion": false,
  "raw_only": true,

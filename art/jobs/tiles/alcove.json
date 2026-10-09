@@ -1,5 +1,5 @@
 {
- "id": "alcove_precinct",
+ "id": "tiles/alcove",
  "prompt": "an isolated cut-out game sprite of a small open-air Roman augural precinct on a low rocky outcrop, a square stone platform reached by three steps with a low parapet of pale ashlar blocks around it and a plain square stone altar at its centre, no roof of any kind so the whole platform is open to the sky, a tall bronze-topped post at one corner with a black raven perched on it, seen from the front and above with the steps facing the viewer, a freestanding structure with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole structure complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
  "style": "rd_pro__topdown",
  "width": 96,

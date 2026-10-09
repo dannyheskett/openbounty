@@ -1,5 +1,5 @@
 {
-  "id": "praefectus_castrorum_figure_loop",
+  "id": "ui/praefectus_castrorum_figure",
   "prompt": "breathes slowly and taps the vine-staff once against his palm, his body, helmet and feet all completely still, smooth loop",
   "style": "rd_advanced_animation__custom_action",
   "width": 96,
@@ -7,7 +7,7 @@
   "seed": 9961,
   "frames_duration": 8,
   "return_spritesheet": true,
-  "input_image_path": "build/art/praefectus_castrorum_figure/run01/01_raw.png",
+  "input_image_path": "build/art/ui/praefectus_castrorum_figure_still/run01/01_raw.png",
   "input_image_keep_alpha": true,
   "bypass_prompt_expansion": true,
   "raw_only": true,

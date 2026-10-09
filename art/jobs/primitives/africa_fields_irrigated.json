@@ -1,5 +1,5 @@
 {
- "id": "fields_africa_irrigated",
+ "id": "primitives/africa_fields_irrigated",
  "prompt": "seamless tileable crop field seen from directly above, straight parallel rows of bright green barley running left to right with thin straight brown irrigation ditches between them, flat even lighting, low contrast, the same everywhere",
  "style": "rd_tile__single_tile",
  "width": 48,

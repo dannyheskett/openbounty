@@ -1,5 +1,5 @@
 {
-  "id": "townhead_africa",
+  "id": "characters/townhead_africa_still",
   "prompt": "a head-and-shoulders portrait, the face filling the frame, of a dark-bearded Punic town elder in a long striped robe and a tall cylindrical cap, holding a rolled scroll, a whitewashed courtyard with palm trees behind him",
   "style": "rd_pro__default",
   "width": 128,
@@ -12,17 +12,7 @@
     128,
     128
   ],
-  "_pack_path": "art/portraits/townhead_africa_00..07.png",
+  "_pack_path": "art/characters/townhead_africa_00..07.png",
   "_animation": "a slow courteous nod, eyes smiling, static background, smooth loop",
-  "_note": "Head townsperson portrait (2026-09-13): the Contracts section of the modern town main page, the same person as the standing headman figure on the backdrop. Town-portrait route: still at 128, eight-frame loop at 128, each frame centre-cropped to 96.",
-  "pack": [
-    "art/portraits/townhead_africa_00.png",
-    "art/portraits/townhead_africa_01.png",
-    "art/portraits/townhead_africa_02.png",
-    "art/portraits/townhead_africa_03.png",
-    "art/portraits/townhead_africa_04.png",
-    "art/portraits/townhead_africa_05.png",
-    "art/portraits/townhead_africa_06.png",
-    "art/portraits/townhead_africa_07.png"
-  ]
+  "_note": "Head townsperson portrait (2026-09-13): the Contracts section of the modern town main page, the same person as the standing headman figure on the backdrop. Town-portrait route: still at 128, eight-frame loop at 128, each frame centre-cropped to 96."
 }

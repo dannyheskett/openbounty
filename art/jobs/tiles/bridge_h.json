@@ -1,5 +1,5 @@
 {
-  "id": "bridge_h",
+  "id": "tiles/bridge_h",
   "prompt": "a square tile of grey stone paving in even rows of rectangular blocks, filling the whole picture edge to edge, with a raised kerb of lighter stone running along the full top edge and the full bottom edge, the left and right edges open so the paving continues past them, seen from directly above, flat, opaque",
   "style": "rd_pro__topdown",
   "width": 96,

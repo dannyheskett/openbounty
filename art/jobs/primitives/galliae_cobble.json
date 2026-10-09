@@ -21,5 +21,6 @@
  "upper_description": "cobblestone road paved with small close-set rounded grey stones, dark joints between them, even and flat",
  "transition_description": "a single edging course of darker set stones where the paving meets the grass",
  "transition_size": 0.0,
- "_note": "Galliae cobble (2026-09-19): t32_cobble_203 with the grass chained to the Galliae grass (011fafa4) and the descriptions in the review table. Re-run on the approved prairie grass (83f91c7d); the run on the teal grass is kept in art/primitives/galliae/cobble_teal. Output kept in art/primitives/galliae/cobble."
+ "_note": "Galliae cobble (2026-09-19): t32_cobble_203 with the grass chained to the Galliae grass (011fafa4) and the descriptions in the review table. Re-run on the approved prairie grass (83f91c7d); the run on the teal grass is kept in art/primitives/galliae/cobble_teal. Output kept in art/primitives/galliae/cobble.",
+ "id": "primitives/galliae_cobble"
 }

@@ -1,5 +1,5 @@
 {
-  "id": "backdrop_plains",
+  "id": "ui/backdrop_plains",
   "_note": "Location backdrop, same route as art/jobs/backdrop_castle.json: rd_pro__default at the 240x102 design size (RD Pro caps a side at 256), opaque, scaled 2x by the shell.",
   "prompt": "open Italian countryside with cypress trees and distant blue hills",
   "style": "rd_pro__default",

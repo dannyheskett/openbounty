@@ -1,5 +1,5 @@
 {
-  "id": "hud_puzzle_grid",
+  "id": "ui/hud_puzzle_grid",
   "prompt": "a close crop from the middle of a much larger aged parchment map, the parchment filling the whole square with no edge, corner, rim or border of the parchment visible anywhere, faint coastlines and a few islands drawn in brown ink, no compass rose, no writing, no lettering",
   "style": "rd_pro__default",
   "width": 96,

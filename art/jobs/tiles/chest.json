@@ -1,5 +1,5 @@
 {
-  "id": "chest",
+  "id": "tiles/chest",
   "prompt": "An ornate treasure chest overflowing with gold coins and jewels, gold trim, top down",
   "style": "rd_plus__topdown_item",
   "width": 64,

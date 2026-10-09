@@ -21,5 +21,6 @@
  "upper_description": "calm deep blue river water, a little silty, with a gentle current and soft ripples, seen from above",
  "transition_description": "a narrow muddy bank where the river meets the meadow grass",
  "transition_size": 0.0,
- "_note": "Africa river (2026-09-19): t32_river_203 chained to the Africa grass (3309ecf2), descriptions as in the review table. Third run (Dan: neither the mud nor the teal): only the river wording and seed changed; earlier runs kept in river_mud and river_teal. Output kept in art/primitives/africa/river."
+ "_note": "Africa river (2026-09-19): t32_river_203 chained to the Africa grass (3309ecf2), descriptions as in the review table. Third run (Dan: neither the mud nor the teal): only the river wording and seed changed; earlier runs kept in river_mud and river_teal. Output kept in art/primitives/africa/river.",
+ "id": "primitives/africa_river"
 }

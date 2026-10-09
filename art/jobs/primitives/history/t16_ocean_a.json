@@ -21,5 +21,6 @@
  },
  "upper_description": "deep dark navy blue ocean water, calm, seen from above, tiny pale ripples",
  "transition_description": "gentle sandy beach: pale turquoise shallow water, then a band of light wet sand, then dry pale sand meeting the grass",
- "transition_size": 0.5
+ "transition_size": 0.5,
+ "id": "primitives/history/t16_ocean_a"
 }

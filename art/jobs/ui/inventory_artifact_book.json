@@ -1,5 +1,5 @@
 {
-  "id": "inventory_artifact_book",
+  "id": "ui/inventory_artifact_book",
   "prompt": "a torn scrap of ancient papyrus, blank and faded, curling at the edges, painted as a small game inventory icon, the object large and centred on a plain dark parchment background that fills the whole picture edge to edge, no frame, no border, no writing, no lettering, no banner, no ribbon",
   "style": "rd_pro__default",
   "width": 104,

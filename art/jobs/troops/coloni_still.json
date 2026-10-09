@@ -1,5 +1,5 @@
 {
-  "id": "coloni",
+  "id": "troops/coloni_still",
   "_note": "The peasants slot. Prompt as written in ART-WORKLIST. Neutral stance, the tool at rest, so the swing is the travel the animation spends. The troop style appends the full-length profile, game-sprite and magenta-background clauses. Animate at 96 without padding, the Hastati, Velites and Tirones route.",
   "prompt": "a ragged Roman tenant farmer in a torn dirty tunic, barefoot, holding a wooden pitchfork, stooped and unarmoured",
   "style": "user__glory_of_rome_troops_bac676cd",

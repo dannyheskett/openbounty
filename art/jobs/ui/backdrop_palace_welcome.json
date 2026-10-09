@@ -1,5 +1,5 @@
 {
- "id": "palace_welcome",
+ "id": "ui/backdrop_palace_welcome",
  "prompt": "the grand entrance hall of an imperial Roman palace, a wide marble atrium with polished veined marble floor, tall fluted columns in two rows, gilded capitals, a shallow reflecting pool at the centre, purple hangings with gold embroidery between the columns, bronze braziers burning, a broad staircase at the far end leading up into light, richly decorated and imperial, no people anywhere",
  "seed": 6601,
  "style": "rd_pro__default",

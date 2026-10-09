@@ -1,5 +1,5 @@
 {
-  "id": "troop_portrait_striges",
+  "id": "troops/striges_portrait",
   "prompt": "a head-and-shoulders portrait, the face filling the frame, of a strix, a monstrous bat-winged night demon with red-brown skin, pointed ears, sharp teeth and clawed hands, leathery pink wings spread behind it, a moonlit ruined tower behind it",
   "style": "rd_pro__default",
   "width": 128,
@@ -15,9 +15,9 @@
   "reference_image_paths": [
     "assets/glory-of-rome/art/troops/striges_00.png"
   ],
-  "_pack_path": "art/portraits/troop_striges.png",
+  "_pack_path": "art/troops/striges_portrait.png",
   "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation.",
   "pack": [
-    "art/portraits/troop_striges.png"
+    "art/troops/striges_portrait.png"
   ]
 }

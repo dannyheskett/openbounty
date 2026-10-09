@@ -1,5 +1,5 @@
 {
-  "id": "lemures",
+  "id": "troops/lemures_still",
   "_note": "Batch of 2026-09-05, prompt rewritten from the worklist row into a neutral stance with the weapon at rest, so the attack is the animation's travel. Animate at 96 without padding.",
   "prompt": "a shambling rotted corpse in bone-white grave wrappings, arms hanging at its sides, hunched and slow, pale grey flesh, not green",
   "style": "user__glory_of_rome_troops_bac676cd",

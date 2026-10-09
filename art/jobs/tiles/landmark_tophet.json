@@ -1,5 +1,5 @@
 {
- "id": "landmark_tophet",
+ "id": "tiles/landmark_tophet",
  "prompt": "an isolated cut-out game sprite of a small cluster of carved Punic stone stelae with rounded tops, of different heights, standing together, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
  "style": "rd_pro__topdown",
  "width": 96,

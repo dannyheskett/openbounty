@@ -1,5 +1,5 @@
 {
-  "id": "sign",
+  "id": "tiles/sign",
   "prompt": "A wooden road signpost with one blank pointed board, roman road, top down",
   "style": "rd_plus__topdown_item",
   "width": 64,

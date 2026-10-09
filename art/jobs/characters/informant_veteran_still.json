@@ -1,5 +1,5 @@
 {
-  "id": "informant_veteran",
+  "id": "characters/informant_veteran_still",
   "prompt": "a head-and-shoulders portrait, the face filling the frame, of a grizzled old legionary veteran with a torn ear, a faded red military cloak and a centurion's vine staff over his shoulder, a city gate behind him",
   "style": "rd_pro__default",
   "width": 128,
@@ -12,17 +12,7 @@
     128,
     128
   ],
-  "_pack_path": "art/portraits/informant_veteran_00..07.png",
+  "_pack_path": "art/characters/informant_veteran_00..07.png",
   "_animation": "narrowing eyes, a slow knowing nod, static background, smooth loop",
-  "_note": "Town portrait still (2026-09-13): informant (Information row) or continent Pontifex (Buy spell row) for the modern town face slot. The enemy-portrait route: rd_pro__default at 128, no references, expansion on; the loop runs at 128 on this still and each frame is centre-cropped to 96 (Dan-approved for these 8, 2026-09-13). Stills only for now.",
-  "pack": [
-    "art/portraits/informant_veteran_00.png",
-    "art/portraits/informant_veteran_01.png",
-    "art/portraits/informant_veteran_02.png",
-    "art/portraits/informant_veteran_03.png",
-    "art/portraits/informant_veteran_04.png",
-    "art/portraits/informant_veteran_05.png",
-    "art/portraits/informant_veteran_06.png",
-    "art/portraits/informant_veteran_07.png"
-  ]
+  "_note": "Town portrait still (2026-09-13): informant (Information row) or continent Pontifex (Buy spell row) for the modern town face slot. The enemy-portrait route: rd_pro__default at 128, no references, expansion on; the loop runs at 128 on this still and each frame is centre-cropped to 96 (Dan-approved for these 8, 2026-09-13). Stills only for now."
 }

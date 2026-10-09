@@ -1,5 +1,5 @@
 {
- "id": "intro_hourglass_loop",
+ "id": "intro/hourglass",
  "prompt": "golden sand running down through the hourglass, the glass and frame still, smooth loop",
  "style": "rd_advanced_animation__custom_action",
  "width": 48,
@@ -7,7 +7,7 @@
  "seed": 15549,
  "frames_duration": 8,
  "return_spritesheet": true,
- "input_image_path": "build/art/intro_hourglass/run01/01_raw.png",
+ "input_image_path": "build/art/intro/hourglass_still/run01/01_raw.png",
  "input_image_keep_alpha": true,
  "bypass_prompt_expansion": false,
  "raw_only": true,

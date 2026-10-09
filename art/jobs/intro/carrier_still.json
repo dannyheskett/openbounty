@@ -1,5 +1,5 @@
 {
- "id": "intro_carrier",
+ "id": "intro/carrier_still",
  "prompt": "a dark hooded figure in a ragged black cloak carrying a golden Roman eagle standard over his shoulder",
  "style": "user__glory_of_rome_troops_bac676cd",
  "width": 96,
@@ -15,11 +15,5 @@
   96
  ],
  "_pack_path": "art/intro/carrier_00..03.png (via intro_carrier_walk)",
- "_note": "2026-10-03, Introduction (#154) scene 1: the hooded thief who carries the eagle away; the figure route at 96, magenta removed. run01 is the still under intro_carrier_walk.",
- "pack": [
-  "art/intro/carrier_00.png",
-  "art/intro/carrier_01.png",
-  "art/intro/carrier_02.png",
-  "art/intro/carrier_03.png"
- ]
+ "_note": "2026-10-03, Introduction (#154) scene 1: the hooded thief who carries the eagle away; the figure route at 96, magenta removed. run01 is the still under intro_carrier_walk."
 }

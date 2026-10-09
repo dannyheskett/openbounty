@@ -1,5 +1,5 @@
 {
-  "id": "shapur_loop",
+  "id": "villains/shapur",
   "prompt": "cold regal stare, lips tightening, static background, smooth loop",
   "style": "rd_advanced_animation__custom_action",
   "width": 96,
@@ -7,7 +7,7 @@
   "seed": 8421,
   "frames_duration": 8,
   "return_spritesheet": true,
-  "input_image_path": "build/art/shapur/run01/01_raw.png",
+  "input_image_path": "build/art/villains/shapur_still/run01/01_raw.png",
   "input_image_keep_alpha": false,
   "bypass_prompt_expansion": false,
   "raw_only": true,

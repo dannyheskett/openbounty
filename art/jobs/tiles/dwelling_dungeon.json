@@ -1,5 +1,5 @@
 {
-  "id": "dwelling_dungeon",
+  "id": "tiles/dwelling_dungeon",
   "prompt": "an isolated cut-out game sprite of a Roman columbarium crypt entrance, a stone doorway flanked by funerary urns with steps going down, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
   "style": "rd_pro__topdown",
   "width": 96,

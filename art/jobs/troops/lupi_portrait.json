@@ -1,5 +1,5 @@
 {
-  "id": "troop_portrait_lupi",
+  "id": "troops/lupi_portrait",
   "prompt": "a head-and-shoulders portrait, the face filling the frame, of a grey wolf, its head and shoulders filling the frame, yellow eyes, bared fangs, thick grey fur, a dark forest at dusk behind it",
   "style": "rd_pro__default",
   "width": 128,
@@ -15,9 +15,9 @@
   "reference_image_paths": [
     "assets/glory-of-rome/art/troops/lupi_00.png"
   ],
-  "_pack_path": "art/portraits/troop_lupi.png",
+  "_pack_path": "art/troops/lupi_portrait.png",
   "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation.",
   "pack": [
-    "art/portraits/troop_lupi.png"
+    "art/troops/lupi_portrait.png"
   ]
 }

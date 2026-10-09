@@ -1,8 +1,8 @@
 {
-  "id": "furiae_attack",
+  "id": "troops/furiae",
   "style": "rd_advanced_animation__custom_action",
   "prompt": "a wide overhead swing, the burning torch carried from upright behind her head in a long arc down and out to full reach in front of her to the right, the way she faces, then back to upright, the wings thrown back and spread as she lunges, hovering with the feet off the ground, smooth loop, no motion blur and no streaks",
-  "input_image_path": "build/art/furiae/run01/01_raw.png",
+  "input_image_path": "build/art/troops/furiae_still/run01/01_raw.png",
   "input_image_keep_alpha": true,
   "width": 96,
   "height": 96,

@@ -1,5 +1,5 @@
 {
-  "id": "jugurtha_loop",
+  "id": "villains/jugurtha",
   "prompt": "sneering face, brow raised, static background, smooth loop",
   "style": "rd_advanced_animation__custom_action",
   "width": 96,
@@ -7,7 +7,7 @@
   "seed": 8392,
   "frames_duration": 8,
   "return_spritesheet": true,
-  "input_image_path": "build/art/jugurtha/run05/01_raw.png",
+  "input_image_path": "build/art/villains/jugurtha_still/run05/01_raw.png",
   "input_image_keep_alpha": false,
   "bypass_prompt_expansion": false,
   "raw_only": true,

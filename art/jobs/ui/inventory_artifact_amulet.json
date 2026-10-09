@@ -1,5 +1,5 @@
 {
-  "id": "inventory_artifact_amulet",
+  "id": "ui/inventory_artifact_amulet",
   "prompt": "a gold locket amulet embossed with a lightning bolt, lying flat on its back with its cord coiled loosely beside it, seen from directly above, painted as a small game inventory icon, the object large and centred on a plain dark parchment background that fills the whole picture edge to edge, no frame, no border, no inset panel, no inner rectangle, no writing, no lettering",
   "style": "rd_pro__default",
   "width": 128,

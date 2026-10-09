@@ -9,5 +9,6 @@
  "shape_style": "round",
  "enhance": true,
  "view": "high top-down",
- "seed": 9105
+ "seed": 9105,
+ "id": "primitives/history/t16_plains_grass"
 }

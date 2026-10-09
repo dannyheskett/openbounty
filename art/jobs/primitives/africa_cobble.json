@@ -21,5 +21,6 @@
  "upper_description": "pale grey limestone paving slabs, even and flat",
  "transition_description": "a single edging course of darker set stones where the paving meets the grass",
  "transition_size": 0.0,
- "_note": "Africa road, fourth run (2026-09-19): words only, a colour far from the khaki grass so the plain tile does not collapse into the grass. Earlier runs kept: cobble_miss (slabs as a tile grid), cobble_miss2 (plain tile came back as the grass), cobble_ref3 (upper_reference_image of Italia's cobble: the plain tile copied the reference). Output kept in art/primitives/africa/cobble."
+ "_note": "Africa road, fourth run (2026-09-19): words only, a colour far from the khaki grass so the plain tile does not collapse into the grass. Earlier runs kept: cobble_miss (slabs as a tile grid), cobble_miss2 (plain tile came back as the grass), cobble_ref3 (upper_reference_image of Italia's cobble: the plain tile copied the reference). Output kept in art/primitives/africa/cobble.",
+ "id": "primitives/africa_cobble"
 }

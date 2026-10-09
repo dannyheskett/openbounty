@@ -1,5 +1,5 @@
 {
-  "id": "larvae",
+  "id": "troops/larvae_still",
   "_note": "Batch of 2026-09-05, prompt rewritten from the worklist row into a neutral stance with the weapon at rest, so the attack is the animation's travel. Animate at 96 without padding.",
   "prompt": "a walking human skeleton in a rotted Roman tunic, hollow eye sockets, bone-white, a rusted short sword held upright at rest in its right hand",
   "style": "user__glory_of_rome_troops_bac676cd",

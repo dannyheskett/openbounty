@@ -21,5 +21,6 @@
  "upper_description": "pale cream-white sand dunes with soft rippled crests, no grass",
  "transition_description": "dry sandy earth with sparse tufts of grass",
  "transition_size": 0.0,
- "_note": "Africa desert (2026-09-19): t32_desert_203 chained to the Africa grass (3309ecf2), descriptions as in the review table. Second run: the first ('warm orange-gold Saharan sand with soft rippled dunes', seed 3103) missed; kept in art/primitives/africa/desert_miss. Next run: the previous ('deep orange Saharan sand dunes with rippled crests, no grass', seed 3113: flat saturated orange) is kept in art/primitives/africa/desert_orange. Only the desert wording and seed changed. Output kept in art/primitives/africa/desert."
+ "_note": "Africa desert (2026-09-19): t32_desert_203 chained to the Africa grass (3309ecf2), descriptions as in the review table. Second run: the first ('warm orange-gold Saharan sand with soft rippled dunes', seed 3103) missed; kept in art/primitives/africa/desert_miss. Next run: the previous ('deep orange Saharan sand dunes with rippled crests, no grass', seed 3113: flat saturated orange) is kept in art/primitives/africa/desert_orange. Only the desert wording and seed changed. Output kept in art/primitives/africa/desert.",
+ "id": "primitives/africa_desert"
 }

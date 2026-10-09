@@ -1,5 +1,5 @@
 {
-  "id": "artifact_chest",
+  "id": "tiles/artifact_chest",
   "prompt": "An ornate gilded reliquary casket with glowing seams, jewels, top down",
   "style": "rd_plus__topdown_item",
   "width": 64,
