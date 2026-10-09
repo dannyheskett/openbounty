@@ -1,0 +1,17 @@
+{
+ "id": "characters/crier_still",
+ "prompt": "a head-and-shoulders portrait, the face filling the frame, of a stout older Roman herald with grey curly hair, heavy jowls, a broad booming shout, a rust striped tunic and an embroidered mantle with a yellow band, the Roman Forum behind him",
+ "style": "rd_pro__default",
+ "width": 128,
+ "height": 128,
+ "seed": 15605,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  128,
+  128
+ ],
+ "_pack_path": "art/characters/crier_00..07.png (via intro_crier_face_loop)",
+ "_note": "2026-10-04, Introduction (#154) scenes 2 and 5: the crier's face for the caption band; the town-portrait still route at 128. run02 is the still under intro_crier_face_loop."
+}

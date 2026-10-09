@@ -1,0 +1,20 @@
+{
+ "id": "scenes/treasure_oriens",
+ "prompt": "a hidden treasure cache uncovered among the fallen columns of a ruined eastern temple, a half-buried wooden chest burst open with Roman gold coins and silver vessels spilling out, dry hills and a distant walled city at dusk, no people",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 7904,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/scenes/treasure_oriens.png",
+ "_note": "The treasure-cache vista for the chest's gold-or-leadership choice in Oriens (2026-10-02). Same engine and size as every vista (rd_pro__default, 240x102, opaque).",
+ "pack": [
+  "art/scenes/treasure_oriens.png"
+ ]
+}

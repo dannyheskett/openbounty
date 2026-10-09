@@ -1,0 +1,20 @@
+{
+ "id": "scenes/tophet",
+ "prompt": "an ancient Punic sanctuary in a rocky valley near the sea, rows of small carved stone stelae among dry grass and palms, a low altar under a stone canopy, the walls of a great city faint on the horizon, hot golden light, no people",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 6613,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/scenes/tophet.png",
+ "_note": "The Africa vista: the Tophet's sanctuary opened for a toll. Location-backdrop route, rd_pro__default 240x102, opaque.",
+ "pack": [
+  "art/scenes/tophet.png"
+ ]
+}

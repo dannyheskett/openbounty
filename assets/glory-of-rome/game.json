@@ -2753,52 +2753,52 @@
 		}],
 	"portraits":	[{
 			"id":	"informant_market",
-			"anim":	["art/portraits/informant_market_00.png", "art/portraits/informant_market_01.png", "art/portraits/informant_market_02.png", "art/portraits/informant_market_03.png", "art/portraits/informant_market_04.png", "art/portraits/informant_market_05.png", "art/portraits/informant_market_06.png", "art/portraits/informant_market_07.png", "art/portraits/informant_market_08.png", "art/portraits/informant_market_09.png", "art/portraits/informant_market_10.png", "art/portraits/informant_market_11.png", "art/portraits/informant_market_12.png", "art/portraits/informant_market_13.png"]
+			"anim":	["art/characters/informant_market_00.png", "art/characters/informant_market_01.png", "art/characters/informant_market_02.png", "art/characters/informant_market_03.png", "art/characters/informant_market_04.png", "art/characters/informant_market_05.png", "art/characters/informant_market_06.png", "art/characters/informant_market_07.png", "art/characters/informant_market_08.png", "art/characters/informant_market_09.png", "art/characters/informant_market_10.png", "art/characters/informant_market_11.png", "art/characters/informant_market_12.png", "art/characters/informant_market_13.png"]
 		}, {
 			"id":	"informant_taverner",
-			"anim":	["art/portraits/informant_taverner_00.png", "art/portraits/informant_taverner_01.png", "art/portraits/informant_taverner_02.png", "art/portraits/informant_taverner_03.png", "art/portraits/informant_taverner_04.png", "art/portraits/informant_taverner_05.png", "art/portraits/informant_taverner_06.png", "art/portraits/informant_taverner_07.png"]
+			"anim":	["art/characters/informant_taverner_00.png", "art/characters/informant_taverner_01.png", "art/characters/informant_taverner_02.png", "art/characters/informant_taverner_03.png", "art/characters/informant_taverner_04.png", "art/characters/informant_taverner_05.png", "art/characters/informant_taverner_06.png", "art/characters/informant_taverner_07.png"]
 		}, {
 			"id":	"informant_veteran",
-			"anim":	["art/portraits/informant_veteran_00.png", "art/portraits/informant_veteran_01.png", "art/portraits/informant_veteran_02.png", "art/portraits/informant_veteran_03.png", "art/portraits/informant_veteran_04.png", "art/portraits/informant_veteran_05.png", "art/portraits/informant_veteran_06.png", "art/portraits/informant_veteran_07.png"]
+			"anim":	["art/characters/informant_veteran_00.png", "art/characters/informant_veteran_01.png", "art/characters/informant_veteran_02.png", "art/characters/informant_veteran_03.png", "art/characters/informant_veteran_04.png", "art/characters/informant_veteran_05.png", "art/characters/informant_veteran_06.png", "art/characters/informant_veteran_07.png"]
 		}, {
 			"id":	"informant_urchin",
-			"anim":	["art/portraits/informant_urchin_00.png", "art/portraits/informant_urchin_01.png", "art/portraits/informant_urchin_02.png", "art/portraits/informant_urchin_03.png", "art/portraits/informant_urchin_04.png", "art/portraits/informant_urchin_05.png", "art/portraits/informant_urchin_06.png", "art/portraits/informant_urchin_07.png"]
+			"anim":	["art/characters/informant_urchin_00.png", "art/characters/informant_urchin_01.png", "art/characters/informant_urchin_02.png", "art/characters/informant_urchin_03.png", "art/characters/informant_urchin_04.png", "art/characters/informant_urchin_05.png", "art/characters/informant_urchin_06.png", "art/characters/informant_urchin_07.png"]
 		}, {
 			"id":	"pontifex_italia",
-			"anim":	["art/portraits/pontifex_italia_00.png", "art/portraits/pontifex_italia_01.png", "art/portraits/pontifex_italia_02.png", "art/portraits/pontifex_italia_03.png", "art/portraits/pontifex_italia_04.png", "art/portraits/pontifex_italia_05.png", "art/portraits/pontifex_italia_06.png", "art/portraits/pontifex_italia_07.png"]
+			"anim":	["art/characters/pontifex_italia_00.png", "art/characters/pontifex_italia_01.png", "art/characters/pontifex_italia_02.png", "art/characters/pontifex_italia_03.png", "art/characters/pontifex_italia_04.png", "art/characters/pontifex_italia_05.png", "art/characters/pontifex_italia_06.png", "art/characters/pontifex_italia_07.png"]
 		}, {
 			"id":	"pontifex_galliae",
-			"anim":	["art/portraits/pontifex_galliae_00.png", "art/portraits/pontifex_galliae_01.png", "art/portraits/pontifex_galliae_02.png", "art/portraits/pontifex_galliae_03.png", "art/portraits/pontifex_galliae_04.png", "art/portraits/pontifex_galliae_05.png", "art/portraits/pontifex_galliae_06.png", "art/portraits/pontifex_galliae_07.png", "art/portraits/pontifex_galliae_08.png", "art/portraits/pontifex_galliae_09.png", "art/portraits/pontifex_galliae_10.png", "art/portraits/pontifex_galliae_11.png", "art/portraits/pontifex_galliae_12.png", "art/portraits/pontifex_galliae_13.png"]
+			"anim":	["art/characters/pontifex_galliae_00.png", "art/characters/pontifex_galliae_01.png", "art/characters/pontifex_galliae_02.png", "art/characters/pontifex_galliae_03.png", "art/characters/pontifex_galliae_04.png", "art/characters/pontifex_galliae_05.png", "art/characters/pontifex_galliae_06.png", "art/characters/pontifex_galliae_07.png", "art/characters/pontifex_galliae_08.png", "art/characters/pontifex_galliae_09.png", "art/characters/pontifex_galliae_10.png", "art/characters/pontifex_galliae_11.png", "art/characters/pontifex_galliae_12.png", "art/characters/pontifex_galliae_13.png"]
 		}, {
 			"id":	"pontifex_africa",
-			"anim":	["art/portraits/pontifex_africa_00.png", "art/portraits/pontifex_africa_01.png", "art/portraits/pontifex_africa_02.png", "art/portraits/pontifex_africa_03.png", "art/portraits/pontifex_africa_04.png", "art/portraits/pontifex_africa_05.png", "art/portraits/pontifex_africa_06.png", "art/portraits/pontifex_africa_07.png"]
+			"anim":	["art/characters/pontifex_africa_00.png", "art/characters/pontifex_africa_01.png", "art/characters/pontifex_africa_02.png", "art/characters/pontifex_africa_03.png", "art/characters/pontifex_africa_04.png", "art/characters/pontifex_africa_05.png", "art/characters/pontifex_africa_06.png", "art/characters/pontifex_africa_07.png"]
 		}, {
 			"id":	"pontifex_oriens",
-			"anim":	["art/portraits/pontifex_oriens_00.png", "art/portraits/pontifex_oriens_01.png", "art/portraits/pontifex_oriens_02.png", "art/portraits/pontifex_oriens_03.png", "art/portraits/pontifex_oriens_04.png", "art/portraits/pontifex_oriens_05.png", "art/portraits/pontifex_oriens_06.png", "art/portraits/pontifex_oriens_07.png"]
+			"anim":	["art/characters/pontifex_oriens_00.png", "art/characters/pontifex_oriens_01.png", "art/characters/pontifex_oriens_02.png", "art/characters/pontifex_oriens_03.png", "art/characters/pontifex_oriens_04.png", "art/characters/pontifex_oriens_05.png", "art/characters/pontifex_oriens_06.png", "art/characters/pontifex_oriens_07.png"]
 		}, {
 			"id":	"boatmaster_italia",
-			"anim":	["art/portraits/boatmaster_italia_00.png", "art/portraits/boatmaster_italia_01.png", "art/portraits/boatmaster_italia_02.png", "art/portraits/boatmaster_italia_03.png", "art/portraits/boatmaster_italia_04.png", "art/portraits/boatmaster_italia_05.png", "art/portraits/boatmaster_italia_06.png", "art/portraits/boatmaster_italia_07.png"]
+			"anim":	["art/characters/boatmaster_italia_00.png", "art/characters/boatmaster_italia_01.png", "art/characters/boatmaster_italia_02.png", "art/characters/boatmaster_italia_03.png", "art/characters/boatmaster_italia_04.png", "art/characters/boatmaster_italia_05.png", "art/characters/boatmaster_italia_06.png", "art/characters/boatmaster_italia_07.png"]
 		}, {
 			"id":	"boatmaster_galliae",
-			"anim":	["art/portraits/boatmaster_galliae_00.png", "art/portraits/boatmaster_galliae_01.png", "art/portraits/boatmaster_galliae_02.png", "art/portraits/boatmaster_galliae_03.png", "art/portraits/boatmaster_galliae_04.png", "art/portraits/boatmaster_galliae_05.png", "art/portraits/boatmaster_galliae_06.png", "art/portraits/boatmaster_galliae_07.png"]
+			"anim":	["art/characters/boatmaster_galliae_00.png", "art/characters/boatmaster_galliae_01.png", "art/characters/boatmaster_galliae_02.png", "art/characters/boatmaster_galliae_03.png", "art/characters/boatmaster_galliae_04.png", "art/characters/boatmaster_galliae_05.png", "art/characters/boatmaster_galliae_06.png", "art/characters/boatmaster_galliae_07.png"]
 		}, {
 			"id":	"boatmaster_africa",
-			"anim":	["art/portraits/boatmaster_africa_00.png", "art/portraits/boatmaster_africa_01.png", "art/portraits/boatmaster_africa_02.png", "art/portraits/boatmaster_africa_03.png", "art/portraits/boatmaster_africa_04.png", "art/portraits/boatmaster_africa_05.png", "art/portraits/boatmaster_africa_06.png", "art/portraits/boatmaster_africa_07.png"]
+			"anim":	["art/characters/boatmaster_africa_00.png", "art/characters/boatmaster_africa_01.png", "art/characters/boatmaster_africa_02.png", "art/characters/boatmaster_africa_03.png", "art/characters/boatmaster_africa_04.png", "art/characters/boatmaster_africa_05.png", "art/characters/boatmaster_africa_06.png", "art/characters/boatmaster_africa_07.png"]
 		}, {
 			"id":	"boatmaster_oriens",
-			"anim":	["art/portraits/boatmaster_oriens_00.png", "art/portraits/boatmaster_oriens_01.png", "art/portraits/boatmaster_oriens_02.png", "art/portraits/boatmaster_oriens_03.png", "art/portraits/boatmaster_oriens_04.png", "art/portraits/boatmaster_oriens_05.png", "art/portraits/boatmaster_oriens_06.png", "art/portraits/boatmaster_oriens_07.png"]
+			"anim":	["art/characters/boatmaster_oriens_00.png", "art/characters/boatmaster_oriens_01.png", "art/characters/boatmaster_oriens_02.png", "art/characters/boatmaster_oriens_03.png", "art/characters/boatmaster_oriens_04.png", "art/characters/boatmaster_oriens_05.png", "art/characters/boatmaster_oriens_06.png", "art/characters/boatmaster_oriens_07.png"]
 		}, {
 			"id":	"siege_italia",
-			"anim":	["art/portraits/siege_italia_00.png", "art/portraits/siege_italia_01.png", "art/portraits/siege_italia_02.png", "art/portraits/siege_italia_03.png", "art/portraits/siege_italia_04.png", "art/portraits/siege_italia_05.png", "art/portraits/siege_italia_06.png", "art/portraits/siege_italia_07.png"]
+			"anim":	["art/characters/siege_italia_00.png", "art/characters/siege_italia_01.png", "art/characters/siege_italia_02.png", "art/characters/siege_italia_03.png", "art/characters/siege_italia_04.png", "art/characters/siege_italia_05.png", "art/characters/siege_italia_06.png", "art/characters/siege_italia_07.png"]
 		}, {
 			"id":	"siege_galliae",
-			"anim":	["art/portraits/siege_galliae_00.png", "art/portraits/siege_galliae_01.png", "art/portraits/siege_galliae_02.png", "art/portraits/siege_galliae_03.png", "art/portraits/siege_galliae_04.png", "art/portraits/siege_galliae_05.png", "art/portraits/siege_galliae_06.png", "art/portraits/siege_galliae_07.png", "art/portraits/siege_galliae_08.png", "art/portraits/siege_galliae_09.png", "art/portraits/siege_galliae_10.png", "art/portraits/siege_galliae_11.png", "art/portraits/siege_galliae_12.png", "art/portraits/siege_galliae_13.png"]
+			"anim":	["art/characters/siege_galliae_00.png", "art/characters/siege_galliae_01.png", "art/characters/siege_galliae_02.png", "art/characters/siege_galliae_03.png", "art/characters/siege_galliae_04.png", "art/characters/siege_galliae_05.png", "art/characters/siege_galliae_06.png", "art/characters/siege_galliae_07.png", "art/characters/siege_galliae_08.png", "art/characters/siege_galliae_09.png", "art/characters/siege_galliae_10.png", "art/characters/siege_galliae_11.png", "art/characters/siege_galliae_12.png", "art/characters/siege_galliae_13.png"]
 		}, {
 			"id":	"siege_africa",
-			"anim":	["art/portraits/siege_africa_00.png", "art/portraits/siege_africa_01.png", "art/portraits/siege_africa_02.png", "art/portraits/siege_africa_03.png", "art/portraits/siege_africa_04.png", "art/portraits/siege_africa_05.png", "art/portraits/siege_africa_06.png", "art/portraits/siege_africa_07.png"]
+			"anim":	["art/characters/siege_africa_00.png", "art/characters/siege_africa_01.png", "art/characters/siege_africa_02.png", "art/characters/siege_africa_03.png", "art/characters/siege_africa_04.png", "art/characters/siege_africa_05.png", "art/characters/siege_africa_06.png", "art/characters/siege_africa_07.png"]
 		}, {
 			"id":	"siege_oriens",
-			"anim":	["art/portraits/siege_oriens_00.png", "art/portraits/siege_oriens_01.png", "art/portraits/siege_oriens_02.png", "art/portraits/siege_oriens_03.png", "art/portraits/siege_oriens_04.png", "art/portraits/siege_oriens_05.png", "art/portraits/siege_oriens_06.png", "art/portraits/siege_oriens_07.png"]
+			"anim":	["art/characters/siege_oriens_00.png", "art/characters/siege_oriens_01.png", "art/characters/siege_oriens_02.png", "art/characters/siege_oriens_03.png", "art/characters/siege_oriens_04.png", "art/characters/siege_oriens_05.png", "art/characters/siege_oriens_06.png", "art/characters/siege_oriens_07.png"]
 		}, {
 			"id":	"headman_italia",
 			"anim":	["art/ui/headman_italia_00.png", "art/ui/headman_italia_01.png", "art/ui/headman_italia_02.png", "art/ui/headman_italia_03.png", "art/ui/headman_italia_04.png", "art/ui/headman_italia_05.png", "art/ui/headman_italia_06.png", "art/ui/headman_italia_07.png"]
@@ -2813,25 +2813,25 @@
 			"anim":	["art/ui/headman_oriens_00.png", "art/ui/headman_oriens_01.png", "art/ui/headman_oriens_02.png", "art/ui/headman_oriens_03.png", "art/ui/headman_oriens_04.png", "art/ui/headman_oriens_05.png", "art/ui/headman_oriens_06.png", "art/ui/headman_oriens_07.png"]
 		}, {
 			"id":	"townhead_italia",
-			"anim":	["art/portraits/townhead_italia_00.png", "art/portraits/townhead_italia_01.png", "art/portraits/townhead_italia_02.png", "art/portraits/townhead_italia_03.png", "art/portraits/townhead_italia_04.png", "art/portraits/townhead_italia_05.png", "art/portraits/townhead_italia_06.png", "art/portraits/townhead_italia_07.png"]
+			"anim":	["art/characters/townhead_italia_00.png", "art/characters/townhead_italia_01.png", "art/characters/townhead_italia_02.png", "art/characters/townhead_italia_03.png", "art/characters/townhead_italia_04.png", "art/characters/townhead_italia_05.png", "art/characters/townhead_italia_06.png", "art/characters/townhead_italia_07.png"]
 		}, {
 			"id":	"townhead_galliae",
-			"anim":	["art/portraits/townhead_galliae_00.png", "art/portraits/townhead_galliae_01.png", "art/portraits/townhead_galliae_02.png", "art/portraits/townhead_galliae_03.png", "art/portraits/townhead_galliae_04.png", "art/portraits/townhead_galliae_05.png", "art/portraits/townhead_galliae_06.png", "art/portraits/townhead_galliae_07.png"]
+			"anim":	["art/characters/townhead_galliae_00.png", "art/characters/townhead_galliae_01.png", "art/characters/townhead_galliae_02.png", "art/characters/townhead_galliae_03.png", "art/characters/townhead_galliae_04.png", "art/characters/townhead_galliae_05.png", "art/characters/townhead_galliae_06.png", "art/characters/townhead_galliae_07.png"]
 		}, {
 			"id":	"townhead_africa",
-			"anim":	["art/portraits/townhead_africa_00.png", "art/portraits/townhead_africa_01.png", "art/portraits/townhead_africa_02.png", "art/portraits/townhead_africa_03.png", "art/portraits/townhead_africa_04.png", "art/portraits/townhead_africa_05.png", "art/portraits/townhead_africa_06.png", "art/portraits/townhead_africa_07.png"]
+			"anim":	["art/characters/townhead_africa_00.png", "art/characters/townhead_africa_01.png", "art/characters/townhead_africa_02.png", "art/characters/townhead_africa_03.png", "art/characters/townhead_africa_04.png", "art/characters/townhead_africa_05.png", "art/characters/townhead_africa_06.png", "art/characters/townhead_africa_07.png"]
 		}, {
 			"id":	"townhead_oriens",
-			"anim":	["art/portraits/townhead_oriens_00.png", "art/portraits/townhead_oriens_01.png", "art/portraits/townhead_oriens_02.png", "art/portraits/townhead_oriens_03.png", "art/portraits/townhead_oriens_04.png", "art/portraits/townhead_oriens_05.png", "art/portraits/townhead_oriens_06.png", "art/portraits/townhead_oriens_07.png"]
+			"anim":	["art/characters/townhead_oriens_00.png", "art/characters/townhead_oriens_01.png", "art/characters/townhead_oriens_02.png", "art/characters/townhead_oriens_03.png", "art/characters/townhead_oriens_04.png", "art/characters/townhead_oriens_05.png", "art/characters/townhead_oriens_06.png", "art/characters/townhead_oriens_07.png"]
 		}, {
 			"id":	"emperor_traianus",
-			"anim":	["art/portraits/emperor_traianus_00.png", "art/portraits/emperor_traianus_01.png", "art/portraits/emperor_traianus_02.png", "art/portraits/emperor_traianus_03.png", "art/portraits/emperor_traianus_04.png", "art/portraits/emperor_traianus_05.png", "art/portraits/emperor_traianus_06.png", "art/portraits/emperor_traianus_07.png", "art/portraits/emperor_traianus_08.png", "art/portraits/emperor_traianus_09.png", "art/portraits/emperor_traianus_10.png", "art/portraits/emperor_traianus_11.png", "art/portraits/emperor_traianus_12.png", "art/portraits/emperor_traianus_13.png"]
+			"anim":	["art/characters/emperor_traianus_00.png", "art/characters/emperor_traianus_01.png", "art/characters/emperor_traianus_02.png", "art/characters/emperor_traianus_03.png", "art/characters/emperor_traianus_04.png", "art/characters/emperor_traianus_05.png", "art/characters/emperor_traianus_06.png", "art/characters/emperor_traianus_07.png", "art/characters/emperor_traianus_08.png", "art/characters/emperor_traianus_09.png", "art/characters/emperor_traianus_10.png", "art/characters/emperor_traianus_11.png", "art/characters/emperor_traianus_12.png", "art/characters/emperor_traianus_13.png"]
 		}, {
 			"id":	"emperor_traianus_figure",
 			"anim":	["art/ui/emperor_traianus_figure_00.png", "art/ui/emperor_traianus_figure_01.png", "art/ui/emperor_traianus_figure_02.png", "art/ui/emperor_traianus_figure_03.png", "art/ui/emperor_traianus_figure_04.png", "art/ui/emperor_traianus_figure_05.png", "art/ui/emperor_traianus_figure_06.png", "art/ui/emperor_traianus_figure_07.png"]
 		}, {
 			"id":	"praefectus_castrorum",
-			"anim":	["art/portraits/praefectus_castrorum_00.png", "art/portraits/praefectus_castrorum_01.png", "art/portraits/praefectus_castrorum_02.png", "art/portraits/praefectus_castrorum_03.png", "art/portraits/praefectus_castrorum_04.png", "art/portraits/praefectus_castrorum_05.png", "art/portraits/praefectus_castrorum_06.png", "art/portraits/praefectus_castrorum_07.png"]
+			"anim":	["art/characters/praefectus_castrorum_00.png", "art/characters/praefectus_castrorum_01.png", "art/characters/praefectus_castrorum_02.png", "art/characters/praefectus_castrorum_03.png", "art/characters/praefectus_castrorum_04.png", "art/characters/praefectus_castrorum_05.png", "art/characters/praefectus_castrorum_06.png", "art/characters/praefectus_castrorum_07.png"]
 		}, {
 			"id":	"palace_usher",
 			"anim":	[
@@ -2849,7 +2849,7 @@
 			"anim":	["art/ui/praefectus_castrorum_figure_00.png", "art/ui/praefectus_castrorum_figure_01.png", "art/ui/praefectus_castrorum_figure_02.png", "art/ui/praefectus_castrorum_figure_03.png", "art/ui/praefectus_castrorum_figure_04.png", "art/ui/praefectus_castrorum_figure_05.png", "art/ui/praefectus_castrorum_figure_06.png", "art/ui/praefectus_castrorum_figure_07.png"]
 		}, {
 			"id":	"intro_crier",
-			"anim":	["art/portraits/intro_crier_00.png", "art/portraits/intro_crier_01.png", "art/portraits/intro_crier_02.png", "art/portraits/intro_crier_03.png", "art/portraits/intro_crier_04.png", "art/portraits/intro_crier_05.png", "art/portraits/intro_crier_06.png", "art/portraits/intro_crier_07.png"]
+			"anim":	["art/characters/crier_00.png", "art/characters/crier_01.png", "art/characters/crier_02.png", "art/characters/crier_03.png", "art/characters/crier_04.png", "art/characters/crier_05.png", "art/characters/crier_06.png", "art/characters/crier_07.png"]
 		}, {
 			"id":	"promotion_rank_1",
 			"anim":	["art/ui/promotion_rank_1.png"]
@@ -3702,7 +3702,7 @@
 			"id":	"coloni",
 			"name":	"Coloni",
 			"sprite":	"art/troops/coloni_00.png",
-			"portrait":	"art/portraits/troop_coloni.png",
+			"portrait":	"art/troops/coloni_portrait.png",
 			"skill_level":	1,
 			"hit_points":	1,
 			"move_rate":	1,
@@ -3722,7 +3722,7 @@
 			"id":	"lares",
 			"name":	"Lares",
 			"sprite":	"art/troops/lares_00.png",
-			"portrait":	"art/portraits/troop_lares.png",
+			"portrait":	"art/troops/lares_portrait.png",
 			"skill_level":	1,
 			"hit_points":	1,
 			"move_rate":	1,
@@ -3742,7 +3742,7 @@
 			"id":	"tirones",
 			"name":	"Tirones",
 			"sprite":	"art/troops/tirones_00.png",
-			"portrait":	"art/portraits/troop_tirones.png",
+			"portrait":	"art/troops/tirones_portrait.png",
 			"skill_level":	2,
 			"hit_points":	2,
 			"move_rate":	2,
@@ -3762,7 +3762,7 @@
 			"id":	"lupi",
 			"name":	"Lupi",
 			"sprite":	"art/troops/lupi_00.png",
-			"portrait":	"art/portraits/troop_lupi.png",
+			"portrait":	"art/troops/lupi_portrait.png",
 			"skill_level":	2,
 			"hit_points":	3,
 			"move_rate":	3,
@@ -3782,7 +3782,7 @@
 			"id":	"larvae",
 			"name":	"Larvae",
 			"sprite":	"art/troops/larvae_00.png",
-			"portrait":	"art/portraits/troop_larvae.png",
+			"portrait":	"art/troops/larvae_portrait.png",
 			"skill_level":	2,
 			"hit_points":	3,
 			"move_rate":	2,
@@ -3802,7 +3802,7 @@
 			"id":	"lemures",
 			"name":	"Lemures",
 			"sprite":	"art/troops/lemures_00.png",
-			"portrait":	"art/portraits/troop_lemures.png",
+			"portrait":	"art/troops/lemures_portrait.png",
 			"skill_level":	2,
 			"hit_points":	5,
 			"move_rate":	1,
@@ -3822,7 +3822,7 @@
 			"id":	"fauni",
 			"name":	"Fauni",
 			"sprite":	"art/troops/fauni_00.png",
-			"portrait":	"art/portraits/troop_fauni.png",
+			"portrait":	"art/troops/fauni_portrait.png",
 			"skill_level":	2,
 			"hit_points":	5,
 			"move_rate":	1,
@@ -3842,7 +3842,7 @@
 			"id":	"baleares",
 			"name":	"Baleares",
 			"sprite":	"art/troops/baleares_00.png",
-			"portrait":	"art/portraits/troop_baleares.png",
+			"portrait":	"art/troops/baleares_portrait.png",
 			"skill_level":	2,
 			"hit_points":	5,
 			"move_rate":	2,
@@ -3862,7 +3862,7 @@
 			"id":	"velites",
 			"name":	"Velites",
 			"sprite":	"art/troops/velites_00.png",
-			"portrait":	"art/portraits/troop_velites.png",
+			"portrait":	"art/troops/velites_portrait.png",
 			"skill_level":	2,
 			"hit_points":	10,
 			"move_rate":	2,
@@ -3882,7 +3882,7 @@
 			"id":	"silvani",
 			"name":	"Silvani",
 			"sprite":	"art/troops/silvani_00.png",
-			"portrait":	"art/portraits/troop_silvani.png",
+			"portrait":	"art/troops/silvani_portrait.png",
 			"skill_level":	3,
 			"hit_points":	10,
 			"move_rate":	3,
@@ -3902,7 +3902,7 @@
 			"id":	"hastati",
 			"name":	"Hastati",
 			"sprite":	"art/troops/hastati_00.png",
-			"portrait":	"art/portraits/troop_hastati.png",
+			"portrait":	"art/troops/hastati_portrait.png",
 			"skill_level":	3,
 			"hit_points":	10,
 			"move_rate":	2,
@@ -3922,7 +3922,7 @@
 			"id":	"numidae",
 			"name":	"Numidae",
 			"sprite":	"art/troops/numidae_00.png",
-			"portrait":	"art/portraits/troop_numidae.png",
+			"portrait":	"art/troops/numidae_portrait.png",
 			"skill_level":	3,
 			"hit_points":	15,
 			"move_rate":	2,
@@ -3942,7 +3942,7 @@
 			"id":	"ligures",
 			"name":	"Ligures",
 			"sprite":	"art/troops/ligures_00.png",
-			"portrait":	"art/portraits/troop_ligures.png",
+			"portrait":	"art/troops/ligures_portrait.png",
 			"skill_level":	3,
 			"hit_points":	20,
 			"move_rate":	1,
@@ -3962,7 +3962,7 @@
 			"id":	"manes",
 			"name":	"Manes",
 			"sprite":	"art/troops/manes_00.png",
-			"portrait":	"art/portraits/troop_manes.png",
+			"portrait":	"art/troops/manes_portrait.png",
 			"skill_level":	4,
 			"hit_points":	10,
 			"move_rate":	3,
@@ -3982,7 +3982,7 @@
 			"id":	"praetoriani",
 			"name":	"Praetoriani",
 			"sprite":	"art/troops/praetoriani_00.png",
-			"portrait":	"art/portraits/troop_praetoriani.png",
+			"portrait":	"art/troops/praetoriani_portrait.png",
 			"skill_level":	5,
 			"hit_points":	35,
 			"move_rate":	1,
@@ -4002,7 +4002,7 @@
 			"id":	"cyclopes",
 			"name":	"Cyclopes",
 			"sprite":	"art/troops/cyclopes_00.png",
-			"portrait":	"art/portraits/troop_cyclopes.png",
+			"portrait":	"art/troops/cyclopes_portrait.png",
 			"skill_level":	4,
 			"hit_points":	40,
 			"move_rate":	1,
@@ -4022,7 +4022,7 @@
 			"id":	"sarmatae",
 			"name":	"Sarmatae",
 			"sprite":	"art/troops/sarmatae_00.png",
-			"portrait":	"art/portraits/troop_sarmatae.png",
+			"portrait":	"art/troops/sarmatae_portrait.png",
 			"skill_level":	4,
 			"hit_points":	40,
 			"move_rate":	3,
@@ -4042,7 +4042,7 @@
 			"id":	"antaei",
 			"name":	"Antaei",
 			"sprite":	"art/troops/antaei_00.png",
-			"portrait":	"art/portraits/troop_antaei.png",
+			"portrait":	"art/troops/antaei_portrait.png",
 			"skill_level":	4,
 			"hit_points":	50,
 			"move_rate":	1,
@@ -4062,7 +4062,7 @@
 			"id":	"equites",
 			"name":	"Equites",
 			"sprite":	"art/troops/equites_00.png",
-			"portrait":	"art/portraits/troop_equites.png",
+			"portrait":	"art/troops/equites_portrait.png",
 			"skill_level":	4,
 			"hit_points":	20,
 			"move_rate":	4,
@@ -4082,7 +4082,7 @@
 			"id":	"druidae",
 			"name":	"Druidae",
 			"sprite":	"art/troops/druidae_00.png",
-			"portrait":	"art/portraits/troop_druidae.png",
+			"portrait":	"art/troops/druidae_portrait.png",
 			"skill_level":	5,
 			"hit_points":	25,
 			"move_rate":	2,
@@ -4102,7 +4102,7 @@
 			"id":	"furiae",
 			"name":	"Furiae",
 			"sprite":	"art/troops/furiae_00.png",
-			"portrait":	"art/portraits/troop_furiae.png",
+			"portrait":	"art/troops/furiae_portrait.png",
 			"skill_level":	5,
 			"hit_points":	25,
 			"move_rate":	1,
@@ -4122,7 +4122,7 @@
 			"id":	"striges",
 			"name":	"Striges",
 			"sprite":	"art/troops/striges_00.png",
-			"portrait":	"art/portraits/troop_striges.png",
+			"portrait":	"art/troops/striges_portrait.png",
 			"skill_level":	5,
 			"hit_points":	30,
 			"move_rate":	1,
@@ -4142,7 +4142,7 @@
 			"id":	"gigantes",
 			"name":	"Gigantes",
 			"sprite":	"art/troops/gigantes_00.png",
-			"portrait":	"art/portraits/troop_gigantes.png",
+			"portrait":	"art/troops/gigantes_portrait.png",
 			"skill_level":	5,
 			"hit_points":	60,
 			"move_rate":	3,
@@ -4162,7 +4162,7 @@
 			"id":	"empusae",
 			"name":	"Empusae",
 			"sprite":	"art/troops/empusae_00.png",
-			"portrait":	"art/portraits/troop_empusae.png",
+			"portrait":	"art/troops/empusae_portrait.png",
 			"skill_level":	6,
 			"hit_points":	50,
 			"move_rate":	1,
@@ -4182,7 +4182,7 @@
 			"id":	"dracones",
 			"name":	"Dracones",
 			"sprite":	"art/troops/dracones_00.png",
-			"portrait":	"art/portraits/troop_dracones.png",
+			"portrait":	"art/troops/dracones_portrait.png",
 			"skill_level":	6,
 			"hit_points":	200,
 			"move_rate":	1,
@@ -4202,7 +4202,7 @@
 			"id":	"sagittarii",
 			"name":	"Sagittarii",
 			"sprite":	"art/troops/sagittarii_00.png",
-			"portrait":	"art/portraits/troop_sagittarii.png",
+			"portrait":	"art/troops/sagittarii_portrait.png",
 			"skill_level":	2,
 			"hit_points":	10,
 			"move_rate":	2,
@@ -4222,7 +4222,7 @@
 			"id":	"elephanti",
 			"name":	"Elephanti",
 			"sprite":	"art/troops/elephanti_00.png",
-			"portrait":	"art/portraits/troop_elephanti.png",
+			"portrait":	"art/troops/elephanti_portrait.png",
 			"skill_level":	5,
 			"hit_points":	80,
 			"move_rate":	2,
@@ -4242,7 +4242,7 @@
 			"id":	"ifrit",
 			"name":	"Ifrit",
 			"sprite":	"art/troops/ifrit_00.png",
-			"portrait":	"art/portraits/troop_ifrit.png",
+			"portrait":	"art/troops/ifrit_portrait.png",
 			"skill_level":	6,
 			"hit_points":	250,
 			"move_rate":	2,
@@ -4262,7 +4262,7 @@
 			"id":	"athanatoi",
 			"name":	"Athanatoi",
 			"sprite":	"art/troops/athanatoi_00.png",
-			"portrait":	"art/portraits/troop_athanatoi.png",
+			"portrait":	"art/troops/athanatoi_portrait.png",
 			"skill_level":	7,
 			"hit_points":	100,
 			"move_rate":	2,
@@ -4395,7 +4395,7 @@
 			"index":	0,
 			"id":	"knight",
 			"name":	"Legatus",
-			"portrait":	"art/classes/legatus.png",
+			"portrait":	"art/classes/legatus_portrait.png",
 			"hero":	{
 				"tile":	"art/classes/legatus_hero.png",
 				"disgraced":	"art/ui/disgraced_legatus.png",
@@ -4454,7 +4454,7 @@
 			"index":	1,
 			"id":	"paladin",
 			"name":	"Praetorianus",
-			"portrait":	"art/classes/praetorianus.png",
+			"portrait":	"art/classes/praetorianus_portrait.png",
 			"hero":	{
 				"tile":	"art/classes/praetorianus_hero.png",
 				"disgraced":	"art/ui/disgraced_praetorianus.png",
@@ -4513,7 +4513,7 @@
 			"index":	2,
 			"id":	"sorceress",
 			"name":	"Sibylla",
-			"portrait":	"art/classes/sibylla.png",
+			"portrait":	"art/classes/sibylla_portrait.png",
 			"hero":	{
 				"tile":	"art/classes/sibylla_hero.png",
 				"disgraced":	"art/ui/disgraced_sibylla.png",
@@ -4572,7 +4572,7 @@
 			"index":	3,
 			"id":	"barbarian",
 			"name":	"Dux",
-			"portrait":	"art/classes/dux.png",
+			"portrait":	"art/classes/dux_portrait.png",
 			"hero":	{
 				"tile":	"art/classes/dux_hero.png",
 				"disgraced":	"art/ui/disgraced_dux.png",
@@ -5741,7 +5741,7 @@
 			"scene_column_shaft":	"art/ui/scene_column_shaft.png",
 			"scene_column_base":	"art/ui/scene_column_base.png",
 			"alcove_figure":	"art/ui/alcove_augur_00.png",
-			"alcove_portrait":	"art/portraits/augur_portrait.png",
+			"alcove_portrait":	"art/characters/augur.png",
 			"alcove_figure_place":	{
 				"x":	50,
 				"y":	43,

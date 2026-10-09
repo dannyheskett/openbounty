@@ -6,7 +6,7 @@
 `zone` builds every tile the set ships, the same pixels each time; `provenance check --rebuild`
 (scripts/check_maps.sh, CI) rebuilds it and compares it with the pack.
 
-Primitives (PixelLab, retired; jobs in art/jobs/galliae_*): grass, sea, cobble and river corner sets
+Primitives (PixelLab, retired; jobs in art/jobs/primitives/galliae_*): grass, sea, cobble and river corner sets
 (sea, cobble and river chained to the grass, terrain id 83f91c7d), the trees and rocks sprite batches,
 and pieces/: the causeway road bridges over Galliae's water (bridge_h, bridge_v, drawn for the Sein in #218).
 

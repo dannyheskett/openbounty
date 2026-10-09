@@ -1,0 +1,31 @@
+{
+ "id": "intro/hero_sibylla_kneel",
+ "prompt": "kneeling on one knee with the head bowed, breathing slowly, smooth loop",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 48,
+ "height": 48,
+ "seed": 15662,
+ "frames_duration": 8,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/intro/hero_sibylla_walk_still/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_pack_path": "art/intro/hero_sibylla_kneel_00..07.png",
+ "_note": "2026-10-04, Introduction (#154) scene 4: the Sibylla kneeling before Trajan at 48, animated from the standing still as the move down to the kneel; the intro plays it once and holds the last frame. run01 is installed.",
+ "pack": [
+  "art/intro/hero_sibylla_kneel_00.png",
+  "art/intro/hero_sibylla_kneel_01.png",
+  "art/intro/hero_sibylla_kneel_02.png",
+  "art/intro/hero_sibylla_kneel_03.png",
+  "art/intro/hero_sibylla_kneel_04.png",
+  "art/intro/hero_sibylla_kneel_05.png",
+  "art/intro/hero_sibylla_kneel_06.png",
+  "art/intro/hero_sibylla_kneel_07.png"
+ ]
+}

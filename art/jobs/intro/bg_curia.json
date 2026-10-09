@@ -1,0 +1,20 @@
+{
+ "id": "intro/bg_curia",
+ "prompt": "interior of the Curia, the Roman Senate house, seen straight on from the side, tiered marble benches rising across the whole back wall with senators in white togas seated in rows facing the viewer, a level polished marble floor in coloured stone patterns running straight across the front, pilasters and high windows above, solemn and grand, no one standing on the floor",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 15780,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/intro/bg_curia.png",
+ "_note": "2026-10-04, Introduction (#154) scene 5: the Curia seen side-on, where Trajan presents the four heroes to the Senate; the backdrop route, with the senators painted on their benches. Trajan and the heroes are sprites over it. run02 is installed.",
+ "pack": [
+  "art/intro/bg_curia.png"
+ ]
+}

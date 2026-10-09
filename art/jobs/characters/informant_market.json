@@ -1,0 +1,31 @@
+{
+  "id": "characters/informant_market",
+  "prompt": "leaning in to share gossip, eyes darting left and right, static background, smooth loop",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 128,
+  "height": 128,
+  "seed": 9501,
+  "frames_duration": 8,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/characters/informant_market_still/run01/01_raw.png",
+  "input_image_keep_alpha": false,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    128,
+    128
+  ],
+  "_pack_path": "art/characters/informant_market_00..07.png",
+  "_note": "Town portrait loop (2026-09-13), the villain route: custom action on the untouched approved still (run01), eight frames at 128, prompt expansion on; each frame is then centre-cropped to 96 with romeart.py crop (Dan-approved for these 8).",
+  "pack": [
+    "art/characters/informant_market_00.png",
+    "art/characters/informant_market_01.png",
+    "art/characters/informant_market_02.png",
+    "art/characters/informant_market_03.png",
+    "art/characters/informant_market_04.png",
+    "art/characters/informant_market_05.png",
+    "art/characters/informant_market_06.png",
+    "art/characters/informant_market_07.png"
+  ]
+}

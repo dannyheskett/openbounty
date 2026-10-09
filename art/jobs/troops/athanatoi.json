@@ -1,0 +1,29 @@
+{
+ "id": "troops/athanatoi",
+ "_note": "2026-10-08 (#200): elephanti_attack copied whole (six frames, expansion on, tag prompt); only the still (athanatoi run05, the scimitar), seed and tag differ. Run02: the scimitar slash, replacing run01's spear thrust.",
+ "prompt": "raises the huge curved scimitar and slashes it down and forward to the right past the wicker shield, then recovers, smooth loop",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 96,
+ "height": 96,
+ "seed": 9313,
+ "frames_duration": 6,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/troops/athanatoi_still/run05/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_pack_path": "art/troops/athanatoi_00..05.png",
+ "pack": [
+  "art/troops/athanatoi_00.png",
+  "art/troops/athanatoi_01.png",
+  "art/troops/athanatoi_02.png",
+  "art/troops/athanatoi_03.png",
+  "art/troops/athanatoi_04.png",
+  "art/troops/athanatoi_05.png"
+ ]
+}

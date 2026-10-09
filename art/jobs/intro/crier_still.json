@@ -1,0 +1,19 @@
+{
+ "id": "intro/crier_still",
+ "prompt": "a stout older Roman herald with grey curly hair, a striped rust tunic and an embroidered mantle, both hands empty, one arm raised as he proclaims",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 64,
+ "height": 64,
+ "seed": 15591,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [
+  64,
+  64
+ ],
+ "_pack_path": "art/intro/crier_00..07.png and art/intro/crier_decree_00..07.png (via intro_crier_gesture and intro_crier_decree)",
+ "_note": "2026-10-03, Introduction (#154) scenes 2 and 5: the crier, after Dan's reference (the HBO Rome newsreader in spirit): the figure route at 64, magenta removed, hands empty. The troop style refuses canvases under 64 (invalid_style_dimensions, no charge). run11 is the still under intro_crier_gesture and intro_crier_decree, which redraw it at 56."
+}

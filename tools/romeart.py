@@ -45,7 +45,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PACK = "assets/glory-of-rome"
 ZONES = ("italia", "galliae", "africa", "oriens")     # Italia's set is the master set
 SETS = ("", "galliae", "africa", "oriens")           # tile-set folders under art/tiles
-JOBS = "art/jobs"
+JOBS = "art/jobs"                                    # art/jobs/<kind>/<name>.json; a job's id is that path
+
+
+def job_files():
+    """Every job file, and its id (its path under art/jobs, without .json)."""
+    return [(os.path.relpath(f, JOBS)[:-5], f) for f in sorted(glob.glob(os.path.join(JOBS, "**", "*.json"), recursive=True))]
 TILE = 96                                            # the pack tile, px
 FONT = "/usr/share/fonts/opentype/urw-base35/C059-Bold.otf"   # drawn lettering
 MOUNTAIN_SHADOW = [2, 3, 0.35]      # compose's contact shadow for every mountain set (#63)
@@ -3576,7 +3581,7 @@ def gj_troop_set(text, troop, **values):
          A("frames", help="the attack run folder (build/art/<id>_attack/runNN: frame_NN.png)"),
          A("portrait", nargs="?", help="the portrait run folder (build/art/troop_portrait_<id>/runNN)"))
 def cmd_troop(a):
-    """art/troops/<id>_NN.png from the run's frames, art/portraits/troop_<id>.png
+    """art/troops/<id>_NN.png from the run's frames, art/troops/<id>_portrait.png
     from the portrait's 128 px still (resized whole to 96, Lanczos), and the
     troop's sprite, portrait and anim in game.json pointed at them. The jobs'
     "pack" lists are updated so the record names what they made."""
@@ -3592,7 +3597,7 @@ def cmd_troop(a):
         rgba(os.path.join(a.frames, f)).save(os.path.join(PACK, dst))
     values = {"sprite": anim[0], "anim": anim}
     if a.portrait:
-        dst = f"art/portraits/troop_{a.troop}.png"
+        dst = f"art/troops/{a.troop}_portrait.png"
         rgba(os.path.join(a.portrait, "01_raw.png")).resize((TILE, TILE), Image.LANCZOS).save(os.path.join(PACK, dst))
         values["portrait"] = dst
     text = gj_troop_set(text, a.troop, **values)
@@ -3605,8 +3610,8 @@ def cmd_troop(a):
     open(p, "w").write(text)
     for run, made in ((a.frames, anim), (a.portrait, [values.get("portrait")])):
         if run:
-            job_id = os.path.basename(os.path.dirname(os.path.abspath(run)))
-            jp = os.path.join(JOBS, job_id + ".json")
+            job_id = os.path.relpath(os.path.dirname(os.path.abspath(run)), os.path.abspath(os.path.join("build", "art")))
+            jp = os.path.join(JOBS, job_id + ".json")      # the run folder is build/art/<job id>/runNN
             if os.path.exists(jp):
                 job_record(jp, pack=made)
     print(f"installed {a.troop}: {len(anim)} frames" + (", portrait" if a.portrait else ""))
@@ -3815,9 +3820,10 @@ def job_prompts(d):
 
 def job_group(name, d):
     p = d.get("_pack_path", "")
+    name = name.split("/")[-1]
     if name.startswith("intro_"):
         return "Introduction"
-    for frag, g in (("art/troops/", "Troops"), ("art/portraits/", "Portraits and faces"), ("art/villains/", "Villains"),
+    for frag, g in (("art/troops/", "Troops"), ("art/characters/", "Portraits and faces"), ("art/villains/", "Villains"),
                     ("art/classes/", "Hero classes"), ("art/tiles/", "Map tiles and terrain"), ("art/scenes/", "Scenes"),
                     ("art/ui/", "Screens and UI")):
         if p.startswith(frag):
@@ -3854,14 +3860,13 @@ def cmd_prompts(a):
     path is a step towards one; a job whose output is not in the pack is left
     out. The jobs' _note history stays in the job files."""
     jobs = []
-    for f in sorted(os.listdir(JOBS)):
-        if f.endswith(".json"):
-            try:
-                d = load_json(os.path.join(JOBS, f))
-            except ValueError:
-                continue
-            if job_live(d):
-                jobs.append((f[:-5], d))
+    for name, f in job_files():
+        try:
+            d = load_json(f)
+        except ValueError:
+            continue
+        if job_live(d):
+            jobs.append((name, d))
     groups = {}
     for name, d in jobs:
         groups.setdefault(job_group(name, d), []).append((name, d))
@@ -3927,11 +3932,12 @@ RECIPES = [   # (glob under art/, the command that makes it)
     ("combat/castle_spike.png", "combat"), ("combat/cursor_0[1-4].png", "combat"),
     ("ui/class_select_picker_[0-3].png", "classpicker"),
     ("ui/title_words.png", "splashtitle --words"),
+    ("ui/splash_logo.png", "splashlogo (the emblem: job ui/splash_logo_emblem)"),
     ("tiles/forest.png", "compose art/layouts/forest96_italia.json"),
     ("tiles/forest_edge_[01][0-9].png", "compose art/layouts/forest96_italia.json"),
     ("tiles/mountain.png", "compose art/layouts/mountain96.json"),
     ("tiles/mountain_edge_[01][0-9].png", "compose art/layouts/mountain96.json"),
-    ("portraits/*_0[89].png", "pingpong (bounce)"), ("portraits/*_1[0-3].png", "pingpong (bounce)"),
+    ("characters/*_0[89].png", "pingpong (bounce)"), ("characters/*_1[0-3].png", "pingpong (bounce)"),
     ("ui/hud_siege_0[4-7].png", "pingpong art/ui/hud_siege 4 --reverse"),
 ]
 
@@ -3942,7 +3948,7 @@ SOURCES = [   # (glob under art/, why it is kept as made)
     ("troops/hastati_*.png", "made for #38 before the job record"),
     ("troops/lupi_*.png", "made for #38 before the job record"),
     ("troops/praetoriani_*.png", "made for #38 before the job record"),
-    ("classes/[a-z]*[a-z].png", "the class portraits, made for #38 before the job record; no recipe was kept"),
+    ("classes/*_portrait.png", "the class portraits, made for #38 before the job record; no recipe was kept"),
     ("ui/class_select_picker.png", "the carousel painting, made for #38 before the job record"),
     ("ui/class_select_highlight.png", "made for #38 before the job record"),
     ("ui/puzzle_cover.png", "made for #38 before the job record"),
@@ -3969,6 +3975,21 @@ def pack_paths(text):
         else:
             out.append(p)
     return out
+
+
+def output_name(path):
+    """The name an art file's job takes: its folder and stem, the frame number
+    (_NN) or grid cell (_X_Y) dropped: art/troops/hastati_03.png -> troops/hastati."""
+    import re
+    rel = os.path.relpath(path, "art") if path.startswith("art/") else path
+    return re.sub(r"(_\d_\d|_\d\d)$", "", rel[:-4])
+
+
+def job_owns(name, path):
+    """The convention: a job is named after what it makes (art/jobs/<kind>/<stem>.json):
+    a series of frames or cells by its stem, a single file (obstacle_01) by its whole name."""
+    rel = os.path.relpath(path, "art")[:-4] if path.startswith("art/") else path[:-4]
+    return name in (output_name(path), rel)
 
 
 def job_record(path, **fields):
@@ -4002,10 +4023,9 @@ def job_record(path, **fields):
 def provenance_claims():
     """[(path or glob, kind, why)] for everything the record names."""
     claims = []
-    for f in sorted(glob.glob(os.path.join(JOBS, "*.json"))):
-        d = load_json(f)
-        for p in d.get("pack", []):
-            claims.append((p, "job", os.path.basename(f)[:-5]))
+    for name, f in job_files():
+        for p in load_json(f).get("pack", []):
+            claims.append((p, "job", name))
     claims += [(f"art/{g}", "recipe", c) for g, c in RECIPES]
     claims += [(f"art/{g}", "source", w) for g, w in SOURCES]
     claims += [(f"art/{g}", "external", "licence beside it") for g in EXTERNAL]
@@ -4038,7 +4058,7 @@ def provenance_rebuild():
             cmd_classpicker(argparse.Namespace(pack=pk))
             cmd_combat(argparse.Namespace(pack=pk, ref="assets/kings-bounty"))
             for prefix in ("emperor_traianus", "informant_market", "pontifex_galliae", "siege_galliae"):
-                cmd_pingpong(argparse.Namespace(prefix=f"art/portraits/{prefix}", n=8, reverse=False, pack=pk))
+                cmd_pingpong(argparse.Namespace(prefix=f"art/characters/{prefix}", n=8, reverse=False, pack=pk))
             cmd_pingpong(argparse.Namespace(prefix="art/ui/hud_siege", n=4, reverse=True, pack=pk))
             built = {z: zone_build(z) for z in ZONE_CFG}
         finally:
@@ -4061,7 +4081,7 @@ def provenance_rebuild():
 
 
 @command("pingpong", "extend a loop's frames: bounce back (prefix_N.. = N-2..1) or --reverse (N-1..0)",
-         A("prefix", help="e.g. art/portraits/siege_galliae (under the pack)"), A("n", type=int, help="the loop's frames"),
+         A("prefix", help="e.g. art/characters/siege_galliae (under the pack)"), A("n", type=int, help="the loop's frames"),
          A("--reverse", action="store_true"), A("--pack", default=PACK))
 def cmd_pingpong(a):
     """A loop played forward and back without repeating its ends (the
@@ -4087,9 +4107,10 @@ def cmd_provenance(a):
     from fnmatch import fnmatch
     if a.action == "normalise":
         n = 0
-        for f in sorted(glob.glob(os.path.join(JOBS, "*.json"))):
+        for name, f in job_files():
             d = load_json(f)
-            want = sorted(p for p in set(pack_paths(d.get("_pack_path", ""))) if os.path.exists(os.path.join(PACK, p)))
+            want = sorted(p for p in set(pack_paths(d.get("_pack_path", ""))) if os.path.exists(os.path.join(PACK, p))
+                          and job_owns(name, p))
             if want and d.get("pack") != want:
                 job_record(f, pack=want)
                 n += 1
@@ -4115,6 +4136,14 @@ def cmd_provenance(a):
             print(f"{k:8s} {f}  {w}")
         return 0
     bad = [f"unclaimed: {f}" for f in files if f not in owner]
+    seen = {}
+    for name, f in job_files():         # the naming convention, and one job per file
+        for p in load_json(f).get("pack", []):
+            if not job_owns(name, p):
+                bad.append(f"misnamed: job {name} claims {p} (it would be {output_name(p)})")
+            if p in seen:
+                bad.append(f"claimed twice: {p} (jobs {seen[p]} and {name})")
+            seen[p] = name
     bad += [f"missing: {p} (claimed by {kind} {why})" for p, hits in exact.items()
             for kind, why in hits if p not in set(files)]
     bad += [f"matches nothing: art/{g} ({kind})" for g, kind, _ in globs if not any(fnmatch(f, g) for f in files)]

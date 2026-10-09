@@ -1,0 +1,24 @@
+{
+ "id": "intro/crowd_00",
+ "prompt": "the crowd stirring, heads turning and arms rising and falling, smooth loop",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 240,
+ "height": 56,
+ "seed": 15524,
+ "frames_duration": 8,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/intro/crowd_00_still/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  56
+ ],
+ "_pack_path": "art/intro/crowd_00.png",
+ "_note": "2026-10-03, Introduction (#154) scenes 2 and 5: custom action, eight frames at 240x56, expansion on, alpha kept. Only frame 00 is installed: Dan ordered the crowd still, so intro.json draws crowd_00 as nineteen cropped columns with staggered heights. run01 is installed.",
+ "pack": [
+  "art/intro/crowd_00.png"
+ ]
+}

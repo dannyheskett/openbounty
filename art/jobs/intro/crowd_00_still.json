@@ -1,0 +1,19 @@
+{
+ "id": "intro/crowd_00_still",
+ "prompt": "a crowd of ancient Roman citizens seen from behind and below, heads and shoulders packed together, men and women in tunics and togas of many colours, some raising their arms, solid magenta background above them",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 56,
+ "seed": 15524,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  56
+ ],
+ "_pack_path": "art/intro/crowd_00.png (via intro_crowd_loop)",
+ "_note": "2026-10-03, Introduction (#154) scenes 2 and 5: the crowd strip along the foot of the Forum; rd_pro__default cut-out (magenta named, removed), as title_eagle. run01 is the still under intro_crowd_loop."
+}
