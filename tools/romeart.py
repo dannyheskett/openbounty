@@ -3260,6 +3260,19 @@ def cmd_combat(a):
     print(f"castle_spike and cursor_01..04 -> {out}")
 
 
+@command("puzzlecover", "the puzzle cover chip (18x18): a red square with a black shadow right and below",
+         A("pack", nargs="?", default=PACK))
+def cmd_puzzlecover(a):
+    """The chip laid over every puzzle piece not yet won, one cell in size:
+    16x15 of red, the last two columns and three rows black (#81 stretched
+    the 16x16 chip to 18x18, so the shadow is two wide and three deep)."""
+    im = Image.new("RGBA", (18, 18), (0, 0, 0, 255))
+    ImageDraw.Draw(im).rectangle((0, 0, 15, 14), fill=(170, 0, 0, 255))
+    out = os.path.join(a.pack, "art", "ui", "puzzle_cover.png")
+    im.save(out)
+    print(f"puzzle_cover -> {out}")
+
+
 # ---- drawn lettering (generated lettering garbles) --------------------------
 
 def bitmap_text(text, size, col, shade, offsets=((1, 1), (2, 2))):
@@ -3981,6 +3994,7 @@ RECIPES = [   # (glob under art/, the command that makes it)
     ("combat/field/*.png", "fields"),
     ("combat/castle_spike.png", "combat"), ("combat/cursor_0[1-4].png", "combat"),
     ("ui/class_select_picker_[0-3].png", "classpicker"),
+    ("ui/puzzle_cover.png", "puzzlecover"),
     ("ui/title_words.png", "splashtitle --words"),
     ("ui/splash_logo.png", "splashlogo (the emblem: job ui/splash_logo_emblem)"),
     ("tiles/forest.png", "compose art/layouts/forest96_italia.json"),
@@ -3999,7 +4013,6 @@ SOURCES = [   # (glob under art/, why it is kept as made)
                     "(art/primitives/italia/BUILD.md), its farmland bases cut by hand in #225"),
     ("classes/*_portrait.png", "the class portraits, made for #38 before the job record; no recipe was kept"),
     ("ui/class_select_picker.png", "the carousel painting, made for #38 before the job record"),
-    ("ui/puzzle_cover.png", "made for #38 before the job record"),
     ("ui/scene_column_*.png", "the column pieces, cut by hand in #38 from the scene_column job's strip"),
 ]
 
@@ -4105,6 +4118,7 @@ def provenance_rebuild():
             fields_build(pk, paintings)
             cmd_classpicker(argparse.Namespace(pack=pk))
             cmd_combat(argparse.Namespace(pack=pk, ref="assets/kings-bounty"))
+            cmd_puzzlecover(argparse.Namespace(pack=pk))
             for prefix in ("emperor_traianus", "informant_market", "pontifex_galliae", "siege_galliae"):
                 cmd_pingpong(argparse.Namespace(prefix=f"art/characters/{prefix}", n=8, reverse=False, pack=pk))
             cmd_pingpong(argparse.Namespace(prefix="art/ui/hud_siege", n=4, reverse=True, pack=pk))
