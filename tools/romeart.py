@@ -3999,7 +3999,6 @@ SOURCES = [   # (glob under art/, why it is kept as made)
                     "(art/primitives/italia/BUILD.md), its farmland bases cut by hand in #225"),
     ("classes/*_portrait.png", "the class portraits, made for #38 before the job record; no recipe was kept"),
     ("ui/class_select_picker.png", "the carousel painting, made for #38 before the job record"),
-    ("ui/class_select_highlight.png", "made for #38 before the job record"),
     ("ui/puzzle_cover.png", "made for #38 before the job record"),
     ("ui/scene_column_*.png", "the column pieces, cut by hand in #38 from the scene_column job's strip"),
 ]

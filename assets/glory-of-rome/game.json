@@ -5783,7 +5783,6 @@
 			"title_eagle":	"art/ui/title_eagle.png",
 			"title_words":	"art/ui/title_words.png",
 			"class_picker":	"art/ui/class_select_picker.png",
-			"class_highlight":	"art/ui/class_select_highlight.png",
 			"class_picker_selected":	["art/ui/class_select_picker_0.png", "art/ui/class_select_picker_1.png", "art/ui/class_select_picker_2.png", "art/ui/class_select_picker_3.png"]
 		},
 		"hud":	{
