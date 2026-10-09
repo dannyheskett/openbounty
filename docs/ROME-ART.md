@@ -2151,10 +2151,10 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 
 ### troops/hastati_portrait
 
-- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9973)
+- **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9975)
 - **Pack path:** `art/troops/hastati_portrait.png`
-- **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Roman legionary of the hastati, a young soldier in a bronze helmet with a tall red feather crest, a mail and bronze chest plate over a red tunic, a red curved rectangular shield with a gold emblem and a spear, a legion camp with tents behind him
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/hastati_00.png"]`, `seed=9973`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+- **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Roman legionary of the hastati, a young soldier in a steel helmet with a tall red horsehair crest, a segmented steel chest plate over a dark red tunic, a red curved rectangular shield with a gold emblem and a spear, a Roman legion camp of leather tents and campfires at dusk filling the background behind him, not a plain background
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["build/art/troops/hastati_still/run01/01_raw.png"]`, `seed=9975`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
 
 ### troops/hastati_still
 
@@ -2272,7 +2272,7 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9983)
 - **Pack path:** `art/troops/lupi_portrait.png`
 - **prompt:** a head-and-shoulders portrait, the face filling the frame, of a grey wolf, its head and shoulders filling the frame, yellow eyes, bared fangs, thick grey fur, a dark forest at dusk behind it
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/lupi_00.png"]`, `seed=9983`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["build/art/troops/lupi_still/run02/01_raw.png"]`, `seed=9983`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
 
 ### troops/lupi_still
 
@@ -2330,7 +2330,7 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9974)
 - **Pack path:** `art/troops/praetoriani_portrait.png`
 - **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Roman praetorian guardsman, a hard veteran in a polished steel helmet with a tall red crest, gleaming segmented steel armour over a red tunic, a red oval shield with a gold scorpion emblem and a drawn sword, the marble halls of the imperial palace behind him
-- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/praetoriani_00.png"]`, `seed=9974`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["build/art/troops/praetoriani_still/run01/01_raw.png"]`, `seed=9974`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
 
 ### troops/praetoriani_still
 

@@ -1,23 +1,37 @@
 {
-  "id": "troops/hastati_portrait",
-  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Roman legionary of the hastati, a young soldier in a bronze helmet with a tall red feather crest, a mail and bronze chest plate over a red tunic, a red curved rectangular shield with a gold emblem and a spear, a legion camp with tents behind him",
-  "style": "rd_pro__default",
-  "width": 128,
-  "height": 128,
-  "seed": 9973,
-  "bypass_prompt_expansion": false,
-  "raw_only": true,
-  "figure": false,
-  "target": [
-    128,
-    128
-  ],
-  "reference_image_paths": [
-    "assets/glory-of-rome/art/troops/hastati_00.png"
-  ],
-  "_pack_path": "art/troops/hastati_portrait.png",
-  "_note": "Static troop portrait (2026-09-13): shown in the home castle's Recruit portrait slot. 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos) at Dan's request, keeping the background rather than cropping. No animation.",
-  "pack": [
-    "art/troops/hastati_portrait.png"
-  ]
+ "id": "troops/hastati_portrait",
+ "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Roman legionary of the hastati, a young soldier in a steel helmet with a tall red horsehair crest, a segmented steel chest plate over a dark red tunic, a red curved rectangular shield with a gold emblem and a spear, a Roman legion camp of leather tents and campfires at dusk filling the background behind him, not a plain background",
+ "style": "rd_pro__default",
+ "width": 128,
+ "height": 128,
+ "seed": 9975,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  128,
+  128
+ ],
+ "reference_image_paths": [
+  "build/art/troops/hastati_still/run01/01_raw.png"
+ ],
+ "_pack_path": "art/troops/hastati_portrait.png",
+ "_note": "Static troop portrait (2026-09-13): shown in the home castle's Recruit portrait slot. 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos) at Dan's request, keeping the background rather than cropping. No animation. Re-rendered 2026-10-09 with the troop's new still (hastati_still run01) as the reference, the settled route, so the portrait matches the remade sprite. run01 came back on plain white (the reference still is a cut-out); run02 names the camp at dusk as the whole background, new seed.",
+ "pack": [
+  "art/troops/hastati_portrait.png"
+ ],
+ "runs": [
+  {
+   "run": "run01",
+   "request": "0b35c761-4e9e-4314-bdc7-15e5b8707461",
+   "cost": 0.18,
+   "date": "2026-10-09"
+  },
+  {
+   "run": "run02",
+   "request": "5aa3e306-b5a6-4dd5-8d09-eb9cad75431d",
+   "cost": 0.18,
+   "date": "2026-10-09"
+  }
+ ]
 }

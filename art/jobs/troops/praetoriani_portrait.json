@@ -1,23 +1,31 @@
 {
-  "id": "troops/praetoriani_portrait",
-  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Roman praetorian guardsman, a hard veteran in a polished steel helmet with a tall red crest, gleaming segmented steel armour over a red tunic, a red oval shield with a gold scorpion emblem and a drawn sword, the marble halls of the imperial palace behind him",
-  "style": "rd_pro__default",
-  "width": 128,
-  "height": 128,
-  "seed": 9974,
-  "bypass_prompt_expansion": false,
-  "raw_only": true,
-  "figure": false,
-  "target": [
-    128,
-    128
-  ],
-  "reference_image_paths": [
-    "assets/glory-of-rome/art/troops/praetoriani_00.png"
-  ],
-  "_pack_path": "art/troops/praetoriani_portrait.png",
-  "_note": "Static troop portrait (2026-09-13): shown in the home castle's Recruit portrait slot. 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos) at Dan's request, keeping the background rather than cropping. No animation.",
-  "pack": [
-    "art/troops/praetoriani_portrait.png"
-  ]
+ "id": "troops/praetoriani_portrait",
+ "prompt": "a head-and-shoulders portrait, the face filling the frame, of a Roman praetorian guardsman, a hard veteran in a polished steel helmet with a tall red crest, gleaming segmented steel armour over a red tunic, a red oval shield with a gold scorpion emblem and a drawn sword, the marble halls of the imperial palace behind him",
+ "style": "rd_pro__default",
+ "width": 128,
+ "height": 128,
+ "seed": 9974,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  128,
+  128
+ ],
+ "reference_image_paths": [
+  "build/art/troops/praetoriani_still/run01/01_raw.png"
+ ],
+ "_pack_path": "art/troops/praetoriani_portrait.png",
+ "_note": "Static troop portrait (2026-09-13): shown in the home castle's Recruit portrait slot. 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos) at Dan's request, keeping the background rather than cropping. No animation. Re-rendered 2026-10-09 with the troop's new still (praetoriani_still run01) as the reference, the settled route, so the portrait matches the remade sprite.",
+ "pack": [
+  "art/troops/praetoriani_portrait.png"
+ ],
+ "runs": [
+  {
+   "run": "run01",
+   "request": "9147d713-3819-48d1-a239-980b36af2809",
+   "cost": 0.18,
+   "date": "2026-10-09"
+  }
+ ]
 }

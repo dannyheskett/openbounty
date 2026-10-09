@@ -1,23 +1,31 @@
 {
-  "id": "troops/lupi_portrait",
-  "prompt": "a head-and-shoulders portrait, the face filling the frame, of a grey wolf, its head and shoulders filling the frame, yellow eyes, bared fangs, thick grey fur, a dark forest at dusk behind it",
-  "style": "rd_pro__default",
-  "width": 128,
-  "height": 128,
-  "seed": 9983,
-  "bypass_prompt_expansion": false,
-  "raw_only": true,
-  "figure": false,
-  "target": [
-    128,
-    128
-  ],
-  "reference_image_paths": [
-    "assets/glory-of-rome/art/troops/lupi_00.png"
-  ],
-  "_pack_path": "art/troops/lupi_portrait.png",
-  "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation.",
-  "pack": [
-    "art/troops/lupi_portrait.png"
-  ]
+ "id": "troops/lupi_portrait",
+ "prompt": "a head-and-shoulders portrait, the face filling the frame, of a grey wolf, its head and shoulders filling the frame, yellow eyes, bared fangs, thick grey fur, a dark forest at dusk behind it",
+ "style": "rd_pro__default",
+ "width": 128,
+ "height": 128,
+ "seed": 9983,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  128,
+  128
+ ],
+ "reference_image_paths": [
+  "build/art/troops/lupi_still/run02/01_raw.png"
+ ],
+ "_pack_path": "art/troops/lupi_portrait.png",
+ "_note": "Static troop portrait (2026-09-13): 128 still with the troop's map sprite as reference, resized whole to 96 (Lanczos), keeping the background. No animation. Re-rendered 2026-10-09 with the troop's new still (lupi_still run02) as the reference, the settled route, so the portrait matches the remade sprite.",
+ "pack": [
+  "art/troops/lupi_portrait.png"
+ ],
+ "runs": [
+  {
+   "run": "run01",
+   "request": "b72f870c-2968-4fdd-b8e2-6d75336620f7",
+   "cost": 0.18,
+   "date": "2026-10-09"
+  }
+ ]
 }
