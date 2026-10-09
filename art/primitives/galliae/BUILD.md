@@ -8,7 +8,7 @@
 
 Primitives (PixelLab, retired; jobs in art/jobs/primitives/galliae_*): grass, sea, cobble and river corner sets
 (sea, cobble and river chained to the grass, terrain id 83f91c7d), the trees and rocks sprite batches,
-and pieces/: the causeway road bridges over Galliae's water (bridge_h, bridge_v, drawn for the Sein in #218).
+and pieces/: the causeway road bridges over Galliae's water (bridge_ew, bridge_ns, drawn for the Sein in #218).
 
 What `zone` does with them, in order:
 
@@ -23,9 +23,9 @@ What `zone` does with them, in order:
                        mountain.png (river_forest_*, river_mountain_*)
     bridge_river_*     bridge: the road's own cobbles across the river between pale parapets, a shadow
                        on the water
-    river_mouth_*      mouth over water_edge_02.png; _w its mirror; _e_s and _w_s drawn the other way up
+    river_mouth_*      mouth over water_edge_sw.png (_ne); _nw its mirror; _es and _sw drawn the other way up
     fields_*           the master set's ploughed and wheat bases; their edges by edges --as ...=desert
-    bridge_h, _v       pieces/
+    bridge_ew, _ns     pieces/
     the passes         fills, aprons, details, interiors, edgevars over the set's own sprites
 
 Galliae has no desert, so the desert names fall back to the master set.

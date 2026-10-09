@@ -1,5 +1,5 @@
 {
-  "id": "tiles/artifact_chest",
+  "id": "objects/artifact_chest",
   "prompt": "An ornate gilded reliquary casket with glowing seams, jewels, top down",
   "style": "rd_plus__topdown_item",
   "width": 64,
@@ -13,9 +13,9 @@
     64,
     64
   ],
-  "_pack_path": "art/tiles/artifact_chest.png",
+  "_pack_path": "art/objects/artifact_chest.png",
   "_note": "Map object on the object route (2026-09-06): rd_pro__topdown, 96x96, magenta named and removed, no reference, freestanding with no ground. 2026-09-26 (#61, #62): remade smaller than the tile on rd_plus__topdown_item, 64x64, a short prompt with no framing wording, four images from seed 8100; image 4 chosen (Dan) and placed 1:1 at (16, 16) on the 96x96 tile.",
   "pack": [
-    "art/tiles/artifact_chest.png"
+    "art/objects/artifact_chest.png"
   ]
 }

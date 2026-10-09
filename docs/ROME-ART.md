@@ -236,6 +236,162 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** horse walking to the right, steady steps, rider still, smooth loop
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=4`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=assets/glory-of-rome/art/classes/sibylla_hero.png`, `raw_only=true`, `return_spritesheet=true`, `seed=7471`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
 
+## Map objects
+
+### objects/alcove
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7402)
+- **Pack path:** `art/objects/alcove.png`
+- **prompt:** an isolated cut-out game sprite of a small open-air Roman augural precinct on a low rocky outcrop, a square stone platform reached by three steps with a low parapet of pale ashlar blocks around it and a plain square stone altar at its centre, no roof of any kind so the whole platform is open to the sky, a tall bronze-topped post at one corner with a black raven perched on it, seen from the front and above with the steps facing the viewer, a freestanding structure with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole structure complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7402`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/artifact_chest
+
+- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
+- **Pack path:** `art/objects/artifact_chest.png`
+- **prompt:** An ornate gilded reliquary casket with glowing seams, jewels, top down
+- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
+
+### objects/artifact_ring
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7231)
+- **Pack path:** `art/objects/artifact_ring.png`
+- **prompt:** an isolated cut-out game sprite of a golden ring resting on a small stone plinth, radiating light, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7231`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/castle
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7162)
+- **Pack path:** `art/objects/castle.png`
+- **prompt:** an isolated cut-out game sprite of a small compact Roman fortress, gleaming white marble walls in ashlar courses, square corner towers with flat red tile roofs, crenellated battlements, a monumental gatehouse framed by columns under a triangular pediment, a golden legionary eagle standard above the gate, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7162`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/castle_palatium
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7161)
+- **Pack path:** `art/objects/castle_palatium.png`
+- **prompt:** an isolated cut-out game sprite of the imperial palace on the Palatine hill of Rome, a grand white marble palace with a long facade of tall Corinthian columns, a great central audience hall under a gilded bronze dome, purple imperial banners hanging between the columns, a golden eagle standard above the entrance, red terracotta roofs on the wings, the palace seen from the front and above with its great doors facing the viewer, a short stretch of paved road in front of the doors that starts and ends at the palace, the road the only ground drawn, no wall, fence or gate, only the flat magenta background around and below the palace, the whole palace complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7161`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/chest
+
+- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
+- **Pack path:** `art/objects/chest.png`
+- **prompt:** An ornate treasure chest overflowing with gold coins and jewels, gold trim, top down
+- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
+
+### objects/dwelling_dungeon
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7201)
+- **Pack path:** `art/objects/dwelling_dungeon.png`
+- **prompt:** an isolated cut-out game sprite of a Roman columbarium crypt entrance, a stone doorway flanked by funerary urns with steps going down, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7201`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/dwelling_forest
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7181)
+- **Pack path:** `art/objects/dwelling_forest.png`
+- **prompt:** an isolated cut-out game sprite of a small stone shrine and altar in a sacred grove, a few dark trees close around it, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7181`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/dwelling_hills
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7192)
+- **Pack path:** `art/objects/dwelling_hills.png`
+- **prompt:** an isolated cut-out game sprite of a cave mouth in a small rocky mound with a carved stone lintel over the opening, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7192`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/dwelling_plains
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7172)
+- **Pack path:** `art/objects/dwelling_plains.png`
+- **prompt:** an isolated cut-out game sprite of a Roman villa rustica farmstead, a low whitewashed farmhouse with a red tiled roof, a haystack and a wooden cart in the open yard beside it, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7172`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/pharos
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7401)
+- **Pack path:** `art/objects/pharos.png`
+- **prompt:** an isolated cut-out game sprite of the Pharos lighthouse of Alexandria, a tall three-stage tower of pale stone, a square base, an eight-sided middle stage and a round top with a fire burning in it and a thin plume of smoke, a small walled courtyard at its foot, seen from the front and above, the tower complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, no wall, fence or gate, only the flat magenta background around it, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7401`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/sign
+
+- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
+- **Pack path:** `art/objects/sign.png`
+- **prompt:** A wooden road signpost with one blank pointed board, roman road, top down
+- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
+
+### objects/temple_ocean
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7501)
+- **Pack path:** `art/objects/temple_ocean.png`
+- **prompt:** an isolated cut-out game sprite of a small stone shrine to the sea god, a low rectangular temple of grey weathered stone with four columns across its front and a shallow slab roof, a stone altar before its steps, two standing stones beside it, seen from the front and above with its doorway facing the viewer, no ground, no grass, no rocks and no path under or around it, the flat magenta background coming right up to the temple steps on every side, the whole shrine complete and well inside the picture, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7501`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/town_africa
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7133)
+- **Pack path:** `art/objects/town_africa.png`
+- **prompt:** an isolated cut-out game sprite of a North African town, lime-white whitewashed houses with flat roofs and sky-blue painted doors and shutters, a red-brown mud-brick watchtower, a few date palms, the buildings seen from the front and above with their doors facing the viewer, a short stretch of paved road in the middle of the cluster that starts and ends among the buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7133`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/town_galliae
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7123)
+- **Pack path:** `art/objects/town_galliae.png`
+- **prompt:** an isolated cut-out game sprite of a Gallic village, round timber houses with steep thatched roofs, a timber watchtower, a few dark pine trees between the houses, the buildings seen from the front and above with their doors facing the viewer, a short stretch of paved road in the middle of the cluster that starts and ends among the buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7123`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/town_italia
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7119)
+- **Pack path:** `art/objects/town_italia.png`
+- **prompt:** an isolated cut-out game sprite of a rustic Italian village, timber-framed farmhouses with rough plank walls and red terracotta roofs, a small villa with a tiled porch on wooden posts, a stone well, a cypress tree, a wooden cart, the buildings seen from the front and above with their doors facing the viewer, a short stretch of paved road in the middle of the cluster that starts and ends among the buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7119`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/town_oriens
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7145)
+- **Pack path:** `art/objects/town_oriens.png`
+- **prompt:** an isolated cut-out game sprite of an Eastern provincial city, honey-gold limestone houses, a small colonnade, temple domes glazed in deep turquoise, a tall stepped tower, the buildings seen from the front and above with their doors facing the viewer, a very short stub of paved road between the two middle buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7145`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/town_rome
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7104)
+- **Pack path:** `art/objects/town_rome.png`
+- **prompt:** an isolated cut-out game sprite of the city of Rome, the Colosseum with its tiers of arches at the centre, white marble temples with columned porticos and triangular pediments crowded around it, a great domed rotunda, a tall triumphal arch, red terracotta roofs packed tight, a golden eagle standard on the highest roof, the buildings seen from the front and above with their doors facing the viewer, a short stretch of paved road in the middle of the cluster that starts and ends among the buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7104`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/wandering_army_africa
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7273)
+- **Pack path:** `art/objects/wandering_army_africa.png`
+- **prompt:** an isolated cut-out game sprite of a Numidian warrior in a white tunic standing and holding up a tall standard topped with ostrich feathers in one hand, a bundle of javelins in the other, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7273`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/wandering_army_galliae
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7252)
+- **Pack path:** `art/objects/wandering_army_galliae.png`
+- **prompt:** an isolated cut-out game sprite of a barbarian warrior standing with a spear and a round shield beside a war standard hung with skulls, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7252`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/wandering_army_italia
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7262)
+- **Pack path:** `art/objects/wandering_army_italia.png`
+- **prompt:** an isolated cut-out game sprite of a ragged Italian brigand standing and holding up a crooked standard hung with a skull and rags in one hand, a short sword in the other, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7262`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/wandering_army_oriens
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7283)
+- **Pack path:** `art/objects/wandering_army_oriens.png`
+- **prompt:** an isolated cut-out game sprite of a Parthian archer in scale armour and a peaked cap standing and holding up a dragon windsock standard in one hand, a composite bow in the other, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7283`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
 ## Map tiles and terrain
 
 ### history/grass16_base_1
@@ -698,61 +854,19 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **where they meet:** shoreline with pale shallow water and wet sand
 - **Settings:** `detail=medium detail`, `enhance=false`, `lower_base_tile_id=d584193b-ab45-4afb-8667-377f4df2da68`, `lower_reference_image=<image>`, `mode=standard`, `outline=lineless`, `seed=4112`, `shading=medium shading`, `shape_style=round`, `text_guidance_scale=8.0`, `tile_size={"width": 32, "height": 32}`, `transition_size=0.0`, `view=high top-down`
 
-### tiles/alcove
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7402)
-- **Pack path:** `art/tiles/alcove.png`
-- **prompt:** an isolated cut-out game sprite of a small open-air Roman augural precinct on a low rocky outcrop, a square stone platform reached by three steps with a low parapet of pale ashlar blocks around it and a plain square stone altar at its centre, no roof of any kind so the whole platform is open to the sky, a tall bronze-topped post at one corner with a black raven perched on it, seen from the front and above with the steps facing the viewer, a freestanding structure with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole structure complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7402`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/artifact_chest
-
-- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
-- **Pack path:** `art/tiles/artifact_chest.png`
-- **prompt:** An ornate gilded reliquary casket with glowing seams, jewels, top down
-- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
-
-### tiles/artifact_ring
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7231)
-- **Pack path:** `art/tiles/artifact_ring.png`
-- **prompt:** an isolated cut-out game sprite of a golden ring resting on a small stone plinth, radiating light, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7231`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/bridge_h
+### tiles/bridge_ew
 
 - **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7621)
-- **Pack path:** `art/tiles/bridge_h.png`
+- **Pack path:** `art/tiles/bridge_ew.png`
 - **prompt:** a square tile of grey stone paving in even rows of rectangular blocks, filling the whole picture edge to edge, with a raised kerb of lighter stone running along the full top edge and the full bottom edge, the left and right edges open so the paving continues past them, seen from directly above, flat, opaque
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `seed=7621`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
 
-### tiles/bridge_v
+### tiles/bridge_ns
 
 - **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7631)
-- **Pack path:** `art/tiles/bridge_v.png`
+- **Pack path:** `art/tiles/bridge_ns.png`
 - **prompt:** a square tile of grey stone paving in even rows of rectangular blocks, filling the whole picture edge to edge, with a raised kerb of lighter stone running along the full left edge and the full right edge, the top and bottom edges open so the paving continues past them, seen from directly above, flat, opaque
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `seed=7631`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/castle
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7162)
-- **Pack path:** `art/tiles/castle.png`
-- **prompt:** an isolated cut-out game sprite of a small compact Roman fortress, gleaming white marble walls in ashlar courses, square corner towers with flat red tile roofs, crenellated battlements, a monumental gatehouse framed by columns under a triangular pediment, a golden legionary eagle standard above the gate, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7162`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/castle_palatium
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7161)
-- **Pack path:** `art/tiles/castle_palatium.png`
-- **prompt:** an isolated cut-out game sprite of the imperial palace on the Palatine hill of Rome, a grand white marble palace with a long facade of tall Corinthian columns, a great central audience hall under a gilded bronze dome, purple imperial banners hanging between the columns, a golden eagle standard above the entrance, red terracotta roofs on the wings, the palace seen from the front and above with its great doors facing the viewer, a short stretch of paved road in front of the doors that starts and ends at the palace, the road the only ground drawn, no wall, fence or gate, only the flat magenta background around and below the palace, the whole palace complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7161`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/chest
-
-- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
-- **Pack path:** `art/tiles/chest.png`
-- **prompt:** An ornate treasure chest overflowing with gold coins and jewels, gold trim, top down
-- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
 
 ### tiles/desert
 
@@ -760,34 +874,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/tiles/desert.png`
 - **prompt:** dry desert sand seen from directly above, pale tan ground with many short streaks of darker tan and near-white in clear contrast, the same everywhere
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3442`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
-
-### tiles/dwelling_dungeon
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7201)
-- **Pack path:** `art/tiles/dwelling_dungeon.png`
-- **prompt:** an isolated cut-out game sprite of a Roman columbarium crypt entrance, a stone doorway flanked by funerary urns with steps going down, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7201`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/dwelling_forest
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7181)
-- **Pack path:** `art/tiles/dwelling_forest.png`
-- **prompt:** an isolated cut-out game sprite of a small stone shrine and altar in a sacred grove, a few dark trees close around it, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7181`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/dwelling_hills
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7192)
-- **Pack path:** `art/tiles/dwelling_hills.png`
-- **prompt:** an isolated cut-out game sprite of a cave mouth in a small rocky mound with a carved stone lintel over the opening, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7192`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/dwelling_plains
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7172)
-- **Pack path:** `art/tiles/dwelling_plains.png`
-- **prompt:** an isolated cut-out game sprite of a Roman villa rustica farmstead, a low whitewashed farmhouse with a red tiled roof, a haystack and a wooden cart in the open yard beside it, seen from the front and above with the gate facing the viewer, a freestanding building with no ground under it: the lowest row of stones is the bottom of the sprite and only the flat magenta background shows below and around it, the whole building complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7172`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
 
 ### tiles/forest
 
@@ -802,90 +888,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/tiles/grass.png`
 - **prompt:** muted moss green grass seen from directly above, dull and slightly grey with only a few short specks of paler olive and dark bottle green, low contrast, the same everywhere
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=48`, `raw_only=true`, `seed=3411`, `style=rd_tile__single_tile`, `target=[48, 48]`, `width=48`
-
-### tiles/pharos
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7401)
-- **Pack path:** `art/tiles/pharos.png`
-- **prompt:** an isolated cut-out game sprite of the Pharos lighthouse of Alexandria, a tall three-stage tower of pale stone, a square base, an eight-sided middle stage and a round top with a fire burning in it and a thin plume of smoke, a small walled courtyard at its foot, seen from the front and above, the tower complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, no wall, fence or gate, only the flat magenta background around it, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7401`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/sign
-
-- **Engine:** Retro Diffusion rd_plus__topdown_item (64x64, seed 8100)
-- **Pack path:** `art/tiles/sign.png`
-- **prompt:** A wooden road signpost with one blank pointed board, roman road, top down
-- **Settings:** `figure=false`, `height=64`, `num_images=4`, `raw_only=true`, `remove_bg=true`, `seed=8100`, `style=rd_plus__topdown_item`, `target=[64, 64]`, `width=64`
-
-### tiles/temple_ocean
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7501)
-- **Pack path:** `art/tiles/temple_ocean.png`
-- **prompt:** an isolated cut-out game sprite of a small stone shrine to the sea god, a low rectangular temple of grey weathered stone with four columns across its front and a shallow slab roof, a stone altar before its steps, two standing stones beside it, seen from the front and above with its doorway facing the viewer, no ground, no grass, no rocks and no path under or around it, the flat magenta background coming right up to the temple steps on every side, the whole shrine complete and well inside the picture, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7501`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/town_africa
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7133)
-- **Pack path:** `art/tiles/town_africa.png`
-- **prompt:** an isolated cut-out game sprite of a North African town, lime-white whitewashed houses with flat roofs and sky-blue painted doors and shutters, a red-brown mud-brick watchtower, a few date palms, the buildings seen from the front and above with their doors facing the viewer, a short stretch of paved road in the middle of the cluster that starts and ends among the buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7133`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/town_galliae
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7123)
-- **Pack path:** `art/tiles/town_galliae.png`
-- **prompt:** an isolated cut-out game sprite of a Gallic village, round timber houses with steep thatched roofs, a timber watchtower, a few dark pine trees between the houses, the buildings seen from the front and above with their doors facing the viewer, a short stretch of paved road in the middle of the cluster that starts and ends among the buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7123`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/town_italia
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7119)
-- **Pack path:** `art/tiles/town_italia.png`
-- **prompt:** an isolated cut-out game sprite of a rustic Italian village, timber-framed farmhouses with rough plank walls and red terracotta roofs, a small villa with a tiled porch on wooden posts, a stone well, a cypress tree, a wooden cart, the buildings seen from the front and above with their doors facing the viewer, a short stretch of paved road in the middle of the cluster that starts and ends among the buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7119`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/town_oriens
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7145)
-- **Pack path:** `art/tiles/town_oriens.png`
-- **prompt:** an isolated cut-out game sprite of an Eastern provincial city, honey-gold limestone houses, a small colonnade, temple domes glazed in deep turquoise, a tall stepped tower, the buildings seen from the front and above with their doors facing the viewer, a very short stub of paved road between the two middle buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7145`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/town_rome
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7104)
-- **Pack path:** `art/tiles/town_rome.png`
-- **prompt:** an isolated cut-out game sprite of the city of Rome, the Colosseum with its tiers of arches at the centre, white marble temples with columned porticos and triangular pediments crowded around it, a great domed rotunda, a tall triumphal arch, red terracotta roofs packed tight, a golden eagle standard on the highest roof, the buildings seen from the front and above with their doors facing the viewer, a short stretch of paved road in the middle of the cluster that starts and ends among the buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7104`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/wandering_army_africa
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7273)
-- **Pack path:** `art/tiles/wandering_army_africa.png`
-- **prompt:** an isolated cut-out game sprite of a Numidian warrior in a white tunic standing and holding up a tall standard topped with ostrich feathers in one hand, a bundle of javelins in the other, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7273`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/wandering_army_galliae
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7252)
-- **Pack path:** `art/tiles/wandering_army_galliae.png`
-- **prompt:** an isolated cut-out game sprite of a barbarian warrior standing with a spear and a round shield beside a war standard hung with skulls, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7252`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/wandering_army_italia
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7262)
-- **Pack path:** `art/tiles/wandering_army_italia.png`
-- **prompt:** an isolated cut-out game sprite of a ragged Italian brigand standing and holding up a crooked standard hung with a skull and rags in one hand, a short sword in the other, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7262`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/wandering_army_oriens
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 7283)
-- **Pack path:** `art/tiles/wandering_army_oriens.png`
-- **prompt:** an isolated cut-out game sprite of a Parthian archer in scale armour and a peaked cap standing and holding up a dragon windsock standard in one hand, a composite bow in the other, seen from the front and above, a freestanding object with no ground under it: its lowest edge is the bottom of the sprite and only the flat magenta background shows below and around it, the whole object complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7283`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
 
 ### tiles/water
 
@@ -1189,6 +1191,60 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a wild Germanic tribal warrior running into battle, long hair and beard, bare chest under a fur cloak, a spear raised and a round wooden shield
 - **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=15512`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
 
+### objects/landmark_gordian
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9304)
+- **prompt:** an isolated cut-out game sprite of an old wooden ox cart with its yoke tied to a post by a huge tangled knot of rope, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9304`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/landmark_oppidum
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9302)
+- **prompt:** an isolated cut-out game sprite of a Gaulish hill-fort gate, a tall wooden gateway of logs with a timber walkway on top, closed, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9302`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/landmark_rubicon
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9300)
+- **prompt:** an isolated cut-out game sprite of a Roman boundary stone, a short carved stone pillar beside a small stone altar with a thin wisp of smoke, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9300`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/landmark_sibyl
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9301)
+- **prompt:** an isolated cut-out game sprite of a cave mouth in a small grey limestone outcrop, a dark arched opening with an oil lamp burning beside it, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9301`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/landmark_tophet
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9303)
+- **prompt:** an isolated cut-out game sprite of a small cluster of carved Punic stone stelae with rounded tops, of different heights, standing together, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9303`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/piece_farmstead
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9411)
+- **prompt:** an isolated cut-out game sprite of one single small Roman farmhouse: one whitewashed cottage with a red tiled roof and a small haystack leaning on its side, one building only, compact and chunky, the same size and scale as a stone well, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9411`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/piece_ruin
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9402)
+- **prompt:** an isolated cut-out game sprite of a ruined Roman villa corner, two broken white stone walls and a fallen column drum, weeds in the cracks, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9402`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/piece_shrine
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9403)
+- **prompt:** an isolated cut-out game sprite of a small roadside Roman shrine, a little stone niche on a plinth with a statuette and an offering bowl, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9403`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
+### objects/piece_well
+
+- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9404)
+- **prompt:** an isolated cut-out game sprite of a round stone village well with a wooden crossbeam, a rope and a bucket, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
+- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9404`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
+
 ### primitives/africa_fields_irrigated
 
 - **Engine:** Retro Diffusion rd_tile__single_tile (48x48, seed 3611)
@@ -1273,60 +1329,6 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/sprites/boat_00.png (frame 0)`
 - **prompt:** an isolated cut-out game sprite of a Roman war galley in profile facing right, a low wooden hull with a bronze ram at the bow and a curved stern post, one mast carrying a full square sail of cream linen cloth, a row of oars along the side angled down into the water, drawn without any water: the keel is the bottom of the sprite and only the flat magenta background lies below and around it, the whole ship complete and well inside the picture, nothing touching or cut off by any edge, solid magenta background
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7831`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/landmark_gordian
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9304)
-- **prompt:** an isolated cut-out game sprite of an old wooden ox cart with its yoke tied to a post by a huge tangled knot of rope, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9304`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/landmark_oppidum
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9302)
-- **prompt:** an isolated cut-out game sprite of a Gaulish hill-fort gate, a tall wooden gateway of logs with a timber walkway on top, closed, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9302`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/landmark_rubicon
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9300)
-- **prompt:** an isolated cut-out game sprite of a Roman boundary stone, a short carved stone pillar beside a small stone altar with a thin wisp of smoke, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9300`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/landmark_sibyl
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9301)
-- **prompt:** an isolated cut-out game sprite of a cave mouth in a small grey limestone outcrop, a dark arched opening with an oil lamp burning beside it, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9301`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/landmark_tophet
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9303)
-- **prompt:** an isolated cut-out game sprite of a small cluster of carved Punic stone stelae with rounded tops, of different heights, standing together, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9303`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/piece_farmstead
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9411)
-- **prompt:** an isolated cut-out game sprite of one single small Roman farmhouse: one whitewashed cottage with a red tiled roof and a small haystack leaning on its side, one building only, compact and chunky, the same size and scale as a stone well, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9411`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/piece_ruin
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9402)
-- **prompt:** an isolated cut-out game sprite of a ruined Roman villa corner, two broken white stone walls and a fallen column drum, weeds in the cracks, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9402`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/piece_shrine
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9403)
-- **prompt:** an isolated cut-out game sprite of a small roadside Roman shrine, a little stone niche on a plinth with a statuette and an offering bowl, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9403`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
-
-### tiles/piece_well
-
-- **Engine:** Retro Diffusion rd_pro__topdown (96x96, seed 9404)
-- **prompt:** an isolated cut-out game sprite of a round stone village well with a wooden crossbeam, a rope and a bucket, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background
-- **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9404`, `style=rd_pro__topdown`, `target=[96, 96]`, `width=96`
 
 ## Portraits and faces
 

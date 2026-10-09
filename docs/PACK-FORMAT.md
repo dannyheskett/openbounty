@@ -64,6 +64,7 @@ its defaults.
 | `font`        | object   | A TrueType/OpenType font rasterised at load into the glyph cell (see §2.2). Absent: the bitmap strip in `sprites.font`. |
 | `sprites`     | object ✱ | Texture-atlas paths (see §4). |
 | `tile_codes`  | object ✱ | Map-character → terrain mapping (§4.2). |
+| `map_art`     | object   | Every map tile and object name the engine draws that no tile code carries (§4.3). |
 | `troops`      | array  ✱ | Troop catalog. Each: `index` (§2.9), `id`, `name`, `sprite`, `portrait` (modern still, optional), `anim` (frames, §4.1), `skill_level`, `hit_points`, `move_rate`, `melee` `[min, max]`, `ranged` `[min, max, ammo]`, `recruit_cost`, `spoils_factor`, `abilities` (a `\|`-joined mask of `FLY`, `REGEN`, `MAGIC`, `IMMUNE`, `ABSORB`, `LEECH`, `SCYTHE`, `UNDEAD`), `dwelling` (singular: `plains`, `forest`, `hill`, `dungeon` or `castle`; a `castle` troop has been recruited only at the home castle and never hosted a salted dwelling), `max_population`, `growth_per_week`, `morale_group` (`A`..`E`, default `A`), `tier_counts` (up to four ints, one foe-garrison count per continent tier). OPENBOUNTY-SPEC §13. |
 | `troop_aliases` | object | Troop ids the pack has renamed: `{"old id": "new id", ...}`. A save written before the rename has loaded with every troop under its new id. Each new id has had to be a troop the pack defines, and no old id may still be one; either fault has refused the pack. Absent, none. |
 | `spells`      | array  ✱ | Spell catalog. Each: `index` (§2.9), `id`, `name`, `cost`, `kind` (`adventure`; any other value or none has meant `combat`), optional `description` (the modern spell pages' fallback when `spell_lore` / `spell_brief` lack the id). Combat spells have been bound by position and adventure spells by id (§2.9). OPENBOUNTY-SPEC §19. |
@@ -517,14 +518,16 @@ map file that uses one has been latin-1. Any other key has been ignored.
 "tile_codes": {
   "G":      { "art": "grass", "terrain": "grass" },
   "F":      { "art": "forest", "terrain": "forest", "blocks_foot": true },
-  "\\xd0":  { "art": "pharos", "ground": "grass", "terrain": "grass" }
+  "\\xd0":  { "art": "pharos", "object": true, "ground": "grass", "terrain": "grass" }
 }
 ```
 
 `art` has been a bare tile name, resolved to `art/tiles/<art>.png` (or the
-zone's `tile_set` folder, §6). `ground` (optional) has named a tile drawn
-under `art`, the way an object stands on its terrain (a landmark such as a
-lighthouse); absent, the code has had no ground of its own.
+zone's `tile_set` folder, §6). `"object": true` has marked a map object (a
+landmark, a set piece) instead: its art has resolved to
+`art/objects/<art>.png`, the same in every zone. `ground` (optional) has named
+a tile drawn under `art`, the way an object stands on its terrain (a
+landmark such as a lighthouse); absent, the code has had no ground of its own.
 `terrain` has been one of `grass` (also the default, and what an unknown name
 has meant), `forest`, `mountain`, `water`, `desert`, `river`. A map byte with
 no entry has failed that zone's map load. River has been inland water: it has blocked walking and
@@ -537,6 +540,77 @@ them) has given a code cosmetic alternates the shell picks per cell at draw
 time (OPENBOUNTY-SPEC REQ-229d). `blocks_foot` and `is_bridge` (default
 false) have been booleans that interact with walkability (a non-blocking
 terrain or `is_bridge` has let the hero walk).
+
+### 4.3 Map art
+
+**Names.** Terrain has lived in `art/tiles/` (and a zone's set folder, §6),
+map objects in `art/objects/`. A terrain name has said what the tile is:
+
+| Piece | Name | Example |
+|---|---|---|
+| Plain tile | `<terrain>` | `forest`, `water`, `fields_wheat` |
+| Edge, open on these sides | `<terrain>_edge_<sides>` | `forest_edge_n`, `water_edge_ne`, `mountain_edge_ns`, `desert_edge_nesw` |
+| Inner corner (a lone open diagonal) | `<terrain>_inner_<corner>` | `forest_inner_es` |
+| Edge facing sand | `<terrain>_sand_edge_<sides>` | `water_sand_edge_s`, `forest_sand_inner_ne` |
+| Road or river piece, by the sides it joins | `<prefix>_<sides>` | `road_ns`, `river_nw`, `river_forest_e` (an end) |
+| Road or river diagonal, by the corner it leaves first | `<prefix>_diag_<corner>` | `road_diag_ne` (runs NE-SW) |
+| River mouth, by the sides the sea is on | `river_mouth_<sides>` | `river_mouth_ne` |
+| Bridge, by the road's direction | `bridge[_river]_<ew or ns>` | `bridge_ew`, `bridge_river_ns` |
+| Dock, by its shore | `dock_<side>` | `dock_n` |
+| Overlay | `detail_v<N>`, `<terrain>_apron_<side>_v<N>`, `<terrain>[_sand]_fill_<corner>` | `forest_apron_e_v2`, `mountain_fill_es` |
+| Variant | `<name>_v<N>`, from 1; the base has no suffix | `grass_v1`, `mountain_edge_e_v2` |
+
+Direction letters have always come in n, e, s, w order (`es`, not `se`;
+`nw`, not `wn`). Object names have been the thing's own name (`chest`,
+`town_galliae`, `castle_gate`).
+
+**`map_art`.** Every name the engine draws that no tile code carries has
+been declared here; the engine has built none. Terrain names (`default`,
+`cleared_water`, `terrain_ground`, `bridges`, `details`, `aprons`, `fills`)
+have been stems under `art/tiles/` and taken the zone's set; the rest have
+been map objects under `art/objects/`. An entry left out has taken the
+standard name shown; an empty string has drawn nothing.
+
+```json
+"map_art": {
+  "default": "grass",              "cleared_water": "water",
+  "terrain_ground": { "grass": "grass", "forest": "forest", "mountain": "mountain",
+                      "water": "water", "desert": "desert", "river": "" },
+  "bridges": { "ew": "bridge_ew", "ns": "bridge_ns",
+               "river_ew": "bridge_river_ew", "river_ns": "bridge_river_ns" },
+  "objects": { "chest": "chest", "artifact_chest": "artifact_chest", "artifact_ring": "artifact_ring",
+               "sign": "sign", "town": "town", "wandering_army": "wandering_army", "alcove": "dwelling_hills",
+               "dwelling_plains": "dwelling_plains", "dwelling_forest": "dwelling_forest",
+               "dwelling_hills": "dwelling_hills", "dwelling_dungeon": "dwelling_dungeon" },
+  "castle_3x2": { "tl": "castle_tl", "tm": "castle_tm", "tr": "castle_tr",
+                  "ml": "castle_ml", "gate": "castle_gate", "mr": "castle_mr" },
+  "castle_1x1": "castle",
+  "details": ["detail_v1", "detail_v2", "detail_v3", "detail_v4"],
+  "aprons": { "forest": { "n": ["forest_apron_n_v1", "forest_apron_n_v2", "forest_apron_n_v3"], "e": [], "s": [], "w": [] },
+              "mountain": { } },
+  "fills": { "forest": { "ne": "forest_fill_ne", "es": "forest_fill_es", "sw": "forest_fill_sw", "nw": "forest_fill_nw" },
+             "forest_sand": { }, "mountain": { }, "mountain_sand": { } }
+}
+```
+
+- `default` has filled a cell the map leaves unset, and been the tile a
+  cleared object leaves on land; `cleared_water` the one it leaves at sea.
+- `terrain_ground` has been each terrain's plain tile: drawn under an object
+  with no ground of its own, and the combat field when
+  `sprites.ui.combat_ground` is `"terrain"`.
+- `bridges` have been what the Bridge spell lays: over the sea (`ew`, `ns`)
+  or over a river (`river_ew`, `river_ns`), named by the road's direction.
+- `objects` and the castle pieces have been what the engine stamps by an
+  object's kind. A town's, castle's or zone's own `art` (§6) has won over the
+  shared `town`, `castle_1x1`, `wandering_army` and `alcove`.
+- `details` (up to 8, of which the first four are drawn), `aprons` (up to 4
+  per side, the first three drawn) and `fills` have been the modern
+  renderer's open-ground overlays (OPENBOUNTY-SPEC REQ-229). They have been
+  optional per set: a set without one has drawn nothing there. A pack that
+  declares none (`kings-bounty`) has drawn none.
+
+A name has been terrain or an object, never both: a non-object tile code
+whose `art` or `ground` is also an object name has failed the pack's load.
 
 ---
 
@@ -647,9 +721,10 @@ load time.
 
 A castle has been stamped as a 3×2 block by default: its gate tile at `x, y`
 plus five blocking wall tiles above and beside it, drawn with the
-`castle_tl/br/tr/ml/mr` and `castle_gate` tile art. A catalog entry that
-declares `"footprint": "1x1"` has been stamped as the gate tile alone, drawn
-with `art/tiles/castle.png`, the way a town is:
+`map_art` castle pieces (`castle_tl/tm/tr/ml/mr` and `castle_gate`, §4.3). A
+catalog entry that declares `"footprint": "1x1"` has been stamped as the gate
+tile alone, drawn with its own `art` or `map_art`'s `castle_1x1`
+(`art/objects/castle.png`), the way a town is:
 
 ```json
 { "id": "capua", "name": "Capua", "x": 41, "y": 53, "zone": "italia",
@@ -659,7 +734,7 @@ with `art/tiles/castle.png`, the way a town is:
 A pack has needed castle art only for the footprints it uses.
 
 **Castle decorations.** A zone's `castles` entry has been able to carry
-`decorations`, a list of `{"dx": n, "dy": n, "art": "<tile name>"}`: extra
+`decorations`, a list of `{"dx": n, "dy": n, "art": "<object name>"}`: extra
 wall tiles stamped at those offsets from the castle's `x, y`, blocking and
 never interactive. An entry without `art` has been skipped. `kings-bounty`
 has ringed its home castle this way.
@@ -744,10 +819,10 @@ zone (`art/combat/field/<zone>_<x>_<y>.png`, each zone's own `field_grid`);
 `kings-bounty` has declared none.
 
 **Per-town art.** A town catalog entry has been able to declare
-`"art": "<stem>"`, a tile under `art/tiles/`, and the engine has stamped that
-tile at the town's position instead of the shared `art/tiles/town.png`.
-Absent has meant `town`; the shared tile has been required only while some
-town uses it, and the art manifest has listed each declared stem once.
+`"art": "<stem>"`, an object under `art/objects/`, and the engine has stamped
+that tile at the town's position instead of the shared town (`map_art`
+`objects.town`). The shared tile has been required only while some town uses
+it, and the art manifest has listed each declared stem once.
 
 ```json
 { "id": "massilia", "name": "Massilia", "art": "town_galliae", "x": 28, "y": 21,
@@ -755,19 +830,19 @@ town uses it, and the art manifest has listed each declared stem once.
 ```
 
 **Per-zone wandering-army art.** A zone has been able to declare
-`"army_art": "<stem>"`, a tile under `art/tiles/`; every wandering foe in
-that zone, declared or salted, has then drawn that tile instead of the shared
-`art/tiles/wandering_army.png`. Absent has meant the shared tile, which has
-been required only while some zone uses it.
+`"army_art": "<stem>"`, an object under `art/objects/`; every wandering foe
+in that zone, declared or salted, has then drawn that tile instead of the
+shared one (`map_art` `objects.wandering_army`). Absent has meant the shared
+tile, which has been required only while some zone uses it.
 
 **Per-zone terrain art.** A zone has been able to declare
 `"tile_set": "<folder>"`. Every `tile_codes` art name for that zone has then
 resolved under `art/tiles/<folder>/` instead of `art/tiles/`, so one `.dat`
 and one `tile_codes` table have served every continent while each draws its
 own grass, forest, water, edges and bridges. The folder has had to hold a
-file for every `tile_codes` art the pack declares; the art manifest has
-listed them, so validation has caught a missing one. Object tiles (towns,
-castles, chests, signs, dwellings) have never been affected. A zone without
+file for every terrain name the zone draws; the art manifest has listed
+them, zone by zone from what each map holds, so validation has caught a
+missing one. Map objects (`art/objects/`, §4.3) have never been affected. A zone without
 the key has drawn the shared `art/tiles/` set, which has been required only
 while some zone uses it.
 
@@ -786,7 +861,7 @@ exactly the listed files, and kept the master set for everything else.
 
 ```json
 { "id": "galliae", "tile_set": "galliae",
-  "tile_set_arts": ["grass", "grass_variant", "grass_01", "forest", "forest_edge_01"] }
+  "tile_set_arts": ["grass", "grass_v1", "forest", "forest_edge_nw", "forest_inner_es"] }
 ```
 
 **Town backdrops.** A zone has been able to declare `"town_backdrop"`, and a

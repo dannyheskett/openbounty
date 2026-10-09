@@ -56,7 +56,7 @@ static bool write_tiny_pack(void) {
     if (!grass) { cJSON_Delete(d); return false; }
     // The bridge code: grass terrain over a river, as the Rome pack declares it.
     cJSON *bridge = cJSON_CreateObject();
-    cJSON_AddStringToObject(bridge, "art", "bridge_h");
+    cJSON_AddStringToObject(bridge, "art", "bridge_ew");
     cJSON_AddStringToObject(bridge, "terrain", "grass");
     cJSON_AddTrueToObject(bridge, "is_bridge");
     set_item(codes, "B", bridge);

@@ -1205,7 +1205,7 @@ static cJSON *emit_zones(const CcArchive *cc) {
 // Public entry point.
 // ============================================================================
 
-// Port-side constants (tile_codes, spawn, contract, controls, sprites,
+// Port-side constants (tile_codes, map_art, spawn, contract, controls, sprites,
 // ending, colors, credits, audio, strings) are kept in one hand-curated
 // JSON literal -- see extract_gamejson_const.inc. These sections are
 // engine-authored data (UI labels, asset paths, dialog templates, ending

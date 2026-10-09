@@ -1,5 +1,5 @@
 {
- "id": "tiles/pharos",
+ "id": "objects/pharos",
  "prompt": "an isolated cut-out game sprite of the Pharos lighthouse of Alexandria, a tall three-stage tower of pale stone, a square base, an eight-sided middle stage and a round top with a fire burning in it and a thin plume of smoke, a small walled courtyard at its foot, seen from the front and above, the tower complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, no wall, fence or gate, only the flat magenta background around it, solid magenta background",
  "style": "rd_pro__topdown",
  "width": 96,
@@ -14,9 +14,9 @@
   96,
   96
  ],
- "_pack_path": "art/tiles/pharos.png",
+ "_pack_path": "art/objects/pharos.png",
  "_note": "The Pharos map tile (REQ-221b vista trigger on Africa's shore beside Alexandria). Object route, the same as every town/castle tile: rd_pro__topdown 96x96 with the magenta background removed, no reference image.",
  "pack": [
-  "art/tiles/pharos.png"
+  "art/objects/pharos.png"
  ]
 }

@@ -34,7 +34,7 @@ typedef enum {
     INTERACT_COUNT
 } Interact;
 
-// Look up a terrain category from an art name (e.g. "water_edge_03" -> TERRAIN_WATER).
+// Look up a terrain category from an art name (e.g. "water_edge_es" -> TERRAIN_WATER).
 // Returns TERRAIN_GRASS for unknown names.
 Terrain TerrainFromArt(const char *art);
 
@@ -49,8 +49,6 @@ Interact DwellingInteractFromKind(const char *kind);
 // A dwelling tile's kind as the troop catalog names it ("plains", "forest",
 // "hill", "dungeon"), or NULL for a tile that is no dwelling.
 const char *DwellingCatalogKind(Interact i);
-// A dwelling tile's art stem ("dwelling_hills", ...), or NULL.
-const char *DwellingArt(Interact i);
 
 bool TerrainWalkable(Terrain t);
 

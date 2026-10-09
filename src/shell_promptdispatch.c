@@ -71,10 +71,10 @@ void shell_set_combat_ground(ShellCtx *ctx) {
         return;
     }
     const Tile *t = MapGetTile(ctx->map, ctx->game->position.x, ctx->game->position.y);
-    const char *terrain = t ? TerrainName(t->terrain) : "grass";
-    if (strcmp(terrain, "water") == 0) terrain = "grass";
+    Terrain terrain = t && t->terrain != TERRAIN_WATER ? (Terrain)t->terrain : TERRAIN_GRASS;
+    const char *stem = resources_map_art(ctx->res)->ground[terrain];
     char art[TILE_ART_NAME_LEN];
-    combat_render_set_ground(tile_cache_get(MapTerrainArt(ctx->map, terrain, art, sizeof art)));
+    combat_render_set_ground(stem[0] ? tile_cache_get(MapTerrainArt(ctx->map, stem, art, sizeof art)) : none);
 }
 
 static CombatResult run_castle_combat(ShellCtx *ctx, const char *castle_id) {

@@ -29,7 +29,7 @@ typedef struct {
     uint8_t  terrain;                  // Terrain, derived from art at load time
     uint8_t  interactive;              // Interact, INTERACT_NONE if no overlay
     bool     blocks_foot;              // castle walls and similar visual blockers
-    bool     is_bridge;                // bridge_h / bridge_v (walkable in both modes)
+    bool     is_bridge;                // bridge_ew / bridge_ns (walkable in both modes)
     int16_t  boat_spawn_x;  // for town tiles: where the rented boat appears; -1 if unset
     int16_t  boat_spawn_y;
 } Tile;
@@ -55,6 +55,9 @@ typedef struct {
     // The zone's wandering-army art stem ("wandering_army" unless the zone
     // declares `army_art`); every foe stamp reads it from here.
     char army_art[TILE_ART_NAME_LEN];
+    // The pack's map art (game.json "map_art"): every name the map stamps that
+    // no tile code carries. NULL (a map built by hand) means the standard names.
+    const struct ResMapArt *map_art;
     // world.clear_keeps_ground: MapClearInteractive restores walkable
     // non-grass ground (desert) instead of writing plain grass (REQ-229f).
     bool clear_keeps_ground;
@@ -113,6 +116,10 @@ const char *MapTerrainArt(const Map *map, const char *stem, char *out, size_t ca
 // (missing zone id, unreadable .dat, unknown tile code).
 bool MapLoadZone(Map *map, const Resources *res, const char *zone_id);
 
+// Mark in used[] every tile code the zone's .dat holds, read the way the
+// loader reads it. False when the file cannot be read.
+bool MapZoneCodes(const ResZone *zone, bool used[RES_TILE_CODE_COUNT]);
+
 // Same as MapLoadZone, but after stamping the JSON-declared objects also
 // replays every SaltedPlacement in the provided game struct whose zone
 // matches zone_id. Use this whenever a Game is available; MapLoadZone is
@@ -147,7 +154,7 @@ bool MapSetTileFromCode(Map *map, const Resources *res, int x, int y,
                         unsigned char code);
 
 // Stamp a live foe's tile with the INTERACT_FOE overlay (id = placement_id, art
-// "wandering_army"). The single definition of "a foe occupies this tile" used by
+// the zone's army art). The single definition of "a foe occupies this tile" used by
 // zone-load stamping and by foes-follow re-sync. No-op if out of bounds or if the
 // tile already holds a DIFFERENT interactive (a chest/gate is never clobbered).
 void MapStampFoe(Map *map, int x, int y, const char *placement_id);
@@ -159,14 +166,5 @@ void MapStampFoe(Map *map, int x, int y, const char *placement_id);
 bool MapClearFoeStamp(Map *map, int x, int y);
 
 
-// The tile art names this module stamps for placed objects. These come from
-// the engine's interact-kind mapping rather than from game.json, so callers
-// enumerating a pack's art must include them. Returns a static array.
-const char *const *map_object_art_names(int *out_count);
-
-// The castle art for one footprint (REQ-228): the six pieces of the 3x2 stamp,
-// or the single `castle` tile of a 1x1 castle. Read off the same tables
-// stamp_objects paints from, so the manifest cannot drift from the map.
-const char *const *map_castle_art_names(ResCastleFootprint fp, int *out_count);
 
 #endif

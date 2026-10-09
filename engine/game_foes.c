@@ -214,7 +214,7 @@ int GameFoesFollow(Game *g, Map *map) {
         Tile *dst = &MAP_TILE(map, best_x, best_y);
         dst->interactive = INTERACT_FOE;
         TileSetId(map, dst, f->placement_id);
-        TileSetArt(map, dst, map->army_art[0] ? map->army_art : "wandering_army");
+        TileSetArt(map, dst, map->army_art[0] ? map->army_art : resources_map_art(NULL)->wandering_army);
     }
     return collided;
 }

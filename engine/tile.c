@@ -91,12 +91,3 @@ const char *DwellingCatalogKind(Interact i) {
     }
 }
 
-const char *DwellingArt(Interact i) {
-    switch (i) {
-        case INTERACT_DWELLING_PLAINS:  return "dwelling_plains";
-        case INTERACT_DWELLING_FOREST:  return "dwelling_forest";
-        case INTERACT_DWELLING_HILLS:   return "dwelling_hills";
-        case INTERACT_DWELLING_DUNGEON: return "dwelling_dungeon";
-        default:                        return NULL;
-    }
-}

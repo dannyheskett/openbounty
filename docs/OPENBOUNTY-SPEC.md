@@ -1013,7 +1013,7 @@ flagged (§38).
   flown over).
 - **REQ-224.** Walkability on foot (`TerrainWalkable`, `engine/tile.c`): grass
   and desert have been walkable; forest, mountain, water and river have not.
-  A tile flagged `is_bridge` (art `bridge_h` / `bridge_v`, grass terrain)
+  A tile flagged `is_bridge` (art `bridge_ew` / `bridge_ns`, grass terrain)
   has been walkable on foot and traversable in a boat. Stepping onto a
   desert tile has set `steps_left_today = 0` immediately (§7.2).
 
@@ -1107,10 +1107,10 @@ flagged (§38).
   name it stamps prefixed with `<tile_set>/` (`engine/map.c MapTerrainArt`),
   including the grass padding, the grass or water a cleared object reverts
   to, and bridge tiles built by the Bridge spell, so the shell's tile cache
-  has loaded `art/tiles/<tile_set>/<art>.png`. Object art stamped from the zone
-  lists has never been prefixed. A zone without the key has drawn the shared
-  set. The art manifest has listed the shared terrain only while some zone
-  draws it, and each declared set once.
+  has loaded `art/tiles/<tile_set>/<art>.png`. Object art (REQ-229g) has
+  never been prefixed. A zone without the key has drawn the shared set. The
+  art manifest has listed, zone by zone, the terrain each map holds and the
+  map art the engine draws, from the folder it is loaded from.
 
 ### 9.7 Castle and town tile placement
 
@@ -1143,9 +1143,9 @@ flagged (§38).
 ### 9.8 Terrain edge variants (baked, not generated)
 
 - **REQ-229.** Every terrain except grass has shipped **twelve edge
-  variants** alongside its plain tile (`water_edge_00..11`,
-  `forest_edge_01..12`, `mountain_edge_01..12`, `desert_edge_01..12`; 48 of
-  the reference pack's 54 tile codes). They have been the transition pieces
+  variants** alongside its plain tile (`water_edge_*`/`water_inner_*`,
+  `forest_edge_*`/`forest_inner_*` and the same for mountain and desert,
+  named by shape per REQ-229a; 48 of the reference pack's 54 tile codes). They have been the transition pieces
   that have blended a terrain into its neighbour, and they have been **baked into
   the `.dat` files by the map author**, not generated at runtime. **A `.dat`
   has held the fully rendered map; nothing about its appearance has been
@@ -1162,29 +1162,33 @@ flagged (§38).
 
 - **REQ-229a.** The variant has been selected by which of the tile's eight
   neighbours carry a **different terrain**, cardinals taking precedence over
-  diagonals. Two families have existed, differing in both base and
-  permutation (matching OpenKB's `tile_offset` table, which has given water its
-  own row):
+  diagonals, and has been **named by that shape**: `<terrain>_edge_<sides>`
+  for the open (differing) cardinals, `<terrain>_inner_<corner>` for a lone
+  open diagonal, the letters always in n, e, s, w order. The same names have
+  served every family (water, water_sand, forest, forest_sand, mountain,
+  mountain_sand, desert and the farmland). The original game numbered these
+  pieces, water from `00` and the rest from `01` in a different order
+  (OpenKB's `tile_offset` table); the number is kept here only to tie the
+  names to that source:
 
-  | Differing neighbours | water | forest / mountain / desert |
-  |---|---|---|
-  | N | `10` | `11` |
-  | S | `11` | `12` |
-  | E | `08` | `09` |
-  | W | `09` | `10` |
-  | N and E | `00` | `03` |
-  | N and W | `01` | `01` |
-  | S and W | `02` | `02` |
-  | S and E | `03` | `04` |
-  | NE only (no cardinal) | `05` | `06` |
-  | SE only | `04` | `05` |
-  | SW only | `06` | `07` |
-  | NW only | `07` | `08` |
+  | Differing neighbours | name | water was | the rest were |
+  |---|---|---|---|
+  | N | `edge_n` | `10` | `11` |
+  | S | `edge_s` | `11` | `12` |
+  | E | `edge_e` | `08` | `09` |
+  | W | `edge_w` | `09` | `10` |
+  | N and E | `edge_ne` | `00` | `03` |
+  | N and W | `edge_nw` | `01` | `01` |
+  | S and W | `edge_sw` | `02` | `02` |
+  | S and E | `edge_es` | `03` | `04` |
+  | NE only (no cardinal) | `inner_ne` | `05` | `06` |
+  | SE only | `inner_es` | `04` | `05` |
+  | SW only | `inner_sw` | `06` | `07` |
+  | NW only | `inner_nw` | `07` | `08` |
 
-  Water has been 0-based (`00`–`11`); the other three 1-based (`01`–`12`)
-  with no `00`. A tile with no differing neighbour has used the plain terrain
-  code. Three or more differing cardinals (a one-tile spit) have used the
-  REQ-229e variants.
+  A tile with no differing neighbour has used the plain terrain code. Three
+  or more differing cardinals (a one-tile spit) have used the REQ-229e
+  variants.
 
 - **REQ-229b.** This table has been **derived from the reference pack's
   maps**, by classifying every edge tile in all four zones by its neighbour
@@ -1198,10 +1202,10 @@ flagged (§38).
   has produced coastlines indistinguishable from the originals.
 
 - **REQ-229e.** Seven more variants have closed the shapes REQ-229a has left
-  undefined, keyed by the tile's OPEN (differing) cardinals: `13` N+S, `14`
-  E+W (one-wide strips), `15` N+E+S, `16` E+S+W, `17` S+W+N, `18` W+N+E
-  (spits, attached on the remaining side), `19` all four (an island). Water
-  has been 0-based (`12`..`18`). `glory-of-rome` has shipped all seven for
+  undefined, named the same way by the tile's OPEN (differing) cardinals:
+  `edge_ns`, `edge_ew` (one-wide strips), `edge_nes`, `edge_esw`, `edge_nsw`,
+  `edge_new` (spits, attached on the remaining side), `edge_nesw` (an
+  island). `glory-of-rome` has shipped all seven for
   forest and mountain and the two strips and the island for water; its four
   zones have contained no other shape. `tools/romeart.py map build` has assigned
   them when it bakes a map from its source; the art has come from the same
@@ -1222,25 +1226,38 @@ flagged (§38).
   `glory-of-rome` has set it; `kings-bounty` has not and has played as the
   original.
 
+- **REQ-229g.** Every name the map draws has been declared in `game.json`;
+  the engine has built none. Terrain has come from `tile_codes` (`art`,
+  `ground`, `variants`) and from `map_art` -- the default cell, the ground a
+  cleared object leaves at sea, each terrain's plain tile, the four bridges,
+  and the overlays (details, aprons, fills) -- all stems under `art/tiles/`.
+  Map objects -- the chest, sign, dwellings, artifacts, town, wandering army,
+  alcove and castle pieces in `map_art`, each town's, castle's and zone's own
+  `art`, and the `tile_codes` marked `"object": true` (landmarks and set
+  pieces) -- have been stems under `art/objects/`, the same in every zone. A
+  name has been one or the other, never both; the loader has refused a pack
+  that makes it both (PACK-FORMAT "Map art").
+
 ### 9.9 Roads (grass-terrain tile codes)
 
 - **REQ-229c.** A road has been a **tile, not an object**: a `tile_codes`
-  entry with `terrain: grass` and its own art, exactly like `grass_variant`.
+  entry with `terrain: grass` and its own art, exactly like `grass_v1`.
   The engine has needed no road concept: walkability and move cost have come from
   the terrain (grass, cost 1), salt and foe logic have seen grass, and the
   renderer has drawn the entry's art. The map author has baked the road pieces into the
   `.dat` like the edge variants (REQ-229). `glory-of-rome` has shipped
   twenty-four pieces, codes `f`..`y` and `\x80`..`\x83`: straights
   `road_ns`/`road_ew`; the four curves `road_ne`, `road_es`, `road_sw`,
-  `road_wn` (named by their two exits); the diagonals `road_nesw`/
-  `road_nwse`; eight joins from a straight exit to a diagonal corner
-  (`road_n_sw`, `road_n_se`, `road_s_nw`, `road_s_ne`, `road_e_nw`,
-  `road_e_sw`, `road_w_ne`, `road_w_se`); and the four **companions**
-  `road_c_nw/ne/sw/se`, grass with the road's triangle in one corner. A
-  diagonal has passed through a tile corner that two side neighbours share, so
-  the author has placed the companions on those two cells (a `road_nwse` at
-  (x, y) has taken `road_c_sw` at (x+1, y) and `road_c_ne` at (x, y+1); a
-  `road_nesw` has taken `road_c_se` at (x-1, y)... see `tools/romeart.py sweep`).
+  `road_nw` (named by their two exits, in n, e, s, w order); the diagonals
+  `road_diag_ne` (running NE-SW) and `road_diag_nw` (NW-SE); eight joins from
+  a straight exit to a diagonal corner (`road_n_sw`, `road_n_es`, `road_s_nw`,
+  `road_s_ne`, `road_e_nw`, `road_e_sw`, `road_w_ne`, `road_w_es`); and the
+  four **companions** `road_c_nw/ne/sw/es`, grass with the road's triangle in
+  one corner. A diagonal has passed through a tile corner that two side
+  neighbours share, so the author has placed the companions on those two cells
+  (a `road_diag_nw` at (x, y) has taken `road_c_sw` at (x+1, y) and
+  `road_c_ne` at (x, y+1); a `road_diag_ne` has taken `road_c_es` at
+  (x-1, y)... see `tools/romeart.py sweep`).
   Last, the four **ends** `road_n`, `road_e`, `road_s`, `road_w`, named by
   their one exit: the road has entered through that side at the full band
   width and stopped inside the tile, so a run has been able to finish in open
@@ -1277,7 +1294,7 @@ flagged (§38).
   identical to the base: a variant has redrawn only the sprites fully inside
   the tile and kept every one that straddles a tile line (`tools/romeart.py
   interiors`, `edgevars`). `glory-of-rome` has declared `forest_v1/_v2`,
-  `mountain_v1/_v2` and `mountain_edge_09/10_v1/_v2` (#63); its first set,
+  `mountain_v1/_v2` and `mountain_edge_e/w_v1/_v2` (#63); its first set,
   `grass_01..10`, has been removed (#221). `kings-bounty` has declared none.
 
 ## 10. Salt: per-zone object placement

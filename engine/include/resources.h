@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "tables.h"
+#include "tile.h"
 
 // Runtime copy of every value loaded from assets/game.json and the table
 // files it references. Mechanics code reads from here instead of holding
@@ -23,7 +24,7 @@
 // that uses a code above 127 is not plain ASCII -- the reader is byte-wise, so
 // such a file is latin-1.
 #define RES_TILE_CODE_COUNT  256
-#define RES_TILE_ART_LEN      24
+#define RES_TILE_ART_LEN      32
 // Animation cycle default: OB_ANIM_FRAMES_DEFAULT, in tables.h.
 #define RES_COMBAT_TILES      15     // combat tileset, fixed role order
 #define RES_END_BODY_LEN     512     // win/lose body text
@@ -279,7 +280,7 @@ typedef struct {
                                   // this town reports on. Empty = none.
     char pinned_spell[RES_ID_LEN];// spell id pre-placed here by salt_spells.
                                   // Empty = no pin (any town may pin in mods).
-    char art[RES_TILE_ART_LEN];   // tile art stem under art/tiles/ ("" = "town")
+    char art[RES_TILE_ART_LEN];   // object art stem under art/objects/ ("" = map_art's town)
     char informant[RES_ID_LEN];   // portraits[] id shown for the town's report ("" = none)
     char headman[RES_ID_LEN];     // portraits[] id of the figure on the town backdrop
     char townhead[RES_ID_LEN];    // portraits[] id of that person's portrait (Contracts, main page)
@@ -348,7 +349,7 @@ typedef struct {
                                   // roll_creature-style monster generation.
                                   //  castle_difficulty[].
     ResCastleFootprint footprint; // "footprint": "3x2" (default) or "1x1"
-    char art[RES_TILE_ART_LEN];   // 1x1 only: its own tile art stem under art/tiles/ ("" = "castle")
+    char art[RES_TILE_ART_LEN];   // 1x1 only: its own object art stem under art/objects/ ("" = map_art's castle_1x1)
     ResCastleSpecial special;
 } ResCastle;
 
@@ -370,7 +371,41 @@ typedef struct {
     // here is laid down first, so the tile's transparent parts show terrain
     // rather than black. Empty = the tile is its own ground, as terrain is.
     char ground[RES_TILE_ART_LEN];
+    // "object": true -- the art is a map object (a landmark, a set piece) under
+    // art/objects/, drawn over `ground`, and never taken from a zone's tile set.
+    bool object;
 } ResTileCode;
+
+// ---- Map art: every name the engine draws that no tile code carries --------
+// game.json "map_art" (PACK-FORMAT section "Map art"). Terrain names (default,
+// cleared_water, ground, bridges, details, aprons, fills) are stems under
+// art/tiles/ and take the zone's tile set; object names (the rest) are stems
+// under art/objects/. An entry left out takes the standard name below; an
+// empty name draws nothing.
+#define RES_MAP_DETAILS 8
+#define RES_MAP_APRONS  4
+enum { RES_DWELL_PLAINS, RES_DWELL_FOREST, RES_DWELL_HILLS, RES_DWELL_DUNGEON, RES_DWELL_COUNT };
+enum { RES_CASTLE_TL, RES_CASTLE_TM, RES_CASTLE_TR, RES_CASTLE_ML, RES_CASTLE_GATE, RES_CASTLE_MR,
+       RES_CASTLE_PARTS };
+typedef struct ResMapArt {
+    char def[RES_TILE_ART_LEN];                  // "default": a cell the map leaves unset ("grass")
+    char cleared_water[RES_TILE_ART_LEN];        // a cleared object at sea ("water")
+    char ground[TERRAIN_COUNT][RES_TILE_ART_LEN];// "terrain_ground": a terrain's plain tile (under an
+                                                 // object with no ground, the combat field)
+    char bridge[2][2][RES_TILE_ART_LEN];         // "bridges": [over a river][crossing north-south]
+    char chest[RES_TILE_ART_LEN], artifact_chest[RES_TILE_ART_LEN], artifact_ring[RES_TILE_ART_LEN];
+    char sign[RES_TILE_ART_LEN], town[RES_TILE_ART_LEN], wandering_army[RES_TILE_ART_LEN];
+    char alcove[RES_TILE_ART_LEN];
+    char dwelling[RES_DWELL_COUNT][RES_TILE_ART_LEN];
+    char castle_3x2[RES_CASTLE_PARTS][RES_TILE_ART_LEN];
+    char castle_1x1[RES_TILE_ART_LEN];
+    int  detail_count;                           // "details": the small open-ground details
+    char detail[RES_MAP_DETAILS][RES_TILE_ART_LEN];
+    int  apron_count[2][4];                      // "aprons": [forest, mountain][n, e, s, w]
+    char apron[2][4][RES_MAP_APRONS][RES_TILE_ART_LEN];
+    char fill[2][2][4][RES_TILE_ART_LEN];        // "fills": [forest, mountain][on grass, on sand]
+                                                 //          [ne, es, sw, nw]
+} ResMapArt;
 
 // ---- Per-zone object placements -------------------------------------------
 
@@ -1323,15 +1358,15 @@ typedef struct {
     // art/tiles/ set. Empty means the whole folder. Heap, sized by the pack.
     int  tile_set_art_count;
     char (*tile_set_arts)[RES_TILE_ART_LEN];
-    // Optional wandering-army tile art for this zone (a stem under
-    // art/tiles/). Empty means the shared "wandering_army".
+    // Optional wandering-army art for this zone (a stem under art/objects/).
+    // Empty means map_art's shared wandering army.
     char army_art[RES_TILE_ART_LEN];
     // Optional open-field ground for fights on this zone: the prefix of its
     // 30 cells (see sprites.field_grid). Empty means the pack's field_grid.
     char field_grid[RES_PATH_LEN];
-    // The map tile the zone's magic alcove is drawn with. Empty falls back to
-    // the hills-dwelling sprite, which is what the alcove borrowed before it
-    // could name its own art.
+    // The object the zone's magic alcove is drawn with (art/objects/). Empty
+    // falls back to map_art's alcove (by default the hills-dwelling sprite,
+    // which is what the alcove borrowed before it could name its own art).
     char alcove_art[RES_TILE_ART_LEN];
     char pontifex[RES_ID_LEN];    // portraits[] id of the priest who sells spells here
     int  alcove_cost;             // this zone's alcove price; -1 = economy.alcove_cost
@@ -1419,6 +1454,11 @@ typedef struct {
 
     // Indexed by raw byte from the .dat. `present == false` means unused.
     ResTileCode tile_codes[RES_TILE_CODE_COUNT];
+    ResMapArt   map_art;
+    // Every stem drawn from art/objects/: map_art's objects, town, castle,
+    // army and alcove art, castle decorations, and "object" tile codes.
+    int         object_art_count;
+    char      (*object_arts)[RES_TILE_ART_LEN];
 
     // Catalogs (loaded from game.json top-level arrays).
     // Heap, troops_count entries: as many as the pack declares.
@@ -1726,10 +1766,11 @@ bool resources_load(Resources *res, const char *manifest_path);
 // Returns the count written to `out` (capped at `cap`).
 //
 // This is the single source of truth for "what art does this pack use". Art
-// has been reachable five ways -- explicit paths, bare tile_codes names under
-// art/tiles/, the shell's own list, villain frames derived from a portrait
-// filename, and the placed-object names map.c stamps by interact kind -- and
-// this list has resolved all five, so callers see real paths.
+// has been reachable four ways -- explicit paths, bare tile and object names
+// (tile_codes, map_art, the catalogs' own art) resolved under art/tiles/ or
+// art/objects/, the shell's own list, and villain frames derived from a
+// portrait filename -- and this list has resolved all four, so callers see
+// real paths.
 // The list grows to hold every path; free it with resources_art_list_free.
 typedef struct {
     char (*path)[RES_PATH_LEN];
@@ -1740,6 +1781,10 @@ int  resources_art_manifest(const Resources *res, ResArtList *out);
 // (the set is whole, or lists `stem` in "tile_set_arts") rather than from the
 // master art/tiles/ set.
 bool resources_tile_from_set(const Resources *res, const char *set, const char *stem);
+// Whether art `stem` is a map object (art/objects/) rather than terrain (art/tiles/).
+bool resources_art_is_object(const Resources *res, const char *stem);
+// The pack's map art, or the standard names when `res` is NULL.
+const ResMapArt *resources_map_art(const Resources *res);
 
 // Where a hero sailing in from zone `from` lands on zone `z`: the zone's
 // "arrivals" entry for that origin, else its hero_spawn.

@@ -153,7 +153,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
 - **Location backdrops** — `figure: false`, `target [240, 102]`; the job has
   been `art/jobs/ui/backdrop_castle.json`, and the others have differed only in
   id, prompt and seed.
-- **Base terrain** (grass, grass_variant, forest, desert, water; not the
+- **Base terrain** (grass, grass_v1, forest, desert, water; not the
   mountain, see below) —
   `rd_tile__single_tile`, the API's purpose-built seamless tile style (cap 64;
   its craft guide has sized single tiles at 16 to 32), at **48x48**, laid 2x2 by
@@ -204,7 +204,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
     output either way).
   The ground has not been in the art: the renderer has drawn the terrain tile
   beneath every object tile.
-- **Bridges** (`bridge_h`, `bridge_v`) — a road, as in the original pack: an
+- **Bridges** (`bridge_ew`, `bridge_ns`) — a road, as in the original pack: an
   opaque square of grey stone paving with a lighter kerb along the two edges
   the road does not cross, so tiles have stacked end to end. Object engine
   (`rd_pro__topdown`), no background removal, no water in the picture: the
@@ -268,7 +268,7 @@ those files in the jobs' `"pack"` lists. Keep the job files under
   sprites flipped or nudged, listed as the code's `variants` so a mass has
   stopped repeating one arrangement.
 - **Mountain side variants** (#63) — `romeart.py edgevars`:
-  `mountain_edge_09/10_v1/_v2` per set, listed as those codes' `variants`, so
+  `mountain_edge_e/w_v1/_v2` per set, listed as those codes' `variants`, so
   a long west or east side of a range stops repeating one tile: as the
   interiors, every rock straddling the tile's lines kept, the rocks inside it
   flipped and nudged and one in three near the open side left out.
@@ -284,28 +284,28 @@ those files in the jobs' `"pack"` lists. Keep the job files under
   hidden. Roads, rivers, fields and pieces have drawn none. Thinning the edge
   pieces' own west and east sides could not do it: their outer column is
   rocks straddling the tile lines, which the neighbours draw too.
-- **Small detail** (#63) — `romeart.py details`: `detail_<1..4>` per set, a
+- **Small detail** (#63) — `romeart.py details`: `detail_v1..v4` per set, a
   bush, two bushes, a stone, two stones (the set's own whole sprites at about
   half size, only the trees its woods are made of; Italia's bush from its
   island clump), drawn by the shell and
   `map render --tiles` on about one plain grass or sand cell in twelve with no wood,
   range or sea beside it (`tilevar_pick` seed `0xD7A1`, 48 ways, 1-4 drawn).
   Cosmetic: the cell stays walkable grass.
-- **Settlement set pieces** (#63) — `art/jobs/primitives/dock_deck.json and art/jobs/tiles/piece_{farmstead,ruin,shrine,well}.json`
+- **Settlement set pieces** (#63) — `art/jobs/primitives/dock_deck.json and art/jobs/objects/piece_{farmstead,ruin,shrine,well}.json`
   (`rd_pro__topdown`, 96 px): a farmhouse, a ruin, a shrine and a well stand
   on grass as solid tiles (`blocks_foot`, map chars `n u h e`); the jetty
   (`j`) is sea off a straight grass shore, `dock_<n|e|s|w>` drawn over that
-  side's `water_edge` piece. `romeart.py dock` has built the four from the
+  side's water edge piece. `romeart.py dock` has built the four from the
   generated deck kept as `art/primitives/pieces/dock_deck.png`: keyed off its
   magenta (`romeart.py key`: red and blue both over green by 80), cropped to
   its ink, centred along the shore and set 6 px from the land side.
   Placed round towns and castles and along roads, each kept only where the
   build, `map lint` and the reach baseline all pass.
-- **Sand shores** (`water_sand_edge_NN`, #63) — not generated. Each zone
-  set's `water_edge_NN` has been read pixel by pixel as sea or shore (nearest
+- **Sand shores** (`water_sand_*`, #63) — not generated. Each zone
+  set's matching water edge piece has been read pixel by pixel as sea or shore (nearest
   to the set's water or grass colours), and the shore part filled with the
   set's desert, so a sea whose coast is all sand has drawn a sand shore line
-  instead of a grass one (`romeart.py shore`, codes 0-13 and 18, the master
+  instead of a grass one (`romeart.py shore`, every water piece but the four spits, the master
   set and every set with desert; `zone` runs it). `tools/romeart.py map build` has picked them; sand
   meeting the sea has kept its own ground to the coast, and forest and rock
   their grass fringe.
@@ -603,8 +603,19 @@ One rule names every piece of art and the job that made it:
   class or character id); a kind's main art takes no variant (a troop's frames
   `hastati_NN`, a villain's face `alaric_NN`, a character's face
   `pontifex_galliae_NN`), anything else does (`hastati_portrait`, `dux_hero`,
-  `dux_walk_NN`, `dux_portrait`). `_NN` numbers frames. Tiles keep their own
-  names, which the map builder and tile codes key on.
+  `dux_walk_NN`, `dux_portrait`). `_NN` numbers frames.
+- **Terrain** (`art/tiles/`, and a zone's set folder) is named by shape, with
+  direction letters always in n, e, s, w order: `forest_edge_n` (open to the
+  north), `water_edge_ne` (a corner), `mountain_edge_ns` (a strip),
+  `desert_edge_nesw` (an island), `forest_inner_es` (a lone open diagonal),
+  `road_nw` (joins north and west), `road_diag_ne` (the NE-SW diagonal),
+  `river_mouth_ne` (the sea to its east and north), `bridge_ew` (the road
+  runs east-west). A variant is `_v1`, `_v2`: `grass_v1`,
+  `forest_apron_n_v2`, `mountain_edge_e_v1`. The full table is PACK-FORMAT
+  §4.3; `romeart.py`'s `edge_name()` writes the edge names.
+- **Map objects** (`art/objects/`) keep the thing's own name: `chest`,
+  `town_galliae`, `landmark_sibyl`, `castle_gate`. game.json declares every
+  terrain and object name the game draws (`tile_codes` and `map_art`).
 - **Jobs:** `art/jobs/<kind>/<name>.json`, named after what they make: a series
   by its stem (`troops/hastati.json` makes `troops/hastati_NN.png`), a single
   file by its whole name (`combat/obstacle_01.json`). A still an animation

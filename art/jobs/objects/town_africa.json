@@ -1,5 +1,5 @@
 {
-  "id": "tiles/town_africa",
+  "id": "objects/town_africa",
   "prompt": "an isolated cut-out game sprite of a North African town, lime-white whitewashed houses with flat roofs and sky-blue painted doors and shutters, a red-brown mud-brick watchtower, a few date palms, the buildings seen from the front and above with their doors facing the viewer, a short stretch of paved road in the middle of the cluster that starts and ends among the buildings, the road the only ground drawn, no wall, fence or gate, only the flat magenta background between and below the buildings, the whole town complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
   "style": "rd_pro__topdown",
   "width": 96,
@@ -14,9 +14,9 @@
     96,
     96
   ],
-  "_pack_path": "art/tiles/town_africa.png",
+  "_pack_path": "art/objects/town_africa.png",
   "_note": "Per-zone town tile. Route settled 2026-09-05 after engine and framing tests: rd_pro__topdown, 96x96, remove_bg with magenta named, NO reference image (a reference made the model fill the frame edge to edge), buildings seen from the front and above with doors facing the viewer (without a facing cue the model draws an isometric diorama on a slab), freestanding with no wall or ground so the tile sits over the terrain, a short road among the buildings named as the only ground (a road 'from the bottom edge' made the model fill and crop the frame).",
   "pack": [
-    "art/tiles/town_africa.png"
+    "art/objects/town_africa.png"
   ]
 }

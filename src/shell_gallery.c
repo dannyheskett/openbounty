@@ -1088,7 +1088,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         combat_prepare_player(&c, g);
         combat_prepare_foe(&c, &tgt);
         combat_reset_match(&c);
-        combat_render_set_ground(tile_cache_get("grass"));
+        combat_render_set_ground(tile_cache_get(NULL));
         combat_reset_turn(&c, COMBAT_SIDE_AI);
         c.unit_id = combat_next_unit(&c);
         gallery_combat_log(&c, g);
@@ -1156,7 +1156,7 @@ int gallery_run(Game *g, Map *m, Fog *f, const Resources *res, const Sprites *s,
         combat_prepare_player(&c, g);
         combat_prepare_castle(&c, &tgt);
         combat_reset_match(&c);
-        combat_render_set_ground(tile_cache_get("grass"));
+        combat_render_set_ground(tile_cache_get(NULL));
         combat_reset_turn(&c, COMBAT_SIDE_AI);
         c.unit_id = combat_next_unit(&c);
         gallery_combat_log(&c, g);

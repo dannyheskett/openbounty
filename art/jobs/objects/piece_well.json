@@ -1,5 +1,5 @@
 {
- "id": "tiles/piece_well",
+ "id": "objects/piece_well",
  "prompt": "an isolated cut-out game sprite of a round stone village well with a wooden crossbeam, a rope and a bucket, seen from the front and above like the other map objects, soft pixel-art shading lit from the upper left, no black outline, a freestanding object with no ground under it: only the flat magenta background shows below and around it, the whole thing complete and well inside the picture with empty background on every side, nothing touching or cut off by any edge, solid magenta background",
  "style": "rd_pro__topdown",
  "width": 96,
@@ -16,6 +16,6 @@
  ],
  "_note": "#63 settlement set piece: a map object round towns and along roads (the parent-and-children placement Songs of Conquest uses), on the map-object route.",
  "pack": [
-  "art/tiles/piece_well.png"
+  "art/objects/piece_well.png"
  ]
 }

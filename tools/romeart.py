@@ -253,8 +253,8 @@ def nearest_mask(ref_path, fore_cols, back_cols, size):
 
 
 def edges_into(tiles, pairs):
-    """Each of art/reference/edges/<terrain>_edge_NN (the original 48x34
-    tiles, water 00-11, the rest 01-12) read as a shape -- terrain or grass by
+    """Each of art/reference/edges/<terrain>_edge_*/_inner_* (the original 48x34
+    tiles: sides, corners and inner corners) read as a shape -- terrain or grass by
     which base's colours a pixel is nearer -- resized to the pack tile and
     filled with this set's base and grass, so every edge seams with its bases
     by construction (REQ-229). pairs: (art, the terrain whose shapes it takes)."""
@@ -267,10 +267,10 @@ def edges_into(tiles, pairs):
         base = rgba(os.path.join(tiles, f"{art}.png"))
         t_cols = cols(os.path.join(ref_dir, f"{ref}.png"))
         for name in sorted(os.listdir(ref_dir)):
-            if name.startswith(f"{ref}_edge_"):
+            if name.startswith((f"{ref}_edge_", f"{ref}_inner_")):
                 out = grass.copy()
                 out.paste(base, (0, 0), nearest_mask(os.path.join(ref_dir, name), t_cols, g_cols, base.size))
-                out.save(os.path.join(tiles, name.replace(f"{ref}_edge_", f"{art}_edge_")))
+                out.save(os.path.join(tiles, art + name[len(ref):]))
                 n += 1
     return n
 
@@ -316,6 +316,31 @@ def cmd_edges(a):
 # sprites S are laid loose in the gap clear of every straddler, and the west
 # and east edge sprites are set back T (top) and U (bottom) px.
 
+# The edge pieces by shape (REQ-229a/e): <t>_edge_<sides> for the sides that
+# border other ground, <t>_inner_<corner> for a lone open diagonal, letters in
+# n, e, s, w order. Inside the tool a shape is still its code in the original
+# game's order -- water's four corners first and the rest one lower than the
+# land's -- but the code never names a file: edge_name() does.
+EDGE_SHAPE = {1: "edge_nw", 2: "edge_sw", 3: "edge_ne", 4: "edge_es", 5: "inner_es", 6: "inner_ne",
+              7: "inner_sw", 8: "inner_nw", 9: "edge_e", 10: "edge_w", 11: "edge_n", 12: "edge_s",
+              13: "edge_ns", 14: "edge_ew", 15: "edge_nes", 16: "edge_esw", 17: "edge_nsw", 18: "edge_new",
+              19: "edge_nesw"}
+WATER_SHAPE = {0: "edge_ne", 1: "edge_nw", 2: "edge_sw", 3: "edge_es", **{k: EDGE_SHAPE[k + 1] for k in range(4, 19)}}
+
+
+def edge_name(t, code):
+    """Terrain t's edge piece `code` as a file stem: edge_name("forest", 11) is
+    forest_edge_n, edge_name("water", 0) water_edge_ne (water and water_sand
+    take water's codes)."""
+    return f"{t}_{(WATER_SHAPE if t.startswith('water') else EDGE_SHAPE)[code]}"
+
+
+def is_edge(name):
+    """Whether a tile stem is an edge piece (a side, corner, strip, spit,
+    island or inner corner) rather than a plain or other tile."""
+    return "_edge_" in name or "_inner_" in name
+
+
 # The open sides of each edge code (REQ-229a/e): 1-4 corners, 9-12 sides,
 # 13-18 strips and spits, 19 the island; 0 and 5-8 have none.
 EDGE_OPEN = {11: "N", 12: "S", 9: "E", 10: "W", 1: "NW", 3: "NE", 2: "SW", 4: "SE",
@@ -354,7 +379,7 @@ class Sprites:
 def lattice_layout(sprites, name="forest", terrain="forest", crown=None, slots=None, ragged=None,
                    grass=f"{PACK}/art/tiles/grass.png"):
     """A forest or mountain layout under the border contract: {"sprites",
-    "grass", "tiles": {name, name_edge_01..19: {"wrap": "", "sprites":
+    "grass", "tiles": {name, its 19 edge pieces (edge_name): {"wrap": "", "sprites":
     [[i, x, y], ...]}}}, every sprite listed in draw order, negatives
     included, for compose. Returns (layout, grass pixels left showing)."""
     S = Sprites(sprites)
@@ -497,7 +522,7 @@ def lattice_layout(sprites, name="forest", terrain="forest", crown=None, slots=N
 
     lay = {"sprites": sprites, "grass": grass, "tiles": {name: tile(0)}}
     for code in range(1, 20):
-        lay["tiles"][f"{name}_edge_{code:02d}"] = tile(code)
+        lay["tiles"][edge_name(name, code)] = tile(code)
     can = Image.new("RGBA", (288, 288))           # the plain tile among plain tiles
     for oy in (0, 96, 192):
         for ox in (0, 96, 192):
@@ -561,7 +586,7 @@ def compose_layout(lay, out, sprite_override=None):
         places = entry["sprites"] if isinstance(entry, dict) else entry
         wrap = entry.get("wrap", "hv") if isinstance(entry, dict) else "hv"
         im = ground.copy()
-        if lay.get("shadow") and "_edge_" in name:
+        if lay.get("shadow") and is_edge(name):
             dx_, dy_, a_ = lay["shadow"]
             ink = Image.new("RGBA", (96, 96))
             for i, x, y in places:
@@ -606,9 +631,9 @@ def seam_violations(lay, report=print):
     straddles itself, meets the same sprite flush on the other side, or only
     touches the line in a run of at most 8 px (an outline, not a cut)."""
     S = Sprites(lay["sprites"])
-    name = [k for k in lay["tiles"] if "_edge_" not in k][0]
+    name = [k for k in lay["tiles"] if not is_edge(k)][0]
     tiles = {0: lay["tiles"][name]}
-    tiles.update({c: lay["tiles"][f"{name}_edge_{c:02d}"] for c in range(1, 20)})
+    tiles.update({c: lay["tiles"][edge_name(name, c)] for c in range(1, 20)})
     held = {c: {tuple(s) for s in t["sprites"]} for c, t in tiles.items()}
     ink = lambda s: S.ink(*s)
     bad = 0
@@ -814,10 +839,10 @@ def whole(im):
 
 
 def island_clump(d, terrain, ground="grass", fam=""):
-    """The free-standing clump of a set's island piece (<terrain>_edge_19):
+    """The free-standing clump of a set's island piece (<terrain>_edge_nesw):
     its pixels unlike the ground, on clear. For a set without kept sprites."""
     isl, gr = (Image.open(os.path.join(d, n)).convert("RGB")
-               for n in (f"{terrain}{fam}_edge_19.png", f"{ground}.png"))
+               for n in (f"{terrain}{fam}_edge_nesw.png", f"{ground}.png"))
     ip, gp = isl.load(), gr.load()
     clump = Image.new("RGBA", isl.size, (0, 0, 0, 0))
     cp = clump.load()
@@ -830,7 +855,8 @@ def island_clump(d, terrain, ground="grass", fam=""):
 
 def fills_set(zone, d):
     """Where a grass or sand cell has a wood or range on two adjacent sides,
-    the shell draws <terrain>[_sand]_fill_<corner> into it, so a concave
+    the shell draws <terrain>[_sand]_fill_<corner> into it (map_art "fills";
+    corners ne, es, sw, nw), so a concave
     corner rounds off. A fill is the plain tile's lattice continued into the
     cell -- the whole sprites whose ink centre lies within 50 px of the corner
     -- on a 288 px canvas with the cell in the middle (drawn one cell up and
@@ -843,7 +869,7 @@ def fills_set(zone, d):
         S = lay and Sprites(lay["sprites"])
         for fam, ground in (("", "grass"), ("_sand", "desert")):
             if not os.path.exists(os.path.join(d, f"{ground}.png")) or \
-                    fam and not os.path.exists(os.path.join(d, f"{t}_sand_edge_01.png")):
+                    fam and not os.path.exists(os.path.join(d, f"{t}_sand_edge_nw.png")):
                 continue
             for corner, (cx, cy) in CORNER.items():
                 out = Image.new("RGBA", (288, 288), (0, 0, 0, 0))
@@ -856,7 +882,7 @@ def fills_set(zone, d):
                             keep.append((y, x, S.im(i)))
                     for (y, x, im) in sorted(keep, key=lambda k: (k[0], k[1])):
                         out.alpha_composite(im, (x + 96, y + 96))
-                elif os.path.exists(os.path.join(d, f"{t}{fam}_edge_19.png")):
+                elif os.path.exists(os.path.join(d, f"{t}{fam}_edge_nesw.png")):
                     # the clump set into the corner, its middle 26 px in from the vertex
                     clump = island_clump(d, t, ground, fam)
                     clump = clump.crop(clump.getbbox())
@@ -876,7 +902,8 @@ def fills_set(zone, d):
                             if math.hypot(dx, dy) <= rad:
                                 op[x + 96, y + 96] = pp[x, y][:3] + (255,)
                 out.putalpha(out.getchannel("A").point(lambda v: 255 if v > 127 else 0))
-                out.save(os.path.join(d, f"{t}{fam}_fill_{corner}.png"))
+                # (the corner keys seed the shapes, so "se" stays "se" here and is "es" in the name)
+                out.save(os.path.join(d, f"{t}{fam}_fill_{'es' if corner == 'se' else corner}.png"))
                 n += 1
     return n
 
@@ -931,7 +958,7 @@ def aprons_set(zone, d):
                     drawn.append((cy + h // 2, cx - w // 2, cy - h // 2, im))
                 for (_, x_, y_, im) in sorted(drawn, key=lambda k: k[0]):   # back to front
                     out.alpha_composite(im, (x_, y_))
-                out.save(os.path.join(d, f"{t}_apron_{side}_{v}.png"))
+                out.save(os.path.join(d, f"{t}_apron_{side}_v{v}.png"))
                 n += 1
     return n
 
@@ -975,12 +1002,12 @@ def details_set(zone, d):
             drawn.append((cy + im.height // 2, cx - im.width // 2, cy - im.height // 2, im))
         for (_, x_, y_, im) in sorted(drawn, key=lambda k: k[0]):
             out.alpha_composite(im, (max(0, min(96 - im.width, x_)), max(0, min(96 - im.height, y_))))
-        out.save(os.path.join(d, f"detail_{v}.png"))
+        out.save(os.path.join(d, f"detail_v{v}.png"))
         n += 1
     return n
 
 
-@command("details", "small detail: a bush, a stone or two on open grass or sand (detail_1..4)",
+@command("details", "small detail: a bush, a stone or two on open grass or sand (detail_v1..v4)",
          A("pack", nargs="?", default=PACK))
 def cmd_details(a):
     n = sum(details_set(zone, d) for zone, d in for_each_set(a.pack))
@@ -1060,12 +1087,12 @@ def edgevars_set(zone, d):
             near = (lambda i, x, y, b: not ((x + b[0] < 30) and rng.random() < 0.34)) if side == "W" else \
                    (lambda i, x, y, b: not ((x + b[2] > 66) and rng.random() < 0.34))
             places = []
-            for (i, flip, x, y) in nudged(S, lay["tiles"][f"mountain_edge_{code:02d}"]["sprites"],
+            for (i, flip, x, y) in nudged(S, lay["tiles"][edge_name("mountain", code)]["sprites"],
                                           rng, near, dx=6, dy=5):
                 if flip:                  # the flipped copy, as sprite 100 + i
                     extra[100 + i] = S.im(i).transpose(Image.FLIP_LEFT_RIGHT)
                 places.append([100 + i if flip else i, x, y])
-            tiles[f"mountain_edge_{code:02d}_v{v}"] = {"wrap": "", "sprites": places}
+            tiles[f"{edge_name('mountain', code)}_v{v}"] = {"wrap": "", "sprites": places}
     S2 = Sprites(lay["sprites"])
     S2._im.update(extra)
     outd = tempfile.mkdtemp()
@@ -1077,7 +1104,7 @@ def edgevars_set(zone, d):
     return n
 
 
-@command("edgevars", "mountain side variants (mountain_edge_09/10_v1, _v2), so a long side stops repeating",
+@command("edgevars", "mountain side variants (mountain_edge_e/w_v1, _v2), so a long side stops repeating",
          A("pack", nargs="?", default=PACK))
 def cmd_edgevars(a):
     n = sum(edgevars_set(zone, d) for zone, d in for_each_set(a.pack))
@@ -1218,7 +1245,7 @@ def stitch_set(src, terrain, out, seed=1):
     os.makedirs(out, exist_ok=True)
     made = {terrain: build("uuuu"), "grass": build("llll")}
     for code, corners in (STITCH_WATER if terrain == "water" else STITCH_STD).items():
-        made[f"{terrain}_edge_{code:02d}"] = build(corners)
+        made[edge_name(terrain, code)] = build(corners)
     for name, im in made.items():
         im.save(os.path.join(out, name + ".png"))
     return made
@@ -1248,6 +1275,12 @@ SWEEP_HW = 16         # half width of a straight band, centred at 48
 SWEEP_END = {"n": (0.45, 0.30, +5.0, +0.60), "e": (0.30, 0.50, -4.0, -0.55),
              "s": (0.50, 0.32, -6.0, -0.65), "w": (0.32, 0.48, +4.0, +0.50)}
 END_TIP, END_FULL, END_FRAY, END_MIN_W = 12.0, 48.0, 3.5, 6.0
+
+
+# A sweep shape's file name: the sides it joins in n, e, s, w order, the two
+# diagonals by the corner they leave first (diag_ne runs NE-SW). The keys stay
+# as drawn ("wn", "nesw") inside the tool.
+SWEEP_NAME = {"wn": "nw", "nesw": "diag_ne", "nwse": "diag_nw", "n_se": "n_es", "w_se": "w_es", "c_se": "c_es"}
 
 
 def sweep_shapes():
@@ -1331,7 +1364,7 @@ def sweep_set(src, out, prefix="road", ground=f"{PACK}/art/tiles/grass.png", rim
                         px[x, y] = (int(r_ * rim_shade), int(g_ * rim_shade), int(b_ * rim_shade), a_)
                     else:
                         px[x, y] = dp[x, y]
-        im.save(os.path.join(out, f"{prefix}_{name}.png"))
+        im.save(os.path.join(out, f"{prefix}_{SWEEP_NAME.get(name, name)}.png"))
 
 
 @command("sweep", "the 24 road or river pieces swept from a corner set's plain tile",
@@ -1353,8 +1386,8 @@ SHORE_CODES = list(range(14)) + [18]       # the water edges the pack draws a sa
 
 
 def shore_set(d):
-    """Sand shores, water_sand_edge_NN, for a set with desert: each pixel of
-    the set's water_edge_NN read as sea or shore (nearer the set's water or
+    """Sand shores, water_sand_edge_*/_inner_*, for a set with desert: each
+    pixel of the set's matching water piece read as sea or shore (nearer the set's water or
     its grass colours), the shore filled with the set's desert -- so a sea
     whose coast is all sand draws a sand shore line, not a grass one."""
     if not os.path.exists(os.path.join(d, "desert.png")):
@@ -1365,7 +1398,7 @@ def shore_set(d):
     dp = rgba(os.path.join(d, "desert.png")).load()
     sea = {}
     for k in SHORE_CODES:
-        im = rgba(os.path.join(d, f"water_edge_{k:02d}.png"))
+        im = rgba(os.path.join(d, edge_name("water", k) + ".png"))
         px = im.load()
         for y in range(TILE):
             for x in range(TILE):
@@ -1374,11 +1407,11 @@ def shore_set(d):
                     sea[c] = near(c, W) <= near(c, G)
                 if not sea[c]:
                     px[x, y] = dp[x, y]
-        im.save(os.path.join(d, f"water_sand_edge_{k:02d}.png"))
+        im.save(os.path.join(d, edge_name("water_sand", k) + ".png"))
     return len(SHORE_CODES)
 
 
-@command("shore", "sand shores (water_sand_edge_NN) for every set with desert",
+@command("shore", "sand shores (water_sand_*) for every set with desert",
          A("pack", nargs="?", default=PACK))
 def cmd_shore(a):
     print(f"wrote {sum(shore_set(d) for _, d in for_each_set(a.pack))} sand shores")
@@ -1411,7 +1444,7 @@ DOCK_DECK = os.path.join("art", "primitives", "pieces", "dock_deck.png")   # pie
 def dock_tiles(tiles, src=DOCK_DECK):
     """dock_<n|e|s|w>: the keyed deck cropped to its ink, centred along the
     shore and set 6 px from the land side of a clear tile. The shell draws
-    it over that side's water_edge piece (the map's 'j')."""
+    it over that side's water edge piece (the map's 'j')."""
     deck = key_sprite(Image.open(src))
     deck = deck.crop(deck.getbbox())
     w, h = deck.size
@@ -1445,7 +1478,7 @@ def cmd_dock(a):
 # its own water, drawn for the Sein in #218; Africa's irrigated farmland, the
 # job fields_africa_irrigated laid 2x2, which Oriens shares).
 ZONE_CFG = {"galliae": {"master": ["fields_plough", "fields_wheat"],
-                        "pieces": ["galliae/pieces/bridge_h", "galliae/pieces/bridge_v"]},
+                        "pieces": ["galliae/pieces/bridge_ew", "galliae/pieces/bridge_ns"]},
             "africa": {"master": ["fields_plough"], "pieces": ["africa/pieces/fields_wheat"]},
             "oriens": {"master": ["fields_plough"], "pieces": ["africa/pieces/fields_wheat"]}}
 ZONE_RAGGED = [6, 20, 34, 12, 28]     # mountain edges: loose rock 6, crags set back 12 and 28 px (#63)
@@ -1481,7 +1514,7 @@ def zone_build(zone):
             keep(os.path.join(stage, terrain), master_names(terrain))
     # 3. forest and mountain: the zone's lattice composed over its grass, and
     #    again over its desert for the pieces whose open sides all face sand
-    #    (forest 07 and 08 have none: their codes went to the vista landmarks)
+    #    (forest's inner_sw and inner_nw have none: their codes went to the vista landmarks)
     for terrain in ("forest", "mountain"):
         lay = zone_lattice(zone, terrain, ragged=ZONE_RAGGED if terrain == "mountain" else None)
         lay["grass"] = os.path.join(out, "grass.png")
@@ -1494,8 +1527,8 @@ def zone_build(zone):
             sand = compose_layout(lay, os.path.join(stage, terrain + "_sand"))
             for k in range(1, 13):
                 if not (terrain == "forest" and k in (7, 8)):
-                    Image.open(os.path.join(sand, f"{terrain}_edge_{k:02d}.png")).save(
-                        os.path.join(out, f"{terrain}_sand_edge_{k:02d}.png"))
+                    Image.open(os.path.join(sand, edge_name(terrain, k) + ".png")).save(
+                        os.path.join(out, edge_name(terrain + "_sand", k) + ".png"))
     # 4. roads and rivers swept over the grass, the rivers again over forest and mountain
     for src, prefix, ground in (("cobble", "road", "grass"), ("river", "river", "grass"),
                                 ("river", "river_forest", "forest"), ("river", "river_mountain", "mountain")):
@@ -1503,18 +1536,19 @@ def zone_build(zone):
             sweep_set(os.path.join(prim, src), os.path.join(stage, prefix), prefix,
                       os.path.join(out, ground + ".png"), rim=2, rim_shade=0.8)
             keep(os.path.join(stage, prefix), master_names(prefix + "_"))
-    # 5. the river bridges, and the mouths: east built, west its mirror, and
-    #    both drawn the other way up for a sea to the south
+    # 5. the river bridges, and the mouths, named by the sides the sea is on:
+    #    ne built (the river runs out east, the sea along the top), nw its
+    #    mirror, and both drawn the other way up (es, sw) for a sea to the south
     if has("river_ns.png") and has("road_ew.png"):
         bridge_tiles(out, out)
-    if has("water_edge_02.png"):
-        e = river_mouth(*(os.path.join(out, n) for n in ("water_edge_02.png", "river_ew.png", "grass.png", "water.png")))
-        e.save(os.path.join(out, "river_mouth_e.png"))
-        e = Image.open(os.path.join(out, "river_mouth_e.png"))
-        e.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(out, "river_mouth_w.png"))
-        for k in ("e", "w"):
+    if has("water_edge_sw.png"):
+        e = river_mouth(*(os.path.join(out, n) for n in ("water_edge_sw.png", "river_ew.png", "grass.png", "water.png")))
+        e.save(os.path.join(out, "river_mouth_ne.png"))
+        e = Image.open(os.path.join(out, "river_mouth_ne.png"))
+        e.transpose(Image.FLIP_LEFT_RIGHT).save(os.path.join(out, "river_mouth_nw.png"))
+        for k, south in (("ne", "es"), ("nw", "sw")):
             Image.open(os.path.join(out, f"river_mouth_{k}.png")).transpose(Image.FLIP_TOP_BOTTOM).save(
-                os.path.join(out, f"river_mouth_{k}_s.png"))
+                os.path.join(out, f"river_mouth_{south}.png"))
     # 6. what the zone shares with the master set, and the farmland's edges
     keep(os.path.join(PACK, "art", "tiles"), [n + ".png" for n in cfg["master"]])
     for p in cfg["pieces"]:
@@ -1654,7 +1688,7 @@ MAP_BASE = {'~': 'water', '.': 'grass', ',': 'grass', 'f': 'forest',
             'S': 'grass', 'O': 'grass', 'K': 'grass', 'G': 'grass',
             'p': 'fields_plough', 'w': 'fields_wheat',
             'j': 'water', 'n': 'grass', 'u': 'grass', 'h': 'grass', 'e': 'grass'}
-MAP_PLAIN = {'~': 'water', '.': 'grass', ',': 'grass_variant', 'f': 'forest',
+MAP_PLAIN = {'~': 'water', '.': 'grass', ',': 'grass_v1', 'f': 'forest',
              '^': 'mountain', 'd': 'desert', 'P': 'pharos', 'T': 'temple_ocean',
              'S': 'landmark_sibyl', 'O': 'landmark_oppidum', 'K': 'landmark_tophet',
              'G': 'landmark_gordian', 'p': 'fields_plough', 'w': 'fields_wheat',
@@ -1674,10 +1708,15 @@ MAP_SPIT_IDX = {frozenset('ns'): 13, frozenset('ew'): 14, frozenset('nes'): 15,
                 frozenset('esw'): 16, frozenset('swn'): 17, frozenset('wne'): 18,
                 frozenset('nesw'): 19}
 MAP_CURVES = {frozenset('ns'): 'ns', frozenset('ew'): 'ew', frozenset('ne'): 'ne',
-              frozenset('es'): 'es', frozenset('sw'): 'sw', frozenset('wn'): 'wn'}
+              frozenset('es'): 'es', frozenset('sw'): 'sw', frozenset('wn'): 'nw'}
 MAP_JOINS = {('n', 'sw'), ('n', 'se'), ('s', 'nw'), ('s', 'ne'),
              ('e', 'nw'), ('e', 'sw'), ('w', 'ne'), ('w', 'se')}
-MAP_OPEN_ARTS = ("grass", "grass_variant", "desert")   # where `place` may scatter
+MAP_OPEN_ARTS = ("grass", "grass_v1", "desert")   # where `place` may scatter
+
+
+def nesw(letters):
+    """Direction letters in the order names use: n, e, s, w ("se" -> "es")."""
+    return "".join(sorted(letters, key="nesw".index))
 
 
 def map_die(msg):
@@ -1816,11 +1855,11 @@ def map_build(pack, zid, src, out, strict=False):
         if len(ex) == 2 and len(orth) == 2:
             return MAP_CURVES.get(frozenset(orth))
         if len(ex) == 2 and len(diag) == 2:
-            return {frozenset(('ne', 'sw')): 'nesw', frozenset(('nw', 'se')): 'nwse'}.get(frozenset(diag))
+            return {frozenset(('ne', 'sw')): 'diag_ne', frozenset(('nw', 'se')): 'diag_nw'}.get(frozenset(diag))
         if len(ex) == 2 and len(orth) == 1 and len(diag) == 1:
             o, c = next(iter(orth)), next(iter(diag))
             if (o, c) in MAP_JOINS:
-                return f"{o}_{c}"
+                return f"{o}_{nesw(c)}"
         return None
 
     out_art = [[None] * W for _ in range(H)]
@@ -1836,16 +1875,16 @@ def map_build(pack, zid, src, out, strict=False):
                 prefix = MAP_RIVER_PREFIX[MAP_RIVER[c]]
                 sea = [d for d, (dx, dy) in MAP_DIRS4.items() if at(x + dx, y + dy) == '~']
                 if len(ex) == 1 and len(sea) >= 1:
-                    # A river ending against the sea is its mouth. The mouth
-                    # art has the open sea on its outflow side and along its
-                    # top, land along its foot; _s is drawn the other way up.
+                    # A river ending against the sea is its mouth, named by the
+                    # sides the sea is on: its outflow side and its top (ne,
+                    # nw), or its foot for the art drawn the other way up (es, sw).
                     inflow = next(iter(ex))
                     north, south = at(x, y - 1), at(x, y + 1)
                     flip = south == '~' and north != '~'
                     if inflow == 'w' and 'e' in sea:
-                        out_art[y][x] = 'river_mouth_e' + ('_s' if flip else '')
+                        out_art[y][x] = 'river_mouth_' + ('es' if flip else 'ne')
                     elif inflow == 'e' and 'w' in sea:
-                        out_art[y][x] = 'river_mouth_w' + ('_s' if flip else '')
+                        out_art[y][x] = 'river_mouth_' + ('sw' if flip else 'nw')
                     else:
                         errors.append(f"({x},{y}): river meets the sea from the "
                                       f"{inflow}; the pack has mouths for east "
@@ -1925,7 +1964,7 @@ def map_build(pack, zid, src, out, strict=False):
             errors.append(f"({x},{y}): a road diagonal's corner falls on "
                           f"{MAP_BASE.get(c)}; its companion needs grass")
         else:
-            out_art[y][x] = 'road_c_' + next(iter(corners))
+            out_art[y][x] = 'road_c_' + nesw(next(iter(corners)))
 
     def edge_idx(t, diff):
         """(index, None) for the edge piece showing these different
@@ -1965,7 +2004,7 @@ def map_build(pack, zid, src, out, strict=False):
             # leaves its edge to a wood or range that has sand edges, unless no
             # piece shows what is left, when the full shape stands.
             diff = {d for d in full if near[d] != 'water' and
-                    not (near[d] in ('forest', 'mountain') and f"{near[d]}_sand_edge_01" in a2c)} \
+                    not (near[d] in ('forest', 'mountain') and edge_name(f"{near[d]}_sand", 1) in a2c)} \
                 if t == 'desert' else full
             idx, why = (None, None) if not diff else edge_idx(t, diff)
             if diff and idx is None and diff != full:
@@ -1988,17 +2027,17 @@ def map_build(pack, zid, src, out, strict=False):
                         f"({x},{y}): {t} edge on {sorted(card)} cannot "
                         f"show its different diagonal {lost}")
             # A sea, wood or range whose every other neighbour is sand fades to
-            # sand: its *_sand_edge piece, where the pack has it.
-            family = f"{t}_edge"
+            # sand: its <t>_sand piece, where the pack has it.
+            family = t
             if t in ('water', 'forest', 'mountain') and all(near[d] == 'desert' for d in diff) \
-                    and f"{t}_sand_edge_{idx:02d}" in a2c:
-                family = f"{t}_sand_edge"
+                    and edge_name(f"{t}_sand", idx) in a2c:
+                family = f"{t}_sand"
             elif t in ('forest', 'mountain') and all(near[d] == 'desert' for d in diff):
-                wants_sand.add(f"{t}_sand_edge_{idx:02d}")
-            name = f"{family}_{idx:02d}"
+                wants_sand.add(edge_name(f"{t}_sand", idx))
+            name = edge_name(family, idx)
             if c == 'j':
                 side = next(iter(card)) if len(card) == 1 else None
-                if family != 'water_edge' or side is None or f"dock_{side}" not in a2c:
+                if family != 'water' or side is None or f"dock_{side}" not in a2c:
                     errors.append(f"({x},{y}): a jetty wants one straight grass shore "
                                   f"(has land on {sorted(diff)})")
                 else:
@@ -2533,8 +2572,12 @@ def render_flat(rows, w, h, codes, scale):
 
 
 def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_arts=None,
-                 seed=0, box=None):
+                 seed=0, box=None, map_art=None):
+    """The map drawn as the shell draws it: each code's art (an object code's
+    from art/objects/, over its ground), then the map art overlays."""
     TW, TH = cell
+    ma = map_art or {}
+    objects = {v["art"] for v in codes.values() if v.get("object")}
     x0, y0, x1, y1 = box or (0, 0, w - 1, h - 1)
     img = Image.new("RGB", ((x1 - x0 + 1) * TW, (y1 - y0 + 1) * TH), (0, 0, 0))
     cache = {}
@@ -2556,7 +2599,8 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_ar
         master set; scaled to `size` once."""
         if name not in cache:
             own = tile_set and (not set_arts or name in set_arts)
-            p = os.path.join(pack_dir, "art", "tiles", tile_set if own else "", name + ".png")
+            p = os.path.join(pack_dir, "art", "objects", name + ".png") if name in objects else \
+                os.path.join(pack_dir, "art", "tiles", tile_set if own else "", name + ".png")
             cache[name] = Image.open(p).convert("RGBA") if os.path.exists(p) else None
             if cache[name] is None and warn:
                 print(f"  warn: no art for tile '{name}' (looked for {p})")
@@ -2597,7 +2641,8 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_ar
         if 1 <= v <= 4 and open_ground(x, y) and all(
                 ter(x + dx, y + dy) not in ("forest", "mountain", "water")
                 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-            t = tile(f"detail_{v}", (TW, TH))
+            names = ma.get("details", [])
+            t = tile(names[v - 1], (TW, TH)) if v <= len(names) else None
             if t is not None:
                 img.paste(t, at(x, y), t)
     # aprons: a plain grass or sand cell beside a wood or range gets one of that
@@ -2609,8 +2654,9 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_ar
         for k, (side, (dx, dy)) in enumerate((("n", (0, -1)), ("e", (1, 0)), ("s", (0, 1)), ("w", (-1, 0)))):
             a = ter(x + dx, y + dy)
             v = tilevar_pick(APRON_SEED + k, x, y, 5)     # 0 and 4: none
-            if a in ("forest", "mountain") and 1 <= v <= 3:
-                t = tile(f"{a}_apron_{side}_{v}", (TW * 3, TH * 3))
+            names = ma.get("aprons", {}).get(a, {}).get(side, []) if a in ("forest", "mountain") else []
+            if 1 <= v <= 3 and v <= len(names):
+                t = tile(names[v - 1], (TW * 3, TH * 3))
                 if t is not None:
                     img.paste(t, at(x, y, -1, -1), t)
     # inner-corner fills: a grass or sand cell with a wood or range on two
@@ -2621,8 +2667,9 @@ def render_tiles(rows, w, h, codes, pack_dir, tile_set="", cell=(48, 34), set_ar
             continue
         for corner, (dx, dy) in (("ne", (1, -1)), ("nw", (-1, -1)), ("se", (1, 1)), ("sw", (-1, 1))):
             a, b = ter(x + dx, y), ter(x, y + dy)
-            if a == b and a in ("forest", "mountain"):
-                t = tile(f"{a}{'_sand' if here == 'desert' else ''}_fill_{corner}", (TW * 3, TH * 3))
+            name = ma.get("fills", {}).get(f"{a}{'_sand' if here == 'desert' else ''}", {}).get(nesw(corner), "")
+            if a == b and a in ("forest", "mountain") and name:
+                t = tile(name, (TW * 3, TH * 3))
                 if t is not None:
                     img.paste(t, at(x, y, -1, -1), t)
     # an apron or fill may lean onto its neighbours: every landmark and set
@@ -2648,7 +2695,7 @@ def map_render(a):
         r = g.get("render", {})
         cell = (int(r.get("tile_w", 48)), int(r.get("tile_h", 34)))
         img = render_tiles(rows, w, h, codes, a.pack, z.get("tile_set", ""), cell,
-                           set(z.get("tile_set_arts", [])) or None, a.seed, box)
+                           set(z.get("tile_set_arts", [])) or None, a.seed, box, g.get("map_art"))
     else:
         cell = (a.scale, a.scale)
         img = render_flat(rows, w, h, codes, a.scale).crop(
@@ -3824,7 +3871,8 @@ def job_group(name, d):
     if name.startswith("intro_"):
         return "Introduction"
     for frag, g in (("art/troops/", "Troops"), ("art/characters/", "Portraits and faces"), ("art/villains/", "Villains"),
-                    ("art/classes/", "Hero classes"), ("art/tiles/", "Map tiles and terrain"), ("art/scenes/", "Scenes"),
+                    ("art/classes/", "Hero classes"), ("art/tiles/", "Map tiles and terrain"),
+                    ("art/objects/", "Map objects"), ("art/scenes/", "Scenes"),
                     ("art/ui/", "Screens and UI")):
         if p.startswith(frag):
             return g
@@ -3921,22 +3969,26 @@ RECIPES = [   # (glob under art/, the command that makes it)
     ("tiles/oriens/*.png", "zone oriens && install oriens"),
     ("tiles/*_fill_*.png", "fills"),
     ("tiles/*_apron_*.png", "aprons"),
-    ("tiles/detail_[1-4].png", "details"),
+    ("tiles/detail_v[1-4].png", "details"),
     ("tiles/forest_v[12].png", "interiors"), ("tiles/mountain_v[12].png", "interiors"),
-    ("tiles/mountain_edge_[01][0-9]_v[12].png", "edgevars"),
-    ("tiles/water_sand_edge_*.png", "shore"),
+    ("tiles/mountain_edge_[ew]_v[12].png", "edgevars"),
+    ("tiles/water_sand_*.png", "shore"),
     ("tiles/dock_[nesw].png", "dock"),
     ("tiles/fields_*_edge_*.png", "edges assets/glory-of-rome '' --as fields_wheat=desert --as fields_plough=desert"),
-    ("tiles/river_mouth_[ew]_s.png", "zone (the mouths drawn the other way up)"),
+    ("tiles/fields_*_inner_*.png", "edges assets/glory-of-rome '' --as fields_wheat=desert --as fields_plough=desert"),
+    ("tiles/river_mouth_es.png", "zone (the mouths drawn the other way up)"),
+    ("tiles/river_mouth_sw.png", "zone (the mouths drawn the other way up)"),
     ("combat/field/*.png", "fields"),
     ("combat/castle_spike.png", "combat"), ("combat/cursor_0[1-4].png", "combat"),
     ("ui/class_select_picker_[0-3].png", "classpicker"),
     ("ui/title_words.png", "splashtitle --words"),
     ("ui/splash_logo.png", "splashlogo (the emblem: job ui/splash_logo_emblem)"),
     ("tiles/forest.png", "compose art/layouts/forest96_italia.json"),
-    ("tiles/forest_edge_[01][0-9].png", "compose art/layouts/forest96_italia.json"),
+    ("tiles/forest_edge_*.png", "compose art/layouts/forest96_italia.json"),
+    ("tiles/forest_inner_*.png", "compose art/layouts/forest96_italia.json"),
     ("tiles/mountain.png", "compose art/layouts/mountain96.json"),
-    ("tiles/mountain_edge_[01][0-9].png", "compose art/layouts/mountain96.json"),
+    ("tiles/mountain_edge_*.png", "compose art/layouts/mountain96.json"),
+    ("tiles/mountain_inner_*.png", "compose art/layouts/mountain96.json"),
     ("characters/*_0[89].png", "pingpong (bounce)"), ("characters/*_1[0-3].png", "pingpong (bounce)"),
     ("ui/hud_siege_0[4-7].png", "pingpong art/ui/hud_siege 4 --reverse"),
 ]

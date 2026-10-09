@@ -145,7 +145,7 @@ void end_cartoon_gallery_draw(RenderTexture2D *rt, const Resources *res,
                               const Sprites *sprites, const struct Game *game, int frame) {
     Texture2D hero = sprites_end_hero(sprites, game ? game->character.cls.id : NULL);
     Texture2D grass = sprites->end_grass;
-    if (!grass.id) grass = tile_cache_get("grass");
+    if (!grass.id) grass = tile_cache_get(NULL);
     int gw = res->ending.grid_width  > 0 ? res->ending.grid_width  : 6;
     int gh = res->ending.grid_height > 0 ? res->ending.grid_height : 5;
     present_refit(rt);
@@ -168,7 +168,7 @@ void run_end_cartoon(RenderTexture2D *rt,
     // The grass backdrop is the pack's ending.grass_tile when declared, else
     // the map's own grass tile, so a pack need not ship the tile twice.
     Texture2D grass = sprites->end_grass;
-    if (!grass.id) grass = tile_cache_get("grass");
+    if (!grass.id) grass = tile_cache_get(NULL);
     // Skip silently if the tile art isn't configured.
     if (!grass.id || !sprites->end_carpet.id || !hero.id) return;
 
