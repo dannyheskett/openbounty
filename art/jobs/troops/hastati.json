@@ -1,0 +1,43 @@
+{
+ "id": "troops/hastati",
+ "_note": "The hastati attack (2026-10-09), animated from its still (hastati_still run01) on the six-frame recipe (expansion on). run01's short tag prompt failed: it named no start or end pose, called the shield 'raised' (the still's is at rest, so the model moved it), and left out the soldier lessons -- the same single weapon, the shield still, both feet planted, no blur. run02 spells out the weapon's path and holds the rest.",
+ "prompt": "the spear comes down from upright at his right side to level at shoulder height and drives straight forward to full reach in front of him to the right, then draws back and returns upright at his side, the same single spear held in his right hand the whole time, the tall red scutum stays still on his left arm the whole time, both feet stay planted, smooth loop, no motion blur and no streaks",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 96,
+ "height": 96,
+ "seed": 9302,
+ "frames_duration": 6,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/troops/hastati_still/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_pack_path": "art/troops/hastati_00..05.png",
+ "pack": [
+  "art/troops/hastati_00.png",
+  "art/troops/hastati_01.png",
+  "art/troops/hastati_02.png",
+  "art/troops/hastati_03.png",
+  "art/troops/hastati_04.png",
+  "art/troops/hastati_05.png"
+ ],
+ "runs": [
+  {
+   "run": "run01",
+   "request": "03067434-3c1f-494b-b350-b63503723426",
+   "cost": 0.25,
+   "date": "2026-10-09"
+  },
+  {
+   "run": "run02",
+   "request": "4032f34d-2639-42c9-8c56-1c414607e4d0",
+   "cost": 0.25,
+   "date": "2026-10-09"
+  }
+ ]
+}

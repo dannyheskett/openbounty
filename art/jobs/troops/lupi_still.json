@@ -1,0 +1,32 @@
+{
+ "id": "troops/lupi_still",
+ "_note": "The lupi still (2026-10-09): the troop's art had no job (made for #38 before the job record), so it is remade on the settled troop route -- the pack's own troop style at 96x96, background removed, no reference image, the look of the old sprite described in words, the weapon at rest. run02 is rendered at 64 (the troop style's smallest canvas), the same prompt, so the wolf sits on the 96 cell at a wolf's size: run01 at 96 filled the frame edge to edge; the animation pads it onto 96 (pad_to).",
+ "prompt": "a large grey wolf seen from the side facing right, standing on all four legs, shaggy grey and tan fur with a pale belly, its head held low and its teeth bared in a snarl, tail out behind it",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 64,
+ "height": 64,
+ "seed": 9311,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [
+  64,
+  64
+ ],
+ "runs": [
+  {
+   "run": "run01",
+   "request": "45e6fe20-7181-4058-ae39-f52040f885d5",
+   "cost": 0.18,
+   "date": "2026-10-09"
+  },
+  {
+   "run": "run02",
+   "request": "84360b65-4a8f-4346-87ba-40b5baa31718",
+   "cost": 0.18,
+   "date": "2026-10-09"
+  }
+ ]
+}

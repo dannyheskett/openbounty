@@ -1,0 +1,55 @@
+{
+ "id": "troops/praetoriani",
+ "_note": "The praetoriani attack (2026-10-09), animated from its still (praetoriani_still run01) on the six-frame recipe (expansion on). run01's short tag prompt failed: it named no start or end pose, called the shield 'raised' (the still's is at rest, so the model moved it), and left out the soldier lessons -- the same single weapon, the shield still, both feet planted, no blur. run02 spells out the weapon's path and holds the rest. run02's sword turned into a curved blade raised overhead: 'short straight sword' and 'point down' are words the model does not take. run03 uses plain words (sword, lifts, stabs) and a new seed. run03 kept the sword straight but 'lifts' won: he raised it upright and never went forward. run04 has the forward verb only.",
+ "prompt": "he stabs the sword straight forward to the right at waist height, then pulls it back to his side, the same sword the whole time, the shield stays still on his left arm, both feet stay planted, smooth loop, no motion blur and no streaks",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 96,
+ "height": 96,
+ "seed": 9324,
+ "frames_duration": 6,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/troops/praetoriani_still/run01/01_raw.png",
+ "input_image_keep_alpha": true,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_pack_path": "art/troops/praetoriani_00..05.png",
+ "pack": [
+  "art/troops/praetoriani_00.png",
+  "art/troops/praetoriani_01.png",
+  "art/troops/praetoriani_02.png",
+  "art/troops/praetoriani_03.png",
+  "art/troops/praetoriani_04.png",
+  "art/troops/praetoriani_05.png"
+ ],
+ "runs": [
+  {
+   "run": "run01",
+   "request": "fb476bd6-916b-4959-b76d-bda01a2d2f05",
+   "cost": 0.25,
+   "date": "2026-10-09"
+  },
+  {
+   "run": "run02",
+   "request": "b12689f5-4e98-4386-9190-a8c91107fbe1",
+   "cost": 0.25,
+   "date": "2026-10-09"
+  },
+  {
+   "run": "run03",
+   "request": "d5e8edd6-2650-4fec-975c-18b4c98a886e",
+   "cost": 0.25,
+   "date": "2026-10-09"
+  },
+  {
+   "run": "run04",
+   "request": "f264e536-5a09-44c2-8e0f-38e46e48db5a",
+   "cost": 0.25,
+   "date": "2026-10-09"
+  }
+ ]
+}

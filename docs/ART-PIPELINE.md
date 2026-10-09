@@ -104,6 +104,22 @@ still: "from upright beside his head forward and down until his arm is
 straight out in front at shoulder height", then "both feet stay planted, the
 shield stays where it is".
 
+A soldier has needed that line; the short tag prompt copied from a monster's
+job (Ifrit, Elephanti) has not been enough (Hastati, Praetoriani, 2026-10-09).
+Without the start pose the spear has turned into a crossbow; a "raised
+shield" the still does not have has been moved and broken up; "short straight
+sword" and "point down" have come back as a curved blade swung overhead;
+"lifts the sword … and stabs" has lifted it and never stabbed. What has
+worked: plain words (sword, spear, shield), the one forward verb, the
+weapon's path, "the same sword the whole time", the shield and feet held
+still, and "no motion blur and no streaks". A beast that should cover ground
+(Lupi's lunge) has needed the paws left free; "the paws stay on the ground"
+has given a snap in place.
+
+A figure that fills its 96 cell (a beast is long, not tall) has been rendered
+at 64, the troop style's smallest canvas, with the same prompt, and the
+animation job has set it on the 96 cell with `pad_to: 96` (Lupi).
+
 ---
 
 ## 4. The frames

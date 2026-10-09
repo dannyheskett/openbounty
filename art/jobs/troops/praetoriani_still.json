@@ -1,0 +1,26 @@
+{
+ "id": "troops/praetoriani_still",
+ "_note": "The praetoriani still (2026-10-09): the troop's art had no job (made for #38 before the job record), so it is remade on the settled troop route -- the pack's own troop style at 96x96, background removed, no reference image, the look of the old sprite described in words, the weapon at rest.",
+ "prompt": "a veteran Roman praetorian guardsman seen from the side facing right, a steel helmet with a red crest and cheek guards, polished segmented steel plate armour over a dark red tunic, steel greaves, a red oval shield with a gold scorpion emblem on his left arm, a short sword held point down at his right side",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 96,
+ "height": 96,
+ "seed": 9321,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [
+  96,
+  96
+ ],
+ "runs": [
+  {
+   "run": "run01",
+   "request": "aa9b21dc-8879-4860-905b-c715912e4b89",
+   "cost": 0.18,
+   "date": "2026-10-09"
+  }
+ ]
+}

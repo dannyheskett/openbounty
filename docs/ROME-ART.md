@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-382 jobs. A job with a **Pack path** has produced that file in the pack; a
+388 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -2142,12 +2142,25 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a towering giant with wild hair and beard, bare massive chest and shoulders, standing on two thick human legs covered in green scaly skin, bare feet planted wide apart, holding a large boulder at rest against his hip in both hands, the figure huge and filling the square with a little space above his head
 - **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=6232`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
 
+### troops/hastati
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 9302)
+- **Pack path:** `art/troops/hastati_00..05.png`
+- **prompt:** the spear comes down from upright at his right side to level at shoulder height and drives straight forward to full reach in front of him to the right, then draws back and returns upright at his side, the same single spear held in his right hand the whole time, the tall red scutum stays still on his left arm the whole time, both feet stay planted, smooth loop, no motion blur and no streaks
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=6`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/troops/hastati_still/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=9302`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
 ### troops/hastati_portrait
 
 - **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9973)
 - **Pack path:** `art/troops/hastati_portrait.png`
 - **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Roman legionary of the hastati, a young soldier in a bronze helmet with a tall red feather crest, a mail and bronze chest plate over a red tunic, a red curved rectangular shield with a gold emblem and a spear, a legion camp with tents behind him
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/hastati_00.png"]`, `seed=9973`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+
+### troops/hastati_still
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 9301)
+- **prompt:** a young Roman legionary of the hastati seen from the side facing right, a steel helmet with a tall red horsehair crest, a segmented steel chest plate over a dark red tunic and skirt, a tall curved rectangular red scutum with a gold thunderbolt emblem on his left arm, a spear held upright in his right hand, red-brown leather boots
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9301`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
 
 ### troops/ifrit
 
@@ -2247,12 +2260,25 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a stocky Ligurian mountain tribesman with a thick beard, a fur cloak over a leather cuirass, a heavy long-handled axe held upright in both hands
 - **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
 
+### troops/lupi
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 9313)
+- **Pack path:** `art/troops/lupi_00..05.png`
+- **prompt:** the wolf lunges forward to the right and bites, then jumps back to where it started, the same wolf the whole time, smooth loop, no motion blur and no streaks
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=6`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/troops/lupi_still/run02/01_raw.png`, `pad_to=96`, `raw_only=true`, `return_spritesheet=true`, `seed=9313`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
 ### troops/lupi_portrait
 
 - **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9983)
 - **Pack path:** `art/troops/lupi_portrait.png`
 - **prompt:** a head-and-shoulders portrait, the face filling the frame, of a grey wolf, its head and shoulders filling the frame, yellow eyes, bared fangs, thick grey fur, a dark forest at dusk behind it
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/lupi_00.png"]`, `seed=9983`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+
+### troops/lupi_still
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (64x64, seed 9311)
+- **prompt:** a large grey wolf seen from the side facing right, standing on all four legs, shaggy grey and tan fur with a pale belly, its head held low and its teeth bared in a snarl, tail out behind it
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=64`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9311`, `style=user__glory_of_rome_troops_bac676cd`, `target=[64, 64]`, `width=64`
 
 ### troops/manes
 
@@ -2292,12 +2318,25 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a Numidian light horseman sitting bareback on a standing horse with all four hooves on the ground and its head up, no saddle and no bridle, only a rope around the horse's neck, the rider in a short plain sleeveless tunic with bare arms and legs, thick curly hair and a short beard, a small round hide shield on his left arm, a curved single-edged falcata sword held upright at rest in his right hand
 - **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=5902`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
 
+### troops/praetoriani
+
+- **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 9324)
+- **Pack path:** `art/troops/praetoriani_00..05.png`
+- **prompt:** he stabs the sword straight forward to the right at waist height, then pulls it back to his side, the same sword the whole time, the shield stays still on his left arm, both feet stay planted, smooth loop, no motion blur and no streaks
+- **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `frames_duration=6`, `height=96`, `input_image_keep_alpha=true`, `input_image_path=build/art/troops/praetoriani_still/run01/01_raw.png`, `raw_only=true`, `return_spritesheet=true`, `seed=9324`, `style=rd_advanced_animation__custom_action`, `target=[96, 96]`, `width=96`
+
 ### troops/praetoriani_portrait
 
 - **Engine:** Retro Diffusion rd_pro__default (128x128, seed 9974)
 - **Pack path:** `art/troops/praetoriani_portrait.png`
 - **prompt:** a head-and-shoulders portrait, the face filling the frame, of a Roman praetorian guardsman, a hard veteran in a polished steel helmet with a tall red crest, gleaming segmented steel armour over a red tunic, a red oval shield with a gold scorpion emblem and a drawn sword, the marble halls of the imperial palace behind him
 - **Settings:** `bypass_prompt_expansion=false`, `figure=false`, `height=128`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/troops/praetoriani_00.png"]`, `seed=9974`, `style=rd_pro__default`, `target=[128, 128]`, `width=128`
+
+### troops/praetoriani_still
+
+- **Engine:** Retro Diffusion user__glory_of_rome_troops_bac676cd (96x96, seed 9321)
+- **prompt:** a veteran Roman praetorian guardsman seen from the side facing right, a steel helmet with a red crest and cheek guards, polished segmented steel plate armour over a dark red tunic, steel greaves, a red oval shield with a gold scorpion emblem on his left arm, a short sword held point down at his right side
+- **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=9321`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
 
 ### troops/sagittarii
 

@@ -1,0 +1,44 @@
+{
+ "id": "troops/lupi",
+ "_note": "The lupi attack (2026-10-09), six frames, expansion on, plain words. The still is rendered at 64 (lupi_still run02) so the wolf is a wolf's size, and pad_to sets it on the 96 cell standing on the bottom. run01 (paws planted, lean and snap) moved too little for an attack (11%). run02 lunges and bites, the paws free.",
+ "prompt": "the wolf lunges forward to the right and bites, then jumps back to where it started, the same wolf the whole time, smooth loop, no motion blur and no streaks",
+ "style": "rd_advanced_animation__custom_action",
+ "width": 96,
+ "height": 96,
+ "seed": 9313,
+ "frames_duration": 6,
+ "return_spritesheet": true,
+ "input_image_path": "build/art/troops/lupi_still/run02/01_raw.png",
+ "input_image_keep_alpha": true,
+ "pad_to": 96,
+ "bypass_prompt_expansion": false,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_pack_path": "art/troops/lupi_00..05.png",
+ "pack": [
+  "art/troops/lupi_00.png",
+  "art/troops/lupi_01.png",
+  "art/troops/lupi_02.png",
+  "art/troops/lupi_03.png",
+  "art/troops/lupi_04.png",
+  "art/troops/lupi_05.png"
+ ],
+ "runs": [
+  {
+   "run": "run01",
+   "request": "6c9efa68-e464-46f4-a280-3a78f28328e8",
+   "cost": 0.25,
+   "date": "2026-10-09"
+  },
+  {
+   "run": "run02",
+   "request": "1626d883-cf3a-4811-8644-05581b06f554",
+   "cost": 0.25,
+   "date": "2026-10-09"
+  }
+ ]
+}

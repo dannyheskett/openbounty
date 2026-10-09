@@ -1,0 +1,26 @@
+{
+ "id": "troops/hastati_still",
+ "_note": "The hastati still (2026-10-09): the troop's art had no job (made for #38 before the job record), so it is remade on the settled troop route -- the pack's own troop style at 96x96, background removed, no reference image, the look of the old sprite described in words, the weapon at rest.",
+ "prompt": "a young Roman legionary of the hastati seen from the side facing right, a steel helmet with a tall red horsehair crest, a segmented steel chest plate over a dark red tunic and skirt, a tall curved rectangular red scutum with a gold thunderbolt emblem on his left arm, a spear held upright in his right hand, red-brown leather boots",
+ "style": "user__glory_of_rome_troops_bac676cd",
+ "width": 96,
+ "height": 96,
+ "seed": 9301,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": true,
+ "target": [
+  96,
+  96
+ ],
+ "runs": [
+  {
+   "run": "run01",
+   "request": "1c36d77d-d49f-478f-b52b-8e41f494cf20",
+   "cost": 0.18,
+   "date": "2026-10-09"
+  }
+ ]
+}

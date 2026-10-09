@@ -3775,7 +3775,7 @@
 			"max_population":	150,
 			"growth_per_week":	5,
 			"morale_group":	"D",
-			"anim":	["art/troops/lupi_00.png", "art/troops/lupi_01.png", "art/troops/lupi_02.png", "art/troops/lupi_03.png"],
+			"anim":	["art/troops/lupi_00.png", "art/troops/lupi_01.png", "art/troops/lupi_02.png", "art/troops/lupi_03.png", "art/troops/lupi_04.png", "art/troops/lupi_05.png"],
 			"tier_counts":	[5, 10, 20, 40]
 		}, {
 			"index":	4,
@@ -3915,7 +3915,7 @@
 			"max_population":	0,
 			"growth_per_week":	4,
 			"morale_group":	"B",
-			"anim":	["art/troops/hastati_00.png", "art/troops/hastati_01.png", "art/troops/hastati_02.png", "art/troops/hastati_03.png"],
+			"anim":	["art/troops/hastati_00.png", "art/troops/hastati_01.png", "art/troops/hastati_02.png", "art/troops/hastati_03.png", "art/troops/hastati_04.png", "art/troops/hastati_05.png"],
 			"tier_counts":	[0, 5, 8, 15]
 		}, {
 			"index":	11,
@@ -3995,7 +3995,7 @@
 			"max_population":	0,
 			"growth_per_week":	3,
 			"morale_group":	"B",
-			"anim":	["art/troops/praetoriani_00.png", "art/troops/praetoriani_01.png", "art/troops/praetoriani_02.png", "art/troops/praetoriani_03.png"],
+			"anim":	["art/troops/praetoriani_00.png", "art/troops/praetoriani_01.png", "art/troops/praetoriani_02.png", "art/troops/praetoriani_03.png", "art/troops/praetoriani_04.png", "art/troops/praetoriani_05.png"],
 			"tier_counts":	[0, 2, 5, 8]
 		}, {
 			"index":	15,
