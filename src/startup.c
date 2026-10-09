@@ -608,6 +608,23 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
 // Class selection: every class in the catalog (legacy: the first four).
 // ---------------------------------------------------------------------------
 
+// Figure k's column of the picker drawn at (px, pw): the pack's
+// class_picker_columns when it gives one boundary per pair of neighbours
+// (the figures are not evenly spaced), else equal columns.
+static void class_column(const Resources *res, const Sprites *sprites, int px, int pw,
+                         int n, int k, int *x, int *w) {
+    int cn = res->sprites.class_picker_column_count, aw = sprites->class_picker.width;
+    if (cn == n - 1 && aw > 0) {
+        int lo = k > 0 ? res->sprites.class_picker_columns[k - 1] : 0;
+        int hi = k < n - 1 ? res->sprites.class_picker_columns[k] : aw;
+        *x = px + pw * lo / aw;
+        *w = pw * hi / aw - pw * lo / aw;
+    } else {
+        *x = px + k * (pw / n);
+        *w = pw / n;
+    }
+}
+
 // The class picker: the painting, the picked figure ringed and captioned.
 // class_cursor < 0: modern, before anyone is picked -- the whole painting.
 static void draw_class_select(const Resources *res, const Sprites *sprites,
@@ -661,8 +678,11 @@ static void draw_class_select(const Resources *res, const Sprites *sprites,
         // Touch: the picker art shows the classes side by side, one column
         // each; tapping a column picks that class (A-D).
         if (picker_shown)
-            for (int k = 0; k < n; k++)
-                ui_tile(px + k * (pw / n), py, pw / n, ph, KEY_A + k);
+            for (int k = 0; k < n; k++) {
+                int cx, cw;
+                class_column(res, sprites, px, pw, n, k, &cx, &cw);
+                ui_tile(cx, py, cw, ph, KEY_A + k);
+            }
         startup_bar(res->ui.startup_class_select_hint);
         return;
     }
@@ -701,8 +721,11 @@ static void draw_class_select(const Resources *res, const Sprites *sprites,
     // tap on one picks it.
     if (picker_shown) {
         int fh = (top < py + ph ? top : py + ph) - py;
-        for (int k = 0; k < n; k++)
-            ui_tile_row(px + k * (pw / n), py, pw / n, fh, TOUCH_LIST_CLASS, k);
+        for (int k = 0; k < n; k++) {
+            int cx, cw;
+            class_column(res, sprites, px, pw, n, k, &cx, &cw);
+            ui_tile_row(cx, py, cw, fh, TOUCH_LIST_CLASS, k);
+        }
     }
 }
 

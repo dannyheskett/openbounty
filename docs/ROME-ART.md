@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-392 jobs. A job with a **Pack path** has produced that file in the pack; a
+393 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -1442,6 +1442,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/ui/backdrop_town_oriens.png`
 - **prompt:** an empty colonnaded avenue in an eastern Roman city, tall limestone columns with striped awnings between them, a tetrapylon at the far end, pale stone paving, dry hills beyond, low golden light, the avenue deserted, no people anywhere
 - **Settings:** `bypass_prompt_expansion=true`, `figure=false`, `height=102`, `raw_only=true`, `seed=6704`, `style=rd_pro__default`, `target=[240, 102]`, `width=240`
+
+### ui/class_select_picker
+
+- **Engine:** Retro Diffusion rd_pro__default (256x164, seed 2005)
+- **Pack path:** `art/ui/class_select_picker.png`
+- **prompt:** The same four Romans standing shoulder to shoulder and filling the frame from top to bottom, shown from the knees up, evenly spaced, left to right: the general in the bronze muscled cuirass with the deep red cloak; the priest with no helmet, his head covered by a white toga hood over a gilded cuirass, holding a bronze dish; the priestess in white robes and veil with a gold fillet, holding a green laurel sprig; the grey-bearded frontier commander in iron mail under a russet fur mantle; only a narrow strip of Italian landscape visible behind them
+- **Settings:** `figure=false`, `height=164`, `raw_only=true`, `reference_image_paths=["assets/glory-of-rome/art/classes/legatus_portrait.png", "assets/glory-of-rome/art/classes/praetorianus_portrait.png", "assets/glory-of-rome/art/classes/sibylla_portrait.png", "assets/glory-of-rome/art/classes/dux_portrait.png"]`, `seed=2005`, `style=rd_pro__default`, `target=[256, 164]`, `width=256`
 
 ### ui/combat_fly
 

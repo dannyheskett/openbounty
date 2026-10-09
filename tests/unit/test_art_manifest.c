@@ -115,6 +115,31 @@ TEST every_rome_manifest_path_exists(void) {
     PASS();
 }
 
+TEST rome_picker_columns_split_the_painting(void) {
+    // The class painting's figures are not evenly spaced: the pack names
+    // where each one after the first starts, one boundary per neighbour pair,
+    // rising left to right inside the 256 px painting.
+    Pack *p = pack_open("assets/glory-of-rome");
+    ASSERT(p);
+    pack_stack_push(p);
+    Resources *r = calloc(1, sizeof *r);
+    bool ok = r && resources_load(r, "game.json");
+    int cn = ok ? r->sprites.class_picker_column_count : -1;
+    int cols[RES_PICKER_COLUMNS] = { 0 };
+    if (ok) memcpy(cols, r->sprites.class_picker_columns, sizeof cols);
+    int classes = ok ? r->classes_count : 0;
+    if (r) resources_free(r);
+    free(r);
+    pack_stack_pop();
+    ASSERT(ok);
+    ASSERT_EQ(classes - 1, cn);
+    for (int i = 0; i < cn; i++) {
+        ASSERT(cols[i] > (i ? cols[i - 1] : 0));
+        ASSERT(cols[i] < 256);
+    }
+    PASS();
+}
+
 static bool manifest_has(int n, const char *path) {
     for (int i = 0; i < n; i++)
         if (strcmp(s_paths[i], path) == 0) return true;
@@ -346,6 +371,7 @@ SUITE(unit_art_manifest_suite) {
     RUN_TEST(manifest_covers_every_category);
     RUN_TEST(placed_object_names_come_from_map_art);
     RUN_TEST(every_rome_manifest_path_exists);
+    RUN_TEST(rome_picker_columns_split_the_painting);
     RUN_TEST(castle_art_follows_the_footprint);
     RUN_TEST(terrain_art_is_listed_per_tile_set);
     RUN_TEST(a_tile_set_may_override_single_arts);

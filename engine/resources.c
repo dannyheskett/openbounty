@@ -1382,6 +1382,14 @@ static void parse_sprites(Resources *res, cJSON *obj) {
                  res_json_str(ui, "class_highlight", ""));
         res_parse_path_list(cJSON_GetObjectItem(ui, "class_picker_selected"),
                         &res->sprites.class_picker_selected, &res->sprites.class_picker_selected_count);
+        cJSON *cols = cJSON_GetObjectItem(ui, "class_picker_columns");
+        res->sprites.class_picker_column_count = 0;
+        if (cJSON_IsArray(cols)) {
+            int nc = cJSON_GetArraySize(cols);
+            if (nc > RES_PICKER_COLUMNS) nc = RES_PICKER_COLUMNS;
+            res_json_int_array(ui, "class_picker_columns", res->sprites.class_picker_columns, nc);
+            res->sprites.class_picker_column_count = nc;
+        }
     }
 
     cJSON *hud = cJSON_GetObjectItem(obj, "hud");

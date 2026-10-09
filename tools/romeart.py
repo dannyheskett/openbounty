@@ -3438,8 +3438,9 @@ def cmd_classpicker(a):
     """Writes art/ui/class_select_picker_0..3.png from class_select_picker.png
     (read only). The landscape is found scanning each column down to the first
     dark outline (plus short sideways steps under overhangs); the figures
-    overlap, so three hand-placed dividing lines decide whose pixel is whose,
-    and three small hand fixes remain."""
+    overlap, so three hand-placed dividing lines decide whose pixel is whose.
+    The lines (and any hand fixes) are placed for the painting the job
+    ui/class_select_picker made: a new painting needs them placed again."""
     from PIL import ImageChops
     SRC = os.path.join(a.pack, 'art', 'ui', 'class_select_picker.png')
     DIM = 150                  # black over the other figures, out of 255
@@ -3458,9 +3459,10 @@ def cmd_classpicker(a):
             bg[y][x]=True
     # hand-drawn dividers between neighbours: x as a polyline in y
     DIV=[
-     [(60,0),(60,40),(68,48),(65,56),(62,64),(60,72),(58,80),(58,96),(57,120),(58,164)],
-     [(124,0),(124,20),(130,48),(140,56),(142,62),(140,72),(140,80),(134,96),(128,104),(120,116),(120,136),(128,142),(133,150),(136,164)],
-     [(186,0),(186,40),(190,52),(194,66),(199,80),(201,100),(201,140),(199,164)],
+     [(72,0),(72,36),(79,42),(78,44),(77,46),(76,48),(76,58),(77,64),(77,80),(78,96),(80,112),(82,128),(84,144),(86,164)],
+     [(133,0),(133,30),(135,40),(136,50),(137,54),(135,60),(134,64),(132,68),(131,72),(130,76),(129,84),(129,88),
+      (125,96),(125,102),(122,108),(122,116),(136,121),(135,124),(134,130),(133,136),(132,142),(131,150),(130,158),(130,164)],
+     [(186,0),(186,30),(187,48),(189,64),(191,80),(193,96),(196,112),(198,128),(200,164)],
     ]
     def divx(poly,y):
         for (x0,y0),(x1,y1) in zip(poly,poly[1:]):
@@ -3504,13 +3506,8 @@ def cmd_classpicker(a):
                 x=e
             else: x+=1
     # hand fixes: (x0,y0,x1,y1) inclusive
-    FORCE_BG=[(22,33,26,39)]          # trees showing beside the Legatus's neck
-    FORCE_FIG=[(160,15,162,15),(152,16,162,16),(151,17,162,17),(150,18,162,18)]+[(149,y,162,y) for y in range(19,25)]
-                                      # the top of the Sibylla's veil and fillet
-    FORCE_FIG+=[(93,8,101,8),(90,9,104,9),(89,10,107,10),(89,11,107,11),(91,12,108,12),
-                (90,13,109,13),(89,14,110,14),(88,15,110,15),(88,16,111,16)]
-                                      # the top of the Praetorianus's hood: its outline is
-                                      # lighter than TH, so the scan runs on into the hood
+    FORCE_BG=[]
+    FORCE_FIG=[]
     for x0,y0,x1,y1 in FORCE_BG:
         for y in range(y0,y1+1):
             for x in range(x0,x1+1):

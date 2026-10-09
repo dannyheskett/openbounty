@@ -1,0 +1,33 @@
+{
+ "id": "ui/class_select_picker",
+ "_note": "The class-select painting: the four classes left to right in catalog order (Legatus, Praetorianus, Sibylla, Dux), one per quarter -- the screen picks a class by which quarter is clicked, so no figure may straddle a boundary. The first (2026-09-03, PR #38) sent no seed, so it could not be repeated; re-made 2026-10-09 from the same call with a seed.",
+ "prompt": "The same four Romans standing shoulder to shoulder and filling the frame from top to bottom, shown from the knees up, evenly spaced, left to right: the general in the bronze muscled cuirass with the deep red cloak; the priest with no helmet, his head covered by a white toga hood over a gilded cuirass, holding a bronze dish; the priestess in white robes and veil with a gold fillet, holding a green laurel sprig; the grey-bearded frontier commander in iron mail under a russet fur mantle; only a narrow strip of Italian landscape visible behind them",
+ "style": "rd_pro__default",
+ "width": 256,
+ "height": 164,
+ "seed": 2005,
+ "reference_image_paths": [
+  "assets/glory-of-rome/art/classes/legatus_portrait.png",
+  "assets/glory-of-rome/art/classes/praetorianus_portrait.png",
+  "assets/glory-of-rome/art/classes/sibylla_portrait.png",
+  "assets/glory-of-rome/art/classes/dux_portrait.png"
+ ],
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  164
+ ],
+ "_pack_path": "art/ui/class_select_picker.png",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "27f9aea8-f025-43f2-9733-8e49c4c8033f",
+   "cost": 0.18,
+   "date": "2026-10-09"
+  }
+ ],
+ "pack": [
+  "art/ui/class_select_picker.png"
+ ]
+}

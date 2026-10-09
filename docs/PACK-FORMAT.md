@@ -415,7 +415,10 @@ borrowed as described:
   (all three or none; otherwise the title has been `splash_title`, still).
 - `class_picker`, `class_highlight`, `class_picker_selected` (one per class,
   in catalog order): the class painting, its cursor glow and the painting
-  with each figure picked out.
+  with each figure picked out. `class_picker_columns`: where each figure
+  after the first starts, in the painting's own pixels, one per pair of
+  neighbours -- the tap zones, for figures not evenly spaced; absent, the
+  painting is tapped in equal columns.
 - `chrome_overworld`: a bitmap frame (absent, the modern lattice);
   `panel_frame`: a palette colour name for legacy's panel frames (§6).
 - `puzzle_cover`: the chip over each puzzle piece still to be won;

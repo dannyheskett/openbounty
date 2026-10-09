@@ -19,6 +19,7 @@
 #define RES_SIGN_TITLE_LEN    64
 #define RES_SIGN_BODY_LEN    256   // Rome's longest is 147 (#135)
 #define RES_PATH_LEN         128
+#define RES_PICKER_COLUMNS   7     // class picker tap-zone boundaries: up to eight figures
 // Indexed by raw map byte, so the table spans the whole byte range: a map
 // file's code can be any of 256 values and always indexes this table. A map
 // that uses a code above 127 is not plain ASCII -- the reader is byte-wise, so
@@ -1690,6 +1691,10 @@ typedef struct {
         // in catalog order (tools/romeart.py classpicker).
         int  class_picker_selected_count;
         char (*class_picker_selected)[RES_PATH_LEN];   // heap, one per class
+        // Where each figure after the first starts, in the picker's own
+        // pixels (left to right): the tap zones. None: equal columns.
+        int  class_picker_column_count;
+        int  class_picker_columns[RES_PICKER_COLUMNS];
         // Palette colour name (e.g. "YELLOW") for the frame the shell draws
         // round every panel slot: HUD panels, inventory cells, contract face.
         // Empty: the shell draws no frame and the art carries its own.
