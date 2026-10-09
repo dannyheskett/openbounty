@@ -91,6 +91,20 @@ void map_render_hero_cell(const Game *g, const Map *m, int *x, int *y) {
     if (y) *y = v.oy + (g->position.y - v.cam_y) * CL_TILE_H;
 }
 
+// The pack's map art (game.json "map_art"), or the standard names for a map
+// built by hand.
+static const ResMapArt *map_art(const Map *m) {
+    return m && m->map_art ? m->map_art : resources_map_art(NULL);
+}
+
+// What a cell stands on: its own ground, else its terrain's plain tile; NULL
+// when the pack names none (a river has no plain tile).
+static const char *ground_art(const Map *m, const Tile *t, char *buf, size_t cap) {
+    if (t->ground) return TileGround(m, t);
+    const char *stem = map_art(m)->ground[t->terrain];
+    return stem[0] ? MapTerrainArt(m, stem, buf, cap) : NULL;
+}
+
 void map_render_cell(const Map *m, int mx, int my, Rectangle dst) {
     const Tile *t = MapGetTile(m, mx, my);
     if (!t) return;
@@ -102,9 +116,8 @@ void map_render_cell(const Map *m, int mx, int my, Rectangle dst) {
     char va[TILE_ART_NAME_LEN];
     if (t->interactive != INTERACT_NONE || t->ground != t->art) {
         char ga[TILE_ART_NAME_LEN];
-        const char *gart = t->ground ? TileGround(m, t)
-                           : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
-        Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
+        const char *gart = ground_art(m, t, ga, sizeof ga);
+        Texture2D ground = gart ? tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va)) : (Texture2D){ 0 };
         if (ground.id)
             gfx_texture_draw(ground, (Rectangle){ 0, 0, (float)ground.width, (float)ground.height },
                              dst, WHITE);
@@ -117,8 +130,8 @@ void map_render_cell_ground(const Map *m, int mx, int my, Rectangle dst) {
     const Tile *t = MapGetTile(m, mx, my);
     if (!t) return;
     char ga[TILE_ART_NAME_LEN], va[TILE_ART_NAME_LEN];
-    const char *gart = t->ground ? TileGround(m, t)
-                       : MapTerrainArt(m, TerrainName(t->terrain), ga, sizeof ga);
+    const char *gart = ground_art(m, t, ga, sizeof ga);
+    if (!gart) return;
     Texture2D ground = tile_cache_get(tilevar_art(gart, mx, my, va, sizeof va));
     if (ground.id)
         gfx_texture_draw(ground, (Rectangle){ 0, 0, (float)ground.width, (float)ground.height },
@@ -126,7 +139,8 @@ void map_render_cell_ground(const Map *m, int mx, int my, Rectangle dst) {
 }
 
 // Small detail (#63): about one plain grass or sand cell in twelve with no
-// wood, range or sea beside it draws detail_<1..4>, a
+// wood, range or sea beside it draws one of the pack's
+// details (map_art "details"), a
 // bush or a stone or two (romeart.py details). Cosmetic: the cell stays
 // walkable grass. `tools/romeart.py map render --tiles` draws the same.
 #define DETAIL_SEED 0xD7A1u
@@ -145,7 +159,7 @@ static void draw_details(const Map *m, const Fog *f, int cam_x, int cam_y,
             int mx = cam_x + tx, my = cam_y + ty;
             if (!FogSeen(f, mx, my)) continue;
             int v = tilevar_pick(DETAIL_SEED, mx, my, 48);
-            if (v < 1 || v > 4 || !open_ground(m, mx, my)) continue;
+            if (v < 1 || v > 4 || v > map_art(m)->detail_count || !open_ground(m, mx, my)) continue;
             bool clear = true;
             for (int k = 0; k < 4 && clear; k++) {
                 const Tile *n = MapGetTile(m, mx + (k == 0) - (k == 1), my + (k == 2) - (k == 3));
@@ -153,9 +167,8 @@ static void draw_details(const Map *m, const Fog *f, int cam_x, int cam_y,
                                n->terrain != TERRAIN_WATER);
             }
             if (!clear) continue;
-            char stem[16], name[TILE_ART_NAME_LEN];
-            snprintf(stem, sizeof stem, "detail_%d", v);
-            Texture2D tex = tile_cache_get(MapTerrainArt(m, stem, name, sizeof name));
+            char name[TILE_ART_NAME_LEN];
+            Texture2D tex = tile_cache_get(MapTerrainArt(m, map_art(m)->detail[v - 1], name, sizeof name));
             if (!tex.id) continue;
             Rectangle dst = { (float)(ox + tx * CL_TILE_W), (float)(oy + ty * CL_TILE_H),
                               (float)CL_TILE_W, (float)CL_TILE_H };
@@ -173,8 +186,7 @@ static void draw_details(const Map *m, const Fog *f, int cam_x, int cam_y,
 #define APRON_SEED 0xA960u
 static void draw_aprons(const Map *m, const Fog *f, int cam_x, int cam_y,
                         int ox, int oy, int x0, int x1, int y0, int y1) {
-    static const struct { const char *name; int dx, dy; } S[4] = {
-        { "n", 0, -1 }, { "e", 1, 0 }, { "s", 0, 1 }, { "w", -1, 0 } };
+    static const struct { int dx, dy; } S[4] = { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } };   // n, e, s, w
     for (int ty = y0; ty <= y1; ty++) {
         for (int tx = x0; tx <= x1; tx++) {
             int mx = cam_x + tx, my = cam_y + ty;
@@ -188,11 +200,10 @@ static void draw_aprons(const Map *m, const Fog *f, int cam_x, int cam_y,
                 const Tile *a = MapGetTile(m, mx + S[k].dx, my + S[k].dy);
                 if (!a || (a->terrain != TERRAIN_FOREST && a->terrain != TERRAIN_MOUNTAIN)) continue;
                 int v = tilevar_pick(APRON_SEED + (unsigned)k, mx, my, 5);   // 0 and 4: none
-                if (v < 1 || v > 3) continue;
-                char stem[48], name[TILE_ART_NAME_LEN];
-                snprintf(stem, sizeof stem, "%s_apron_%s_%d",
-                         a->terrain == TERRAIN_FOREST ? "forest" : "mountain", S[k].name, v);
-                Texture2D tex = tile_cache_get(MapTerrainArt(m, stem, name, sizeof name));
+                int w = a->terrain == TERRAIN_MOUNTAIN;
+                if (v < 1 || v > 3 || v > map_art(m)->apron_count[w][k]) continue;
+                char name[TILE_ART_NAME_LEN];
+                Texture2D tex = tile_cache_get(MapTerrainArt(m, map_art(m)->apron[w][k][v - 1], name, sizeof name));
                 if (!tex.id) continue;
                 Rectangle dst = { (float)(ox + (tx - 1) * CL_TILE_W), (float)(oy + (ty - 1) * CL_TILE_H),
                                   (float)(3 * CL_TILE_W), (float)(3 * CL_TILE_H) };
@@ -204,14 +215,14 @@ static void draw_aprons(const Map *m, const Fog *f, int cam_x, int cam_y,
 
 // Inner-corner fills (#63): a grass or sand cell with a wood or range on two
 // adjacent sides gets that terrain's own trees or rocks drawn into the corner
-// between them (art <terrain>[_sand]_fill_<corner>, 3x3 cells with the cell in
+// between them (map_art "fills", 3x3 cells with the cell in
 // the middle, from tools/romeart.py fills), so a concave corner rounds off
 // and a staircase reads as a slope. Cosmetic: the cell stays what it is. A
 // cell holding an object is left alone.
 static void draw_inner_fills(const Map *m, const Fog *f, int cam_x, int cam_y,
                              int ox, int oy, int x0, int x1, int y0, int y1) {
-    static const struct { const char *name; int dx, dy; } C[4] = {
-        { "ne", 1, -1 }, { "nw", -1, -1 }, { "se", 1, 1 }, { "sw", -1, 1 } };
+    static const struct { int corner, dx, dy; } C[4] = {   // corner: map_art fills' ne, es, sw, nw
+        { 0, 1, -1 }, { 3, -1, -1 }, { 1, 1, 1 }, { 2, -1, 1 } };
     for (int ty = y0; ty <= y1; ty++) {
         for (int tx = x0; tx <= x1; tx++) {
             int mx = cam_x + tx, my = cam_y + ty;
@@ -224,10 +235,10 @@ static void draw_inner_fills(const Map *m, const Fog *f, int cam_x, int cam_y,
                 const Tile *b = MapGetTile(m, mx, my + C[k].dy);
                 if (!a || !b || a->terrain != b->terrain) continue;
                 if (a->terrain != TERRAIN_FOREST && a->terrain != TERRAIN_MOUNTAIN) continue;
-                char stem[48], art[TILE_ART_NAME_LEN];
-                snprintf(stem, sizeof stem, "%s%s_fill_%s",
-                         a->terrain == TERRAIN_FOREST ? "forest" : "mountain",
-                         t->terrain == TERRAIN_DESERT ? "_sand" : "", C[k].name);
+                const char *stem = map_art(m)->fill[a->terrain == TERRAIN_MOUNTAIN]
+                                                   [t->terrain == TERRAIN_DESERT][C[k].corner];
+                if (!stem[0]) continue;
+                char art[TILE_ART_NAME_LEN];
                 Texture2D tex = tile_cache_get(MapTerrainArt(m, stem, art, sizeof art));
                 if (!tex.id) continue;
                 Rectangle dst = { (float)(ox + (tx - 1) * CL_TILE_W), (float)(oy + (ty - 1) * CL_TILE_H),

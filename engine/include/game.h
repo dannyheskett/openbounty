@@ -116,7 +116,7 @@ typedef struct {
 typedef struct {
     char zone[24];
     int  x, y;
-    int  vertical;   // 1: runs north-south (bridge_v / bridge_river_ns); an int
+    int  vertical;   // 1: runs north-south (bridge_ns / bridge_river_ns); an int
                      // so the record has no padding for the fingerprint to read
 } BuiltBridge;
 

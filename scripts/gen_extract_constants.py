@@ -10,7 +10,7 @@ KB.EXE. Run this after editing any of them in assets/kings-bounty/.
 import json
 import sys
 
-SECTIONS = ["render", "tile_codes", "spawn", "contract", "controls", "sprites",
+SECTIONS = ["render", "tile_codes", "map_art", "spawn", "contract", "controls", "sprites",
             "ending", "colors", "credits", "audio"]
 
 
@@ -30,8 +30,8 @@ def main():
                 "// strings to strings/en.json. Regenerate with\n"
                 "// scripts/gen_extract_constants.py after editing the pack.\n"
                 "//\n"
-                "// Sections: render, tile_codes, spawn, contract, controls, sprites,\n"
-                "//           ending, colors, credits, audio, strings.\n"
+                "// Sections: render, tile_codes, map_art, spawn, contract, controls,\n"
+                "//           sprites, ending, colors, credits, audio, strings.\n"
                 "static const char EX_PORT_CONSTANTS_JSON[] =\n"
                 '"' + lit + '";\n')
 

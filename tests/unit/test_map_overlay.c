@@ -123,7 +123,7 @@ TEST castle_default_footprint_stamps_gate_and_five_walls(void) {
     ASSERT_STR_EQ("castle_gate", TileArt(m, gate));
     ASSERT_FALSE(gate->blocks_foot);
     struct { int x, y; const char *art; } walls[5] = {
-        { 29, 35, "castle_tl" }, { 30, 35, "castle_br" }, { 31, 35, "castle_tr" },
+        { 29, 35, "castle_tl" }, { 30, 35, "castle_tm" }, { 31, 35, "castle_tr" },
         { 29, 36, "castle_ml" }, { 31, 36, "castle_mr" },
     };
     for (int i = 0; i < 5; i++) {

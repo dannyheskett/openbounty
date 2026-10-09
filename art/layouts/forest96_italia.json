@@ -77,7 +77,7 @@
     ]
    ]
   },
-  "forest_edge_01": {
+  "forest_edge_nw": {
    "wrap": "",
    "sprites": [
     [
@@ -132,7 +132,7 @@
     ]
    ]
   },
-  "forest_edge_02": {
+  "forest_edge_sw": {
    "wrap": "",
    "sprites": [
     [
@@ -187,7 +187,7 @@
     ]
    ]
   },
-  "forest_edge_03": {
+  "forest_edge_ne": {
    "wrap": "",
    "sprites": [
     [
@@ -242,7 +242,7 @@
     ]
    ]
   },
-  "forest_edge_04": {
+  "forest_edge_es": {
    "wrap": "",
    "sprites": [
     [
@@ -297,7 +297,7 @@
     ]
    ]
   },
-  "forest_edge_05": {
+  "forest_inner_es": {
    "wrap": "",
    "sprites": [
     [
@@ -372,7 +372,7 @@
     ]
    ]
   },
-  "forest_edge_06": {
+  "forest_inner_ne": {
    "wrap": "",
    "sprites": [
     [
@@ -447,7 +447,7 @@
     ]
    ]
   },
-  "forest_edge_07": {
+  "forest_inner_sw": {
    "wrap": "",
    "sprites": [
     [
@@ -522,7 +522,7 @@
     ]
    ]
   },
-  "forest_edge_08": {
+  "forest_inner_nw": {
    "wrap": "",
    "sprites": [
     [
@@ -597,7 +597,7 @@
     ]
    ]
   },
-  "forest_edge_09": {
+  "forest_edge_e": {
    "wrap": "",
    "sprites": [
     [
@@ -677,7 +677,7 @@
     ]
    ]
   },
-  "forest_edge_10": {
+  "forest_edge_w": {
    "wrap": "",
    "sprites": [
     [
@@ -757,7 +757,7 @@
     ]
    ]
   },
-  "forest_edge_11": {
+  "forest_edge_n": {
    "wrap": "",
    "sprites": [
     [
@@ -812,7 +812,7 @@
     ]
    ]
   },
-  "forest_edge_12": {
+  "forest_edge_s": {
    "wrap": "",
    "sprites": [
     [
@@ -867,7 +867,7 @@
     ]
    ]
   },
-  "forest_edge_13": {
+  "forest_edge_ns": {
    "wrap": "",
    "sprites": [
     [
@@ -902,7 +902,7 @@
     ]
    ]
   },
-  "forest_edge_14": {
+  "forest_edge_ew": {
    "wrap": "",
    "sprites": [
     [
@@ -987,7 +987,7 @@
     ]
    ]
   },
-  "forest_edge_15": {
+  "forest_edge_nes": {
    "wrap": "",
    "sprites": [
     [
@@ -1017,7 +1017,7 @@
     ]
    ]
   },
-  "forest_edge_16": {
+  "forest_edge_esw": {
    "wrap": "",
    "sprites": [
     [
@@ -1072,7 +1072,7 @@
     ]
    ]
   },
-  "forest_edge_17": {
+  "forest_edge_nsw": {
    "wrap": "",
    "sprites": [
     [
@@ -1102,7 +1102,7 @@
     ]
    ]
   },
-  "forest_edge_18": {
+  "forest_edge_new": {
    "wrap": "",
    "sprites": [
     [
@@ -1157,7 +1157,7 @@
     ]
    ]
   },
-  "forest_edge_19": {
+  "forest_edge_nesw": {
    "wrap": "",
    "sprites": [
     [

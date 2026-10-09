@@ -98,6 +98,11 @@ const char *MapTerrainArt(const Map *map, const char *stem, char *out, size_t ca
     return out;
 }
 
+// The map's art names (game.json "map_art"), or the standard ones.
+static const ResMapArt *MA(const Map *map) {
+    return map && map->map_art ? map->map_art : resources_map_art(NULL);
+}
+
 // The bare stem of a tile art name ("set/road_ew" -> "road_ew").
 static const char *art_stem(const char *art) {
     const char *slash = strrchr(art, '/');
@@ -110,7 +115,10 @@ static bool fill_tile_from_code(Map *map, Tile *t, const Resources *res,
     const ResTileCode *tc = &res->tile_codes[c];
     if (!tc->present) return false;
     char art[TILE_ART_NAME_LEN];
-    MapTerrainArt(map, tc->art, art, sizeof art);
+    // An object code (a landmark) is the same art in every zone; terrain takes
+    // the zone's tile set.
+    if (tc->object) snprintf(art, sizeof art, "%s", tc->art);
+    else MapTerrainArt(map, tc->art, art, sizeof art);
     t->art         = MapStrIntern(map, art);
     if (tc->ground[0]) {
         char gart[TILE_ART_NAME_LEN];
@@ -142,9 +150,7 @@ bool MapLayBridge(Map *map, int x, int y, bool vertical) {
     // Over a river the deck is the river bridge: paving across the river's own
     // piece, crossing north-south over a river running east-west, or the other
     // way round.
-    const char *stem = (t->terrain == TERRAIN_RIVER)
-        ? (vertical ? "bridge_river_ns" : "bridge_river_ew")
-        : (vertical ? "bridge_v" : "bridge_h");
+    const char *stem = MA(map)->bridge[t->terrain == TERRAIN_RIVER][vertical];
     t->terrain = TERRAIN_GRASS;
     t->interactive = INTERACT_NONE;
     t->blocks_foot = false;
@@ -162,7 +168,7 @@ bool MapSetTileFromCode(Map *map, const Resources *res, int x, int y,
 
 static void default_tile(Map *map, Tile *t) {
     char art[TILE_ART_NAME_LEN];
-    MapTerrainArt(map, "grass", art, sizeof art);
+    MapTerrainArt(map, MA(map)->def, art, sizeof art);
     t->art         = MapStrIntern(map, art);
     t->ground      = t->art;
     t->terrain     = TERRAIN_GRASS;
@@ -190,6 +196,22 @@ static const char *skip_blank_and_comments(const char *p, const char *end) {
     return p;
 }
 
+bool MapZoneCodes(const ResZone *zone, bool used[RES_TILE_CODE_COUNT]) {
+    size_t sz = 0;
+    const unsigned char *bytes = LoadAssetBytes(zone->map_path, &sz);
+    if (!bytes) return false;
+    const char *p = (const char *)bytes, *end = p + sz;
+    p = skip_blank_and_comments(p, end);
+    for (int y = 0; y < zone->height && p < end; y++) {
+        for (int x = 0; p < end && *p != '\n' && *p != '\r' && x < zone->width; x++)
+            used[(unsigned char)*p++] = true;
+        while (p < end && *p != '\n') p++;
+        if (p < end) p++;
+    }
+    UnloadAssetBytes(bytes);
+    return true;
+}
+
 static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
     size_t sz = 0;
     const unsigned char *bytes = LoadAssetBytes(zone->map_path, &sz);
@@ -206,8 +228,9 @@ static bool load_dat(Map *map, const Resources *res, const ResZone *zone) {
     }
     copy_string(map->name, sizeof(map->name), zone->id);
     copy_string(map->tile_set, sizeof(map->tile_set), zone->tile_set);
+    map->map_art = &res->map_art;
     copy_string(map->army_art, sizeof(map->army_art),
-                zone->army_art[0] ? zone->army_art : "wandering_army");
+                zone->army_art[0] ? zone->army_art : res->map_art.wandering_army);
     map->hero_spawn_x = zone->hero_spawn_x;
     map->hero_spawn_y = zone->hero_spawn_y;
     map->clear_keeps_ground = res->world.clear_keeps_ground;
@@ -270,18 +293,18 @@ static Tile *tile_at(Map *map, int x, int y) {
 //
 // 1x1: the gate tile alone, drawn with the single `castle` art, so the castle
 // sits on the map the way a town does.
-typedef struct { int dx, dy; const char *art; bool gate; } CastlePart;
+typedef struct { int dx, dy; int part; bool gate; } CastlePart;   // part: RES_CASTLE_*, -1 = the 1x1 tile
 
 static const CastlePart CASTLE_3X2_PARTS[] = {
-    { -1, -1, "castle_tl",   false },
-    {  0, -1, "castle_br",   false },
-    { +1, -1, "castle_tr",   false },
-    { -1,  0, "castle_ml",   false },
-    {  0,  0, "castle_gate", true  },
-    { +1,  0, "castle_mr",   false },
+    { -1, -1, RES_CASTLE_TL,   false },
+    {  0, -1, RES_CASTLE_TM,   false },
+    { +1, -1, RES_CASTLE_TR,   false },
+    { -1,  0, RES_CASTLE_ML,   false },
+    {  0,  0, RES_CASTLE_GATE, true  },
+    { +1,  0, RES_CASTLE_MR,   false },
 };
 static const CastlePart CASTLE_1X1_PARTS[] = {
-    {  0,  0, "castle", true },
+    {  0,  0, -1, true },
 };
 
 static const CastlePart *castle_parts(ResCastleFootprint fp, int *out_count) {
@@ -291,6 +314,20 @@ static const CastlePart *castle_parts(ResCastleFootprint fp, int *out_count) {
     }
     *out_count = (int)(sizeof CASTLE_3X2_PARTS / sizeof CASTLE_3X2_PARTS[0]);
     return CASTLE_3X2_PARTS;
+}
+
+static const char *placement_art(const ResMapArt *m, int kind) {
+    switch (kind) {
+        case INTERACT_TELECAVE:         return m->dwelling[RES_DWELL_DUNGEON];
+        case INTERACT_NAVMAP:           return m->chest;
+        case INTERACT_ORB:              return m->chest;
+        case INTERACT_ARTIFACT:         return m->artifact_chest;
+        case INTERACT_DWELLING_PLAINS:  return m->dwelling[RES_DWELL_PLAINS];
+        case INTERACT_DWELLING_FOREST:  return m->dwelling[RES_DWELL_FOREST];
+        case INTERACT_DWELLING_HILLS:   return m->dwelling[RES_DWELL_HILLS];
+        case INTERACT_DWELLING_DUNGEON: return m->dwelling[RES_DWELL_DUNGEON];
+        default: return NULL;
+    }
 }
 
 // stamp_objects: paint all JSON-authored objects onto the map. This is
@@ -308,7 +345,7 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         TileSetId(map, t, z->signs[i].id);
         t->sign_title = MapStrIntern(map, z->signs[i].title);
         t->sign_body = MapStrIntern(map, z->signs[i].body);
-        TileSetArt(map, t, "sign");
+        TileSetArt(map, t, res->map_art.sign);
     }
     for (int i = 0; i < z->town_count; i++) {
         const ResTown *zt = resources_zone_town(res, z, i);
@@ -320,8 +357,8 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         t->boat_spawn_x = zt->boat_x;
         t->boat_spawn_y = zt->boat_y;
         // A town draws its own tile when the catalog entry names one
-        // (`art`, a stem under art/tiles/), else the shared "town" tile.
-        TileSetArt(map, t, zt->art[0] ? zt->art : "town");
+        // (`art`, a stem under art/objects/), else the shared town tile.
+        TileSetArt(map, t, zt->art[0] ? zt->art : res->map_art.town);
     }
     for (int i = 0; i < z->castle_count; i++) {
         // The footprint is the catalog entry's choice (REQ-228); a zone castle
@@ -336,7 +373,9 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
             Tile *t = tile_at(map, cx + parts[p].dx, cy + parts[p].dy);
             if (!t) continue;
             // A 1x1 castle draws its own tile when the catalog names one.
-            const char *art = (nparts == 1 && rc && rc->art[0]) ? rc->art : parts[p].art;
+            const char *art = (nparts == 1 && rc && rc->art[0]) ? rc->art
+                            : parts[p].part < 0 ? res->map_art.castle_1x1
+                            : res->map_art.castle_3x2[parts[p].part];
             TileSetArt(map, t, art);
             if (parts[p].gate) {
                 // Gate: interactive entry point.
@@ -371,7 +410,7 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         if (!t) continue;
         t->interactive = INTERACT_TREASURE_CHEST;
         TileSetId(map, t, z->chests[i].id);
-        TileSetArt(map, t, "chest");
+        TileSetArt(map, t, res->map_art.chest);
     }
     for (int i = 0; i < z->artifact_count; i++) {
         Tile *t = tile_at(map, z->artifacts[i].x, z->artifacts[i].y);
@@ -381,7 +420,7 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         // Both artifact tile bytes (0x92/0x93) display the same
         // chest-style art; the artifact identity is reveal-on-pickup,
         // not from the world tile.
-        TileSetArt(map, t, "artifact_chest");
+        TileSetArt(map, t, res->map_art.artifact_chest);
     }
     for (int i = 0; i < z->dwelling_count; i++) {
         Tile *t = tile_at(map, z->dwellings[i].x, z->dwellings[i].y);
@@ -390,7 +429,7 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Interact ik = DwellingInteractFromKind(k);
         if (ik != INTERACT_NONE) {
             t->interactive = ik;
-            TileSetArt(map, t, DwellingArt(ik));
+            TileSetArt(map, t, placement_art(&res->map_art, ik));
         }
         TileSetId(map, t, z->dwellings[i].id);
     }
@@ -404,7 +443,7 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
         Tile *t = tile_at(map, z->magic_alcove_x, z->magic_alcove_y);
         if (t) {
             t->interactive = INTERACT_ALCOVE;
-            TileSetArt(map, t, z->alcove_art[0] ? z->alcove_art : "dwelling_hills");
+            TileSetArt(map, t, z->alcove_art[0] ? z->alcove_art : res->map_art.alcove);
             TileSetId(map, t, "alcove");
             // The alcove sits on a mountain-edge tile; force it walkable
             // so the player can step on it (the sprite implies a passable
@@ -429,19 +468,6 @@ static void stamp_objects(Map *map, const Resources *res, const ResZone *z,
 //     pure terrain so we can't inherit a glyph here.
 //   - Salt-placed artifacts use the same chest art as JSON artifacts
 //     (per , both tile bytes look alike).
-static const char *placement_art(int kind) {
-    switch (kind) {
-        case INTERACT_TELECAVE:         return "dwelling_dungeon";
-        case INTERACT_NAVMAP:           return "chest";
-        case INTERACT_ORB:              return "chest";
-        case INTERACT_ARTIFACT:         return "artifact_chest";
-        case INTERACT_DWELLING_PLAINS:  return "dwelling_plains";
-        case INTERACT_DWELLING_FOREST:  return "dwelling_forest";
-        case INTERACT_DWELLING_HILLS:   return "dwelling_hills";
-        case INTERACT_DWELLING_DUNGEON: return "dwelling_dungeon";
-        default: return NULL;
-    }
-}
 
 static void stamp_placements(Map *map, const Game *game, const char *zone_id) {
     if (!game || !zone_id) return;
@@ -454,7 +480,7 @@ static void stamp_placements(Map *map, const Game *game, const char *zone_id) {
         if (!t) continue;
         t->interactive = (Interact)p->kind;
         TileSetId(map, t, p->id);
-        const char *art = placement_art(p->kind);
+        const char *art = placement_art(MA(map), p->kind);
         if (art) TileSetArt(map, t, art);
     }
     // All foes -- friendly and hostile -- stamped from the live FoeState
@@ -486,7 +512,7 @@ void MapStampFoe(Map *map, int x, int y, const char *placement_id) {
         return;
     t->interactive = INTERACT_FOE;
     TileSetId(map, t, placement_id);
-    TileSetArt(map, t, map->army_art[0] ? map->army_art : "wandering_army");
+    TileSetArt(map, t, map->army_art[0] ? map->army_art : MA(map)->wandering_army);
 }
 
 bool MapClearFoeStamp(Map *map, int x, int y) {
@@ -551,7 +577,7 @@ void MapClearInteractive(Map *map, int x, int y) {
     // interactives don't become walkable.
     char art[TILE_ART_NAME_LEN];
     if (t->terrain == TERRAIN_WATER) {
-        TileSetArt(map, t, MapTerrainArt(map, "water", art, sizeof art));
+        TileSetArt(map, t, MapTerrainArt(map, MA(map)->cleared_water, art, sizeof art));
         return;
     }
     // Only grass-terrain ground comes back (roads, grass variants): a
@@ -567,7 +593,7 @@ void MapClearInteractive(Map *map, int x, int y) {
         t->art = t->ground;
         t->terrain = (uint8_t)ground;
     } else {
-        t->art = MapStrIntern(map, MapTerrainArt(map, "grass", art, sizeof art));
+        t->art = MapStrIntern(map, MapTerrainArt(map, MA(map)->def, art, sizeof art));
         t->ground = t->art;
         t->terrain = TERRAIN_GRASS;
     }
@@ -575,32 +601,3 @@ void MapClearInteractive(Map *map, int x, int y) {
     t->is_bridge   = false;
 }
 
-// Art names this module stamps onto tiles for placed objects (towns,
-// dwellings, chests, signs, bridges, foes). They are NOT in game.json -- the
-// engine chooses them by interact kind -- so resources_art_manifest() has to
-// ask for them rather than duplicate the list and drift from it. Castle art
-// depends on the footprint and is served by map_castle_art_names.
-const char *const *map_object_art_names(int *out_count) {
-    // "town" and "wandering_army" are not here: town art is per catalog entry
-    // (ResTown.art) and army art per zone (ResZone.army_art); the manifest
-    // lists both from the declarations.
-    static const char *const NAMES[] = {
-        "chest", "artifact_chest", "artifact_ring",
-        "sign", "bridge_h", "bridge_v",
-        "dwelling_plains", "dwelling_forest", "dwelling_hills",
-        "dwelling_dungeon",
-    };
-    if (out_count) *out_count = (int)(sizeof NAMES / sizeof NAMES[0]);
-    return NAMES;
-}
-
-const char *const *map_castle_art_names(ResCastleFootprint fp, int *out_count) {
-    // Filled from the stamp tables, so the names live in one place.
-    static const char *names[2][8];
-    int which = (fp == RES_CASTLE_FOOTPRINT_1X1) ? 1 : 0;
-    int n = 0;
-    const CastlePart *parts = castle_parts(fp, &n);
-    for (int i = 0; i < n && i < 8; i++) names[which][i] = parts[i].art;
-    if (out_count) *out_count = n;
-    return names[which];
-}

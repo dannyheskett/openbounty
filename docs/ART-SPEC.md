@@ -64,7 +64,8 @@ the size in the "authored" column.
 
 | category | path |
 |---|---|
-| terrain and map objects | `art/tiles/` (a zone with `tile_set` draws its terrain from `art/tiles/<set>/` instead; objects stay shared) |
+| terrain | `art/tiles/` (a zone with `tile_set` draws its terrain from `art/tiles/<set>/` instead), named by shape: `forest_edge_n`, `water_inner_es`, `road_nw` (PACK-FORMAT §4.3) |
+| map objects: towns, castles, landmarks, set pieces, dwellings, chests, signs, wandering armies | `art/objects/` (the same in every zone) |
 | zone terrain sets | `art/tiles/africa/`, `galliae/`, `oriens/` |
 | troop sprites, their animation frames and portraits | `art/troops/` (`<troop>_NN`, `<troop>_portrait`) |
 | villain portraits and frames | `art/villains/` |

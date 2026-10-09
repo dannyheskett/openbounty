@@ -617,7 +617,7 @@ is not what its source builds. Rivers have linked only orthogonally, because
 the hero has moved 8-way with no corner rule and would step across a diagonal
 river. A river whose straight run reaches the map's edge has flowed off it.
 A mouth has had the sea on its outflow side and along its top
-(`river_mouth_e`/`_w`), or along its foot (`river_mouth_e_s`/`_w_s`, the same
+(`river_mouth_ne`/`_nw`), or along its foot (`river_mouth_es`/`_sw`, the same
 art the other way up). The builder has warned, cell by cell, about shapes the
 art draws badly: a mouth with sea on both or neither of its north and south
 sides, a river ending in open ground, a forest- or mountain-banked river
@@ -625,7 +625,7 @@ beside another terrain, and a sea tile whose different diagonal no water
 variant shows; `--strict`, which `scripts/check_maps.sh` has used, has made
 those errors. A land tile's corner no variant shows has been counted only.
 Desert meeting the sea has kept its own ground to the coast, the sea's edge
-drawing the shore line as sand (`water_sand_edge_NN`, where every land beside
+drawing the shore line as sand (`water_sand_*`, where every land beside
 it has been desert); forest and rock have kept their grass fringe, since
 drawn solid to the water they stop in a straight line at the tile's edge.
 `tools/romeart.py map lint`, run by `scripts/check_maps.sh`, has failed any terrain
@@ -800,7 +800,7 @@ Real requirements, not guidelines:
   hosted six and has had ten.
 - **Castles have been single tiles.** Every catalog entry has declared
   `"footprint": "1x1"` (REQ-228): the gate tile alone, drawn with
-  `art/tiles/castle.png`, the way a town has sat on the map. No wall tiles, so
+  `art/objects/castle.png`, the way a town has sat on the map. No wall tiles, so
   the only room a castle has needed is its tile and the gate landing below
   it.
 - Exactly one `is_home` zone (Italia); one `magic_alcove` and one

@@ -328,7 +328,7 @@ TEST a_vista_fires_once_and_changes_the_map(void) {
     ASSERT(ev->effects);
     ev->effect_count = 1;
     ev->effects[0].x = tx; ev->effects[0].y = ty;
-    ev->effects[0].code = ',';                    // grass_variant: a declared code
+    ev->effects[0].code = ',';                    // grass_v1: a declared code
 
     int sp = spell_index_by_id("bridge");
     ASSERT(sp >= 0);
@@ -361,7 +361,7 @@ TEST a_vista_fires_once_and_changes_the_map(void) {
     ASSERT_EQ(PIO_NOTE_SCENE, r->kind);
     ASSERT_EQ(REQ_FACE_EVENT, r->face);
     ASSERT_STR_EQ("The Ford", r->header);
-    ASSERT_STR_EQ("grass_variant", TileArt(m, MapGetTile(m, tx, ty)));
+    ASSERT_STR_EQ("grass_v1", TileArt(m, MapGetTile(m, tx, ty)));
     player_io_drain_messages(g);
 
     // Again: no second firing, no second charge spent.
@@ -374,7 +374,7 @@ TEST a_vista_fires_once_and_changes_the_map(void) {
     // The change outlives a zone switch: the map reloads and it is re-applied.
     ASSERT(GameSwitchZone(g, m, f, "forestria"));
     ASSERT(GameSwitchZone(g, m, f, "continentia"));
-    ASSERT_STR_EQ("grass_variant", TileArt(m, MapGetTile(m, tx, ty)));
+    ASSERT_STR_EQ("grass_v1", TileArt(m, MapGetTile(m, tx, ty)));
 
     free(ev->reqs); free(ev->effects); free(z->events);
     z->events = NULL; z->event_count = 0;

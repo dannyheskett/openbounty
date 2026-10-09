@@ -164,8 +164,8 @@ static void parse_towns(Resources *res, cJSON *arr) {
                  res_json_str(it, "intel_castle", ""));
         res_copy_str(t->pinned_spell, sizeof(t->pinned_spell),
                  res_json_str(it, "pinned_spell", ""));
-        // Optional per-town tile art (a bare stem under art/tiles/). Absent
-        // means the shared "town" tile, so older packs stamp as before.
+        // Optional per-town art (a bare stem under art/objects/). Absent means
+        // map_art's shared town tile, so older packs stamp as before.
         res_copy_str(t->art, sizeof(t->art), res_json_str(it, "art", ""));
         res_copy_str(t->informant, sizeof(t->informant), res_json_str(it, "informant", ""));
         res_copy_str(t->headman, sizeof(t->headman), res_json_str(it, "headman", ""));
@@ -336,6 +336,7 @@ static void parse_tile_codes(Resources *res, cJSON *obj) {
         cJSON *jib = cJSON_GetObjectItem(entry, "is_bridge");
         tc->blocks_foot = cJSON_IsBool(jbf) && cJSON_IsTrue(jbf);
         tc->is_bridge   = cJSON_IsBool(jib) && cJSON_IsTrue(jib);
+        tc->object      = cJSON_IsTrue(cJSON_GetObjectItem(entry, "object"));
         cJSON *jv = cJSON_GetObjectItem(entry, "variants");
         int v_cap = res_json_len(jv);
         if (cJSON_IsArray(jv) && RES_TABLE_ALLOC(tc->variants, tc->variant_count, v_cap)) {
@@ -348,6 +349,144 @@ static void parse_tile_codes(Resources *res, cJSON *obj) {
             }
         }
     }
+}
+
+// The standard map art names: what a pack gets for any "map_art" entry it
+// leaves out. No details, aprons or fills: a pack draws those only by naming
+// them.
+static const ResMapArt MAP_ART_STD = {
+    .def = "grass", .cleared_water = "water",
+    .ground = { [TERRAIN_GRASS] = "grass", [TERRAIN_FOREST] = "forest", [TERRAIN_MOUNTAIN] = "mountain",
+                [TERRAIN_WATER] = "water", [TERRAIN_DESERT] = "desert" },
+    .bridge = { { "bridge_ew", "bridge_ns" }, { "bridge_river_ew", "bridge_river_ns" } },
+    .chest = "chest", .artifact_chest = "artifact_chest", .artifact_ring = "artifact_ring",
+    .sign = "sign", .town = "town", .wandering_army = "wandering_army", .alcove = "dwelling_hills",
+    .dwelling = { "dwelling_plains", "dwelling_forest", "dwelling_hills", "dwelling_dungeon" },
+    .castle_3x2 = { "castle_tl", "castle_tm", "castle_tr", "castle_ml", "castle_gate", "castle_mr" },
+    .castle_1x1 = "castle",
+};
+
+const ResMapArt *resources_map_art(const Resources *res) {
+    return res ? &res->map_art : &MAP_ART_STD;
+}
+
+// `key` in `obj` into `dst` when it is a string (an empty one draws nothing);
+// otherwise `dst` keeps its standard name.
+static void map_art_str(const cJSON *obj, const char *key, char *dst) {
+    const cJSON *v = cJSON_GetObjectItem(obj, key);
+    if (cJSON_IsString(v)) res_copy_str(dst, RES_TILE_ART_LEN, v->valuestring);
+}
+
+// A list of names under `key` into dst[cap]; returns how many.
+static int map_art_list(const cJSON *obj, const char *key, char (*dst)[RES_TILE_ART_LEN], int cap) {
+    int n = 0;
+    const cJSON *v;
+    cJSON_ArrayForEach(v, cJSON_GetObjectItem(obj, key))
+        if (cJSON_IsString(v) && v->valuestring[0] && n < cap)
+            res_copy_str(dst[n++], RES_TILE_ART_LEN, v->valuestring);
+    return n;
+}
+
+static void parse_map_art(Resources *res, const cJSON *obj) {
+    ResMapArt *m = &res->map_art;
+    *m = MAP_ART_STD;
+    if (!cJSON_IsObject(obj)) return;
+    static const char *const TERRAINS[TERRAIN_COUNT] = { "grass", "forest", "mountain", "water", "desert", "river" };
+    static const char *const SIDES[4] = { "n", "e", "s", "w" };
+    static const char *const CORNERS[4] = { "ne", "es", "sw", "nw" };
+    static const char *const WOODS[2] = { "forest", "mountain" };
+    map_art_str(obj, "default", m->def);
+    map_art_str(obj, "cleared_water", m->cleared_water);
+    const cJSON *jg = cJSON_GetObjectItem(obj, "terrain_ground");
+    for (int t = 0; t < TERRAIN_COUNT; t++) map_art_str(jg, TERRAINS[t], m->ground[t]);
+    const cJSON *jb = cJSON_GetObjectItem(obj, "bridges");
+    map_art_str(jb, "ew", m->bridge[0][0]);
+    map_art_str(jb, "ns", m->bridge[0][1]);
+    map_art_str(jb, "river_ew", m->bridge[1][0]);
+    map_art_str(jb, "river_ns", m->bridge[1][1]);
+    const cJSON *jo = cJSON_GetObjectItem(obj, "objects");
+    map_art_str(jo, "chest", m->chest);
+    map_art_str(jo, "artifact_chest", m->artifact_chest);
+    map_art_str(jo, "artifact_ring", m->artifact_ring);
+    map_art_str(jo, "sign", m->sign);
+    map_art_str(jo, "town", m->town);
+    map_art_str(jo, "wandering_army", m->wandering_army);
+    map_art_str(jo, "alcove", m->alcove);
+    map_art_str(jo, "dwelling_plains", m->dwelling[RES_DWELL_PLAINS]);
+    map_art_str(jo, "dwelling_forest", m->dwelling[RES_DWELL_FOREST]);
+    map_art_str(jo, "dwelling_hills", m->dwelling[RES_DWELL_HILLS]);
+    map_art_str(jo, "dwelling_dungeon", m->dwelling[RES_DWELL_DUNGEON]);
+    static const char *const PARTS[RES_CASTLE_PARTS] = { "tl", "tm", "tr", "ml", "gate", "mr" };
+    const cJSON *jc = cJSON_GetObjectItem(obj, "castle_3x2");
+    for (int i = 0; i < RES_CASTLE_PARTS; i++) map_art_str(jc, PARTS[i], m->castle_3x2[i]);
+    map_art_str(obj, "castle_1x1", m->castle_1x1);
+    m->detail_count = map_art_list(obj, "details", m->detail, RES_MAP_DETAILS);
+    const cJSON *ja = cJSON_GetObjectItem(obj, "aprons"), *jf = cJSON_GetObjectItem(obj, "fills");
+    for (int w = 0; w < 2; w++) {
+        for (int k = 0; k < 4; k++)
+            m->apron_count[w][k] = map_art_list(cJSON_GetObjectItem(ja, WOODS[w]), SIDES[k],
+                                                m->apron[w][k], RES_MAP_APRONS);
+        char sand[16];
+        snprintf(sand, sizeof sand, "%s_sand", WOODS[w]);
+        for (int k = 0; k < 4; k++) {
+            map_art_str(cJSON_GetObjectItem(jf, WOODS[w]), CORNERS[k], m->fill[w][0][k]);
+            map_art_str(cJSON_GetObjectItem(jf, sand), CORNERS[k], m->fill[w][1][k]);
+        }
+    }
+}
+
+static bool object_art_has(const Resources *res, const char *stem) {
+    for (int i = 0; i < res->object_art_count; i++)
+        if (strcmp(res->object_arts[i], stem) == 0) return true;
+    return false;
+}
+
+bool resources_art_is_object(const Resources *res, const char *stem) {
+    return res && stem && stem[0] && object_art_has(res, stem);
+}
+
+// Gather every object stem (resources_art_is_object) once the catalogs are in.
+// A name that is both an object and a terrain tile code is a pack error: it
+// would have to be drawn from two folders.
+static bool collect_object_arts(Resources *res) {
+    const ResMapArt *m = &res->map_art;
+    int cap = 16 + RES_DWELL_COUNT + RES_CASTLE_PARTS + res->town_count + res->castle_count + 2 * res->zone_count;
+    for (int z = 0; z < res->zone_count; z++)
+        for (int c = 0; c < res->zones[z].castle_count; c++) cap += res->zones[z].castles[c].decor_count;
+    for (int i = 0; i < RES_TILE_CODE_COUNT; i++) cap += res->tile_codes[i].object;
+    free(res->object_arts);
+    res->object_art_count = 0;
+    res->object_arts = calloc((size_t)cap, sizeof *res->object_arts);
+    if (!res->object_arts) return false;
+#define ADD(s) do { const char *s_ = (s); \
+        if (s_[0] && !object_art_has(res, s_) && res->object_art_count < cap) \
+            res_copy_str(res->object_arts[res->object_art_count++], RES_TILE_ART_LEN, s_); } while (0)
+    ADD(m->chest); ADD(m->artifact_chest); ADD(m->artifact_ring); ADD(m->sign);
+    ADD(m->town); ADD(m->wandering_army); ADD(m->alcove); ADD(m->castle_1x1);
+    for (int i = 0; i < RES_DWELL_COUNT; i++) ADD(m->dwelling[i]);
+    for (int i = 0; i < RES_CASTLE_PARTS; i++) ADD(m->castle_3x2[i]);
+    for (int i = 0; i < res->town_count; i++) ADD(res->towns[i].art);
+    for (int i = 0; i < res->castle_count; i++) ADD(res->castles[i].art);
+    for (int z = 0; z < res->zone_count; z++) {
+        const ResZone *zn = &res->zones[z];
+        ADD(zn->army_art);
+        ADD(zn->alcove_art);
+        for (int c = 0; c < zn->castle_count; c++)
+            for (int d = 0; d < zn->castles[c].decor_count; d++) ADD(zn->castles[c].decorations[d].art);
+    }
+    for (int i = 0; i < RES_TILE_CODE_COUNT; i++)
+        if (res->tile_codes[i].present && res->tile_codes[i].object) ADD(res->tile_codes[i].art);
+#undef ADD
+    for (int i = 0; i < RES_TILE_CODE_COUNT; i++) {
+        const ResTileCode *tc = &res->tile_codes[i];
+        if (!tc->present || tc->object) continue;
+        if (object_art_has(res, tc->art) || (tc->ground[0] && object_art_has(res, tc->ground))) {
+            fprintf(stdout, "resources: tile code 0x%02x names '%s', which is also a map object "
+                    "(mark the code \"object\": true, or rename one)\n", i, tc->art);
+            return false;
+        }
+    }
+    return true;
 }
 
 // Fill a heap list with one entry per element of `arr`; *dst is allocated here
@@ -2088,6 +2227,11 @@ bool resources_load(Resources *res, const char *manifest_path) {
     parse_castles(res,     cJSON_GetObjectItem(root, "castles"));
     parse_zones(res,       cJSON_GetObjectItem(root, "zones"));
     parse_tile_codes(res,  cJSON_GetObjectItem(root, "tile_codes"));
+    parse_map_art(res,     cJSON_GetObjectItem(root, "map_art"));
+    if (!collect_object_arts(res)) {
+        cJSON_Delete(root);
+        return false;
+    }
 
     parse_troops(res,      cJSON_GetObjectItem(root, "troops"));
     if (!parse_troop_aliases(res, cJSON_GetObjectItem(root, "troop_aliases"))) {
@@ -2234,6 +2378,7 @@ void resources_free(Resources *res) {
     // Heap-owned tables, each sized from the pack.
     if (res) {
         res_intro_free(&res->intro);
+        free(res->object_arts);   res->object_arts = NULL;   res->object_art_count = 0;
         for (int i = 0; res->portraits && i < res->portrait_count; i++) free(res->portraits[i].anim);
         free(res->portraits);
         res->portraits = NULL;
