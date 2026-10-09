@@ -3,7 +3,7 @@
 **Generated** by `tools/romeart.py prompts` from `art/jobs/*.json`. Do not
 edit by hand: change the job file and run the tool again.
 
-388 jobs. A job with a **Pack path** has produced that file in the pack; a
+392 jobs. A job with a **Pack path** has produced that file in the pack; a
 job without one has produced a step towards it (the still an animation starts
 from). The routes themselves -- which engine, which settings, and why -- have
 been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
@@ -181,6 +181,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a barbarian warlord on horseback in profile facing right, a bearskin cloak over mail, a long axe across his shoulder, a shaggy dark horse standing still with all four feet on the ground
 - **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7431`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
 
+### classes/dux_portrait
+
+- **Engine:** Retro Diffusion rd_pro__default (192x204, seed 2004)
+- **Pack path:** `art/classes/dux_portrait.png`
+- **prompt:** A weathered frontier commander in mail over furs with a wolf-pelt cloak and an iron torc, a forest edge behind him, waist-up, the figure filling the frame
+- **Settings:** `figure=false`, `height=204`, `raw_only=true`, `seed=2004`, `style=rd_pro__default`, `target=[192, 204]`, `width=192`
+
 ### classes/dux_walk
 
 - **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 7481)
@@ -194,6 +201,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/classes/legatus_hero.png (and ending.hero_tile as art/ui/end_hero.png)`
 - **prompt:** a Roman commander on horseback in profile facing right, red cloak, crested helmet, gilded cuirass, the horse standing still with all four feet on the ground
 - **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7401`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### classes/legatus_portrait
+
+- **Engine:** Retro Diffusion rd_pro__default (192x204, seed 2001)
+- **Pack path:** `art/classes/legatus_portrait.png`
+- **prompt:** A Roman general in a muscled bronze cuirass with lion-head shoulder pieces and a red paludamentum cloak, crested helmet under one arm, a fortified camp at sunset behind him, waist-up, the figure filling the frame
+- **Settings:** `figure=false`, `height=204`, `raw_only=true`, `seed=2001`, `style=rd_pro__default`, `target=[192, 204]`, `width=192`
 
 ### classes/legatus_walk
 
@@ -209,6 +223,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **prompt:** a Roman praetorian officer on horseback in profile facing right, white cloak with a purple border, gilded scale cuirass, plumed helmet, the horse standing still with all four feet on the ground
 - **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7411`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
 
+### classes/praetorianus_portrait
+
+- **Engine:** Retro Diffusion rd_pro__default (192x204, seed 2002)
+- **Pack path:** `art/classes/praetorianus_portrait.png`
+- **prompt:** A Roman warrior-priest, his head veiled with a white toga worn over a gilded cuirass, holding a sacrificial patera over a burning altar flame, white and gold, waist-up, the figure filling the frame
+- **Settings:** `figure=false`, `height=204`, `raw_only=true`, `seed=2002`, `style=rd_pro__default`, `target=[192, 204]`, `width=192`
+
 ### classes/praetorianus_walk
 
 - **Engine:** Retro Diffusion rd_advanced_animation__custom_action (96x96, seed 7461)
@@ -222,6 +243,13 @@ been in `docs/ART-PIPELINE.md`; each job's run history has been in its own
 - **Pack path:** `art/classes/sibylla_hero.png`
 - **prompt:** a Roman priestess on horseback in profile facing right, white robes and a veil, a laurel branch in her hand, a pale grey horse standing still with all four feet on the ground
 - **Settings:** `bypass_prompt_expansion=true`, `figure=true`, `height=96`, `raw_only=true`, `remove_bg=true`, `return_non_bg_removed=true`, `seed=7421`, `style=user__glory_of_rome_troops_bac676cd`, `target=[96, 96]`, `width=96`
+
+### classes/sibylla_portrait
+
+- **Engine:** Retro Diffusion rd_pro__default (192x204, seed 2003)
+- **Pack path:** `art/classes/sibylla_portrait.png`
+- **prompt:** A veiled Vestal oracle-priestess in white robes with a gold fillet, holding a laurel sprig, a temple interior lit by a sacred flame behind her, waist-up, the figure filling the frame
+- **Settings:** `figure=false`, `height=204`, `raw_only=true`, `seed=2003`, `style=rd_pro__default`, `target=[192, 204]`, `width=192`
 
 ### classes/sibylla_walk
 

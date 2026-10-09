@@ -1,0 +1,19 @@
+{
+ "id": "classes/dux_portrait",
+ "_note": "The dux class portrait (2026-09-03, PR #38 commit f87b45b), recorded 2026-10-09 from the exact call in that PR's ART-WORKLIST (6b427f6^, section classes_barbarian): rd_pro__default at 192x204, seed 2004, no bypass_prompt_expansion sent, the raw copied into the pack as art/classes/barbarian.png (renamed since; the bytes are unchanged). Recorded, not re-run.",
+ "prompt": "A weathered frontier commander in mail over furs with a wolf-pelt cloak and an iron torc, a forest edge behind him, waist-up, the figure filling the frame",
+ "style": "rd_pro__default",
+ "width": 192,
+ "height": 204,
+ "seed": 2004,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  192,
+  204
+ ],
+ "_pack_path": "art/classes/dux_portrait.png",
+ "pack": [
+  "art/classes/dux_portrait.png"
+ ]
+}

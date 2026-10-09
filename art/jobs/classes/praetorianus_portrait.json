@@ -1,0 +1,19 @@
+{
+ "id": "classes/praetorianus_portrait",
+ "_note": "The praetorianus class portrait (2026-09-03, PR #38 commit f87b45b), recorded 2026-10-09 from the exact call in that PR's ART-WORKLIST (6b427f6^, section classes_paladin): rd_pro__default at 192x204, seed 2002, no bypass_prompt_expansion sent, the raw copied into the pack as art/classes/paladin.png (renamed since; the bytes are unchanged). Recorded, not re-run.",
+ "prompt": "A Roman warrior-priest, his head veiled with a white toga worn over a gilded cuirass, holding a sacrificial patera over a burning altar flame, white and gold, waist-up, the figure filling the frame",
+ "style": "rd_pro__default",
+ "width": 192,
+ "height": 204,
+ "seed": 2002,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  192,
+  204
+ ],
+ "_pack_path": "art/classes/praetorianus_portrait.png",
+ "pack": [
+  "art/classes/praetorianus_portrait.png"
+ ]
+}

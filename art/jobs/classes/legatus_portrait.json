@@ -1,0 +1,19 @@
+{
+ "id": "classes/legatus_portrait",
+ "_note": "The legatus class portrait (2026-09-03, PR #38 commit f87b45b), recorded 2026-10-09 from the exact call in that PR's ART-WORKLIST (6b427f6^, section classes_knight): rd_pro__default at 192x204, seed 2001, no bypass_prompt_expansion sent, the raw copied into the pack as art/classes/knight.png (renamed since; the bytes are unchanged). Recorded, not re-run.",
+ "prompt": "A Roman general in a muscled bronze cuirass with lion-head shoulder pieces and a red paludamentum cloak, crested helmet under one arm, a fortified camp at sunset behind him, waist-up, the figure filling the frame",
+ "style": "rd_pro__default",
+ "width": 192,
+ "height": 204,
+ "seed": 2001,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  192,
+  204
+ ],
+ "_pack_path": "art/classes/legatus_portrait.png",
+ "pack": [
+  "art/classes/legatus_portrait.png"
+ ]
+}

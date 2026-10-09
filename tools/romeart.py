@@ -4104,7 +4104,6 @@ SOURCES = [   # (glob under art/, why it is kept as made)
     ("tiles/*.png", "the master set (Italia): its sea, desert, roads and rivers were stitched and swept in #38-#67 "
                     "from PixelLab corner sets that were not kept, its river_forest/river_mountain pieces rebanked "
                     "(art/primitives/italia/BUILD.md), its farmland bases cut by hand in #225"),
-    ("classes/*_portrait.png", "the class portraits, made for #38 before the job record; no recipe was kept"),
     ("ui/class_select_picker.png", "the carousel painting, made for #38 before the job record"),
 ]
 
