@@ -3294,8 +3294,50 @@ def column_band(row, x0, x1, off):
         px[x, 0] = COLUMN_RAMP[max(0, min(8, level))] + (255,)
 
 
+# The ivy column's greens, darkest to lightest.
+IVY_RAMP = [(3, 20, 6), (12, 33, 17), (22, 49, 29), (38, 62, 45), (52, 77, 55), (70, 99, 71),
+            (83, 116, 83), (97, 129, 94), (114, 143, 107)]
+IVY_LEAVES = [   # ramp offsets from the leaf's tone; - clear
+    ["-12-", "0233", "-01-"],
+    ["-2-", "123", "012", "-0-"],
+    ["-23", "0123", "-01"],
+]
+
+
+def column_ivy(shaft, seed=6501):
+    """Two vines wound round the shaft half a turn apart, once each in
+    its 45 rows so the repeated shaft has no seam: the stem where a vine
+    passes the front, leaves crowding it on both sides, lit like the marble
+    (brighter left of centre)."""
+    rng = random.Random(seed)
+    h = shaft.height
+    px = shaft.load()
+
+    def put(x, y, level):
+        if 0 <= x < 28:
+            px[x, y % h] = IVY_RAMP[max(0, min(8, level))] + (255,)
+    for start in (0, math.pi):
+        front = []
+        for i in range(h * 4):
+            th = start + 2 * math.pi * i / (h * 4)
+            if math.cos(th) > -0.2:
+                x, y = round(13.5 - 12.5 * math.sin(th)), i // 4
+                put(x, y, 1)
+                front.append((x, y))
+        for k, (x, y) in enumerate(front[::3]):
+            leaf = IVY_LEAVES[rng.randrange(len(IVY_LEAVES))]
+            tone = 5 - round(abs(x - 11) / 5) + rng.choice((-1, 0, 0, 1))
+            side = rng.choice((-1, 1))
+            lx, ly = x + side * rng.randint(1, 3) - len(leaf[0]) // 2, y + rng.randint(-2, 1) - len(leaf) // 2
+            for dy, row in enumerate(leaf):
+                for dx, c in enumerate(row):
+                    if c != "-":
+                        put(lx + dx, ly + dy, tone + int(c) - 1)
+    return shaft
+
+
 @command("columns", "the scene column (capital 28x9, shaft 28x45, base 28x8): plain fluted marble, drawn",
-         A("pack", nargs="?", default=PACK))
+         A("pack", nargs="?", default=PACK), A("--ivy", action="store_true", help="wind a drawn vine round the shaft"))
 def cmd_columns(a):
     """The column in the bars beside a place backdrop: the capital, the shaft
     repeated, the base, mirrored on the right (src/modern/uikit.c). Drawn from
@@ -3315,6 +3357,8 @@ def cmd_columns(a):
     for x, c in enumerate(COLUMN_FLUTES):
         if c != "-":
             shaft.paste(COLUMN_RAMP[int(c)] + (255,), (x, 0, x + 1, 45))
+    if a.ivy:
+        column_ivy(shaft)
     out = os.path.join(a.pack, "art", "ui")
     for name, im in (("capital", capital), ("shaft", shaft), ("base", base)):
         im.save(os.path.join(out, f"scene_column_{name}.png"))
@@ -4043,7 +4087,7 @@ RECIPES = [   # (glob under art/, the command that makes it)
     ("combat/castle_spike.png", "combat"), ("combat/cursor_0[1-4].png", "combat"),
     ("ui/class_select_picker_[0-3].png", "classpicker"),
     ("ui/puzzle_cover.png", "puzzlecover"),
-    ("ui/scene_column_*.png", "columns"),
+    ("ui/scene_column_*.png", "columns --ivy"),
     ("ui/title_words.png", "splashtitle --words"),
     ("ui/splash_logo.png", "splashlogo (the emblem: job ui/splash_logo_emblem)"),
     ("tiles/forest.png", "compose art/layouts/forest96_italia.json"),
@@ -4167,7 +4211,7 @@ def provenance_rebuild():
             cmd_classpicker(argparse.Namespace(pack=pk))
             cmd_combat(argparse.Namespace(pack=pk, ref="assets/kings-bounty"))
             cmd_puzzlecover(argparse.Namespace(pack=pk))
-            cmd_columns(argparse.Namespace(pack=pk))
+            cmd_columns(argparse.Namespace(pack=pk, ivy=True))
             for prefix in ("emperor_traianus", "informant_market", "pontifex_galliae", "siege_galliae"):
                 cmd_pingpong(argparse.Namespace(prefix=f"art/characters/{prefix}", n=8, reverse=False, pack=pk))
             cmd_pingpong(argparse.Namespace(prefix="art/ui/hud_siege", n=4, reverse=True, pack=pk))
