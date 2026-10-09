@@ -3273,6 +3273,54 @@ def cmd_puzzlecover(a):
     print(f"puzzle_cover -> {out}")
 
 
+# The marble ramp, darkest to lightest: the stone colours of the ivy column
+# (the ui/scene_column job, deleted) the drawn one replaces.
+COLUMN_RAMP = [(100, 102, 87), (121, 116, 102), (136, 138, 123), (155, 152, 135), (172, 167, 147),
+               (184, 179, 157), (195, 191, 169), (218, 214, 192), (235, 230, 212)]
+# The shaft's one row, repeated down it: the ivy column's flutes, each pixel
+# column's commonest stone colour with the ivy left out (ramp index; - clear).
+COLUMN_FLUTES = "--375778477847788274813530--"
+
+
+def column_band(row, x0, x1, off):
+    """One row of a lit cylinder from x0 to x1: brightest just left of the
+    middle, darker to both edges, `off` steps lighter or darker."""
+    px = row.load()
+    for x in range(x0, x1 + 1):
+        t = (x - x0) / (x1 - x0)
+        level = 8 - round(abs(t - 0.42) * 11) + off
+        if x in (x0, x1):
+            level = min(level, 1)
+        px[x, 0] = COLUMN_RAMP[max(0, min(8, level))] + (255,)
+
+
+@command("columns", "the scene column (capital 28x9, shaft 28x45, base 28x8): plain fluted marble, drawn",
+         A("pack", nargs="?", default=PACK))
+def cmd_columns(a):
+    """The column in the bars beside a place backdrop: the capital, the shaft
+    repeated, the base, mirrored on the right (src/modern/uikit.c). Drawn from
+    the ivy column's own stone and flutes, without the ivy."""
+    def piece(rows):          # rows: (x0, x1, off) per row, top to bottom
+        im = Image.new("RGBA", (28, len(rows)), (0, 0, 0, 0))
+        for y, (x0, x1, off) in enumerate(rows):
+            row = Image.new("RGBA", (28, 1), (0, 0, 0, 0))
+            column_band(row, x0, x1, off)
+            im.paste(row, (0, y))
+        return im
+    capital = piece([(0, 27, 1), (0, 27, 0), (0, 27, 0), (0, 27, -1), (0, 27, -3),
+                     (1, 26, -5), (1, 26, -1), (1, 26, 0), (1, 26, -2)])
+    base = piece([(1, 26, 0), (1, 26, -2), (0, 27, -4), (0, 27, 1), (0, 27, 0),
+                  (0, 27, 0), (0, 27, -1), (0, 27, -3)])
+    shaft = Image.new("RGBA", (28, 45), (0, 0, 0, 0))
+    for x, c in enumerate(COLUMN_FLUTES):
+        if c != "-":
+            shaft.paste(COLUMN_RAMP[int(c)] + (255,), (x, 0, x + 1, 45))
+    out = os.path.join(a.pack, "art", "ui")
+    for name, im in (("capital", capital), ("shaft", shaft), ("base", base)):
+        im.save(os.path.join(out, f"scene_column_{name}.png"))
+    print(f"scene_column_capital, _shaft, _base -> {out}")
+
+
 # ---- drawn lettering (generated lettering garbles) --------------------------
 
 def bitmap_text(text, size, col, shade, offsets=((1, 1), (2, 2))):
@@ -3995,6 +4043,7 @@ RECIPES = [   # (glob under art/, the command that makes it)
     ("combat/castle_spike.png", "combat"), ("combat/cursor_0[1-4].png", "combat"),
     ("ui/class_select_picker_[0-3].png", "classpicker"),
     ("ui/puzzle_cover.png", "puzzlecover"),
+    ("ui/scene_column_*.png", "columns"),
     ("ui/title_words.png", "splashtitle --words"),
     ("ui/splash_logo.png", "splashlogo (the emblem: job ui/splash_logo_emblem)"),
     ("tiles/forest.png", "compose art/layouts/forest96_italia.json"),
@@ -4013,7 +4062,6 @@ SOURCES = [   # (glob under art/, why it is kept as made)
                     "(art/primitives/italia/BUILD.md), its farmland bases cut by hand in #225"),
     ("classes/*_portrait.png", "the class portraits, made for #38 before the job record; no recipe was kept"),
     ("ui/class_select_picker.png", "the carousel painting, made for #38 before the job record"),
-    ("ui/scene_column_*.png", "the column pieces, cut by hand in #38 from the scene_column job's strip"),
 ]
 
 EXTERNAL = ["font/*"]      # the OFL font and its licence
@@ -4119,6 +4167,7 @@ def provenance_rebuild():
             cmd_classpicker(argparse.Namespace(pack=pk))
             cmd_combat(argparse.Namespace(pack=pk, ref="assets/kings-bounty"))
             cmd_puzzlecover(argparse.Namespace(pack=pk))
+            cmd_columns(argparse.Namespace(pack=pk))
             for prefix in ("emperor_traianus", "informant_market", "pontifex_galliae", "siege_galliae"):
                 cmd_pingpong(argparse.Namespace(prefix=f"art/characters/{prefix}", n=8, reverse=False, pack=pk))
             cmd_pingpong(argparse.Namespace(prefix="art/ui/hud_siege", n=4, reverse=True, pack=pk))
