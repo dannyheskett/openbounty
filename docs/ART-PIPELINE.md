@@ -547,8 +547,7 @@ python3 tools/romeart.py rdgen reprocess art/jobs/<id>.json        # re-cut and 
 - `rdgen` has written nothing into `assets/`: approved finals have gone in
   through `romeart.py troop install` (or, for other art, as the job's notes
   say), and the job's `"pack"` list has named what it made.
-- Review on a page: `romeart.py review <out> <runs...>` for chosen runs;
-  `art.html` at the repo root has shown the whole pack and refreshed from disk.
+- Review on a page: `romeart.py review <out> <runs...>` for chosen runs.
 
 ---
 
@@ -621,8 +620,7 @@ One rule names every piece of art and the job that made it:
   file by its whole name (`combat/obstacle_01.json`). A still an animation
   starts from is `<name>_still.json`; an input to kept art (a primitive, an
   emblem a recipe composes) sits under `art/jobs/primitives/` or beside the art
-  it feeds; a job whose output does not ship is under a `history/` folder and
-  claims nothing. A job's `id` is its path under `art/jobs`, and its runs land
+  it feeds. A job whose output no longer ships is deleted, not kept. A job's `id` is its path under `art/jobs`, and its runs land
   in `build/art/<id>/runNN/`.
 
 `romeart.py provenance check` fails on a job claiming a file not named after

@@ -70,7 +70,6 @@ where `ios/` has implemented them natively (`docs/IOS-BACKEND.md`).
 .
 ├── Makefile                  # Every target: desktop, web, Android, iOS, dist
 ├── run.sh                    # `make && ./build/debug/openbounty`
-├── art.html                  # Review page for the Rome art, refreshed from disk
 ├── newart.html               # Review page for the newer Rome art, in context
 │
 ├── engine/                   # ENGINE: pure game logic -> libobengine.a
