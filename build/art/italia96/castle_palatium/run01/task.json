@@ -1,1 +1,1 @@
-{"status":"accepted","task_id":"d9976fe2-5672-4913-b43a-ab422a706427","request_id":"d9976fe2-5672-4913-b43a-ab422a706427","message":"Inference accepted. Poll GET /v1/inferences/tasks/{task_id} for status."}
+{"status":"accepted","task_id":"d0806a25-31e9-4aeb-97b7-e43107671389","request_id":"d0806a25-31e9-4aeb-97b7-e43107671389","message":"Inference accepted. Poll GET /v1/inferences/tasks/{task_id} for status."}
