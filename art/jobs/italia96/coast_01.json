@@ -1,0 +1,9 @@
+{
+ "prompt": "A rocky Mediterranean coastline seen from above. Clear blue sea meets mossy green grass along a winding shore of pale sand and a few grey rocks, with several small bays and headlands. The sea is calm, deep blue in open water and lighter blue near the shore. Only sea, sand, rocks and grass. Light falls from the upper left.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 11117,
+ "bypass_prompt_expansion": true
+}

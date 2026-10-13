@@ -1,0 +1,28 @@
+{
+ "id": "italia/obj_landmark_rubicon",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 48,
+ "height": 48,
+ "seed": 9010,
+ "num_images": 2,
+ "remove_bg": true,
+ "prompt": "a tall carved white stone boundary pillar with a bronze plaque, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Italia set: landmark_rubicon, one 48 px map cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "9224e12b-432d-4cc0-98e0-16fd6b3cef37",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

@@ -1,0 +1,28 @@
+{
+ "id": "italia/probe_rider",
+ "style": "rd_pro__topdown",
+ "width": 32,
+ "height": 32,
+ "seed": 8304,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a Roman legate in a red cloak and bronze helmet riding a brown horse, walking to the right, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  32,
+  32
+ ],
+ "_note": "Gate B: Italia style probe at one map cell",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "runs": [
+  {
+   "run": "run02",
+   "request": "50c95bac-5978-4448-b98e-84dce71590d5",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

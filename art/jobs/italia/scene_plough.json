@@ -1,0 +1,24 @@
+{
+ "id": "italia/scene_plough",
+ "style": "user__italia_overworld_d6f5ba7d",
+ "width": 256,
+ "height": 256,
+ "seed": 8805,
+ "num_images": 2,
+ "prompt": "one huge ploughed field of brown furrows filling the whole map, nothing else",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate C: one terrain in the Italia look, for cutting seamless 48 px ground tiles",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "d7a1335c-efa2-4879-a27e-5d9c0a476561",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

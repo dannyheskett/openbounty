@@ -1,0 +1,24 @@
+{
+ "id": "italia/key_pro",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 8101,
+ "num_images": 4,
+ "prompt": "a classic 16-bit RPG overworld map of the Roman Italian countryside, seen from the three-quarter top-down view, showing a small area about eight map squares across: a sandy beach and turquoise sea on the right, a winding blue river crossed by a small stone arch bridge, a paved Roman road, green meadows, ploughed fields and golden wheat, a wood of umbrella pines and dark cypresses, grey limestone hills and two rocky mountains, a small walled hill town with terracotta roofs, and a tiny Roman rider on horseback on the road, the rider about one eighth of the image tall, warm sunlight from the upper left",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate A: master reference candidates for the Italia custom style (32 px per map cell)",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "09c65997-7c63-4c5d-8de0-a6154bf09cd9",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

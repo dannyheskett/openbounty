@@ -1,0 +1,12 @@
+{
+ "prompt": "A patch of pale golden desert sand filling the whole picture, seen from the front and above, lit from the upper left. Soft low wind ripples and gentle shallow dunes with faint shadows, a few small scattered stones, each part a little different. Only sand and stones.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 11128,
+ "bypass_prompt_expansion": true,
+ "_reference_images": [
+  "art/reference/italia96/italia_key.png"
+ ]
+}

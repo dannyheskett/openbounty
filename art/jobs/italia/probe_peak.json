@@ -1,0 +1,28 @@
+{
+ "id": "italia/probe_peak",
+ "style": "rd_pro__topdown",
+ "width": 32,
+ "height": 32,
+ "seed": 8302,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a single grey limestone mountain peak with a sunlit left face and shaded right face, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  32,
+  32
+ ],
+ "_note": "Gate B: Italia style probe at one map cell",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "runs": [
+  {
+   "run": "run02",
+   "request": "68bf21db-8d44-4865-b0e8-acdfd36ca4d5",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

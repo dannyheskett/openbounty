@@ -1,0 +1,26 @@
+{
+ "id": "italia/wang_wheat",
+ "style": "rd_tile__tileset_advanced",
+ "width": 24,
+ "height": 24,
+ "seed": 9203,
+ "prompt": "a field of ripe golden wheat in neat rows with a darker border",
+ "extra_prompt": "fresh green meadow grass with small tufts, seen from directly above",
+ "extra_input_image_path": "art/primitives/italia48/key_crops/grass.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  120
+ ],
+ "_note": "Italia terrain transitions: 24 px corner tiles, four to a 48 px cell",
+ "input_image_path": "art/primitives/italia48/key_crops/wheat.png",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "caebe51d-7c0b-4329-bdce-13b59fe87fae",
+   "cost": 0.1,
+   "date": "2026-10-09"
+  }
+ ]
+}

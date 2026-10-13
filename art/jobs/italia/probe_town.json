@@ -1,0 +1,28 @@
+{
+ "id": "italia/probe_town",
+ "style": "rd_pro__topdown",
+ "width": 32,
+ "height": 32,
+ "seed": 8303,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a small walled Italian hill town with terracotta roofs inside grey stone walls with a gate on the south side, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  32,
+  32
+ ],
+ "_note": "Gate B: Italia style probe at one map cell",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "runs": [
+  {
+   "run": "run02",
+   "request": "f0c77ab7-d077-4363-91d4-2033f27a3dda",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

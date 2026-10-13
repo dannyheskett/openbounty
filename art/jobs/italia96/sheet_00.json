@@ -1,0 +1,11 @@
+{
+ "prompt": "Four separate things in one picture, drawn in proportion to each other, seen from the front and above, lit from the upper left. Each stands apart on the flat magenta background, with empty magenta between them. Along the top: a small Italian hill town of about eight cream stone houses with terracotta roofs, standing close together behind a low stone wall with a gate in the middle, stretching across three quarters of the picture's width. To its right: a Roman general on a brown horse standing still, seen in profile facing right, in a red cloak, bronze chest armour and a crested helmet, as tall as one of the town's houses. Along the bottom, from the left: one tree with a single short trunk and one big round crown of dense dark green leaves shaped like a dome, taller than the rider; and a tall rocky crag of warm grey and tan brown rock with deep cracks rising to a pointed peak, nearly twice the rider's height, with green grass on its lower slopes. They stand alone, with only the flat magenta background around and below them.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 10900,
+ "remove_bg": true,
+ "return_non_bg_removed": true,
+ "bypass_prompt_expansion": true
+}

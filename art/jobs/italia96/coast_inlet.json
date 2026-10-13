@@ -1,0 +1,14 @@
+{
+ "prompt": "A narrow winding inlet of calm clear blue sea cutting deep into mossy green grass, seen from above, with a shore of pale sand along both its sides and a few small grey stones. The sea is deep blue in open water and lighter blue near the shore. Only sea, sand, a few stones and grass. Light falls from the upper left.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 11138,
+ "bypass_prompt_expansion": true,
+ "_reference_images": [
+  "art/reference/italia96/italia_key.png",
+  "art/reference/italia96/coast_01.png",
+  "art/reference/italia96/coast_island.png"
+ ]
+}

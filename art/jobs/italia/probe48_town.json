@@ -1,0 +1,28 @@
+{
+ "id": "italia/probe48_town",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 48,
+ "height": 48,
+ "seed": 8604,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a small walled Italian hill town seen from above: terracotta roofs inside a ring of grey stone walls with a gate on the south side, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Gate B: one map cell at 48 px native",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "7046484b-8af6-4b5e-a17a-1d3671ec0b81",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

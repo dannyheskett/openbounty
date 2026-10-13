@@ -1,0 +1,24 @@
+{
+ "id": "italia/tex_grass",
+ "style": "rd_tile__single_tile",
+ "width": 48,
+ "height": 48,
+ "seed": 8701,
+ "num_images": 4,
+ "prompt": "fresh green meadow grass with soft lighter and darker tufts and a few tiny wildflowers, seen from directly above, warm light from the upper left",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Gate C: Italia ground texture, one 48 px cell, seamless",
+ "runs": [
+  {
+   "run": "run02",
+   "request": "70fccb9e-bc55-41f9-85ff-e210609b5bb6",
+   "cost": 0.24,
+   "date": "2026-10-09"
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+ "prompt": "A rounded square island of mossy green grass filling most of the picture, seen from above, its four sides nearly straight and its four corners softly rounded, with a narrow shore of pale sand all round it, in calm clear blue sea. Only sea, sand and grass. Light falls from the upper left.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 11143,
+ "bypass_prompt_expansion": true,
+ "_reference_images": [
+  "art/reference/italia96/italia_key.png",
+  "art/reference/italia96/coast_inlet.png"
+ ]
+}

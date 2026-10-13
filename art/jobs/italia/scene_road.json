@@ -1,0 +1,24 @@
+{
+ "id": "italia/scene_road",
+ "style": "user__italia_overworld_d6f5ba7d",
+ "width": 256,
+ "height": 256,
+ "seed": 8806,
+ "num_images": 2,
+ "prompt": "a wide paved Roman square of grey fitted stone slabs filling the whole map, nothing else",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate C: one terrain in the Italia look, for cutting seamless 48 px ground tiles",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "bb820733-5aa3-47ad-8b48-c9bbc9fa84bf",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

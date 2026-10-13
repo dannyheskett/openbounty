@@ -1,0 +1,20 @@
+{
+ "name": "Italia overworld",
+ "description": "Glory of Rome: the Italia province map, classic 16-bit RPG overworld",
+ "reference_path": "art/reference/italia/italia_key.png",
+ "caption": "A classic 16-bit RPG overworld map of Roman Italy in three-quarter top-down view: grey limestone mountains, a walled hill town with terracotta roofs, umbrella pines and dark cypresses, a blue river with a stone arch bridge, a paved Roman road, ploughed and wheat fields, a sandy beach and turquoise sea, a small rider on the road. Clean pixel art, dark outlines on objects, soft shading, warm sunlight from the upper left.",
+ "llm_instructions": "Describe the subject as it would appear on a classic 16-bit RPG overworld map of Roman Italy, seen from the three-quarter top-down view (the top and the south face of things are visible, ground is seen from above). Keep the warm Mediterranean palette: fresh green grass, grey limestone, terracotta roofs, golden wheat, turquoise sea, sandy beaches. Light comes from the upper left. Objects have clean dark outlines and soft shading. Name a plain flat background colour when the subject is a single object; describe the ground when the subject is a terrain texture. Never add text, borders, grid lines, frames, sky or a horizon.",
+ "template": "{prompt}, classic 16-bit RPG overworld map of Roman Italy, three-quarter top-down view, light from the upper left",
+ "force_bg_removal": false,
+ "apply_prompt_fixer": true,
+ "id": "user_style_eab25e1af9a846d2a76610479199ce4f",
+ "prompt_style": "user__italia_overworld_d6f5ba7d",
+ "history": [
+  {
+   "action": "create",
+   "date": "2026-10-09 21:56",
+   "template": "{prompt}, classic 16-bit RPG overworld map of Roman Italy, three-quarter top-down view, light from the upper left",
+   "llm_instructions": "Describe the subject as it would appear on a classic 16-bit RPG overworld map of Roman Italy, seen from the three-quarter top-down view (the top and the south face of things are visible, ground is seen from above). Keep the warm Mediterranean palette: fresh green grass, grey limestone, terracotta roofs, golden wheat, turquoise sea, sandy beaches. Light comes from the upper left. Objects have clean dark outlines and soft shading. Name a plain flat background colour when the subject is a single object; describe the ground when the subject is a terrain texture. Never add text, borders, grid lines, frames, sky or a horizon."
+  }
+ ]
+}

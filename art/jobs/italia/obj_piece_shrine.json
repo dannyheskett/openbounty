@@ -1,0 +1,28 @@
+{
+ "id": "italia/obj_piece_shrine",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 48,
+ "height": 48,
+ "seed": 9013,
+ "num_images": 2,
+ "remove_bg": true,
+ "prompt": "a small Roman roadside shrine with a stone altar under a little tiled roof, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Italia set: piece_shrine, one 48 px map cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "48ca9621-5064-40b0-be45-759d34f14c27",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

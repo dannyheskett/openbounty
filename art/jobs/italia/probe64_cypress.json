@@ -1,0 +1,28 @@
+{
+ "id": "italia/probe64_cypress",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 64,
+ "height": 64,
+ "seed": 8505,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a single tall dark green Italian cypress tree, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  64,
+  64
+ ],
+ "_note": "Gate B: RD Pro top-down + the Italia key as reference, 64 px, to be downscaled to one 32 px cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "8a030d7a-d59b-43a8-94e7-c9ee2cde24c7",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

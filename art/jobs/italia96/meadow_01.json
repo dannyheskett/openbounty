@@ -1,0 +1,9 @@
+{
+ "prompt": "A patch of short bright mossy green grass filling the whole picture, seen from the front and above, lit from the upper left, like the turf under a boulder. Soft uneven clumps of mid green grass with lighter green tips and darker green hollows between them, each clump a little different. Only grass.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 11102,
+ "bypass_prompt_expansion": true
+}

@@ -1,0 +1,24 @@
+{
+ "id": "italia96/key_plus2",
+ "style": "rd_plus__topdown_map",
+ "width": 256,
+ "height": 256,
+ "seed": 9632,
+ "num_images": 4,
+ "prompt": "the Italian countryside of ancient Rome as a game overworld map seen from above, no sky, no horizon, no text: rolling Apennine hills of dry golden grass with white limestone outcrops, silver-green olive groves, vineyards in neat rows, umbrella-shaped stone pines and lines of tall dark cypress trees, a rocky Mediterranean coast with a small sandy cove and clear blue sea, a river crossed by a Roman stone arch bridge, a straight paved Roman road lined with cypresses, wheat fields, a walled hill town of ochre stone houses with terracotta roofs, and a Roman hero on horseback on the road",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate A (approved plan step 2), second set: Italian landscape named specifically",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "a05de524-ef77-4770-b24b-a930bead4d8e",
+   "cost": 0.24,
+   "date": "2026-10-10"
+  }
+ ]
+}

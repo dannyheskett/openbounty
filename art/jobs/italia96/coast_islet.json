@@ -1,0 +1,13 @@
+{
+ "prompt": "A small round island of mossy green grass, about a third of the picture wide, in the middle of calm clear blue sea, seen from above, with a narrow shore of pale sand all round it. Only sea, sand and grass. Light falls from the upper left.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 11145,
+ "bypass_prompt_expansion": true,
+ "_reference_images": [
+  "art/reference/italia96/italia_key.png",
+  "art/reference/italia96/coast_inlet.png"
+ ]
+}

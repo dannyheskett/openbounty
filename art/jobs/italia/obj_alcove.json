@@ -1,0 +1,28 @@
+{
+ "id": "italia/obj_alcove",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 48,
+ "height": 48,
+ "seed": 9009,
+ "num_images": 2,
+ "remove_bg": true,
+ "prompt": "a small round Roman temple of the augurs with white columns and a domed roof, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Italia set: alcove, one 48 px map cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "59ac3022-cdac-469b-8a26-fe7d04f3aa13",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

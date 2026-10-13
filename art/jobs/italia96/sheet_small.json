@@ -1,0 +1,10 @@
+{
+ "prompt": "Twelve separate small things from the countryside in one picture, all about the same size, seen from the front and above, lit on the left and shaded on the right. Each stands apart on the flat magenta background, with empty magenta between them. Along the top, from the left, four bare rocks of warm grey and tan brown rock with deep cracks and bare to their bases: a small jagged rock peak; a low rounded rocky hump; a pair of large boulders; a small rock outcrop with a little moss on its shaded side. Along the middle, from the left: a patch of red poppies with dark centres growing in tall grass; a lone olive tree with a twisted grey trunk under a rounded crown of silver-green leaves, standing on a small round patch of mossy green grass; a low outcrop of three weathered grey boulders on a patch of mossy green grass; three round golden haystacks standing in a row on a patch of mossy green grass. Along the bottom, from the left: a round Roman stone well with a timber frame and a bucket and a stone trough beside it; a small Roman roadside shrine, a waist-high stone niche with a bronze statue and offerings, its opening facing the viewer; a small square timber landing deck of weathered brown planks on four wooden posts with a coil of rope on it; a tall plain square stone pillar on a stepped base with a carved laurel band near its top. They stand alone, with only the flat magenta background around and below them.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 10913,
+ "remove_bg": true,
+ "bypass_prompt_expansion": true
+}

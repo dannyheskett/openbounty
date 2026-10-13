@@ -1,0 +1,30 @@
+{
+ "id": "italia96/land_forest8",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 9871,
+ "num_images": 1,
+ "prompt": "Dense patches of very tall pine forest beside an open mossy field, seen from close above. Each patch is one solid mass of large, tall, dark green treetops, packed tightly together. Open mossy grass lies between the patches, and the grass grows right up to the trees. Each patch casts a soft shadow along its edge onto the grass. Only grass and trees.",
+ "reference_image_paths": [
+  "art/reference/italia96/italia_key.png"
+ ],
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "img2img for tree scale, as land_forest7 (same input crop, strength 0.55); prompt adds grass up to the trees and only grass and trees",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "31920529-461d-451c-a0d6-5769fe56745e",
+   "cost": 0.18,
+   "date": "2026-10-10"
+  }
+ ],
+ "input_image_path": "art/primitives/italia96/land/forest4_crop64_x4.png",
+ "strength": 0.55
+}

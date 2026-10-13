@@ -1,0 +1,12 @@
+{
+ "prompt": "Exactly the same short bright mossy green grass as the reference picture, the same clumps and colours, filling the whole picture, lit from the upper left, with small white and red wildflowers scattered loosely through it and a few small pale stones. Only grass, flowers and stones.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 11124,
+ "bypass_prompt_expansion": true,
+ "_reference_images": [
+  "build/art/italia96/meadow_01/run01/01_raw.png"
+ ]
+}

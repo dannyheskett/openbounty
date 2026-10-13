@@ -1,0 +1,28 @@
+{
+ "id": "italia/obj_artifact_chest",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 48,
+ "height": 48,
+ "seed": 9017,
+ "num_images": 2,
+ "remove_bg": true,
+ "prompt": "an ornate gilded treasure chest with jewels on the lid, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Italia set: artifact_chest, one 48 px map cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "26971435-6a1f-49f3-b224-b5bf518eac9b",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+{
+ "prompt": "A broad paved Roman road, as wide as a town square, of fitted grey paving stones crossing mossy green grass, seen from above. The stones are worn and uneven, with grass at their edges. Only the road and grass. Light falls from the upper left.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 11134,
+ "bypass_prompt_expansion": true,
+ "_reference_images": [
+  "art/reference/italia96/italia_key.png"
+ ]
+}

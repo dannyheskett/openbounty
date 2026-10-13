@@ -1,0 +1,24 @@
+{
+ "id": "italia/tex_sea",
+ "style": "rd_tile__single_tile",
+ "width": 48,
+ "height": 48,
+ "seed": 8702,
+ "num_images": 4,
+ "prompt": "deep turquoise Mediterranean sea water with small light ripples, seen from directly above, warm light from the upper left",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Gate C: Italia ground texture, one 48 px cell, seamless",
+ "runs": [
+  {
+   "run": "run02",
+   "request": "4c3f753c-8a18-4c37-a321-3d19e518c696",
+   "cost": 0.24,
+   "date": "2026-10-09"
+  }
+ ]
+}

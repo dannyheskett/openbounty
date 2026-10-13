@@ -2868,7 +2868,7 @@
 			"invitations":	"ostia",
 			"informant":	"informant_market",
 			"name":	"Ostia",
-			"art":	"town_italia",
+			"art":	"town_italia_coast",
 			"x":	30,
 			"y":	61,
 			"boat":	{
@@ -2890,7 +2890,7 @@
 			"invitations":	"puteoli",
 			"informant":	"informant_taverner",
 			"name":	"Puteoli",
-			"art":	"town_italia",
+			"art":	"town_italia_coast",
 			"x":	38,
 			"y":	71,
 			"boat":	{
@@ -2911,7 +2911,7 @@
 			"invitations":	"cumae",
 			"informant":	"informant_urchin",
 			"name":	"Cumae",
-			"art":	"town_italia",
+			"art":	"town_italia_coast",
 			"x":	37,
 			"y":	69,
 			"boat":	{
@@ -2953,7 +2953,7 @@
 			"invitations":	"pisae",
 			"informant":	"informant_market",
 			"name":	"Pisae",
-			"art":	"town_italia",
+			"art":	"town_italia_coast",
 			"x":	18,
 			"y":	35,
 			"boat":	{
@@ -2974,7 +2974,7 @@
 			"invitations":	"ancona",
 			"informant":	"informant_taverner",
 			"name":	"Ancona",
-			"art":	"town_italia",
+			"art":	"town_italia_coast",
 			"x":	37,
 			"y":	36,
 			"boat":	{
@@ -3037,7 +3037,7 @@
 			"invitations":	"croton",
 			"informant":	"informant_market",
 			"name":	"Croton",
-			"art":	"town_italia",
+			"art":	"town_italia_coast",
 			"x":	56,
 			"y":	95,
 			"boat":	{
@@ -3418,7 +3418,7 @@
 				"invitations":	"olbia",
 				"informant":	"informant_market",
 				"name":	"Olbia",
-				"art":	"town_italia",
+				"art":	"town_italia_coast",
 				"x":	17,
 				"y":	78,
 				"boat":	{
@@ -5147,7 +5147,8 @@
 		},
 		".":	{
 			"art":	"grass",
-			"terrain":	"grass"
+			"terrain":	"grass",
+			"variants":	["grass_v1", "grass_v2", "grass_v3", "grass_v4", "grass_v5", "grass_v6", "grass_v7", "grass_v8", "grass_v9"]
 		},
 		"/":	{
 			"art":	"desert_edge_es",
@@ -5227,7 +5228,8 @@
 		},
 		"D":	{
 			"art":	"desert",
-			"terrain":	"desert"
+			"terrain":	"desert",
+			"variants":	["desert_v1", "desert_v2"]
 		},
 		"E":	{
 			"art":	"forest_edge_e",
@@ -5237,8 +5239,7 @@
 		"F":	{
 			"art":	"forest",
 			"terrain":	"forest",
-			"blocks_foot":	true,
-			"variants":	["forest_v1", "forest_v2"]
+			"blocks_foot":	true
 		},
 		"G":	{
 			"art":	"forest_edge_w",
@@ -5298,14 +5299,12 @@
 		"R":	{
 			"art":	"mountain_edge_e",
 			"terrain":	"mountain",
-			"blocks_foot":	true,
-			"variants":	["mountain_edge_e_v1", "mountain_edge_e_v2"]
+			"blocks_foot":	true
 		},
 		"S":	{
 			"art":	"mountain_edge_w",
 			"terrain":	"mountain",
-			"blocks_foot":	true,
-			"variants":	["mountain_edge_w_v1", "mountain_edge_w_v2"]
+			"blocks_foot":	true
 		},
 		"T":	{
 			"art":	"mountain_edge_n",
@@ -5319,11 +5318,13 @@
 		},
 		"Y":	{
 			"art":	"water_edge_ne",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_edge_ne_v1", "water_edge_ne_v2"]
 		},
 		"Z":	{
 			"art":	"water_edge_nw",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_edge_nw_v1", "water_edge_nw_v2"]
 		},
 		"[":	{
 			"art":	"water_edge_sw",
@@ -5335,41 +5336,48 @@
 		},
 		"]":	{
 			"art":	"water_inner_es",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_inner_es_v1", "water_inner_es_v2"]
 		},
 		"^":	{
 			"art":	"mountain",
 			"terrain":	"mountain",
-			"blocks_foot":	true,
-			"variants":	["mountain_v1", "mountain_v2"]
+			"blocks_foot":	true
 		},
 		"_":	{
 			"art":	"water_inner_ne",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_inner_ne_v1", "water_inner_ne_v2"]
 		},
 		"`":	{
 			"art":	"water_inner_sw",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_inner_sw_v1", "water_inner_sw_v2"]
 		},
 		"a":	{
 			"art":	"water_inner_nw",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_inner_nw_v1", "water_inner_nw_v2"]
 		},
 		"b":	{
 			"art":	"water_edge_e",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_edge_e_v1", "water_edge_e_v2"]
 		},
 		"c":	{
 			"art":	"water_edge_w",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_edge_w_v1", "water_edge_w_v2"]
 		},
 		"d":	{
 			"art":	"water_edge_n",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_edge_n_v1", "water_edge_n_v2"]
 		},
 		"e":	{
 			"art":	"water_edge_s",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_edge_s_v1"]
 		},
 		"f":	{
 			"art":	"road_ns",
@@ -5551,7 +5559,8 @@
 		},
 		"~":	{
 			"art":	"water",
-			"terrain":	"water"
+			"terrain":	"water",
+			"variants":	["water_v1", "water_v2"]
 		},
 		"\\x84":	{"art":	"river_ns", "terrain":	"river"},
 		"\\x85":	{"art":	"river_ew", "terrain":	"river"},
@@ -5635,32 +5644,8 @@
 		"\\xff":	{"art":	"landmark_oppidum", "object":	true, "ground":	"grass", "terrain":	"grass"},
 		"\\xf7":	{"art":	"landmark_tophet", "object":	true, "ground":	"grass", "terrain":	"grass"},
 		"\\xf8":	{"art":	"landmark_gordian", "object":	true, "ground":	"grass", "terrain":	"grass"},
-		"\\xa2":	{"art":	"fields_plough", "terrain":	"grass"},
-		"\\xa3":	{"art":	"fields_wheat", "terrain":	"grass"},
-		"\\xa4":	{"art":	"fields_plough_edge_nw", "terrain":	"grass"},
-		"\\xa5":	{"art":	"fields_plough_edge_sw", "terrain":	"grass"},
-		"\\xa6":	{"art":	"fields_plough_edge_ne", "terrain":	"grass"},
-		"\\xa7":	{"art":	"fields_plough_edge_es", "terrain":	"grass"},
-		"\\xa8":	{"art":	"fields_plough_inner_es", "terrain":	"grass"},
-		"\\xa9":	{"art":	"fields_plough_inner_ne", "terrain":	"grass"},
-		"\\xaa":	{"art":	"fields_plough_inner_sw", "terrain":	"grass"},
-		"\\xab":	{"art":	"fields_plough_inner_nw", "terrain":	"grass"},
-		"\\xac":	{"art":	"fields_plough_edge_e", "terrain":	"grass"},
-		"\\xad":	{"art":	"fields_plough_edge_w", "terrain":	"grass"},
-		"\\xae":	{"art":	"fields_plough_edge_n", "terrain":	"grass"},
-		"\\xaf":	{"art":	"fields_plough_edge_s", "terrain":	"grass"},
-		"\\xba":	{"art":	"fields_wheat_edge_nw", "terrain":	"grass"},
-		"\\xbb":	{"art":	"fields_wheat_edge_sw", "terrain":	"grass"},
-		"\\xbc":	{"art":	"fields_wheat_edge_ne", "terrain":	"grass"},
-		"\\xbd":	{"art":	"fields_wheat_edge_es", "terrain":	"grass"},
-		"\\xbe":	{"art":	"fields_wheat_inner_es", "terrain":	"grass"},
-		"\\xbf":	{"art":	"fields_wheat_inner_ne", "terrain":	"grass"},
-		"\\xc0":	{"art":	"fields_wheat_inner_sw", "terrain":	"grass"},
-		"\\xc1":	{"art":	"fields_wheat_inner_nw", "terrain":	"grass"},
-		"\\xc2":	{"art":	"fields_wheat_edge_e", "terrain":	"grass"},
-		"\\xc3":	{"art":	"fields_wheat_edge_w", "terrain":	"grass"},
-		"\\xc4":	{"art":	"fields_wheat_edge_n", "terrain":	"grass"},
-		"\\xc5":	{"art":	"fields_wheat_edge_s", "terrain":	"grass"},
+		"\\xa2":	{"art":	"fields_plough", "terrain":	"grass", "variants":	["fields_plough_v1", "fields_plough_v2", "fields_plough_v3"]},
+		"\\xa3":	{"art":	"fields_wheat", "terrain":	"grass", "variants":	["fields_wheat_v1", "fields_wheat_v2", "fields_wheat_v3"]},
 		"\\x8a":	{"art":	"dock_n", "ground":	"water_edge_n", "terrain":	"water"},
 		"\\x8f":	{"art":	"dock_s", "ground":	"water_edge_s", "terrain":	"water"},
 		"\\x90":	{"art":	"dock_e", "ground":	"water_edge_e", "terrain":	"water"},
@@ -5677,18 +5662,7 @@
 		"bridges":	{"ew":	"bridge_ew", "ns":	"bridge_ns", "river_ew":	"bridge_river_ew", "river_ns":	"bridge_river_ns"},
 		"objects":	{"chest":	"chest", "artifact_chest":	"artifact_chest", "artifact_ring":	"artifact_ring", "sign":	"sign", "town":	"town", "wandering_army":	"wandering_army", "alcove":	"alcove", "dwelling_plains":	"dwelling_plains", "dwelling_forest":	"dwelling_forest", "dwelling_hills":	"dwelling_hills", "dwelling_dungeon":	"dwelling_dungeon"},
 		"castle_3x2":	{"tl":	"castle_tl", "tm":	"castle_tm", "tr":	"castle_tr", "ml":	"castle_ml", "gate":	"castle_gate", "mr":	"castle_mr"},
-		"castle_1x1":	"castle",
-		"details":	["detail_v1", "detail_v2", "detail_v3", "detail_v4"],
-		"aprons":	{
-			"forest":	{"n":	["forest_apron_n_v1", "forest_apron_n_v2", "forest_apron_n_v3"], "e":	["forest_apron_e_v1", "forest_apron_e_v2", "forest_apron_e_v3"], "s":	["forest_apron_s_v1", "forest_apron_s_v2", "forest_apron_s_v3"], "w":	["forest_apron_w_v1", "forest_apron_w_v2", "forest_apron_w_v3"]},
-			"mountain":	{"n":	["mountain_apron_n_v1", "mountain_apron_n_v2", "mountain_apron_n_v3"], "e":	["mountain_apron_e_v1", "mountain_apron_e_v2", "mountain_apron_e_v3"], "s":	["mountain_apron_s_v1", "mountain_apron_s_v2", "mountain_apron_s_v3"], "w":	["mountain_apron_w_v1", "mountain_apron_w_v2", "mountain_apron_w_v3"]}
-		},
-		"fills":	{
-			"forest":	{"ne":	"forest_fill_ne", "es":	"forest_fill_es", "sw":	"forest_fill_sw", "nw":	"forest_fill_nw"},
-			"forest_sand":	{"ne":	"forest_sand_fill_ne", "es":	"forest_sand_fill_es", "sw":	"forest_sand_fill_sw", "nw":	"forest_sand_fill_nw"},
-			"mountain":	{"ne":	"mountain_fill_ne", "es":	"mountain_fill_es", "sw":	"mountain_fill_sw", "nw":	"mountain_fill_nw"},
-			"mountain_sand":	{"ne":	"mountain_sand_fill_ne", "es":	"mountain_sand_fill_es", "sw":	"mountain_sand_fill_sw", "nw":	"mountain_sand_fill_nw"}
-		}
+		"castle_1x1":	"castle"
 	},
 	"spawn":	{
 		"calm_radius":	12,

@@ -1,0 +1,30 @@
+{
+ "id": "italia96/obj_town_rome",
+ "style": "rd_pro__topdown",
+ "width": 96,
+ "height": 96,
+ "seed": 9611,
+ "num_images": 4,
+ "remove_bg": true,
+ "reference_image_paths": [
+  "art/reference/italia96/town_rome.png",
+  "art/reference/italia96/castle_palatium.png",
+  "art/reference/italia96/town_italia.png"
+ ],
+ "prompt": "the city of ancient Rome: the Colosseum, marble temples with columns and red terracotta roofs, crowded city blocks inside stone walls",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_note": "Italia 96: town_rome, one 96 px map cell, native",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "6cc942d2-0478-4b2b-a1e3-7e1b3ec119f6",
+   "cost": 0.72,
+   "date": "2026-10-10"
+  }
+ ]
+}

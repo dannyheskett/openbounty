@@ -1,0 +1,28 @@
+{
+ "id": "italia/probe48_oak",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 48,
+ "height": 48,
+ "seed": 8603,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a single round leafy green holm oak tree, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Gate B: one map cell at 48 px native",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "762a7f90-9f02-45ea-9535-26064f22b39c",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

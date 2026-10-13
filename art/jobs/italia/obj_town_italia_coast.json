@@ -1,0 +1,28 @@
+{
+ "id": "italia/obj_town_italia_coast",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 48,
+ "height": 48,
+ "seed": 9004,
+ "num_images": 2,
+ "remove_bg": true,
+ "prompt": "a small Italian harbour town seen from above: terracotta roofs, a stone quay with two little boats and a small lighthouse, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Italia set: town_italia_coast, one 48 px map cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "fde84f54-b022-4e77-8bf1-d76ae01a3e19",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

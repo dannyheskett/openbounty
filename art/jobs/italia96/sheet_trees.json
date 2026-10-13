@@ -1,0 +1,10 @@
+{
+ "prompt": "Nine separate trees in one picture, drawn in proportion to each other, seen from the front and above, lit on the left and shaded on the right, each with a brown trunk. Each stands apart on the flat magenta background, with empty magenta between them. Along the top, from the left: a tree with a single short brown trunk and one big round crown of dense dark green leaves shaped like a dome, the crown one solid rounded mass made of many small clusters of leaves; a tree of the same height with a short brown trunk and one tall oval crown of dense dark green leaves; an Italian stone pine with a tall bare brown trunk under a flat wide umbrella crown of dark green needles. Along the middle, from the left: a narrow dark green cypress, tall and pointed like a flame, on a short brown trunk; a second tree with a short brown trunk and a round dome crown, a little wider than the first; a tree with a thick brown trunk and a broad spreading crown of dense green leaves, wider than it is tall. Along the bottom, from the left: a slender poplar with a brown trunk and a narrow tall oval crown of lighter green leaves; a second stone pine with a bare brown trunk and an umbrella crown in two rounded tiers; a young oak, smaller than the others, with a short brown trunk and a small round crown of bright green leaves. They stand alone, with only the flat magenta background around and below them.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 10911,
+ "remove_bg": true,
+ "bypass_prompt_expansion": true
+}

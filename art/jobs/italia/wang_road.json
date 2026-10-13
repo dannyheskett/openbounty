@@ -1,0 +1,25 @@
+{
+ "id": "italia/wang_road",
+ "style": "rd_tile__tileset_advanced",
+ "width": 24,
+ "height": 24,
+ "seed": 9204,
+ "prompt": "a paved Roman road of light grey cobblestones with a darker stone kerb",
+ "extra_prompt": "fresh green meadow grass with small tufts, seen from directly above",
+ "extra_input_image_path": "art/primitives/italia48/key_crops/grass.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  120
+ ],
+ "_note": "Italia terrain transitions: 24 px corner tiles, four to a 48 px cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "7511b8b9-a3c2-4768-b5be-af11c6937f23",
+   "cost": 0.1,
+   "date": "2026-10-09"
+  }
+ ]
+}

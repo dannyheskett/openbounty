@@ -1,0 +1,25 @@
+{
+ "id": "italia/wang_coast",
+ "style": "rd_tile__tileset_advanced",
+ "width": 24,
+ "height": 24,
+ "seed": 9211,
+ "prompt": "deep turquoise Mediterranean sea water with small white wave ripples, edged by a narrow golden sandy beach and a thin line of white surf where it meets the grass",
+ "extra_prompt": "fresh green meadow grass with small tufts, seen from directly above",
+ "extra_input_image_path": "art/primitives/italia48/key_crops/grass.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  120
+ ],
+ "_note": "Italia terrain transitions: 24 px corner tiles, four to a 48 px cell",
+ "runs": [
+  {
+   "run": "run02",
+   "request": "7cdba4a2-7ac5-44e4-b44e-38af01013035",
+   "cost": 0.1,
+   "date": "2026-10-09"
+  }
+ ]
+}

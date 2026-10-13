@@ -1,0 +1,30 @@
+{
+ "id": "italia96/dux_hero",
+ "style": "rd_pro__topdown",
+ "width": 96,
+ "height": 96,
+ "target": [
+  96,
+  96
+ ],
+ "seed": 10508,
+ "num_images": 1,
+ "prompt": "A Roman general on a brown horse standing still with all four hooves on the ground, seen in profile, facing right. A red cloak, bronze chest armour and a crested helmet. Light falls from the upper left. It stands alone, with only the flat magenta background around and below it.",
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "remove_bg": true,
+ "_note": "Plan v2, Step 1",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "e7ab6893-18a5-4ffc-b6b1-363324f16e82",
+   "cost": 0.18,
+   "date": "2026-10-11"
+  }
+ ],
+ "pack": [
+  "art/classes/dux_hero.png"
+ ],
+ "bypass_prompt_expansion": true
+}

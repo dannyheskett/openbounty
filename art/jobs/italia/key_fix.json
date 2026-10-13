@@ -1,0 +1,21 @@
+{
+ "id": "italia/key_fix",
+ "tool": "inpainting",
+ "input_image_path": "art/reference/italia/key_nogrid.png",
+ "mask_path": "art/reference/italia/key_fix_mask.png",
+ "seed": 8111,
+ "prompt": "more grey limestone mountain slopes and rolling green hills with a few umbrella pines, continuing the same top-down RPG overworld map, no sky",
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate A: candidate 2 with its sky corners repainted as land",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "inf_8ARrKDPyab2NdqWpLkeQ1WJ0L34YjzMl",
+   "cost": 0.18,
+   "date": "2026-10-09"
+  }
+ ]
+}

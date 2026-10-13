@@ -1,0 +1,28 @@
+{
+ "id": "italia/probe64_pine",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 64,
+ "height": 64,
+ "seed": 8501,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a single Italian umbrella stone pine tree with a wide flat dark green crown on a short trunk, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  64,
+  64
+ ],
+ "_note": "Gate B: RD Pro top-down + the Italia key as reference, 64 px, to be downscaled to one 32 px cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "9552fc15-81a5-4ada-a88f-49db35973cc0",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

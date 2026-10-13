@@ -1,0 +1,26 @@
+{
+ "id": "italia96/tile_coast",
+ "style": "rd_tile__tileset_advanced",
+ "width": 32,
+ "height": 32,
+ "seed": 9601,
+ "prompt": "deep blue Mediterranean sea water with gentle waves and a pale sandy shore",
+ "extra_prompt": "green meadow grass seen from directly above",
+ "input_image_path": "art/primitives/italia96/crops/sea.png",
+ "extra_input_image_path": "art/primitives/italia96/crops/grass.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  128,
+  160
+ ],
+ "_note": "Italia 96: 32 px corner tiles, nine to a 96 px cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "bc7ff328-a63f-4498-abda-4cbf7f2648bd",
+   "cost": 0.1,
+   "date": "2026-10-10"
+  }
+ ]
+}

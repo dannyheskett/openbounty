@@ -1,0 +1,24 @@
+{
+ "id": "italia/scene_wheat",
+ "style": "user__italia_overworld_d6f5ba7d",
+ "width": 256,
+ "height": 256,
+ "seed": 8804,
+ "num_images": 2,
+ "prompt": "one huge field of ripe golden wheat filling the whole map, nothing else",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate C: one terrain in the Italia look, for cutting seamless 48 px ground tiles",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "1d05b8f5-402b-45e7-8710-75e7f9e4f329",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

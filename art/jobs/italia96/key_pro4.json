@@ -1,0 +1,31 @@
+{
+ "id": "italia96/key_pro4",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 9651,
+ "num_images": 1,
+ "prompt": "A Roman rider on horseback travelling a cypress-lined stone road through lush green Italian hills, past silver-green olive groves, vineyards and wheat fields toward a walled town with terracotta roofs, beside a river with a stone arch bridge that runs into a blue Mediterranean bay with a sandy beach, rocky mountains beyond, warm afternoon sunlight",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate A: style reference for all Italian frames; prompt checked against RD prompting guidance",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "eb73c70c-324c-42e3-95e8-b48507cdf055",
+   "cost": 0.18,
+   "date": "2026-10-10"
+  }
+ ],
+ "_kept": {
+  "file": "art/reference/italia96/italia_key.png",
+  "from": "build/art/italia96/key_pro4/run01/01_raw.png",
+  "palette": "art/palettes/italia.png",
+  "chosen": "2026-10-10, by Dan, as the Italia key frame (Gate A)",
+  "palette_locked": "2026-10-10, by Dan: 64 colours, the key's 26 plus 38 from italia96/key_pro (28), key_pro3 (6), re_town_rome (4)"
+ }
+}

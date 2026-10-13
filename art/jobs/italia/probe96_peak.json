@@ -1,0 +1,25 @@
+{
+ "id": "italia/probe96_peak",
+ "style": "user__italia_overworld_d6f5ba7d",
+ "width": 96,
+ "height": 96,
+ "seed": 8402,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a single grey limestone mountain peak with a sunlit left face and shaded right face and a little green scrub at its foot, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_note": "Gate B: Italia custom style at its 96 px minimum, to be K-centroid downscaled to one 32 px cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "3af58d63-871a-4088-84c4-3437b23b0dc0",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

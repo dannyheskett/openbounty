@@ -85,7 +85,7 @@ TEST placed_object_names_come_from_map_art(void) {
 }
 
 TEST every_rome_manifest_path_exists(void) {
-    // Rome draws from four tile sets, map art overlays and art/objects/: the
+    // Rome draws from four tile sets and art/objects/: the
     // manifest names each file from the folder the game loads it from, so a
     // sand edge only a province's set has is never asked of the master set.
     Pack *p = pack_open("assets/glory-of-rome");
@@ -110,8 +110,8 @@ TEST every_rome_manifest_path_exists(void) {
     ASSERT(ok);
     if (missing[0]) FAILm(missing);
     ASSERT(objects > 20);
-    ASSERT(sets > 100);
-    ASSERT(overlays >= 24);
+    ASSERT(sets > 60);
+    ASSERT_EQ(0, overlays);             // tiles only: Rome declares no details, aprons or fills
     PASS();
 }
 

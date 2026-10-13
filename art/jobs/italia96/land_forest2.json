@@ -1,0 +1,28 @@
+{
+ "id": "italia96/land_forest2",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 9671,
+ "num_images": 1,
+ "prompt": "A wide view of a dense forest, a solid mass of dark green treetops packed tightly together, surrounded by a wide plain of green grass, the forest casting a shadow along its edge onto the grass, warm afternoon sunlight",
+ "reference_image_paths": [
+  "art/reference/italia96/italia_key.png"
+ ],
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Landscape for the forest-to-grass tileset, second try: the forest as one mass, seen wide",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "5b2ebc6f-74f8-4ef0-9400-6e084029daab",
+   "cost": 0.18,
+   "date": "2026-10-10"
+  }
+ ]
+}

@@ -1,0 +1,24 @@
+{
+ "id": "italia/tex_wheat",
+ "style": "rd_tile__single_tile",
+ "width": 48,
+ "height": 48,
+ "seed": 8704,
+ "num_images": 4,
+ "prompt": "a field of ripe golden wheat in neat rows, seen from directly above, warm light from the upper left",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Gate C: Italia ground texture, one 48 px cell, seamless",
+ "runs": [
+  {
+   "run": "run02",
+   "request": "ffef7f60-158c-4df5-b719-2f0a1c4dc9b6",
+   "cost": 0.24,
+   "date": "2026-10-09"
+  }
+ ]
+}

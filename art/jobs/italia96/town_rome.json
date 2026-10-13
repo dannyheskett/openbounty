@@ -1,0 +1,13 @@
+{
+ "prompt": "The city of Rome, seen from the front and above with the doors facing the viewer. The Colosseum stands among white marble temples with terracotta roofs, behind a city wall that runs along the front with a gate in the middle. The city spreads across the whole picture from the left edge to the right edge. Light falls from the upper left. The buildings and wall stand directly on the flat magenta background. Only the city and its wall. It stands alone, with only the flat magenta background around and below it.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 96,
+ "num_images": 1,
+ "seed": 11024,
+ "remove_bg": true,
+ "bypass_prompt_expansion": true,
+ "_reference_images": [
+  "art/reference/italia96/italia_key.png"
+ ]
+}

@@ -1,0 +1,28 @@
+{
+ "id": "italia/probe64_rider",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 64,
+ "height": 64,
+ "seed": 8504,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a Roman legate in a red cloak and bronze helmet riding a brown horse, walking to the right, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  64,
+  64
+ ],
+ "_note": "Gate B: RD Pro top-down + the Italia key as reference, 64 px, to be downscaled to one 32 px cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "70259441-96d9-4227-bff6-530e2b0cb6eb",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

@@ -1,0 +1,25 @@
+{
+ "id": "italia/probe96_pine",
+ "style": "user__italia_overworld_d6f5ba7d",
+ "width": 96,
+ "height": 96,
+ "seed": 8401,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a single Italian umbrella stone pine tree with a wide flat dark green crown on a short trunk, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_note": "Gate B: Italia custom style at its 96 px minimum, to be K-centroid downscaled to one 32 px cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "159aaa5f-5196-4286-8d84-21d84578971b",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

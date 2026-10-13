@@ -1,0 +1,24 @@
+{
+ "id": "italia/tex_sand",
+ "style": "rd_tile__single_tile",
+ "width": 48,
+ "height": 48,
+ "seed": 8703,
+ "num_images": 4,
+ "prompt": "warm golden beach sand with a few tiny pebbles and soft ripples, seen from directly above, warm light from the upper left",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Gate C: Italia ground texture, one 48 px cell, seamless",
+ "runs": [
+  {
+   "run": "run02",
+   "request": "bf9a0f93-f805-44e1-bc61-3bddfeb304b1",
+   "cost": 0.24,
+   "date": "2026-10-09"
+  }
+ ]
+}

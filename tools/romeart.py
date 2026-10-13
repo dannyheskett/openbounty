@@ -388,6 +388,10 @@ def lattice_layout(sprites, name="forest", terrain="forest", crown=None, slots=N
         # edge sprites on a terminal west/east side: (sprite, inset, place)
         EDGE_W = [(crown, 0, "top"), (crown, 12, "mid"), (crown, 5, "bottom")]
         EDGE_E = [(crown, 8, "top"), (crown, 0, "mid"), (crown, 14, "bottom")]
+        if slots:   # several tree kinds: the slots file names the tree in each place (plan v4)
+            s = load_json(slots)
+            UPPER, LOWER = s["upper"], s["lower"]
+            EDGE_W, EDGE_E = [tuple(e) for e in s["edge_w"]], [tuple(e) for e in s["edge_e"]]
     else:
         UPPER, LOWER = [[6, 0], [7, 1]], [[6, 5], [5, 7]]
         EDGE_W = [(7, 4, "top"), (3, 12, "mid"), (5, 0, "bottom")]
@@ -504,7 +508,10 @@ def lattice_layout(sprites, name="forest", terrain="forest", crown=None, slots=N
                 if (place == "top" and "N" in open_sides) or (place == "bottom" and "S" in open_sides):
                     continue
                 l, t, r, b = S.bbox(i)
-                y = {"top": 1 - t, "mid": 48 - (t + b) // 2, "bottom": 95 - b}[place]
+                # a sprite as tall as the tile (ink 96 rows) sits at 0: the 1 px margins
+                # inside the north and south lines would put it across the other line
+                y = {"top": 1 - t if b - t < 96 else -t, "mid": 48 - (t + b) // 2,
+                     "bottom": 95 - b if b - t < 96 else 96 - b}[place]
                 if ragged and code < 13:
                     ins += {"top": rag_top, "mid": 0, "bottom": rag_bot}[place]
                 x = -l + ins if side == "W" else 96 - r - ins
@@ -515,9 +522,9 @@ def lattice_layout(sprites, name="forest", terrain="forest", crown=None, slots=N
             keep = ragged_side(keep, open_sides)
         if any(crossings(i, x, y) & set(open_sides) for (i, x, y, _) in keep):
             sys.exit(f"romeart: {name} code {code}: a sprite crosses a terminal line")
-        # one draw order in every tile: lower rows, upper rows, edge sprites --
-        # so nothing drawn on one side of a line covers a straddler on it
-        keep = sorted(set(keep), key=lambda p: (min(p[3], 0), p[2], p[1]))
+        # one draw order in every tile, the painter's: the sprite whose foot is lowest on the
+        # screen is nearest and drawn last (plan v4; seamcheck still proves every join)
+        keep = sorted(set(keep), key=lambda p: (S.ink(p[0], p[1], p[2])[3], p[1]))
         return {"wrap": "", "sprites": [[i, x, y] for (i, x, y, _) in keep]}
 
     lay = {"sprites": sprites, "grass": grass, "tiles": {name: tile(0)}}
@@ -541,7 +548,9 @@ def zone_lattice(zone, terrain, ragged=None):
         return None
     slots = os.path.join(prim, "rock_slots.json")
     if terrain == "forest":
-        return lattice_layout(spr, "forest", crown=1 if zone == "oriens" else 0)[0]
+        tslots = os.path.join(prim, "tree_slots.json")
+        return lattice_layout(spr, "forest", crown=1 if zone == "oriens" else 0,
+                              slots=tslots if os.path.exists(tslots) else None)[0]
     return lattice_layout(spr, "mountain", "mountain", slots=slots if os.path.exists(slots) else None,
                           ragged=ragged)[0]
 
@@ -549,7 +558,7 @@ def zone_lattice(zone, terrain, ragged=None):
 @command("lattice", "a forest or mountain layout under the border contract (for compose)",
          A("out", help="layout .json"), A("--sprites", required=True, help="tile_NN.png folder"),
          A("--name", default="forest"), A("--terrain", default="forest", choices=("forest", "mountain")),
-         A("--crown", type=int, help="forest: the tree sprite"), A("--slots", help="mountain: rock_slots.json"),
+         A("--crown", type=int, help="forest: the tree sprite"), A("--slots", help="rock_slots.json (mountain) or tree_slots.json (forest)"),
          A("--ragged", help="S,A,B[,T,U]: ragged terminal sides (#63)"),
          A("--shadow", help="DX,DY,A: compose's contact shadow under the edge pieces (mountains: 2,3,0.35)"))
 def cmd_lattice(a):
@@ -673,11 +682,12 @@ def seam_violations(lay, report=print):
     def run_on_line(u, side):
         i, x, y = u
         a_ = S.alpha(i)
+        w, h = S.im(i).size                    # the sprite's own size: canvases need not be 96 px
         if side in "EW":
             col = 95 - x if side == "E" else -x
-            return sum(1 for yy in range(96) if 0 <= col < 96 and a_[col, yy] > 0)
+            return sum(1 for yy in range(h) if 0 <= col < w and a_[col, yy] > 0)
         row = 95 - y if side == "S" else -y
-        return sum(1 for xx in range(96) if 0 <= row < 96 and a_[xx, row] > 0)
+        return sum(1 for xx in range(w) if 0 <= row < h and a_[xx, row] > 0)
 
     def flush_ok(other, side, u):
         l, t, r, b = ink(u)
@@ -711,7 +721,9 @@ def cmd_seamcheck(a):
 
 @command("slots", "search rock-slot arrangements for a mountain lattice (seamcheck 0, fewest grass px)",
          A("sprites"), A("out", help="rock_slots.json"), A("--tries", type=int, default=300),
-         A("--seed", type=int, default=1), A("--straddle", help="sprite digits allowed to straddle, e.g. 4567"))
+         A("--seed", type=int, default=1), A("--straddle", help="sprite digits allowed to straddle, e.g. 4567"),
+         A("--terrain", default="mountain", choices=("forest", "mountain")),
+         A("--max-repeat", type=int, default=0, help="no sprite in more than N places of the period (0: no limit)"))
 def cmd_slots(a):
     """Which rock fits a slot depends on its ink box, so a new rock set needs
     its own rock_slots.json. Draws random arrangements, keeps the one with no
@@ -719,7 +731,7 @@ def cmd_slots(a):
     small enough to cross one border (Italia's 4-7, #67)."""
     rnd = random.Random(a.seed)
     ALL = list(range(len(Sprites(a.sprites).ids())))
-    SMALL = [int(c) for c in a.straddle] if a.straddle else ALL
+    SMALL = ([int(c) for c in a.straddle.split(",")] if "," in a.straddle else [int(c) for c in a.straddle]) if a.straddle else ALL
     INS = [0, 4, 6, 8, 12, 14]
     tmp = tempfile.mkdtemp()
     sl = os.path.join(tmp, "slots.json")
@@ -729,9 +741,13 @@ def cmd_slots(a):
                  "lower": [[rnd.choice(SMALL), rnd.choice(SMALL)], [rnd.choice(SMALL), rnd.choice(SMALL)]],
                  "edge_w": [[rnd.choice(ALL), rnd.choice(INS), p] for p in ("top", "mid", "bottom")],
                  "edge_e": [[rnd.choice(ALL), rnd.choice(INS), p] for p in ("top", "mid", "bottom")]}
+        if a.max_repeat:
+            used = [i for row in slots["upper"] + slots["lower"] for i in row] + [e[0] for e in slots["edge_w"] + slots["edge_e"]]
+            if max(used.count(i) for i in set(used)) > a.max_repeat:
+                continue
         json.dump(slots, open(sl, "w"))
         try:
-            lay, holes = lattice_layout(a.sprites, "mountain", "mountain", slots=sl)
+            lay, holes = lattice_layout(a.sprites, a.terrain, a.terrain, slots=sl)
         except SystemExit:
             continue                          # a slot crossed two borders
         res.append((seam_violations(lay, report=lambda *_: None), holes, slots))
@@ -793,7 +809,7 @@ def bridge_tiles(tiles, out):
                 if not on_road[y, x]:
                     im[y, x] = road[min(max(y, mt), mb), x]
             for y0, outer in ((t, t), (b - P + 1, b)):
-                for y in range(y0, y0 + P):
+                for y in range(max(0, y0), min(96, y0 + P)):
                     c = stone * LINE if y == outer else light * (0.8 if x % 8 == 0 else 1.0)
                     im[y, x, :3] = c.astype(np.int32)
             for y in range(b + 1, min(96, b + 4)):
@@ -1477,10 +1493,13 @@ def cmd_dock(a):
 # under art/primitives/<zone>/pieces/ (Galliae's causeway road bridges over
 # its own water, drawn for the Sein in #218; Africa's irrigated farmland, the
 # job fields_africa_irrigated laid 2x2, which Oriens shares).
-ZONE_CFG = {"galliae": {"master": ["fields_plough", "fields_wheat"],
-                        "pieces": ["galliae/pieces/bridge_ew", "galliae/pieces/bridge_ns"]},
-            "africa": {"master": ["fields_plough"], "pieces": ["africa/pieces/fields_wheat"]},
-            "oriens": {"master": ["fields_plough"], "pieces": ["africa/pieces/fields_wheat"]}}
+# The provinces' farmland bases were the master set's until Italia went to 48 px; they keep those bases,
+# now art/primitives/farmland/.
+ZONE_CFG = {"galliae": {"master": [],
+                        "pieces": ["galliae/pieces/bridge_ew", "galliae/pieces/bridge_ns",
+                                   "farmland/fields_plough", "farmland/fields_wheat"]},
+            "africa": {"master": [], "pieces": ["farmland/fields_plough", "africa/pieces/fields_wheat"]},
+            "oriens": {"master": [], "pieces": ["farmland/fields_plough", "africa/pieces/fields_wheat"]}}
 ZONE_RAGGED = [6, 20, 34, 12, 28]     # mountain edges: loose rock 6, crags set back 12 and 28 px (#63)
 
 
@@ -1993,8 +2012,8 @@ def map_build(pack, zid, src, out, strict=False):
             if c not in MAP_BASE:
                 continue            # an overlay whose error is already listed
             t = MAP_BASE[c]
-            if t == 'grass':
-                out_art[y][x] = MAP_PLAIN[c]
+            if t == 'grass' or not any(k.startswith(t + "_edge_") for k in a2c):
+                out_art[y][x] = MAP_PLAIN[c]      # grass, or a ground drawn whole with no edge pieces at all
                 continue
             near = {d: cls[y + dy][x + dx] for d, (dx, dy) in MAP_DIRS8.items()
                     if 0 <= x + dx < W and 0 <= y + dy < H}
@@ -4066,20 +4085,27 @@ def cmd_prompts(a):
 # recipe or source naming a file that is not there.
 
 RECIPES = [   # (glob under art/, the command that makes it)
+    # the Italia set, 48 px native (tools/italia48.py): every terrain name Italia's map uses, and the objects
+    ("tiles/grass.png", "italia48 tiles"), ("tiles/water*.png", "italia48 tiles"),
+    ("tiles/fields_*.png", "italia48 tiles"), ("tiles/forest*.png", "italia48 tiles"),
+    ("tiles/mountain*.png", "italia48 tiles"), ("tiles/road_*.png", "italia48 tiles"),
+    ("tiles/river_*.png", "italia48 tiles"), ("tiles/bridge_*.png", "italia48 tiles"),
+    ("tiles/dock_[nesw].png", "italia48 tiles"),
+    ("objects/alcove.png", "italia48 objects"), ("objects/artifact_chest.png", "italia48 objects"),
+    ("objects/artifact_ring.png", "italia48 objects"), ("objects/castle.png", "italia48 objects"),
+    ("objects/castle_palatium.png", "italia48 objects"), ("objects/chest.png", "italia48 objects"),
+    ("objects/landmark_rubicon.png", "italia48 objects"), ("objects/landmark_sibyl.png", "italia48 objects"),
+    ("objects/piece_farmstead.png", "italia48 objects"), ("objects/piece_ruin.png", "italia48 objects"),
+    ("objects/piece_shrine.png", "italia48 objects"), ("objects/piece_well.png", "italia48 objects"),
+    ("objects/sign.png", "italia48 objects"), ("objects/town_italia.png", "italia48 objects"),
+    ("objects/town_italia_coast.png", "italia48 objects"), ("objects/town_rome.png", "italia48 objects"),
+    ("objects/wandering_army_italia.png", "italia48 objects"),
+    ("classes/*_hero.png", "italia48 objects"),
+    ("classes/*_walk_0[0-3].png", "italia48 objects"), ("sprites/boat_0[0-3].png", "italia48 objects"),
     ("tiles/galliae/*.png", "zone galliae && install galliae"),
     ("tiles/africa/*.png", "zone africa && install africa"),
     ("tiles/oriens/*.png", "zone oriens && install oriens"),
-    ("tiles/*_fill_*.png", "fills"),
-    ("tiles/*_apron_*.png", "aprons"),
-    ("tiles/detail_v[1-4].png", "details"),
-    ("tiles/forest_v[12].png", "interiors"), ("tiles/mountain_v[12].png", "interiors"),
-    ("tiles/mountain_edge_[ew]_v[12].png", "edgevars"),
     ("tiles/water_sand_*.png", "shore"),
-    ("tiles/dock_[nesw].png", "dock"),
-    ("tiles/fields_*_edge_*.png", "edges assets/glory-of-rome '' --as fields_wheat=desert --as fields_plough=desert"),
-    ("tiles/fields_*_inner_*.png", "edges assets/glory-of-rome '' --as fields_wheat=desert --as fields_plough=desert"),
-    ("tiles/river_mouth_es.png", "zone (the mouths drawn the other way up)"),
-    ("tiles/river_mouth_sw.png", "zone (the mouths drawn the other way up)"),
     ("combat/field/*.png", "fields"),
     ("combat/castle_spike.png", "combat"), ("combat/cursor_0[1-4].png", "combat"),
     ("ui/class_select_picker_[0-3].png", "classpicker"),
@@ -4087,12 +4113,6 @@ RECIPES = [   # (glob under art/, the command that makes it)
     ("ui/scene_column_*.png", "columns --ivy"),
     ("ui/title_words.png", "splashtitle --words"),
     ("ui/splash_logo.png", "splashlogo (the emblem: job ui/splash_logo_emblem)"),
-    ("tiles/forest.png", "compose art/layouts/forest96_italia.json"),
-    ("tiles/forest_edge_*.png", "compose art/layouts/forest96_italia.json"),
-    ("tiles/forest_inner_*.png", "compose art/layouts/forest96_italia.json"),
-    ("tiles/mountain.png", "compose art/layouts/mountain96.json"),
-    ("tiles/mountain_edge_*.png", "compose art/layouts/mountain96.json"),
-    ("tiles/mountain_inner_*.png", "compose art/layouts/mountain96.json"),
     ("characters/*_0[89].png", "pingpong (bounce)"), ("characters/*_1[0-3].png", "pingpong (bounce)"),
     ("ui/hud_siege_0[4-7].png", "pingpong art/ui/hud_siege 4 --reverse"),
 ]
@@ -4192,15 +4212,17 @@ def provenance_rebuild():
         out, sys.stdout = sys.stdout, null
         try:
             for zone, d in for_each_set(pk):
+                if zone == "italia":
+                    continue                    # the master set is the Italia 48 set, rebuilt below
                 for f in (fills_set, aprons_set, details_set, interiors_set, edgevars_set):
                     f(zone, d)
                 shore_set(d)
-            dock_tiles(tiles)
-            for lay in ("art/layouts/forest96_italia.json", "art/layouts/mountain96.json"):
-                for f in glob.glob(os.path.join(compose_layout(load_json(lay), os.path.join(tmp, "lay")), "*.png")):
-                    if os.path.basename(f) != "grass.png":
-                        shutil.copyfile(f, os.path.join(tiles, os.path.basename(f)))
-            edges_into(tiles, [("fields_wheat", "desert"), ("fields_plough", "desert")])
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import italia48
+            italia48.PACK = os.path.join(pk, "art")
+            cmd_italia48(argparse.Namespace(what="tiles", _pack=pk))
+            italia48.build_objects()
+            italia48.PACK = os.path.join(PACK, "art")
             paintings = os.path.join(tmp, "fields")
             shutil.copytree(os.path.join("art", "fields"), paintings)
             fields_build(pk, paintings)
@@ -4325,16 +4347,22 @@ def cmd_provenance(a):
 # recorded in the job's "runs". cost, balance and reprocess charge nothing.
 # The token is read from a file, never the environment or the command line.
 
-RD_API = "https://api.retrodiffusion.ai/v1"
+RD_ROOT = "https://api.retrodiffusion.ai"
+RD_API = RD_ROOT + "/v1"      # a path starting "/v2/" goes to RD_ROOT as it is (styles, edit tools)
 RD_TOKEN = os.path.expanduser("~/.config/retrodiffusion/token")
 RD_SENT = ("seed", "remove_bg", "tile_x", "tile_y", "frames_duration", "return_spritesheet", "input_palette",
-           "strength", "bypass_prompt_expansion", "return_non_bg_removed")
+           "strength", "bypass_prompt_expansion", "return_non_bg_removed", "extra_prompt")
 # Every key a job may carry: "_" keys are notes, never sent; anything else is
 # REFUSED, not ignored -- a job once carried a key this did not forward, and a
 # paid call went out that could not answer the question it was made for.
 RD_KEYS = {"id", "prompt", "style", "width", "height", "target", "raw_only", "figure", "headroom_rows",
            "input_image_path", "input_palette_path", "input_image_keep_alpha", "reference_image_paths",
-           "pad_to", "num_images", "pack", "runs"} | set(RD_SENT)
+           "pad_to", "num_images", "pack", "runs", "extra_input_image_path",
+           "tool", "mask_path", "soft_inpaint"} | set(RD_SENT)
+# A job with "tool" runs an edit tool instead of a generation: only inpainting
+# so far (input_image_path + mask_path + prompt, no style; the mask's opaque
+# pixels are the ones repainted). It is quoted, run and recorded like any job.
+RD_TOOLS = ("inpainting",)
 # The line between an attack and a walk, measured over the first 25 runs:
 # attacks grew the silhouette 28-34% over frame 0, walks under 7%.
 MOTION_GATE_PCT = 25
@@ -4353,7 +4381,8 @@ def rd_api(token, method, path, payload=None, timeout=60):
     import urllib.error
     import urllib.request
     data = json.dumps(payload).encode() if payload is not None else None
-    req = urllib.request.Request(RD_API + path, data=data, method=method)
+    url = (RD_ROOT if path.startswith("/v2/") else RD_API) + path
+    req = urllib.request.Request(url, data=data, method=method)
     req.add_header("X-RD-Token", token)
     if data:
         req.add_header("Content-Type", "application/json")
@@ -4370,7 +4399,11 @@ def rd_api(token, method, path, payload=None, timeout=60):
 
 def rd_job(path):
     job = load_json(path)
-    missing = [k for k in ("id", "prompt", "style", "width", "height", "target") if k not in job]
+    need = ("id", "prompt", "input_image_path", "mask_path", "target") if job.get("tool") else \
+           ("id", "prompt", "style", "width", "height", "target")
+    missing = [k for k in need if k not in job]
+    if job.get("tool") and job["tool"] not in RD_TOOLS:
+        sys.exit(f"rdgen: {path}: tool {job['tool']!r} is not one of {', '.join(RD_TOOLS)}")
     unknown = sorted(k for k in job if not k.startswith("_") and k not in RD_KEYS)
     if missing or unknown:
         sys.exit(f"rdgen: {path}: " + (f"missing {', '.join(missing)}; " if missing else "") +
@@ -4413,10 +4446,76 @@ def rd_payload(job, check_cost=False):
             flat.paste(src, (0, 0), src)
             src = flat
         p["input_image"] = b64png(src)
+    if job.get("extra_input_image_path"):
+        # Tileset Advanced: the OUTSIDE texture (input_image is the inside one)
+        flat = Image.new("RGB", rgba(job["extra_input_image_path"]).size, (255, 255, 255))
+        src = rgba(job["extra_input_image_path"])
+        flat.paste(src, (0, 0), src)
+        p["extra_input_image"] = b64png(flat)
     if job.get("reference_image_paths"):
         p["reference_images"] = [b64png(rgba(r)) for r in job["reference_image_paths"]]
     p["check_cost" if check_cost else "async"] = True
     return p
+
+
+def rd_tool_payload(job):
+    """An edit-tool request. Inpainting: the image (RGB) and a same-size RGBA
+    mask whose opaque pixels are repainted, everything else kept exactly
+    (soft_inpaint false unless the job says otherwise)."""
+    src = rgba(job["input_image_path"])
+    flat = Image.new("RGB", src.size, (255, 255, 255))
+    flat.paste(src, (0, 0), src)
+    mask = rgba(job["mask_path"])
+    if mask.size != src.size:
+        sys.exit(f"rdgen: mask {mask.size} is not the image's size {src.size}")
+    if max(src.size) > 256:
+        sys.exit(f"rdgen: inpainting takes at most 256x256, not {src.size}")
+    p = {"input_image": b64png(flat), "mask_image": b64png(mask), "prompt": job["prompt"],
+         "soft_inpaint": bool(job.get("soft_inpaint", False))}
+    if "seed" in job:
+        p["seed"] = job["seed"]
+    return p
+
+
+def rd_run_tool(tok, job, run):
+    """Quote, and with run=True submit, an edit-tool job (inpainting) as a
+    task; the result arrives as a hosted URL and is saved as 01_raw.png."""
+    import time
+    import urllib.request
+    tool = job["tool"]
+    payload = rd_tool_payload(job)
+    est = rd_api(tok, "POST", f"/v2/edit/tools/{tool}/estimate", payload)
+    print(f"cost ${est.get('balance_cost')}  ({tool}, about {est.get('estimate_seconds')}s)")
+    if not run:
+        print("dry run; nothing submitted (add --run to submit and be charged)")
+        return
+    work = rd_run_dir(job["id"], new=True)
+    shutil.copy(job["_path"], os.path.join(work, "job.json"))
+    payload["custom_id"] = f"{job['id']}/{os.path.basename(work)}"
+    sub = rd_api(tok, "POST", f"/v2/edit/tools/{tool}/tasks", payload)
+    save_json(os.path.join(work, "task.json"), sub)
+    task = sub.get("task_id")
+    if not task:
+        sys.exit(f"rdgen: submit failed: {json.dumps(sub)[:300]}")
+    print(f"run dir {work}\ntask {task}")
+    res = None
+    for i in range(90):
+        time.sleep(4)
+        s = rd_api(tok, "GET", f"/v2/edit/tasks/{task}")
+        if s.get("status") in ("succeeded", "failed"):
+            save_json(os.path.join(work, "poll.json"), s)
+            res = s
+            break
+    if not res or res.get("status") != "succeeded":
+        sys.exit(f"rdgen: {tool} did not succeed: {json.dumps(res)[:300]}")
+    out = res.get("result") or {}
+    url = (out.get("output_urls") or [None])[0]
+    if not url:
+        sys.exit(f"rdgen: {tool} returned no image: {json.dumps(out)[:300]}")
+    open(os.path.join(work, "01_raw.png"), "wb").write(urllib.request.urlopen(url, timeout=60).read())
+    print(f"charged ${out.get('balance_cost')} -> {work}/01_raw.png")
+    job_record(job["_path"], runs={"run": os.path.basename(work), "request": out.get("inference_id") or task,
+                                   "cost": out.get("balance_cost"), "date": time.strftime("%Y-%m-%d")})
 
 
 def rd_frames(raw_p, job, work):
@@ -4576,6 +4675,9 @@ def cmd_rdgen(a):
         print(f"reprocessing {job['id']} from {work} (no charge)")
         rd_finish(tok, job, work)
         return
+    if job.get("tool"):
+        rd_run_tool(tok, job, a.action == "run" and a.run)
+        return
     cost = rd_api(tok, "POST", "/inferences", rd_payload(job, check_cost=True))
     if a.action == "cost":
         print(f"{job['id']}: ${cost.get('balance_cost')}  (remaining ${cost.get('remaining_balance')})")
@@ -4619,6 +4721,103 @@ def cmd_rdgen(a):
     job_record(job["_path"], runs={"run": os.path.basename(work), "request": res.get("request_id"),
                                    "cost": res.get("balance_cost"), "date": time.strftime("%Y-%m-%d")})
     rd_finish(tok, job, work)
+
+
+@command("italia48", "the Italia set at 48 px native (tools/italia48.py): tiles | objects",
+         A("what", choices=["tiles", "objects"]))
+def cmd_italia48(a):
+    """tiles: every terrain name Italia's map uses, from art/primitives/italia48/scenes and sprites;
+    objects: the objects, heroes and boat from art/primitives/italia48/objects. Deterministic."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import italia48
+    if a.what == "objects":
+        print("objects:", ", ".join(italia48.build_objects()))
+        return
+    pack = getattr(a, "_pack", PACK)
+    res = load_json(os.path.join(pack, "game.json"))
+    tc = res["tile_codes"]
+    rows = [l.rstrip("\n") for l in open(os.path.join(pack, "maps", "italia.dat"), encoding="latin-1")
+            if not l.startswith("#") and l.strip()]
+    names = set()
+    for r in rows:
+        for ch in r:
+            v = tc.get(ch if ch in tc else "\\x%02x" % ord(ch))
+            if v:
+                names.add(v["art"])
+                names.update(v.get("variants", []))
+                if v.get("ground"):
+                    names.add(v["ground"])
+    names.update(n for n in (res.get("map_art", {}).get("bridges") or {}).values())
+    made, skipped = italia48.build_tiles(names, os.path.join(pack, "art", "tiles"))
+    print(f"tiles: {len(made)} made; drawn elsewhere: {', '.join(skipped)}")
+
+
+RD_STYLE_KEYS = {"name", "reference_path", "caption", "description", "llm_instructions", "expanded_llm_instructions",
+                 "template", "force_bg_removal", "force_palette", "apply_prompt_fixer", "id", "prompt_style",
+                 "history"}
+
+
+def rdstyle_setup(p):
+    p.add_argument("--token-file", default=RD_TOKEN)
+    p.add_argument("action", choices=["create", "patch", "show", "delete"])
+    p.add_argument("job", help="the style file, e.g. art/jobs/italia/style.json")
+
+
+@command("rdstyle", "Retro Diffusion custom style (RD Pro template): create | patch | show | delete", setup=rdstyle_setup)
+def cmd_rdstyle(a):
+    """A custom style from one 256x256 native reference (POST /v2/styles).
+    The style file holds the reference path, the caption, the instructions
+    for RD's prompt-expanding model and the prompt template; create writes
+    the returned id and prompt_style back into it, patch sends the current
+    fields again, and every change is appended to its "history". Use the
+    prompt_style as a job's "style"."""
+    import time
+    tok = rd_token(a.token_file)
+    st = load_json(a.job)
+    unknown = sorted(k for k in st if not k.startswith("_") and k not in RD_STYLE_KEYS)
+    if unknown:
+        sys.exit(f"rdstyle: {a.job}: unknown key(s) {', '.join(unknown)}")
+    if a.action == "show":
+        sel = rd_api(tok, "GET", "/v2/styles/selector")
+        mine = [x for x in sel.get("styles", []) if x.get("prompt_style") == st.get("prompt_style")]
+        print(json.dumps(mine or {"note": "not in the selector", "prompt_style": st.get("prompt_style")}, indent=1))
+        return
+    if a.action == "delete":
+        if not st.get("id"):
+            sys.exit("rdstyle: no id to delete")
+        print(json.dumps(rd_api(tok, "DELETE", f"/v2/styles/{st['id']}")))
+        return
+    ref = rgba(st["reference_path"])
+    if ref.size != (256, 256):
+        sys.exit(f"rdstyle: the reference must be 256x256 native, not {ref.size}")
+    flat = Image.new("RGB", ref.size, (255, 255, 255))
+    flat.paste(ref, (0, 0), ref)
+    body = {"name": st["name"], "reference_images": [b64png(flat)]}
+    for k, api in (("description", "description"), ("caption", "reference_caption"),
+                   ("llm_instructions", "llm_instructions"), ("expanded_llm_instructions", "expanded_llm_instructions"),
+                   ("template", "user_prompt_template"), ("force_bg_removal", "force_bg_removal"),
+                   ("force_palette", "force_palette"), ("apply_prompt_fixer", "apply_prompt_fixer")):
+        if k in st:
+            body[api] = st[k]
+    if "template" in st and "{prompt}" not in st["template"]:
+        sys.exit("rdstyle: the template must contain {prompt}")
+    if a.action == "create":
+        if st.get("id"):
+            sys.exit(f"rdstyle: {a.job} already has style {st['id']}; patch it or delete it first")
+        r = rd_api(tok, "POST", "/v2/styles", body)
+        if not r.get("prompt_style"):
+            sys.exit(f"rdstyle: create failed: {json.dumps(r)[:400]}")
+        st["id"], st["prompt_style"] = r.get("id"), r["prompt_style"]
+    else:
+        if not st.get("id"):
+            sys.exit("rdstyle: create it first")
+        r = rd_api(tok, "PATCH", f"/v2/styles/{st['id']}", body)
+        if "error" in r or "detail" in r:
+            sys.exit(f"rdstyle: patch failed: {json.dumps(r)[:400]}")
+    st.setdefault("history", []).append({"action": a.action, "date": time.strftime("%Y-%m-%d %H:%M"),
+                                          "template": st.get("template"), "llm_instructions": st.get("llm_instructions")})
+    save_json(a.job, st)
+    print(f"{a.action}: {st['prompt_style']} (id {st['id']})")
 
 
 # ==========================================================================

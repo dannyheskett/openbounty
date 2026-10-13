@@ -1,0 +1,28 @@
+{
+ "id": "italia/obj_hero_praetorianus",
+ "style": "rd_pro__topdown",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "width": 48,
+ "height": 48,
+ "seed": 9001,
+ "num_images": 2,
+ "remove_bg": true,
+ "prompt": "a Roman praetorian commander in gilded bronze armour with a white plumed helmet and a purple cloak riding a brown horse, walking to the right, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  48,
+  48
+ ],
+ "_note": "Italia set: hero_praetorianus, one 48 px map cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "05c1dae0-0c9e-472e-9701-930339b283ea",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

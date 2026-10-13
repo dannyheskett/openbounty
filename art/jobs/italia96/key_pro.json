@@ -1,0 +1,24 @@
+{
+ "id": "italia96/key_pro",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 9621,
+ "num_images": 4,
+ "prompt": "Italian countryside seen from above as a game overworld map: a sea with a sandy beach, a river crossed by a Roman stone bridge, a paved Roman road, umbrella pine and cypress woods, limestone hills and mountains, ploughed fields and wheat fields, a small walled town with terracotta roofs, and a Roman hero on horseback on the road",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate A (approved plan step 2): master reference candidates, Italian country at 8x8 cells",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "38ce0106-ce44-48d7-8138-0192f8e2712f",
+   "cost": 0.72,
+   "date": "2026-10-10"
+  }
+ ]
+}

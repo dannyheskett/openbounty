@@ -1,0 +1,24 @@
+{
+ "id": "italia/scene_meadow",
+ "style": "user__italia_overworld_d6f5ba7d",
+ "width": 256,
+ "height": 256,
+ "seed": 8801,
+ "num_images": 2,
+ "prompt": "a wide open green meadow filling the whole map, only grass with small tufts and a few tiny wildflowers, nothing else",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate C: one terrain in the Italia look, for cutting seamless 48 px ground tiles",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "617a0068-33b0-4563-818d-d99a2e3d36b8",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

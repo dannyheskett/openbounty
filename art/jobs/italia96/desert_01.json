@@ -1,0 +1,12 @@
+{
+ "prompt": "A dry sandy desert edge meeting mossy green grass, seen from above. Pale golden sand with low dunes and a few scattered stones. Patches of sand of different sizes reach into the grass, and some meet only at their corners. Only sand and grass. Light falls from the upper left.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 11120,
+ "bypass_prompt_expansion": true,
+ "_reference_images": [
+  "art/reference/italia96/italia_key.png"
+ ]
+}

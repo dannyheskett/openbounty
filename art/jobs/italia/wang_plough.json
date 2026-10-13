@@ -1,0 +1,26 @@
+{
+ "id": "italia/wang_plough",
+ "style": "rd_tile__tileset_advanced",
+ "width": 24,
+ "height": 24,
+ "seed": 9202,
+ "prompt": "a ploughed field of rich brown soil in neat furrows with a dark earth border",
+ "extra_prompt": "fresh green meadow grass with small tufts, seen from directly above",
+ "extra_input_image_path": "art/primitives/italia48/key_crops/grass.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  120
+ ],
+ "_note": "Italia terrain transitions: 24 px corner tiles, four to a 48 px cell",
+ "input_image_path": "art/primitives/italia48/key_crops/plough.png",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "621bd9a3-4525-4479-be4e-0b41d1a760e6",
+   "cost": 0.1,
+   "date": "2026-10-09"
+  }
+ ]
+}

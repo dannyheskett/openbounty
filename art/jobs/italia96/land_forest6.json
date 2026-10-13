@@ -1,0 +1,28 @@
+{
+ "id": "italia96/land_forest6",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 9841,
+ "num_images": 1,
+ "prompt": "Several dense patches of tall pine forest spread across a mossy field, seen from close above. Each tree is large, about one tenth of the image wide, and its tall dark green crown shows its height. The trees in each patch are packed tightly together into one solid mass. The patches sit close together, and some meet only at their corners. Narrow strips of mossy field wind between them. Each patch casts a soft shadow along its edge onto the field.",
+ "reference_image_paths": [
+  "art/reference/italia96/italia_key.png"
+ ],
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Forest landscape at a larger tree scale (each tree ~1/10 image), key as the only reference",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "5f76e997-dc6c-4335-a895-c0cdda4df642",
+   "cost": 0.18,
+   "date": "2026-10-10"
+  }
+ ]
+}

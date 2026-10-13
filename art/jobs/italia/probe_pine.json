@@ -1,0 +1,28 @@
+{
+ "id": "italia/probe_pine",
+ "style": "rd_pro__topdown",
+ "width": 32,
+ "height": 32,
+ "seed": 8301,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a single Italian umbrella stone pine tree with a wide flat dark green crown on a short trunk, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  32,
+  32
+ ],
+ "_note": "Gate B: Italia style probe at one map cell",
+ "reference_image_paths": [
+  "art/reference/italia/italia_key.png"
+ ],
+ "runs": [
+  {
+   "run": "run02",
+   "request": "1eb03c5f-d31e-4af6-916e-39a9ba5c8834",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

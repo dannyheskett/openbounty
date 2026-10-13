@@ -1,0 +1,13 @@
+{
+ "prompt": "A straight stretch of coast running from the left edge to the right edge of the picture, seen from above: calm clear blue sea across the top half, a gently wavy shore of pale sand, and mossy green grass across the bottom half. The shoreline bends only a little. Only sea, sand and grass. Light falls from the upper left.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 11141,
+ "bypass_prompt_expansion": true,
+ "_reference_images": [
+  "art/reference/italia96/italia_key.png",
+  "art/reference/italia96/coast_inlet.png"
+ ]
+}

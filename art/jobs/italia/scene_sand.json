@@ -1,0 +1,24 @@
+{
+ "id": "italia/scene_sand",
+ "style": "user__italia_overworld_d6f5ba7d",
+ "width": 256,
+ "height": 256,
+ "seed": 8803,
+ "num_images": 2,
+ "prompt": "a wide sandy beach filling the whole map, only warm golden sand, no water and no grass",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate C: one terrain in the Italia look, for cutting seamless 48 px ground tiles",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "4e58cd7e-6612-4d04-8cd6-1f6d23958c45",
+   "cost": 0.36,
+   "date": "2026-10-09"
+  }
+ ]
+}

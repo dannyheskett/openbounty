@@ -1,0 +1,25 @@
+{
+ "id": "italia/probe96_rider",
+ "style": "user__italia_overworld_d6f5ba7d",
+ "width": 96,
+ "height": 96,
+ "seed": 8404,
+ "num_images": 4,
+ "remove_bg": true,
+ "prompt": "a Roman legate in a red cloak and bronze helmet riding a brown horse, walking to the right, on a plain white background",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  96,
+  96
+ ],
+ "_note": "Gate B: Italia custom style at its 96 px minimum, to be K-centroid downscaled to one 32 px cell",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "4931dfbd-69da-4816-aa91-72685e8598ad",
+   "cost": 0.72,
+   "date": "2026-10-09"
+  }
+ ]
+}

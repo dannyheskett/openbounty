@@ -1,0 +1,14 @@
+{
+ "prompt": "Nine separate rocky mountains in one picture, drawn in proportion to each other, seen from the front and above, lit on the left and shaded on the right, of warm grey and tan brown rock with deep cracks. Each stands apart on the flat magenta background, with empty magenta between them. Along the top, from the left: a tall mountain with a single pointed peak; a broad mountain with two pointed peaks; a steep crag split by a deep cleft. Along the middle, from the left: a broad mountain with a flat top; a sharp crag of pale rock with two thin spires; a wide mountain with three stepped peaks. Along the bottom, from the left, three small rocks of the same warm grey and tan brown rock, each about half the height of the mountains: a small jagged rock peak; a low rounded rocky hump; a pair of large boulders. They stand alone, with only the flat magenta background around and below them.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 10915,
+ "remove_bg": true,
+ "bypass_prompt_expansion": true,
+ "_reference_images": [
+  "art/reference/italia96/italia_key.png",
+  "art/reference/italia96/crags_v1.png"
+ ]
+}

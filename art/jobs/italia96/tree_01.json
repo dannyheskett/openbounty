@@ -1,0 +1,27 @@
+{
+ "id": "italia96/tree_01",
+ "style": "rd_pro__topdown",
+ "width": 96,
+ "height": 96,
+ "target": [
+  96,
+  96
+ ],
+ "seed": 10505,
+ "num_images": 1,
+ "prompt": "One tree with a single short trunk and one big round crown of dense dark green leaves, shaped like a dome, seen from the front and above. The crown is one solid rounded mass, lit on the left and shaded on the right. It stands alone, with only the flat magenta background around and below it.",
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "remove_bg": true,
+ "_note": "Plan v2, Step 1",
+ "runs": [
+  {
+   "run": "run01",
+   "request": "c06d98a9-caf4-4e77-b03a-cb3b2c9fb42e",
+   "cost": 0.18,
+   "date": "2026-10-11"
+  }
+ ],
+ "bypass_prompt_expansion": true
+}
