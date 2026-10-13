@@ -1,0 +1,12 @@
+{
+ "prompt": "A Roman general on a brown horse standing still with all four hooves on the ground, seen in profile, facing right. A red cloak, bronze chest armour and a crested helmet. Light falls from the upper left. It stands alone, with only the flat magenta background around and below it.",
+ "prompt_style": "rd_pro__topdown",
+ "width": 96,
+ "height": 96,
+ "num_images": 1,
+ "seed": 10508,
+ "remove_bg": true,
+ "bypass_prompt_expansion": true,
+ "input_palette": "iVBORw0KGgoAAAANSUhEUgAAAEgAAAABCAIAAADy2H+0AAAA5ElEQVR4nAHZACb/AYs3MsP+AHAhCXrCz1ZEOhX45igbC6bY9nhHHeQEGtbg4/YTLMHGyBISFBgYFVEl2QMWMfYSRNvYykAVuhEcMZ+68U81+dz7QiooG/oEI7mqaCYdBPYJEE1Zt5ahPod+4QUM9GNyM+Tl8uvt/yQ9BM2z+PfvAxxF+zIkSaCKsnp7fbzDwhYtNjE/VamYoCQTEeEeJzP/9wgcJFMdDpHS7rursN4VNC4J7x4QCf0QIR3QoAsLCx8kKHCn4BkI8ekNL4Iy6h8gIQoNEI+Qk/Dr5yElLb+6s1gvYVieXV4vjJ8LAAAAAElFTkSuQmCC",
+ "async": true
+}

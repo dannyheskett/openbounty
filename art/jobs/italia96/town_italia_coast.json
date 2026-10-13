@@ -1,10 +1,10 @@
 {
- "prompt": "A Roman town of large two-storey cream stone houses with orange tile roofs, arched doorways and stone columns, and a tall square stone watchtower, the buildings as tall as the picture, standing together on one paved stone floor, with wooden barrels and clay pots by the doors. Only the town and its floor, on a flat magenta background.",
+ "prompt": "A Roman town seen whole: large cream stone houses with orange tile roofs and a tall square stone watchtower standing close together on one flat rectangular paved stone floor, the houses facing front, with wooden barrels and clay pots by the doors. It stands alone, with only the flat magenta background around and below it.",
  "prompt_style": "rd_pro__topdown",
- "width": 224,
- "height": 224,
+ "width": 192,
+ "height": 96,
  "num_images": 1,
- "seed": 11037,
+ "seed": 11044,
  "remove_bg": true,
  "bypass_prompt_expansion": true,
  "_reference_images": [

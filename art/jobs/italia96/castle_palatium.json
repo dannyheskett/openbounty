@@ -1,10 +1,10 @@
 {
- "prompt": "A Roman imperial palace on a hilltop seen from the front and above with its doors facing the viewer. White marble halls with columns and terracotta roofs, a small garden with cypress trees. The whole palace and garden fit inside the picture with magenta showing on every side. Light falls from the upper left. It stands directly on the flat magenta background, alone, with only the flat magenta background around and below it.",
+ "prompt": "A Roman imperial palace seen whole: a grand two-storey white marble hall with tall columns and an orange tile roof, and a smaller marble wing on each side, standing close together on one flat rectangular paved stone floor, facing front, with stone urns by the doors. It stands alone, with only the flat magenta background around and below it.",
  "prompt_style": "rd_pro__topdown",
  "width": 96,
  "height": 96,
  "num_images": 1,
- "seed": 11031,
+ "seed": 11050,
  "remove_bg": true,
  "bypass_prompt_expansion": true,
  "_reference_images": [

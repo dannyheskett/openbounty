@@ -1,0 +1,20 @@
+{
+ "request": "art/jobs/italia96/town_italia_coast.json",
+ "style": "rd_pro__topdown",
+ "prompt": "A Roman town seen whole: large cream stone houses with orange tile roofs and a tall square stone watchtower standing close together on one flat rectangular paved stone floor, the houses facing front, with wooden barrels and clay pots by the doors. It stands alone, with only the flat magenta background around and below it.",
+ "width": 192,
+ "height": 96,
+ "seed": 11044,
+ "remove_bg": true,
+ "reference_images": [
+  "art/reference/italia96/italia_key.png"
+ ],
+ "input_palette": "art/palettes/italia.png",
+ "_pack_path": "art/objects/town_italia_coast.png",
+ "pack": [
+  "art/objects/town_italia_coast_left.png",
+  "art/objects/town_italia_coast_right.png"
+ ],
+ "approved": "2026-10-13, Dan: fully approved",
+ "_engine_note": "art/objects/town_italia_coast.png is a copy of the left half: the engine draws one 96 px object per town cell until the 2x1 placement is added"
+}

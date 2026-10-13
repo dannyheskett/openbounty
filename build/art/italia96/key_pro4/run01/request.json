@@ -1,0 +1,9 @@
+{
+ "prompt": "A Roman rider on horseback travelling a cypress-lined stone road through lush green Italian hills, past silver-green olive groves, vineyards and wheat fields toward a walled town with terracotta roofs, beside a river with a stone arch bridge that runs into a blue Mediterranean bay with a sandy beach, rocky mountains beyond, warm afternoon sunlight",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 1,
+ "seed": 9651,
+ "async": true
+}

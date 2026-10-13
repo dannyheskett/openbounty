@@ -1,0 +1,9 @@
+{
+ "prompt": "the Italian countryside of ancient Rome as a game overworld map seen from above, no sky, no horizon, no text: rolling Apennine hills of dry golden grass with white limestone outcrops, silver-green olive groves, vineyards in neat rows, umbrella-shaped stone pines and lines of tall dark cypress trees, a rocky Mediterranean coast with a small sandy cove and clear blue sea, a river crossed by a Roman stone arch bridge, a straight paved Roman road lined with cypresses, wheat fields, a walled hill town of ochre stone houses with terracotta roofs, and a Roman hero on horseback on the road",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 4,
+ "seed": 9631,
+ "async": true
+}

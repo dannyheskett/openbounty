@@ -1,0 +1,9 @@
+{
+ "prompt": "Italian countryside seen from above as a game overworld map: a sea with a sandy beach, a river crossed by a Roman stone bridge, a paved Roman road, umbrella pine and cypress woods, limestone hills and mountains, ploughed fields and wheat fields, a small walled town with terracotta roofs, and a Roman hero on horseback on the road",
+ "prompt_style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "num_images": 4,
+ "seed": 9621,
+ "async": true
+}

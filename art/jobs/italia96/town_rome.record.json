@@ -1,0 +1,21 @@
+{
+ "request": "art/jobs/italia96/town_rome.json",
+ "style": "rd_pro__topdown",
+ "prompt": "The city of Rome seen whole: grand white marble temples with tall columns and orange tile roofs, a long basilica with a wide roof, a domed temple and a tall stone victory column, with cream stone houses between them and a round stone amphitheatre among them at the back, all standing on one flat rectangular paved stone floor, facing front, with a stone gate tower at the front edge. It stands alone, with only the flat magenta background around and below it.",
+ "width": 192,
+ "height": 192,
+ "seed": 11046,
+ "remove_bg": true,
+ "reference_images": [
+  "art/reference/italia96/italia_key.png"
+ ],
+ "input_palette": "art/palettes/italia.png",
+ "pack": [
+  "art/objects/town_rome_top_left.png",
+  "art/objects/town_rome_top_right.png",
+  "art/objects/town_rome_bottom_left.png",
+  "art/objects/town_rome_bottom_right.png"
+ ],
+ "_engine_note": "art/objects/town_rome.png is a copy of the bottom-left quarter (the gate's cell) until the engine places 2x2 objects",
+ "approved": "2026-10-13, Dan: approved"
+}
