@@ -1,13 +1,16 @@
 {
- "prompt": "A Roman army fort seen from the front and above with its gate facing the viewer. Square timber and stone walls with corner towers around rows of tents. Light falls from the upper left. The walls stand directly on the flat magenta background, with no ground, slab or path drawn under or around them. Only the fort. It stands alone, with only the flat magenta background around and below it.",
+ "prompt": "A Roman stone fortress. High cream stone walls with battlements run round a paved courtyard, with a low round tower at each corner. A gatehouse with two towers stands at the front, with red banners. Low stone barracks with orange tile roofs stand inside the walls. All of it stands on one flat square paved stone floor, the size of the buildings of Rome. It stands alone, with only the flat magenta background around and below it.",
  "prompt_style": "rd_pro__topdown",
  "width": 96,
  "height": 96,
  "num_images": 1,
- "seed": 11029,
+ "seed": 11053,
  "remove_bg": true,
  "bypass_prompt_expansion": true,
  "_reference_images": [
-  "art/reference/italia96/italia_key.png"
- ]
+  "art/reference/italia96/town_rome.png",
+  "art/reference/italia96/italia_key.png",
+  "art/reference/italia96/town_italia_coast.png"
+ ],
+ "_input_palette": "art/palettes/italia.png"
 }

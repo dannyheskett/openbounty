@@ -1,0 +1,19 @@
+{
+ "request": "art/jobs/italia96/castle.json",
+ "style": "rd_pro__topdown",
+ "prompt": "A Roman stone fortress. High cream stone walls with battlements run round a paved courtyard, with a low round tower at each corner. A gatehouse with two towers stands at the front, with red banners. Low stone barracks with orange tile roofs stand inside the walls. All of it stands on one flat square paved stone floor, the size of the buildings of Rome. It stands alone, with only the flat magenta background around and below it.",
+ "width": 96,
+ "height": 96,
+ "seed": 11053,
+ "remove_bg": true,
+ "reference_images": [
+  "art/reference/italia96/town_rome.png",
+  "art/reference/italia96/italia_key.png",
+  "art/reference/italia96/town_italia_coast.png"
+ ],
+ "input_palette": "art/palettes/italia.png",
+ "pack": [
+  "art/objects/castle.png"
+ ],
+ "approved": "2026-10-13, Dan: ok (partial outline on the shadow side accepted)"
+}
