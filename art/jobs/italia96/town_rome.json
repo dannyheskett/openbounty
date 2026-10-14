@@ -1,10 +1,10 @@
 {
- "prompt": "The city of Rome is seen whole from the front. Grand white marble temples with tall columns and orange tile roofs stand close together with rows of cream stone houses on one flat rectangular paved stone floor. A long basilica, a domed temple and a tall stone column stand with them. A round stone amphitheatre stands at the back. It stands alone, with only the flat magenta background around and below it.",
+ "prompt": "The city of Rome is seen whole from the front. Grand white marble temples with tall columns and orange tile roofs stand close together with rows of cream stone houses on one flat rectangular paved stone floor. A long basilica, a domed temple and a tall stone column stand with them. A round stone amphitheatre stands beside the temples. It stands alone, with only the flat magenta background around and below it.",
  "prompt_style": "rd_pro__topdown",
  "width": 192,
  "height": 192,
  "num_images": 1,
- "seed": 11053,
+ "seed": 11058,
  "remove_bg": true,
  "bypass_prompt_expansion": true
 }

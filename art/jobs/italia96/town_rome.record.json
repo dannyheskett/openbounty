@@ -1,10 +1,10 @@
 {
  "request": "art/jobs/italia96/town_rome.json",
  "style": "rd_pro__topdown",
- "prompt": "The city of Rome is seen whole from the front. Grand white marble temples with tall columns and orange tile roofs stand close together with rows of cream stone houses on one flat rectangular paved stone floor. A long basilica, a domed temple and a tall stone column stand with them. A round stone amphitheatre stands at the back. It stands alone, with only the flat magenta background around and below it.",
+ "prompt": "The city of Rome is seen whole from the front. Grand white marble temples with tall columns and orange tile roofs stand close together with rows of cream stone houses on one flat rectangular paved stone floor. A long basilica, a domed temple and a tall stone column stand with them. A round stone amphitheatre stands beside the temples. It stands alone, with only the flat magenta background around and below it.",
  "width": 192,
  "height": 192,
- "seed": 11053,
+ "seed": 11058,
  "remove_bg": true,
  "reference_images": [
   "art/reference/italia96/town_italia_coast.png",
@@ -18,5 +18,5 @@
   "art/objects/town_rome_bottom_right.png"
  ],
  "_engine_note": "town_rome.png is a copy of the bottom-left quarter until 2x2 placement exists",
- "status": "2026-10-14 installed under Dan's 'iterate until it works' order; no gate, no wall, front-on, floor, no people, purple 0; no amphitheatre drawn; awaiting Dan's veto or pass"
+ "status": "2026-10-14 installed under Dan's 'iterate until it works' order: no gate, no wall, front view, one floor, amphitheatre present, no people, purple 0; awaiting Dan's veto or pass"
 }
