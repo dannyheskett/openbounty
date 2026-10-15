@@ -4,7 +4,7 @@
  "width": 192,
  "height": 192,
  "num_images": 1,
- "seed": 11058,
+ "seed": 11060,
  "remove_bg": true,
  "bypass_prompt_expansion": true
 }
