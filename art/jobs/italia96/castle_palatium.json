@@ -1,16 +1,14 @@
 {
- "prompt": "A grand Roman palace compound. A white marble hall with tall columns and an orange tile roof stands at the back. A long marble wing with an orange roof stands on each side of it. A small round temple stands in front. Stone urns stand in the courtyard. All of them stand close together on one flat rectangular paved stone floor, the size of the buildings of Rome. It stands alone, with only the flat magenta background around and below it.",
- "prompt_style": "rd_pro__topdown",
- "width": 192,
- "height": 96,
- "num_images": 1,
- "seed": 11046,
- "remove_bg": true,
- "bypass_prompt_expansion": true,
- "_reference_images": [
-  "art/reference/italia96/town_rome.png",
-  "art/reference/italia96/italia_key.png",
-  "art/reference/italia96/town_italia_coast.png"
- ],
- "_input_palette": "art/palettes/italia.png"
+  "prompt": "A grand Roman palace compound. A white marble hall with tall columns and an orange tile roof stands at the back. A long marble wing with an orange roof stands on each side of it. A small round temple stands in front. Stone urns stand in the courtyard. All of them stand close together on one flat rectangular paved stone floor, the size of the buildings of Rome. It stands alone, with only the flat magenta background around and below it.",
+  "prompt_style": "rd_pro__topdown",
+  "width": 192,
+  "height": 96,
+  "num_images": 1,
+  "seed": 11046,
+  "remove_bg": true,
+  "bypass_prompt_expansion": true,
+  "_reference_images": [
+    "art/reference/italia96/italia_key.png"
+  ],
+  "_input_palette": "art/palettes/italia.png"
 }

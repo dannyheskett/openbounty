@@ -1,10 +1,10 @@
 {
- "prompt": "The city of Rome is seen whole from the front. Grand white marble temples with tall columns and orange tile roofs stand close together with rows of cream stone houses on one flat rectangular paved stone floor. A long basilica, a domed temple and a tall stone column stand with them. A round stone amphitheatre stands beside the temples. It stands alone, with only the flat magenta background around and below it.",
+ "prompt": "The city of Rome is seen whole from the front. The great round stone Colosseum with rows of arches stands beside the Roman Forum. The Forum is a wide paved square lined with white marble temples with tall columns and orange tile roofs. The Senate House, a tall plain brick hall with a gabled roof and bronze doors, stands at one side of the Forum. A long basilica with a wide roof, a round domed temple, a marble triumphal arch and a tall stone victory column stand with them. Rows of cream stone houses with orange tile roofs fill the spaces between. All of them stand close together on one flat rectangular paved stone floor. It stands alone, with only the flat magenta background around and below it.",
  "prompt_style": "rd_pro__topdown",
- "width": 192,
- "height": 192,
+ "width": 256,
+ "height": 256,
  "num_images": 1,
- "seed": 11060,
+ "seed": 100,
  "remove_bg": true,
  "bypass_prompt_expansion": true
 }
