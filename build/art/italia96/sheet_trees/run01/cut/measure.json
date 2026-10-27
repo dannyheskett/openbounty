@@ -1,0 +1,87 @@
+{
+ "found": 9,
+ "expected": 9,
+ "objects": {
+  "tile_00": {
+   "w": 60,
+   "h": 66,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "96x96",
+   "fits": true,
+   "height_pct_of_canvas": 69
+  },
+  "tile_01": {
+   "w": 38,
+   "h": 70,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "96x96",
+   "fits": true,
+   "height_pct_of_canvas": 73
+  },
+  "tile_02": {
+   "w": 68,
+   "h": 71,
+   "purple": 1,
+   "ground": 0,
+   "canvas": "96x96",
+   "fits": true,
+   "height_pct_of_canvas": 74
+  },
+  "tile_03": {
+   "w": 24,
+   "h": 73,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "96x96",
+   "fits": true,
+   "height_pct_of_canvas": 76
+  },
+  "tile_04": {
+   "w": 54,
+   "h": 65,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "96x96",
+   "fits": true,
+   "height_pct_of_canvas": 68
+  },
+  "tile_05": {
+   "w": 78,
+   "h": 68,
+   "purple": 11,
+   "ground": 0,
+   "canvas": "96x96",
+   "fits": true,
+   "height_pct_of_canvas": 71
+  },
+  "tile_06": {
+   "w": 25,
+   "h": 70,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "96x96",
+   "fits": true,
+   "height_pct_of_canvas": 73
+  },
+  "tile_07": {
+   "w": 52,
+   "h": 71,
+   "purple": 3,
+   "ground": 0,
+   "canvas": "96x96",
+   "fits": true,
+   "height_pct_of_canvas": 74
+  },
+  "tile_08": {
+   "w": 36,
+   "h": 50,
+   "purple": 2,
+   "ground": 0,
+   "canvas": "96x96",
+   "fits": true,
+   "height_pct_of_canvas": 52
+  }
+ }
+}

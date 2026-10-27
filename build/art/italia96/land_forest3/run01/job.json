@@ -1,0 +1,20 @@
+{
+ "id": "italia96/land_forest3",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 9691,
+ "num_images": 1,
+ "prompt": "A dense forest in the middle of a wide mossy field, seen in a wide view. The treetops form one solid mass of dark green, packed tightly together. Beneath the trees, the forest floor is a deep mossy green. The field around the forest is soft mossy grass with small tufts and patches of clover. The forest casts a dark shadow along its edge onto the field.",
+ "reference_image_paths": [
+  "art/reference/italia96/italia_key.png"
+ ],
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Landscape for the forest-to-grass tileset, third try: no sunlight, mossy field and forest floor"
+}

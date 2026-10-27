@@ -1,5 +1,11 @@
 # Build output
-build/
+/build/*
+# Except the Italia art set's source renders and their exact requests, kept
+# deliberately (git cannot re-include a path whose parent is excluded, hence
+# the /* form at each level).
+!/build/art/
+/build/art/*
+!/build/art/italia96/
 dist/*.tar.gz
 dist/*.zip
 *.o

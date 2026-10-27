@@ -1,0 +1,16 @@
+{
+ "id": "italia96/key_pro3",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 9641,
+ "num_images": 1,
+ "prompt": "the lush green Italian countryside of ancient Rome as a game overworld map seen from above, no sky, no horizon, no text, no border: rolling green hills and fresh green meadows, silver-green olive groves, vineyards in neat rows, umbrella-shaped stone pines and lines of tall dark cypress trees, a Mediterranean coast with a sandy beach and clear blue sea, a river crossed by a Roman stone arch bridge, a straight paved Roman road lined with cypresses, green and golden wheat fields, a walled hill town with terracotta roofs, and a Roman hero on horseback on the road",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Gate A, third try: lush green countryside (set 2 read as desert)"
+}

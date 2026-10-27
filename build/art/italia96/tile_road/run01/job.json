@@ -1,0 +1,18 @@
+{
+ "id": "italia96/tile_road",
+ "style": "rd_tile__tileset_advanced",
+ "width": 32,
+ "height": 32,
+ "seed": 9602,
+ "prompt": "a Roman road of fitted grey paving stones",
+ "extra_prompt": "green meadow grass seen from directly above",
+ "input_image_path": "art/primitives/italia96/crops/road.png",
+ "extra_input_image_path": "art/primitives/italia96/crops/grass.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  128,
+  160
+ ],
+ "_note": "Italia 96: 32 px corner tiles, nine to a 96 px cell"
+}

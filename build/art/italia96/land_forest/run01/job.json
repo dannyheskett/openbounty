@@ -1,0 +1,20 @@
+{
+ "id": "italia96/land_forest",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 9661,
+ "num_images": 1,
+ "prompt": "A large dense forest of umbrella-shaped stone pines, tall dark cypresses and oaks in the middle of a wide plain of green grass, open grass all around it, the trees casting shadows onto the grass, warm afternoon sunlight",
+ "reference_image_paths": [
+  "art/reference/italia96/italia_key.png"
+ ],
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Landscape for the forest-to-grass tileset: a dense forest in a grass plain, cut into 96 px tiles"
+}

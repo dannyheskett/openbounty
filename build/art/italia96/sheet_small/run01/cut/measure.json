@@ -1,0 +1,114 @@
+{
+ "found": 12,
+ "expected": 12,
+ "objects": {
+  "tile_00": {
+   "w": 45,
+   "h": 46,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "64x64",
+   "fits": true,
+   "height_pct_of_canvas": 72
+  },
+  "tile_01": {
+   "w": 55,
+   "h": 29,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "64x64",
+   "fits": true,
+   "height_pct_of_canvas": 45
+  },
+  "tile_02": {
+   "w": 58,
+   "h": 41,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "64x64",
+   "fits": true,
+   "height_pct_of_canvas": 64
+  },
+  "tile_03": {
+   "w": 41,
+   "h": 34,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "64x64",
+   "fits": true,
+   "height_pct_of_canvas": 53
+  },
+  "grass_v1": {
+   "w": 60,
+   "h": 56,
+   "purple": 8,
+   "ground": 0,
+   "canvas": "64x64",
+   "fits": true,
+   "height_pct_of_canvas": 88
+  },
+  "grass_v2": {
+   "w": 67,
+   "h": 83,
+   "purple": 12,
+   "ground": 0,
+   "canvas": "72x72",
+   "fits": false,
+   "height_pct_of_canvas": 115
+  },
+  "grass_v3": {
+   "w": 106,
+   "h": 38,
+   "purple": 1,
+   "ground": 130,
+   "canvas": "64x64",
+   "fits": false,
+   "height_pct_of_canvas": 59
+  },
+  "grass_v5": {
+   "w": 92,
+   "h": 38,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "64x64",
+   "fits": false,
+   "height_pct_of_canvas": 59
+  },
+  "piece_well": {
+   "w": 63,
+   "h": 73,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "56x56",
+   "fits": false,
+   "height_pct_of_canvas": 130
+  },
+  "alcove": {
+   "w": 40,
+   "h": 66,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "64x64",
+   "fits": false,
+   "height_pct_of_canvas": 103
+  },
+  "dock_deck": {
+   "w": 66,
+   "h": 60,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "56x56",
+   "fits": false,
+   "height_pct_of_canvas": 107
+  },
+  "landmark_rubicon": {
+   "w": 39,
+   "h": 80,
+   "purple": 0,
+   "ground": 0,
+   "canvas": "32x56",
+   "fits": false,
+   "height_pct_of_canvas": 143
+  }
+ }
+}

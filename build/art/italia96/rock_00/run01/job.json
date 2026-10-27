@@ -1,0 +1,23 @@
+{
+ "id": "italia96/rock_00",
+ "style": "rd_pro__topdown",
+ "width": 96,
+ "height": 96,
+ "target": [
+  96,
+  96
+ ],
+ "seed": 10507,
+ "num_images": 1,
+ "prompt": "A tall rocky mountain with a pointed peak, seen from the front and above. Steep warm grey and tan brown rock faces with deep cracks rise to a sharp point, lit on the left and shaded on the right. Green grass covers its lower slopes. The mountain fills the whole picture. It stands alone, with only the flat magenta background around and below it.",
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "remove_bg": true,
+ "_note": "Plan v2, Step 1",
+ "runs": [],
+ "bypass_prompt_expansion": true,
+ "reference_image_paths": [
+  "art/reference/italia96/italia_key.png"
+ ]
+}

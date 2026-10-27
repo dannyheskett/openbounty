@@ -1,0 +1,24 @@
+{
+ "id": "italia96/town_italia",
+ "style": "rd_pro__topdown",
+ "width": 192,
+ "height": 96,
+ "target": [
+  192,
+  96
+ ],
+ "seed": 10506,
+ "num_images": 1,
+ "prompt": "A small walled Italian hill town spread wide from left to right, seen from the front and above with its doors facing the viewer. Cream stone houses with terracotta roofs crowd inside a low stone wall with a gate. Light falls from the upper left. The houses and wall stand directly on the flat magenta background. Only the town and its wall. It stands alone, with only the flat magenta background around and below it.",
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "remove_bg": true,
+ "_note": "Plan v2, Step 1",
+ "runs": [],
+ "pack": [
+  "art/objects/town_italia.png",
+  "art/objects/town_italia_right.png"
+ ],
+ "bypass_prompt_expansion": true
+}

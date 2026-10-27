@@ -1,0 +1,22 @@
+{
+ "id": "italia96/land_forest5",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 9827,
+ "num_images": 1,
+ "prompt": "Several dense patches of tall forest spread across a mossy field, seen from close above. Each patch is one solid mass of large, tall, dark green treetops, packed tightly together. The patches sit close together, and some meet only at their corners. Narrow strips of mossy field wind between them. Each patch casts a long dark shadow along its edge onto the field.",
+ "reference_image_paths": [
+  "art/reference/italia96/italia_key.png",
+  "art/primitives/italia96/land/forest.png"
+ ],
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Forest landscape at a larger tree scale, so trees fit a larger hero",
+ "runs": []
+}

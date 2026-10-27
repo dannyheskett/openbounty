@@ -1,0 +1,21 @@
+{
+ "id": "italia96/land_forest4",
+ "style": "rd_pro__topdown",
+ "width": 256,
+ "height": 256,
+ "seed": 9701,
+ "num_images": 1,
+ "prompt": "Several dense patches of forest spread across a wide mossy field, seen in a wide view. Each patch is one solid mass of dark green treetops, packed tightly together. The patches sit close together, and some meet only at their corners. Narrow strips of mossy field wind between them. Each patch casts a dark shadow along its edge onto the field.",
+ "reference_image_paths": [
+  "art/reference/italia96/italia_key.png",
+  "art/primitives/italia96/land/forest.png"
+ ],
+ "input_palette_path": "art/palettes/italia.png",
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  256,
+  256
+ ],
+ "_note": "Landscape for the forest-to-grass tileset: patches meeting at corners, for the diagonal pieces"
+}
