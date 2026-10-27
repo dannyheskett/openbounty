@@ -82,7 +82,6 @@ step-by-step for creating them without a Mac.
 | `scripts/net_retry.py` | the bounded retry every store script has used: three retries (10 s, 30 s, 90 s) on HTTP 429/5xx and network errors, then a failure. |
 | `scripts/asc_next_build.py` | printed the next build number App Store Connect has not seen, so a build has never collided with one Apple already held. |
 | `scripts/testflight_notes.py` | waited out Apple's processing window and written "What to Test" onto the build TestFlight has just received. |
-| `scripts/devicefarm_run.py` | uploaded the APK or `.ipa` to AWS Device Farm and fuzz-tested it on real phones. |
 | `scripts/android_smoke.sh` | installed the emulator APK in CI, launched it, and failed unless the process has been alive 20 s later. |
 
 | Workflow | Trigger |
@@ -90,4 +89,3 @@ step-by-step for creating them without a Mac.
 | `asc-setup.yml` | manual; one verb per run, `dry_run` on by default (titled DRY RUN) |
 | `build.yml` | every merge of `staging` into `main`: every platform built, `release-N` tagged, the GitHub Release published; nothing sent to a store, and a missing signing secret has failed it |
 | `release.yml` — `play`, `appstore-upload`, `appstore-submit` | manual, for a chosen `release-N`: the AAB to the Play track picked, then the `.ipa` uploaded, TestFlight notes for internal testers, version 1.0.N submitted to App Review; one after another, stopping at the first failure, each store read back at the end |
-| `devicefarm.yml` | manual; real-device fuzz test of both apps (AWS OIDC, no stored keys) |

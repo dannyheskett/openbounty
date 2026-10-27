@@ -679,8 +679,8 @@ ios: $(IOS_IPA)
 # upload somewhere, so none of it is decoration.
 $(IOS_IPA): $(IOS_DEPS)
 	$(call ios_build,iphoneos,arm64-apple-ios$(IOS_MIN),$(IOS_APP_DIR),build/ios-device/obj)
-	@# Device-platform keys. Device farms read CFBundleSupportedPlatforms on
-	@# upload and refuse a bundle without it.
+	@# Device-platform keys. Upload validation reads CFBundleSupportedPlatforms
+	@# and refuses a bundle without it.
 	plist=$(IOS_APP_DIR)/Info.plist; \
 	/usr/libexec/PlistBuddy \
 	    -c "Add :CFBundleSupportedPlatforms array" \
