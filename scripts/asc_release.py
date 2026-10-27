@@ -89,6 +89,10 @@ ASSET_POLL_SECONDS = 15
 # editable, and for a version Apple is mid-way through publishing to go live.
 WITHDRAW_WAIT_SECONDS = 10 * 60
 PUBLISH_WAIT_SECONDS = 30 * 60
+# Apple applies a submission asynchronously: for a few seconds after it is
+# sent, the version still reads READY_FOR_REVIEW. The read-back waits this
+# long for it to move on before calling the submission failed.
+SUBMIT_SETTLE_SECONDS = 5 * 60
 STATE_POLL_SECONDS = 20
 
 # Replaced in the tests so they don't wait.
@@ -756,6 +760,10 @@ def cmd_verify_submitted(asc, args):
         sys.exit(f"verify: no version {want} in App Store Connect")
     v = match[0]
     state = v["attributes"]["appStoreState"]
+    if state == "READY_FOR_REVIEW":
+        # Just submitted and still settling (see SUBMIT_SETTLE_SECONDS).
+        state = wait_for_state(asc, app, v["id"], SUBMITTED_OK, SUBMIT_SETTLE_SECONDS,
+                               f"waiting for {want} to enter review")
     build = asc.call("GET", f"/v1/appStoreVersions/{v['id']}/build").get("data") or {}
     attached = (build.get("attributes") or {}).get("version")
     if state not in SUBMITTED_OK:
