@@ -31,7 +31,15 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-linux-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-linux-ubuntu22-
       - name: Install raylib build + runtime deps
+        env:
+          APT_ARCHIVES: /home/runner/apt-archives
         run: |
           ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
@@ -73,8 +81,15 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-windows-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-windows-ubuntu22-
       - name: Install mingw cross-toolchain
         env:
+          APT_ARCHIVES: /home/runner/apt-archives
           DEBIAN_FRONTEND: noninteractive
         run: |
           # C99 cross-compile only: the two mingw C compilers + binutils directly. The
@@ -112,7 +127,15 @@ jobs:
       # embedded in openbounty.data is zipped by ./build/debug/openbounty --pack-dir. The
       # other web repos do not need it; installing it unconditionally costs a little time
       # and keeps one job body for all of them.
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-web-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-web-ubuntu22-
       - name: Install Linux build deps
+        env:
+          APT_ARCHIVES: /home/runner/apt-archives
         run: |
           ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
@@ -159,7 +182,15 @@ jobs:
       # The APK embeds The Glory of Rome pack, and the pack is zipped by the
       # NATIVE binary (./build/debug/openbounty --pack-dir), so the Linux
       # toolchain is required even though nothing native ships from this job.
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-android-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-android-ubuntu22-
       - name: Install Linux build deps
+        env:
+          APT_ARCHIVES: /home/runner/apt-archives
         run: |
           ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \

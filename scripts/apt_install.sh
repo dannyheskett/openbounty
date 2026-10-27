@@ -20,6 +20,17 @@ use_main_archive() {
     for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
         [ -f "$f" ] && sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' "$f"
     done
+    # GitHub's Ubuntu images point sources.list at a mirror LIST
+    # (mirror+file:/etc/apt/apt-mirrors.txt) whose first entry is Azure's
+    # mirror; apt moves down that list only when a mirror errors, not when it
+    # is merely slow. Drop Azure from the list so Ubuntu's archive is used.
+    if [ -f /etc/apt/apt-mirrors.txt ]; then
+        sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+        grep -q . /etc/apt/apt-mirrors.txt \
+            || echo 'http://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+        echo "[apt_install] mirrors now:" >&2
+        cat /etc/apt/apt-mirrors.txt >&2
+    fi
     return 0
 }
 

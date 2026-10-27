@@ -106,8 +106,15 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-build-linux-windows-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-build-linux-windows-ubuntu22-
       - name: Install Linux + mingw deps
         env:
+          APT_ARCHIVES: /home/runner/apt-archives
           DEBIAN_FRONTEND: noninteractive
         run: |
           ./scripts/apt_install.sh \
@@ -168,7 +175,15 @@ jobs:
         with:
           version: 6.0.11
       # See ci.yml: the web target can transitively need the native Linux build.
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-build-web-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-build-web-ubuntu22-
       - name: Install Linux build deps + zip
+        env:
+          APT_ARCHIVES: /home/runner/apt-archives
         run: |
           ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
@@ -360,7 +375,15 @@ jobs:
       # The APK embeds The Glory of Rome pack, and the pack is zipped by the
       # NATIVE binary (./build/debug/openbounty --pack-dir), so the Linux
       # toolchain is required even though nothing native ships from this job.
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-build-android-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-build-android-ubuntu22-
       - name: Install Linux build deps
+        env:
+          APT_ARCHIVES: /home/runner/apt-archives
         run: |
           ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
