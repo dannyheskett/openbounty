@@ -388,9 +388,20 @@ def upload_screenshots(asc, loc_id, shots, display_type):
             break
 
     if set_id:
+        existing = asc.call("GET", f"/v1/appScreenshotSets/{set_id}/appScreenshots?limit=50")
+        # Leave the set alone when it already holds exactly these files, in
+        # this order, and none failed. Every upload makes Apple process the
+        # image again -- minutes per screenshot on a slow day -- and a version
+        # carries its screenshots forward, so most releases change none.
+        attrs = [shot["attributes"] for shot in existing.get("data", [])]
+        have = [(a.get("fileName"), a.get("sourceFileChecksum")) for a in attrs]
+        want = [(path.name, hashlib.md5(path.read_bytes()).hexdigest()) for path in shots]
+        failed = any((a.get("assetDeliveryState") or {}).get("state") == "FAILED" for a in attrs)
+        if have == want and not failed:
+            print(f"  screenshots {display_type}: unchanged ({len(want)}); not re-uploading")
+            return
         # Clear the slot first: uploads append, so re-running would pile up
         # duplicates against Apple's 10-per-set ceiling.
-        existing = asc.call("GET", f"/v1/appScreenshotSets/{set_id}/appScreenshots")
         for shot in existing.get("data", []):
             asc.call("DELETE", f"/v1/appScreenshots/{shot['id']}")
     else:

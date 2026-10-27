@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the store scripts' failure handling: the bounded retry
-(net_retry.py), asc_release.py replacing a pending App Review, re-uploading a
-stalled screenshot, and retrying Apple's "not ready yet" submit refusal. No network:
+(net_retry.py), asc_release.py replacing a pending App Review, leaving unchanged
+screenshots alone, re-uploading a stalled screenshot, and retrying Apple's "not ready yet" submit refusal. No network:
 the transport and App Store Connect are faked. Run by CI (ci.yml, linux).
 
 Exit status is non-zero on any failure.
@@ -406,12 +406,68 @@ def test_submit():
     check(fake.calls == 1, "any other 409 -> not retried")
 
 
+class FakeSet:
+    """One existing screenshot set holding `held` [(name, checksum, state)]."""
+
+    def __init__(self, held):
+        self.dry_run = False
+        self.held = held
+        self.deleted, self.uploaded = [], []
+
+    def call(self, method, path, body=None, raise_errors=False):
+        if path.endswith("/appScreenshotSets"):
+            return {"data": [{"id": "set", "attributes": {"screenshotDisplayType": "APP_IPHONE_67"}}]}
+        if method == "GET" and "/appScreenshots" in path:
+            return {"data": [{"id": n, "attributes": {"fileName": n, "sourceFileChecksum": c,
+                                                      "assetDeliveryState": {"state": st}}}
+                             for n, c, st in self.held]}
+        if method == "DELETE":
+            self.deleted.append(path)
+            return {}
+        if method == "POST":
+            self.uploaded.append(body["data"]["attributes"]["fileName"])
+            return {"data": {"id": "new", "attributes": {"uploadOperations": []}}}
+        if method == "PATCH":
+            return {}
+        raise AssertionError(f"unexpected call {method} {path}")
+
+
+def test_listing_screenshots(tmp):
+    print("asc_release listing screenshots")
+    import hashlib
+    m = load_asc()
+    files = []
+    for n in ("01.png", "02.png"):
+        (tmp / n).write_bytes(n.encode())
+        files.append(tmp / n)
+    md5 = {f.name: hashlib.md5(f.read_bytes()).hexdigest() for f in files}
+
+    fake = FakeSet([("01.png", md5["01.png"], "COMPLETE"), ("02.png", md5["02.png"], "COMPLETE")])
+    m.upload_screenshots(fake, "loc", files, "APP_IPHONE_67")
+    check(not fake.deleted and not fake.uploaded, "same files, same order -> left alone")
+
+    fake = FakeSet([("01.png", md5["01.png"], "COMPLETE"), ("02.png", "old", "COMPLETE")])
+    m.upload_screenshots(fake, "loc", files, "APP_IPHONE_67")
+    check(len(fake.deleted) == 2 and fake.uploaded == ["01.png", "02.png"],
+          "one file changed -> set replaced")
+
+    fake = FakeSet([("02.png", md5["02.png"], "COMPLETE"), ("01.png", md5["01.png"], "COMPLETE")])
+    m.upload_screenshots(fake, "loc", files, "APP_IPHONE_67")
+    check(fake.uploaded == ["01.png", "02.png"], "order changed -> set replaced")
+
+    fake = FakeSet([("01.png", md5["01.png"], "COMPLETE"), ("02.png", md5["02.png"], "FAILED")])
+    m.upload_screenshots(fake, "loc", files, "APP_IPHONE_67")
+    check(fake.uploaded == ["01.png", "02.png"], "same files but one FAILED -> set replaced")
+
+
 def main():
     test_retry()
     test_replace()
     test_verify_submitted()
     with tempfile.TemporaryDirectory() as tmp:
         test_screenshots(Path(tmp))
+    with tempfile.TemporaryDirectory() as tmp:
+        test_listing_screenshots(Path(tmp))
     test_submit()
     if failures:
         print(f"FAILED: {failures} check(s)")
