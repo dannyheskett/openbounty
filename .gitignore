@@ -66,8 +66,9 @@ __pycache__/
 *.aab
 *.ipa
 
-# The original game's files for --extract (KB.EXE and its data)
-legacy/
+# The original game's files for --extract (KB.EXE and its data). Anchored to
+# the top level: unanchored, this also ignored src/legacy/, which is source.
+/legacy/
 
 # --- store signing material ---
 # Never commit these: the release workflow decodes the Play keystore and the
