@@ -77,12 +77,19 @@ from store_listing import ListingError, asc_listing  # noqa: E402
 BASE = "https://api.appstoreconnect.apple.com"
 
 # How long a submission waits for Apple to finish processing the version's
-# screenshots, and how often it looks. Processing usually takes a minute or
-# two; the deadline leaves room for a slow day at Apple, and a screenshot that
-# never finishes still fails loudly. It sits inside the workflow jobs'
-# 20-minute timeout with room for the steps before it, so the job ends on this
-# script's explanation rather than the runner killing it.
-ASSET_WAIT_SECONDS = 10 * 60
+# screenshots, and how often it looks. Processing usually takes a few minutes.
+#
+# Apple sometimes drops one: it sits at UPLOAD_COMPLETE (bytes received, never
+# processed) indefinitely while the rest of the set finishes. A screenshot that
+# has not finished after ASSET_STALL_SECONDS is deleted and uploaded again, at
+# most ASSET_REUPLOADS times, each one printed; after that the run fails naming
+# it. The stall threshold sits above the slowest healthy processing seen (about
+# 5.5 min). The overall deadline covers every re-upload and sits inside the
+# release job's timeout, so the job ends on this script's explanation rather
+# than the runner killing it.
+ASSET_STALL_SECONDS = 6 * 60
+ASSET_REUPLOADS = 3
+ASSET_WAIT_SECONDS = 30 * 60
 ASSET_POLL_SECONDS = 15
 
 # Replacing a pending review: how long to wait for a withdrawn version to become
@@ -93,6 +100,12 @@ PUBLISH_WAIT_SECONDS = 30 * 60
 # sent, the version still reads READY_FOR_REVIEW. The read-back waits this
 # long for it to move on before calling the submission failed.
 SUBMIT_SETTLE_SECONDS = 5 * 60
+# Apple can refuse the submit itself with 409 "Version is not ready to be
+# submitted yet, please try again later" for a few minutes after the build is
+# attached and the screenshots finish. That refusal -- and only that one -- is
+# tried again every STATE_POLL_SECONDS until this deadline; any other refusal
+# fails at once.
+SUBMIT_RETRY_SECONDS = 10 * 60
 STATE_POLL_SECONDS = 20
 
 # Replaced in the tests so they don't wait.
@@ -390,27 +403,34 @@ def upload_screenshots(asc, loc_id, shots, display_type):
         set_id = (created.get("data") or {}).get("id", "<set>")
 
     for path in shots:
-        blob = path.read_bytes()
-        reserved = asc.call("POST", "/v1/appScreenshots", {
-            "data": {"type": "appScreenshots",
-                     "attributes": {"fileName": path.name, "fileSize": len(blob)},
-                     "relationships": {"appScreenshotSet": {
-                         "data": {"type": "appScreenshotSets", "id": set_id}}}}})
-        if asc.dry_run:
-            print(f"  [dry-run] upload {path.name} ({len(blob)} bytes)")
-            continue
-        data = reserved["data"]
-        for op in data["attributes"]["uploadOperations"]:
-            asc.put_bytes(op, blob)
-        asc.call("PATCH", f"/v1/appScreenshots/{data['id']}", {
-            "data": {"type": "appScreenshots", "id": data["id"],
-                     "attributes": {"uploaded": True,
-                                    "sourceFileChecksum": hashlib.md5(blob).hexdigest()}}})
+        upload_screenshot(asc, set_id, path)
         print(f"  screenshot {display_type} {path.name}")
 
 
+def upload_screenshot(asc, set_id, path):
+    """Upload one file into a screenshot set; returns the new screenshot's id."""
+    blob = path.read_bytes()
+    reserved = asc.call("POST", "/v1/appScreenshots", {
+        "data": {"type": "appScreenshots",
+                 "attributes": {"fileName": path.name, "fileSize": len(blob)},
+                 "relationships": {"appScreenshotSet": {
+                     "data": {"type": "appScreenshotSets", "id": set_id}}}}})
+    if asc.dry_run:
+        print(f"  [dry-run] upload {path.name} ({len(blob)} bytes)")
+        return "<screenshot>"
+    data = reserved["data"]
+    for op in data["attributes"]["uploadOperations"]:
+        asc.put_bytes(op, blob)
+    asc.call("PATCH", f"/v1/appScreenshots/{data['id']}", {
+        "data": {"type": "appScreenshots", "id": data["id"],
+                 "attributes": {"uploaded": True,
+                                "sourceFileChecksum": hashlib.md5(blob).hexdigest()}}})
+    return data["id"]
+
+
 def screenshot_states(asc, version_id):
-    """Every screenshot on the version, as (display type, file name, state).
+    """Every screenshot on the version, as (display type, file name, state,
+    errors, screenshot id, set id).
 
     The state is Apple's assetDeliveryState: AWAITING_UPLOAD, UPLOAD_COMPLETE,
     COMPLETE or FAILED, with FAILED carrying errors.
@@ -426,29 +446,75 @@ def screenshot_states(asc, version_id):
                 a = shot["attributes"]
                 delivery = a.get("assetDeliveryState") or {}
                 out.append((display, a.get("fileName", shot["id"]),
-                            delivery.get("state", "UNKNOWN"), delivery.get("errors") or []))
+                            delivery.get("state", "UNKNOWN"), delivery.get("errors") or [],
+                            shot["id"], st["id"]))
     return out
+
+
+def local_screenshot(display, name):
+    """The repo file a screenshot was uploaded from, or None."""
+    for d, folder in SHOT_SETS:
+        if d == display and (folder / name).is_file():
+            return folder / name
+    return None
+
+
+def reupload_screenshot(asc, set_id, shot_id, path):
+    """Replace one screenshot with a fresh upload of `path`, keeping its place
+    in the set (a new upload lands at the end, and the order is what the store
+    shows)."""
+    order = [s["id"] for s in
+             asc.call("GET", f"/v1/appScreenshotSets/{set_id}/appScreenshots?limit=50")
+             .get("data", [])]
+    asc.call("DELETE", f"/v1/appScreenshots/{shot_id}")
+    new_id = upload_screenshot(asc, set_id, path)
+    asc.call("PATCH", f"/v1/appScreenshotSets/{set_id}/relationships/appScreenshots",
+             {"data": [{"type": "appScreenshots", "id": new_id if i == shot_id else i}
+                       for i in order]})
 
 
 def wait_for_screenshots(asc, version_id, deadline):
     """Block until Apple has finished processing every screenshot on the
-    version. Exits on a FAILED screenshot, or if processing outlasts the
-    deadline, naming the screenshots involved."""
+    version, re-uploading one that stalls (see ASSET_STALL_SECONDS). Exits on a
+    FAILED screenshot, on one still stalled after ASSET_REUPLOADS re-uploads,
+    or if processing outlasts the deadline, naming the screenshots involved."""
+    first_seen = {}   # screenshot id -> when it was first seen unfinished
+    reuploads = {}    # (display, file name) -> re-uploads so far
     while True:
         states = screenshot_states(asc, version_id)
         failed = [s for s in states if s[2] == "FAILED"]
         if failed:
-            lines = "\n".join(f"  {d} {n}: {json.dumps(e)}" for d, n, _, e in failed)
+            lines = "\n".join(f"  {s[0]} {s[1]}: {json.dumps(s[3])}" for s in failed)
             sys.exit(f"Apple failed to process {len(failed)} screenshot(s):\n{lines}")
         pending = [s for s in states if s[2] != "COMPLETE"]
         if not pending:
-            print(f"  screenshots processed ({len(states)})")
+            print(f"  screenshots processed ({len(states)})", flush=True)
             return
-        if time.monotonic() >= deadline:
-            lines = "\n".join(f"  {d} {n}: {st}" for d, n, st, _ in pending)
+        now = monotonic()
+        if now >= deadline:
+            lines = "\n".join(f"  {s[0]} {s[1]}: {s[2]}" for s in pending)
             sys.exit(f"screenshots still processing after {ASSET_WAIT_SECONDS // 60} min:\n{lines}")
-        print(f"  waiting on Apple to process {len(pending)} of {len(states)} screenshot(s)")
-        time.sleep(ASSET_POLL_SECONDS)
+        for display, name, state, _, shot_id, set_id in pending:
+            since = first_seen.setdefault(shot_id, now)
+            if now - since < ASSET_STALL_SECONDS:
+                continue
+            done = reuploads.get((display, name), 0)
+            if done >= ASSET_REUPLOADS:
+                sys.exit(f"Apple has not processed screenshot {display} {name} (still {state}) "
+                         f"after {ASSET_REUPLOADS} re-uploads, {ASSET_STALL_SECONDS // 60} min each")
+            path = local_screenshot(display, name)
+            if path is None:
+                sys.exit(f"screenshot {display} {name} stuck at {state} for "
+                         f"{ASSET_STALL_SECONDS // 60} min, and there is no {name} in the repo "
+                         f"to upload again")
+            reuploads[(display, name)] = done + 1
+            print(f"  screenshot {display} {name} stuck at {state} for "
+                  f"{int(now - since) // 60} min; uploading it again "
+                  f"(re-upload {done + 1}/{ASSET_REUPLOADS})", flush=True)
+            reupload_screenshot(asc, set_id, shot_id, path)
+        print(f"  waiting on Apple to process {len(pending)} of {len(states)} screenshot(s)",
+              flush=True)
+        sleep(ASSET_POLL_SECONDS)
 
 
 def add_submission_item(asc, sub_id, version_id, deadline):
@@ -468,11 +534,37 @@ def add_submission_item(asc, sub_id, version_id, deadline):
         except ASCError as e:
             if not (e.status == 409 and e.has_code("STATE_ERROR.ASSET_IN_POST_PROCESSING")):
                 sys.exit(str(e))
-            if time.monotonic() >= deadline:
+            if monotonic() >= deadline:
                 sys.exit(f"Apple still reports assets in post-processing after "
                          f"{ASSET_WAIT_SECONDS // 60} min\n{e}")
-            print("  Apple still post-processing an asset; trying again shortly")
-            time.sleep(ASSET_POLL_SECONDS)
+            print("  Apple still post-processing an asset; trying again shortly", flush=True)
+            sleep(ASSET_POLL_SECONDS)
+
+
+NOT_READY_YET = "Version is not ready to be submitted yet"
+
+
+def submit_for_review(asc, sub_id):
+    """Send the review submission. Apple's "not ready to be submitted yet,
+    please try again later" refusal is tried again until SUBMIT_RETRY_SECONDS
+    (see there); any other error fails at once."""
+    body = {"data": {"type": "reviewSubmissions", "id": sub_id,
+                     "attributes": {"submitted": True}}}
+    deadline = monotonic() + SUBMIT_RETRY_SECONDS
+    while True:
+        try:
+            asc.call("PATCH", f"/v1/reviewSubmissions/{sub_id}", body, raise_errors=True)
+            return
+        except ASCError as e:
+            if not (e.status == 409 and e.has_code("STATE_ERROR.ENTITY_STATE_INVALID")
+                    and NOT_READY_YET in e.text):
+                sys.exit(str(e))
+            if monotonic() >= deadline:
+                sys.exit(f"Apple still says the version is not ready to submit after "
+                         f"{SUBMIT_RETRY_SECONDS // 60} min\n{e}")
+            print(f"  Apple says the version is not ready to submit yet; "
+                  f"trying again in {STATE_POLL_SECONDS}s", flush=True)
+            sleep(STATE_POLL_SECONDS)
 
 
 # The App Review contact fields. Apple refuses a submission whose version has
@@ -713,7 +805,7 @@ def cmd_release(asc, args):
 
     # The listing step has just replaced every screenshot, and Apple will not
     # take a version whose screenshots are still processing.
-    deadline = time.monotonic() + ASSET_WAIT_SECONDS
+    deadline = monotonic() + ASSET_WAIT_SECONDS
     if not asc.dry_run and not is_placeholder(version_id):
         wait_for_screenshots(asc, version_id, deadline)
 
@@ -733,9 +825,7 @@ def cmd_release(asc, args):
                      "relationships": {"app": {"data": {"type": "apps", "id": app}}}}})
         sub_id = (submission.get("data") or {}).get("id", "<submission>")
     add_submission_item(asc, sub_id, version_id, deadline)
-    asc.call("PATCH", f"/v1/reviewSubmissions/{sub_id}",
-             {"data": {"type": "reviewSubmissions", "id": sub_id,
-                       "attributes": {"submitted": True}}})
+    submit_for_review(asc, sub_id)
     print(f"  submitted {version_string} for review")
     return 0
 
@@ -775,6 +865,9 @@ def cmd_verify_submitted(asc, args):
 
 
 def main():
+    # Line-buffer stdout so progress lines and an exit message (stderr) land in
+    # the CI log in the order they happened.
+    sys.stdout.reconfigure(line_buffering=True)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="verb", required=True)
