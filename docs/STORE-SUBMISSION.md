@@ -77,16 +77,15 @@ step-by-step for creating them without a Mac.
 |---|---|
 | `scripts/store_listing.py` | parsed both LISTING.md files, enforced each store's length limits, and banned a listing that names another store or the original game. CI has run `--check` on every PR. |
 | `scripts/asc_setup.py` | one-time Apple setup, one subcommand each: `bundle-id` has registered the App ID; `profile --cert-sha1 SHA1 --out FILE` has created (or reused) the App Store provisioning profile bound to the team certificate; `app-info [--privacy-url URL]` has set category, content rights, age rating, privacy-policy URL, support/marketing URLs, a free price, and availability in every territory except mainland China. Each has taken `--dry-run`. |
-| `scripts/asc_release.py` | `status` (the current version, its state and builds); `listing [--skip-if-busy]` (text + screenshots); `release --build N [--submit] [--phased] [--whats-new TEXT] [--skip-if-busy]` (the build attached to version `1.0.N`, sent to App Review with `--submit`, released in phases with `--phased`). `--skip-if-busy` has exited 0 when no version is free to write onto; `listing` and `release` have taken `--dry-run`. |
-| `scripts/asc_next_build.py` | printed the next build number App Store Connect has not seen, so branch and release builds have never collided. |
+| `scripts/asc_release.py` | `status` (the current version, its state and builds); `listing` (text + screenshots); `release --build N [--submit] [--phased] [--whats-new TEXT]` (any earlier version still pending App Review withdrawn first, the build attached to version `1.0.N`, sent to App Review with `--submit`, released in phases with `--phased`); `build-state` and `verify-submitted` (read-backs). `listing` and `release` have taken `--dry-run`. |
+| `scripts/play_release.py` | `listing`, `release --build N --track T [--upload AAB] [--with-listing]`, `status`, `verify` (the read-back), for `com.danheskett.gloryofrome`. |
+| `scripts/net_retry.py` | the bounded retry every store script has used: three retries (10 s, 30 s, 90 s) on HTTP 429/5xx and network errors, then a failure. |
+| `scripts/asc_next_build.py` | printed the next build number App Store Connect has not seen, so a build has never collided with one Apple already held. |
 | `scripts/testflight_notes.py` | waited out Apple's processing window and written "What to Test" onto the build TestFlight has just received. |
 | `scripts/android_smoke.sh` | installed the emulator APK in CI, launched it, and failed unless the process has been alive 20 s later. |
 
 | Workflow | Trigger |
 |---|---|
-| `asc-setup.yml` | manual; one verb per run, `dry_run` on by default |
-| `store-release.yml` | manual; the listing pushed and a chosen build submitted, `dry_run` on by default |
-| `testflight.yml` | manual; the chosen branch built, signed and sent to TestFlight, with no tag and no release |
-| `release.yml` — `build-ios`, `publish-testflight`, `testflight-notes`, `submit-appstore`, `build-android`, `publish-play` | every merge to `main` (a `staging` -> `main` promotion), each gated on its own secrets; `submit-appstore` only when asked for |
-
-Play has had no automation beyond the internal-track upload.
+| `asc-setup.yml` | manual; one verb per run, `dry_run` on by default (titled DRY RUN) |
+| `build.yml` | every merge of `staging` into `main`: every platform built, `release-N` tagged, the GitHub Release published; nothing sent to a store, and a missing signing secret has failed it |
+| `release.yml` — `play`, `appstore-upload`, `appstore-submit` | manual, for a chosen `release-N`: the AAB to the Play track picked, then the `.ipa` uploaded, TestFlight notes for internal testers, version 1.0.N submitted to App Review; one after another, stopping at the first failure, each store read back at the end |

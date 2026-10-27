@@ -132,7 +132,7 @@ toolchain provenance keys App Store Connect has checked, and entitlements -- and
 signed it when `IOS_SIGN_IDENTITY`, `IOS_PROFILE` and `IOS_TEAM_ID` have been
 given. All of it has run on GitHub's macOS runners: the `ios` CI job has built
 the Simulator app, booted a Simulator, launched it and captured screenshots,
-then built and signed the device `.ipa`; the release has uploaded that `.ipa`
-to App Store Connect; `testflight.yml` has uploaded any branch on demand.
+then built and signed the device `.ipa`; `build.yml` has attached it to the
+GitHub Release, and `release.yml` has uploaded it to App Store Connect.
 `docs/RELEASE-PROCESS.md` and `docs/STORE-SUBMISSION.md` have covered the
 pipeline.

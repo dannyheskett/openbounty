@@ -75,6 +75,17 @@ strategy,turnbased,fantasy,tactics,rome,roman,army,rpg,offline,retro
 | Marketing URL | https://github.com/dannyheskett/openbounty |
 | Privacy policy URL | the published URL of `../../android/play-assets/PRIVACY.md` |
 
+- **Copyright:** `2026 Daniel Heskett`
+
+## App Review notes
+
+Sent to Apple's reviewer with every submission that has none yet
+(`scripts/asc_release.py` sets them, with the team's review contact).
+
+```
+Thank you very much for reviewing my game. The Glory of Rome is a turn-based fantasy strategy game played entirely offline: recruit an army, fight battles on a grid, take castles and track down the villains before your commission runs out. It needs no account or sign-in, and has no ads or purchases. Everything is a tap.
+```
+
 ## App Privacy
 
 "Data Not Collected" for every category. The app has had no network code at all.
