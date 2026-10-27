@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Tests for the store scripts' failure handling: the bounded retry
-(net_retry.py) and asc_release.py replacing a pending App Review. No network:
+(net_retry.py), asc_release.py replacing a pending App Review, re-uploading a
+stalled screenshot, and retrying Apple's "not ready yet" submit refusal. No network:
 the transport and App Store Connect are faked. Run by CI (ci.yml, linux).
 
 Exit status is non-zero on any failure.
 """
 import io
 import sys
+import tempfile
 import urllib.error
 from pathlib import Path
 
@@ -261,10 +263,156 @@ def test_verify_submitted():
                 "wrong build attached -> fails", "not 7")
 
 
+class FakeShots:
+    """A version's screenshots. `stuck` names files Apple never processes on
+    their first `stuck[name]` uploads; every other upload finishes after one
+    poll."""
+
+    def __init__(self, asc_release, names, stuck=None, failed=None):
+        self.m = asc_release
+        self.dry_run = False
+        self.stuck = dict(stuck or {})
+        self.failed = set(failed or [])
+        self.uploads = {n: 1 for n in names}
+        self.shots = [{"id": f"{n}#1", "name": n, "polls": 0} for n in names]
+        self.order_patches = []
+
+    def state(self, shot):
+        if shot["name"] in self.failed:
+            return "FAILED"
+        upload = int(shot["id"].split("#")[1])
+        if upload <= self.stuck.get(shot["name"], 0):
+            return "UPLOAD_COMPLETE"
+        return "COMPLETE" if shot["polls"] > 1 else "UPLOAD_COMPLETE"
+
+    def call(self, method, path, body=None, raise_errors=False):
+        if path.endswith("/appStoreVersionLocalizations"):
+            return {"data": [{"id": "loc"}]}
+        if path.endswith("/appScreenshotSets"):
+            return {"data": [{"id": "set", "attributes": {"screenshotDisplayType": "APP_IPHONE_67"}}]}
+        if method == "GET" and "/appScreenshots" in path:
+            for shot in self.shots:
+                shot["polls"] += 1
+            return {"data": [{"id": s["id"], "attributes": {
+                "fileName": s["name"],
+                "assetDeliveryState": {"state": self.state(s),
+                                       "errors": [{"code": "BAD"}] if self.state(s) == "FAILED" else []}}}
+                for s in self.shots]}
+        if method == "DELETE" and path.startswith("/v1/appScreenshots/"):
+            gone = path.rsplit("/", 1)[1]
+            self.shots = [s for s in self.shots if s["id"] != gone]
+            return {}
+        if method == "POST" and path == "/v1/appScreenshots":
+            name = body["data"]["attributes"]["fileName"]
+            self.uploads[name] += 1
+            shot = {"id": f"{name}#{self.uploads[name]}", "name": name, "polls": 0}
+            self.shots.append(shot)
+            return {"data": {"id": shot["id"], "attributes": {"uploadOperations": []}}}
+        if method == "PATCH" and path.startswith("/v1/appScreenshots/"):
+            return {}
+        if method == "PATCH" and path.endswith("/relationships/appScreenshots"):
+            want = [d["id"] for d in body["data"]]
+            self.order_patches.append(want)
+            self.shots.sort(key=lambda s: want.index(s["id"]))
+            return {}
+        raise AssertionError(f"unexpected call {method} {path}")
+
+
+def test_screenshots(tmp):
+    print("asc_release screenshot processing")
+    m = load_asc()
+    names = ["01.png", "02.png", "03.png"]
+    for n in names:
+        (tmp / n).write_bytes(b"png")
+    m.SHOT_SETS = [("APP_IPHONE_67", tmp)]
+    clock = {"t": 0.0}
+    m.monotonic = lambda: clock["t"]
+    m.sleep = lambda s: clock.__setitem__("t", clock["t"] + s)
+
+    fake = FakeShots(m, names)
+    m.wait_for_screenshots(fake, "v1", m.ASSET_WAIT_SECONDS)
+    check(sum(fake.uploads.values()) == 3, "all process normally -> no re-upload")
+
+    clock["t"] = 0.0
+    fake = FakeShots(m, names, stuck={"02.png": 1})
+    m.wait_for_screenshots(fake, "v1", m.ASSET_WAIT_SECONDS)
+    check(fake.uploads["02.png"] == 2 and [s["name"] for s in fake.shots] == names,
+          "one stuck at UPLOAD_COMPLETE -> re-uploaded once, set order kept")
+
+    clock["t"] = 0.0
+    fake = FakeShots(m, names, stuck={"03.png": 10})
+    expect_exit(lambda: m.wait_for_screenshots(fake, "v1", m.ASSET_WAIT_SECONDS),
+                "never processes -> fails after the re-uploads, naming it", "03.png")
+    check(fake.uploads["03.png"] == 1 + m.ASSET_REUPLOADS,
+          f"never processes -> exactly {m.ASSET_REUPLOADS} re-uploads")
+
+    clock["t"] = 0.0
+    fake = FakeShots(m, names, failed={"01.png"})
+    expect_exit(lambda: m.wait_for_screenshots(fake, "v1", m.ASSET_WAIT_SECONDS),
+                "FAILED -> fails at once", "failed to process")
+    check(sum(fake.uploads.values()) == 3, "FAILED -> not re-uploaded")
+
+    clock["t"] = 0.0
+    m.SHOT_SETS = [("APP_IPHONE_67", tmp / "elsewhere")]
+    fake = FakeShots(m, names, stuck={"02.png": 1})
+    expect_exit(lambda: m.wait_for_screenshots(fake, "v1", m.ASSET_WAIT_SECONDS),
+                "stuck with no repo file to re-upload -> fails", "no 02.png in the repo")
+
+
+NOT_READY = ('{"errors":[{"code":"STATE_ERROR.ENTITY_STATE_INVALID","meta":{"associatedErrors":'
+             '{"/v1/appStoreVersions/x":[{"code":"STATE_ERROR","detail":"Version is not ready '
+             'to be submitted yet, please try again later."}]}}}]}')
+
+
+class FakeSubmit:
+    """The submit PATCH: refused with `refusal` for the first `refusals` calls."""
+
+    def __init__(self, asc_release, refusals, refusal=NOT_READY):
+        self.m = asc_release
+        self.dry_run = False
+        self.refusals = refusals
+        self.refusal = refusal
+        self.calls = 0
+
+    def call(self, method, path, body=None, raise_errors=False):
+        assert method == "PATCH" and body["data"]["attributes"] == {"submitted": True}
+        self.calls += 1
+        if self.calls <= self.refusals:
+            raise self.m.ASCError(409, method, path, self.refusal)
+        return {}
+
+
+def test_submit():
+    print("asc_release submit")
+    m = load_asc()
+    clock = {"t": 0.0}
+    m.monotonic = lambda: clock["t"]
+    m.sleep = lambda s: clock.__setitem__("t", clock["t"] + s)
+
+    fake = FakeSubmit(m, refusals=3)
+    m.submit_for_review(fake, "sub1")
+    check(fake.calls == 4, "\"not ready yet\" x3 -> tried again, then submitted")
+
+    clock["t"] = 0.0
+    fake = FakeSubmit(m, refusals=10**6)
+    expect_exit(lambda: m.submit_for_review(fake, "sub1"),
+                "\"not ready yet\" past the deadline -> fails", "still says the version is not ready")
+
+    clock["t"] = 0.0
+    fake = FakeSubmit(m, refusals=1, refusal='{"errors":[{"code":"STATE_ERROR.ENTITY_STATE_INVALID",'
+                                             '"detail":"Missing required screenshots."}]}')
+    expect_exit(lambda: m.submit_for_review(fake, "sub1"),
+                "any other 409 -> fails at once", "Missing required screenshots")
+    check(fake.calls == 1, "any other 409 -> not retried")
+
+
 def main():
     test_retry()
     test_replace()
     test_verify_submitted()
+    with tempfile.TemporaryDirectory() as tmp:
+        test_screenshots(Path(tmp))
+    test_submit()
     if failures:
         print(f"FAILED: {failures} check(s)")
         return 1

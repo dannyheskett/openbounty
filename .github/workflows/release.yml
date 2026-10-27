@@ -316,7 +316,9 @@ jobs:
     needs: [resolve, play, appstore-upload]
     if: ${{ !cancelled() && needs.resolve.result == 'success' && needs.resolve.outputs.do_appstore == 'true' && needs.appstore-upload.result == 'success' }}
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    # Inside this: up to 30 min for Apple to process the screenshots (with
+    # re-uploads) and 10 min of "not ready yet" retries on the submit.
+    timeout-minutes: 90
     env:
       ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
       ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
