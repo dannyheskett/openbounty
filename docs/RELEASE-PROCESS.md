@@ -18,14 +18,15 @@ to `main` has been the release. Nothing has been pushed to `main` directly.
 
 **Every merge to `main` has cut a release.** Merging the `staging` -> `main`
 pull request has pushed its merge commit to `main`, and that push has run the
-release workflow, which has picked the next `N`, built every target, and
-published. The `main` ruleset has refused direct pushes, so that merge has been
+build workflow (`build.yml`), which has picked the next `N`, built every
+target, and published the GitHub Release. The `main` ruleset has refused direct pushes, so that merge has been
 the only way anything has reached `main`. Promotions that have changed only docs have
 been skipped via `paths-ignore`. The workflow has also been runnable by hand
-from the **Actions** tab → **release** → **Run workflow**, which is what you
-want to retry a release that has failed for a reason outside the code (see §4); a
-hand run has defaulted to `dry_run`, which has built and verified everything
-and tagged and published nothing.
+from the **Actions** tab → **build** → **Run workflow**, which is what you
+want to retry a build that has failed for a reason outside the code (see §4); a
+hand run has defaulted to `dry_run` (titled DRY RUN), which has built and
+verified everything and tagged and published nothing. Shipping the result has
+been the separate **release** workflow (§2).
 
 The workflow has:
    - computed the next number `N` (max existing `release-N` tag + 1),
@@ -49,9 +50,11 @@ by `--version`.
 
 ## 2. What the workflow has done
 
-`.github/workflows/release.yml` has been triggered by any push to `main` (in
-practice, the merge of a `staging` -> `main` pull request) and by
-`workflow_dispatch`. Its jobs:
+Building and shipping have been two separate workflows.
+`.github/workflows/build.yml` has been triggered by the merge of a `staging` ->
+`main` pull request (and by hand, as a dry run). It has built, tagged and
+published the GitHub Release, and has never touched a store. Any failure has
+failed the run and nothing after it has run. Its jobs:
 
 - **guard**: the attribution guard (`attribution-guard.yml`, reused via
   `workflow_call`) has gated everything, so a violating commit has never
@@ -76,43 +79,40 @@ practice, the merge of a `staging` -> `main` pull request) and by
 - **iOS build** (macOS 26): has built raylib for macOS and the pack tool
   first -- the .app has embedded The Glory of Rome pack and the native binary
   has been what has zipped that pack -- then packaged the device `.ipa`. The
-  `.ipa` has been unsigned when the Apple secrets have been absent, and
-  App Store-signed when they have been present, in a throwaway keychain, with
-  the entitlements the Makefile has written and the icon compiled into
-  `Assets.car`. The build number has been the larger of `N` and
+  `.ipa` has been App Store-signed in a throwaway keychain, with the
+  entitlements the Makefile has written and the icon compiled into
+  `Assets.car`; a missing Apple signing secret has failed the build. The build number has been the larger of `N` and
   the next number App Store Connect has not seen (`scripts/asc_next_build.py`),
-  so a branch build on TestFlight has never collided with it. The signed path
-  has then verified the bundle has been App Store-shaped before it has been
-  uploaded anywhere.
+  so it has never collided with a build Apple already held. The job has then
+  verified the bundle has been App Store-shaped.
 - **android build** (Ubuntu): has installed the NDK, build-tools and platform,
   built raylib for `arm64-v8a` and the Linux toolchain (the APK has embedded
   The Glory of Rome pack, and the native binary has been what has zipped that
   pack), then
-  packaged a debug-signed sideload **APK** and -- only when all four
-  `PLAY_*` signing secrets have been present -- an upload-signed **AAB**. Mobile has
+  packaged a debug-signed sideload **APK** and an upload-signed **AAB**; a
+  missing `PLAY_*` signing secret has failed the build. Mobile has
   been The Glory of Rome only; the job has asserted no King's Bounty pack has been
   inside either artifact.
 - **publish** (Ubuntu): has downloaded all build artifacts, created the
   `release-N` **tag at the triggering SHA**, and published the GitHub Release
   with auto-generated notes and the archives attached.
-- **publish-play** (Ubuntu): has pushed the AAB to Play's **internal** track,
-  gated on `publish` having succeeded and on `dry_run` being false, and
-  skipped entirely when `PLAY_SERVICE_ACCOUNT_JSON` has been absent. The package
-  name has been `com.danheskett.gloryofrome` -- the app, not the repository.
-- **publish-testflight** (macOS 26): has validated the `.ipa` with
-  `altool --validate-app` and then uploaded it to App Store Connect, where it
-  has appeared in TestFlight after Apple's 5-15 minute processing. It has been
-  gated the same way as `publish-play`: on `publish` having succeeded, on
-  `dry_run` being false, and skipped when the `ASC_*` secrets have been missing
-  or the `.ipa` has been unsigned. Validation has run first because it has
-  named the rejection reason
-  without consuming the build number.
-- **testflight-notes** (Ubuntu): has written the "What to Test" note onto the
-  uploaded build (`scripts/testflight_notes.py`), waiting up to 90 minutes
-  for Apple to process it, since the note can be attached only to a build
-  Apple has finished processing.
-- **submit-appstore** (Ubuntu): has sent the build to App Review, and has run
-  only on a hand run with `submit_for_review` ticked.
+`.github/workflows/release.yml` has been run by hand, for a chosen `release-N`,
+and has shipped that release's own `.aab` and `.ipa` from the GitHub Release.
+Its jobs have run one after another, and the first failure has stopped the
+rest:
+
+- **play** (Ubuntu): has uploaded the AAB to the Play track picked
+  (`com.danheskett.gloryofrome` -- the app, not the repository), with the
+  listing in the same edit, and has read the track back.
+- **appstore-upload** (macOS 26): has validated and uploaded the `.ipa` (or
+  said App Store Connect already had that build number), taking the build
+  number from the `.ipa` itself.
+- **appstore-submit** (Ubuntu): has waited for Apple's processing, written the
+  "What to Test" note for internal testers, withdrawn any earlier version still
+  pending App Review, submitted version 1.0.N, and read it back.
+
+A missing secret has failed the job it was needed in; temporary store errors
+have been retried three times and have then failed.
 
 Tagging has happened in the publish job, after every build job has succeeded. If
 any build has failed, no tag has been created and `N` has been reused next time.
@@ -137,34 +137,21 @@ thing -- that the King's Bounty pack is *not* in there.
 **Secrets the Android path has needed**: `PLAY_UPLOAD_KEYSTORE` (base64 of
 the upload keystore), `PLAY_KEY_ALIAS`, `PLAY_KEYSTORE_PASSWORD`,
 `PLAY_KEY_PASSWORD` for signing the AAB, and `PLAY_SERVICE_ACCOUNT_JSON` for
-the Play push. With none of them set, the release has still produced the
-sideload APK and simply skipped the bundle and the upload.
-
-### Putting a branch on TestFlight
-
-`.github/workflows/testflight.yml`, run by hand from the branch you are on,
-has built and signed that branch, asked App Store Connect for the next free
-build number (`scripts/asc_next_build.py`, so branch builds have never
-collided with release builds), uploaded, and written a "What to Test" note naming the
-branch and commit. Nothing has been tagged and no GitHub Release has been
-made.
-
-App Review submission has been **opt-in**: a merge to `main` has refreshed
-TestFlight and stopped there. To submit, run `release` by hand with
-`submit_for_review` ticked, or use `store-release.yml`.
+the Play push. Every one has been required: a missing signing secret has
+failed `build.yml`, a missing `PLAY_SERVICE_ACCOUNT_JSON` the release.
 
 **Secrets the iOS path has needed**: `IOS_CERT_P12` (base64 of the Apple
 Distribution certificate and key), `IOS_CERT_PASSWORD`,
 `IOS_PROVISIONING_PROFILE` (base64 of the App Store `.mobileprovision`) and
 `IOS_TEAM_ID` to sign; `ASC_KEY_P8`, `ASC_KEY_ID` and `ASC_ISSUER_ID` (an App
-Store Connect API key) to upload. With none of them set, the release has
-still produced the unsigned `.ipa` and skipped the upload.
+Store Connect API key) to upload. Every one has been required: a missing
+signing secret has failed `build.yml`, a missing `ASC_*` secret the release.
 
 ---
 
 ## What every release has shipped
 
-Each merge to `main` has produced one `release-N` with all of these:
+Each merge of `staging` into `main` has produced one `release-N` with all of these:
 
 | Artifact | What it has been |
 |---|---|
@@ -172,8 +159,8 @@ Each merge to `main` has produced one `release-N` with all of these:
 | `gloryofrome-build-<N>-linux-x86_64.tar.gz`, `-windows-x86_64.zip`, `-windows-i686.zip`, `-macos-universal.zip` | **The Glory of Rome** -- the same binary with `assets/glory-of-rome.openbounty` beside it, where pack discovery has looked, so it has started with no flags. |
 | `openbounty-build-<N>-web-wasm.zip` | The King's Bounty browser build (its pack embedded in `openbounty.data`), served at danheskett.com/dist/openbounty/. |
 | `gloryofrome-build-<N>-web-wasm.zip` | The Glory of Rome browser build (its pack embedded in `openbounty.data`), served at danheskett.com/dist/gloryofrome/. |
-| `gloryofrome-build-<N>-ios-arm64.ipa` | The App Store-signed iOS app, uploaded to TestFlight. |
-| `gloryofrome-build-<N>-android-arm64.apk`, `gloryofrome-build-<N>-android.aab` | The Android sideload APK and the upload-signed Play bundle, pushed to Play's internal track when `PLAY_SERVICE_ACCOUNT_JSON` has existed. |
+| `gloryofrome-build-<N>-ios-arm64.ipa` | The App Store-signed iOS app, shipped by `release.yml`. |
+| `gloryofrome-build-<N>-android-arm64.apk`, `gloryofrome-build-<N>-android.aab` | The Android sideload APK and the upload-signed Play bundle, shipped by `release.yml`. |
 
 `scripts/verify_release_packs.sh` has enforced the pack rule on every
 archive in each build job: no pack in an `openbounty-*` desktop archive,
@@ -216,8 +203,10 @@ anything.
 Because the tag has been created **last** (only after all builds have succeeded), a
 failed build has left no tag and no release, and the same `N` has been
 reused by the next run. If the failure has been outside the code (a runner, an
-expired secret, a store outage), re-run the workflow by hand with `dry_run`
-off; it has built `main`'s tip. If the code needs a fix, land it on `staging`
+expired secret), re-run `build.yml` by hand with `dry_run` off; it has built
+`main`'s tip. A failed `release.yml` run has shipped nothing past the job that
+failed, and has been re-run for the same `release-N` once the cause has been
+fixed: a store that already has the build has said so and carried on. If the code needs a fix, land it on `staging`
 through a pull request and promote again with a new `staging` -> `main` pull
 request; `main` has taken no direct push.
 

@@ -19,22 +19,33 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# bash -eo pipefail for every step: a failing command, including one inside a
+# pipe, fails its step.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   linux:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
       - name: Install raylib build + runtime deps
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
             libxcursor-dev libxi-dev libasound2-dev
       - name: Build raylib (Linux, static)
         run: ./scripts/build_raylib_linux.sh
       - name: Run tests
         run: make test
+      # The store scripts' failure handling: bounded retries, and replacing a
+      # pending App Review. Faked transport, no network.
+      - name: Test the store scripts
+        run: |
+          python3 -m pip install --quiet cryptography
+          python3 scripts/test_store_scripts.py
       - name: Build dev + release
         run: make all release
       # A release packages The Glory of Rome with its pack; build that package and
@@ -59,19 +70,18 @@ jobs:
 
   windows:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
       - name: Install mingw cross-toolchain
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update
           # C99 cross-compile only: the two mingw C compilers + binutils directly. The
           # `mingw-w64` metapackage pulls the whole g++ toolchain (both arches x
           # posix/win32) + perl -- 39 packages / 241 MB, none of which this build uses.
           # binutils-mingw-w64 supplies the *-ar that build_raylib_windows.sh invokes.
-          sudo apt-get install -y --no-install-recommends \
+          ./scripts/apt_install.sh \
             gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 binutils-mingw-w64
       - name: Build raylib (mingw win64 + win32)
         run: ./scripts/build_raylib_windows.sh
@@ -90,7 +100,7 @@ jobs:
 
   web:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
       - name: Set up Emscripten
@@ -104,8 +114,7 @@ jobs:
       # and keeps one job body for all of them.
       - name: Install Linux build deps
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
             libxcursor-dev libxi-dev libasound2-dev
       - name: Build raylib (Linux)
@@ -152,8 +161,7 @@ jobs:
       # toolchain is required even though nothing native ships from this job.
       - name: Install Linux build deps
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
             libxcursor-dev libxi-dev libasound2-dev
       - name: Build raylib (Linux)

@@ -33,6 +33,12 @@ permissions:
   id-token: write   # mint the OIDC token to assume the AWS role
   contents: read
 
+# bash -eo pipefail for every step: a failing command, including one inside a
+# pipe, fails its step.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   android:
     name: build APK + Device Farm fuzz (Android)
@@ -107,7 +113,10 @@ jobs:
 
   ios:
     name: build .ipa + Device Farm fuzz (iOS)
-    if: inputs.platform == 'ios' || inputs.platform == 'both'
+    # After Android, and only if it passed (or was not selected): one failure
+    # stops the run.
+    needs: android
+    if: ${{ !cancelled() && (inputs.platform == 'ios' || (inputs.platform == 'both' && needs.android.result == 'success')) }}
     runs-on: macos-15
     timeout-minutes: 45
     steps:
