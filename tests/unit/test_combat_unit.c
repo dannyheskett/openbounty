@@ -88,12 +88,15 @@ TEST under_control_invalid_troop_returns_false(void) {
 }
 
 // Open field fields three of the five garrison slots -- the original's quirk --
-// unless the target is a fixed guardian in a modern pack, which fields all
-// five (combat_prepare_foe, engine/combat.c).
+// unless the target is a fixed guardian in a pack with combat.guardian_full_band,
+// which fields all five (combat_prepare_foe, engine/combat.c).
 static void fill_five(Unit *g) {
     for (int i = 0; i < 5; i++) {
         const TroopDef *t = troop_by_index(i);
-        snprintf(g[i].id, sizeof g[i].id, "%s", t->id);
+        size_t n = strlen(t->id);
+        if (n >= sizeof g[i].id) n = sizeof g[i].id - 1;
+        memcpy(g[i].id, t->id, n);
+        g[i].id[n] = '\0';
         g[i].count = 10 + i;
     }
 }
@@ -139,6 +142,66 @@ TEST fixed_guardian_fields_five(void) {
     PASS();
 }
 
+// The full band is the pack's rule (combat.guardian_full_band), read by the
+// engine's one target builder, so the game, autoplay and --validate-pack field
+// the same band.
+TEST full_band_follows_the_pack_key(void) {
+    Resources *res1; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res1, &g, &m, &f, NULL, FIXTURE_SEED));
+    ASSERT(g->foe_count > 0);
+    FoeState *foe = &g->foes[0];
+    CombatTarget t;
+
+    foe->is_static = true;
+    res1->guardian_full_band = false;        // King's Bounty: three
+    CombatTargetForFoe(g, foe->placement_id, &t);
+    ASSERT_EQ(foe->garrison, t.garrison);
+    ASSERT_STR_EQ(foe->placement_id, t.seed_key);
+    ASSERT_FALSE(t.full_band);
+
+    res1->guardian_full_band = true;         // The Glory of Rome: a guardian, five
+    CombatTargetForFoe(g, foe->placement_id, &t);
+    ASSERT(t.full_band);
+
+    foe->is_static = false;                  // a wandering band stays three
+    CombatTargetForFoe(g, foe->placement_id, &t);
+    ASSERT_FALSE(t.full_band);
+
+    CombatTargetForFoe(g, "no_such_foe", &t);
+    ASSERT_EQ(NULL, t.garrison);
+    fx_free_game_full(res1, g, m, f);
+    PASS();
+}
+
+// An out-of-control stack is back under control as soon as its losses bring
+// it within the hero's leadership: 100 peasants (1 hp) out of control under
+// 60 leadership, 50 lost, are under control again before the next unit acts.
+TEST ooc_stack_regains_control_when_it_fits(void) {
+    Resources *res1; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res1, &g, &m, &f, NULL, FIXTURE_SEED));
+    const TroopDef *t = troop_by_id("peasants");
+    ASSERT(t && t->hit_points == 1);
+    g->stats.leadership_current = 60;
+    static Combat c;
+    memset(&c, 0, sizeof c);
+    for (int s = 0; s < COMBAT_SIDES; s++)
+        for (int i = 0; i < COMBAT_SLOTS; i++) c.units[s][i].troop_idx = -1;
+    c.heroes[COMBAT_SIDE_PLAYER] = g;
+    combat_init_unit(&c.units[COMBAT_SIDE_PLAYER][0], t->index, 100);
+    c.units[COMBAT_SIDE_PLAYER][0].out_of_control = !unit_under_control(g, t->index, 100);
+    ASSERT(c.units[COMBAT_SIDE_PLAYER][0].out_of_control);
+    c.side = COMBAT_SIDE_PLAYER; c.unit_id = -1;
+    c.units[COMBAT_SIDE_PLAYER][0].count = 61;          // still over
+    combat_next_unit(&c);
+    ASSERT(c.units[COMBAT_SIDE_PLAYER][0].out_of_control);
+    c.units[COMBAT_SIDE_PLAYER][0].count = 50;          // 50 died: fits under 60
+    c.unit_id = -1;
+    combat_next_unit(&c);
+    ASSERT_FALSE(c.units[COMBAT_SIDE_PLAYER][0].out_of_control);
+    fx_free_game_full(res1, g, m, f);
+    PASS();
+}
+
 SUITE(unit_combat_unit_suite) {
     RUN_TEST(init_unit_sets_count_and_max);
     RUN_TEST(init_unit_zero_count);
@@ -148,4 +211,6 @@ SUITE(unit_combat_unit_suite) {
     RUN_TEST(under_control_invalid_troop_returns_false);
     RUN_TEST(wandering_band_fields_three);
     RUN_TEST(fixed_guardian_fields_five);
+    RUN_TEST(full_band_follows_the_pack_key);
+    RUN_TEST(ooc_stack_regains_control_when_it_fits);
 }

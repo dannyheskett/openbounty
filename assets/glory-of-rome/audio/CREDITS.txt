@@ -1,4 +1,4 @@
-Glory of Rome audio sources
+The Glory of Rome audio sources
 
 intro_theme.ogg   Original, synthesised by tools/romeart.py introtheme. No licence needed.
 intro_thunder.wav "Thunderclap" by Fission9, https://freesound.org/people/Fission9/sounds/534023/
@@ -21,3 +21,4 @@ intro_applause.wav"Applause (Theatre Audience - Indoors)" by christos71, https:/
                   CC0 1.0 (public domain). 4 s from 0:02, faded in and out, mono.
 intro_march.wav   "R11-19-Army Marching Steadily.wav" by craigsmith, https://freesound.org/people/craigsmith/sounds/480434/
                   CC0 1.0 (public domain). 10 s from 0:00.6, faded in and out, mono.
+tune_victory.wav  King's Bounty's victory tune (KB.EXE tune slot 3), rendered as the other tunes are.

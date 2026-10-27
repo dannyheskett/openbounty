@@ -1,8 +1,8 @@
 {
-	"title":	"Glory of Rome",
+	"title":	"The Glory of Rome",
 	"version":	1,
 	"pack_id":	"glory-of-rome",
-	"pack_name":	"Glory of Rome",
+	"pack_name":	"The Glory of Rome",
 	"pack_kind":	"base",
 	"font":	{
 		"file":	"art/font/PressStart2P-Regular.ttf",
@@ -21,12 +21,9 @@
 		"native_h":	504 },
 	"world":	{
 		"language":	"en",
-		"max_army_slots":	5,
 		"clear_keeps_ground":	true,
 		"castle_gate_report":	true,
 		"starting_zone":	"italia",
-		"zone_noun":	"province",
-		"zone_noun_plural":	"provinces",
 		"default_name":	"Hero",
 		"default_options":	[4, 1, 1, 1, 1]
 	},
@@ -88,6 +85,7 @@
 	"combat":	{
 		"morale_as_army_view":	true,
 		"field_obstacle_chance":	12,
+		"guardian_full_band":	true,
 		"morale_chart":	[["N", "N", "N", "N", "N"], ["N", "N", "N", "N", "N"], ["N", "N", "H", "N", "N"], ["L", "N", "L", "H", "N"], ["L", "L", "L", "N", "N"]],
 		"number_names":	[{
 				"min":	500,
@@ -156,6 +154,27 @@
 							"y":	30,
 							"tile":	"\\xcc"
 						}]
+				}, {
+					"id":	"sibyl",
+					"x":	34,
+					"y":	51,
+					"scene":	"art/scenes/sibyl.png",
+					"title":	"The Sibyl's Cave",
+					"hint":	"A wall of rock seals the Sibyl's cave. Her priest will have it cut away for an offering of 1500 gold to Apollo.",
+					"body":	"The priest takes your offering, and the last of the rock is cut away. Deep in the cave the Sibyl's lamp still burns, and beside it lie the gifts of a hundred years of pilgrims.",
+					"requires":	[{
+							"gold":	1500,
+							"consume":	true
+						}],
+					"effects":	[{
+							"x":	35,
+							"y":	51,
+							"tile":	"."
+						}, {
+							"x":	36,
+							"y":	51,
+							"tile":	"."
+						}]
 				}],
 			"is_home":	true,
 			"home_spawn":	{
@@ -178,12 +197,12 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["peasants", "sprites", "orcs", "skeletons", "wolves", "gnomes"],
+				"preferred_troops":	["coloni", "lares", "baleares", "larvae", "lupi", "fauni"],
 				"dwelling_range":	[0, 14]
 			},
 			"signs":	[{
-					"x":	30,
-					"y":	31,
+					"x":	31,
+					"y":	32,
 					"id":	"sign_italia_1",
 					"title":	"The Rubicon",
 					"body":	"A sacred boundary. No army crosses the Rubicon without the gods' leave; only a pontifex may bridge it."
@@ -324,12 +343,12 @@
 				}],
 			"chests":	[{
 					"id":	"chest_1",
-					"x":	9,
-					"y":	13
+					"x":	11,
+					"y":	14
 				}, {
 					"id":	"chest_2",
-					"x":	27,
-					"y":	13
+					"x":	25,
+					"y":	14
 				}, {
 					"id":	"chest_3",
 					"x":	27,
@@ -486,15 +505,223 @@
 					"artifact":	"articles"
 				}, {
 					"id":	"chest_cove_mountain",
-					"x":	38,
+					"x":	39,
 					"y":	54,
 					"fixed":	true,
 					"artifact":	"book"
 				}, {
 					"id":	"chest_cove_forest",
-					"x":	49,
+					"x":	47,
 					"y":	60,
 					"fixed":	true
+				}, {
+					"id":	"chest_capri",
+					"x":	29,
+					"y":	71,
+					"fixed":	true,
+					"gold":	4000
+				}, {
+					"id":	"chest_sibyl",
+					"x":	37,
+					"y":	51,
+					"fixed":	true,
+					"gold":	4000
+				}, {
+					"id":	"chest_40",
+					"x":	17,
+					"y":	6
+				}, {
+					"id":	"chest_41",
+					"x":	26,
+					"y":	5
+				}, {
+					"id":	"chest_42",
+					"x":	12,
+					"y":	12
+				}, {
+					"id":	"chest_43",
+					"x":	19,
+					"y":	13
+				}, {
+					"id":	"chest_44",
+					"x":	3,
+					"y":	10
+				}, {
+					"id":	"chest_45",
+					"x":	22,
+					"y":	3
+				}, {
+					"id":	"chest_46",
+					"x":	4,
+					"y":	6
+				}, {
+					"id":	"chest_47",
+					"x":	29,
+					"y":	3
+				}, {
+					"id":	"chest_48",
+					"x":	3,
+					"y":	15
+				}, {
+					"id":	"chest_49",
+					"x":	21,
+					"y":	26
+				}, {
+					"id":	"chest_50",
+					"x":	8,
+					"y":	22
+				}, {
+					"id":	"chest_51",
+					"x":	4,
+					"y":	24
+				}, {
+					"id":	"chest_52",
+					"x":	16,
+					"y":	19
+				}, {
+					"id":	"chest_53",
+					"x":	26,
+					"y":	23
+				}, {
+					"id":	"chest_54",
+					"x":	19,
+					"y":	27
+				}, {
+					"id":	"chest_55",
+					"x":	7,
+					"y":	33
+				}, {
+					"id":	"chest_56",
+					"x":	6,
+					"y":	28
+				}, {
+					"id":	"chest_57",
+					"x":	27,
+					"y":	39
+				}, {
+					"id":	"chest_58",
+					"x":	20,
+					"y":	43
+				}, {
+					"id":	"chest_59",
+					"x":	27,
+					"y":	30
+				}, {
+					"id":	"chest_60",
+					"x":	32,
+					"y":	35
+				}, {
+					"id":	"chest_61",
+					"x":	37,
+					"y":	47
+				}, {
+					"id":	"chest_62",
+					"x":	30,
+					"y":	48
+				}, {
+					"id":	"chest_63",
+					"x":	40,
+					"y":	48
+				}, {
+					"id":	"chest_64",
+					"x":	42,
+					"y":	72
+				}, {
+					"id":	"chest_65",
+					"x":	34,
+					"y":	67
+				}, {
+					"id":	"chest_66",
+					"x":	31,
+					"y":	64
+				}, {
+					"id":	"chest_67",
+					"x":	42,
+					"y":	67
+				}, {
+					"id":	"chest_68",
+					"x":	54,
+					"y":	71
+				}, {
+					"id":	"chest_69",
+					"x":	47,
+					"y":	68
+				}, {
+					"id":	"chest_70",
+					"x":	57,
+					"y":	70
+				}, {
+					"id":	"chest_71",
+					"x":	53,
+					"y":	94
+				}, {
+					"id":	"chest_72",
+					"x":	53,
+					"y":	74
+				}, {
+					"id":	"chest_73",
+					"x":	53,
+					"y":	82
+				}, {
+					"id":	"chest_74",
+					"x":	54,
+					"y":	91
+				}, {
+					"id":	"chest_75",
+					"x":	48,
+					"y":	89
+				}, {
+					"id":	"chest_76",
+					"x":	16,
+					"y":	76
+				}, {
+					"id":	"chest_77",
+					"x":	13,
+					"y":	77
+				}, {
+					"id":	"chest_78",
+					"x":	11,
+					"y":	61
+				}, {
+					"id":	"chest_79",
+					"x":	10,
+					"y":	50
+				}, {
+					"id":	"chest_80",
+					"x":	10,
+					"y":	56
+				}, {
+					"id":	"chest_81",
+					"x":	39,
+					"y":	107
+				}, {
+					"id":	"chest_82",
+					"x":	40,
+					"y":	120
+				}, {
+					"id":	"chest_83",
+					"x":	34,
+					"y":	114
+				}, {
+					"id":	"chest_84",
+					"x":	45,
+					"y":	125
+				}, {
+					"id":	"chest_85",
+					"x":	46,
+					"y":	119
+				}, {
+					"id":	"chest_86",
+					"x":	40,
+					"y":	114
+				}, {
+					"id":	"chest_87",
+					"x":	42,
+					"y":	106
+				}, {
+					"id":	"chest_88",
+					"x":	50,
+					"y":	74
 				}],
 			"artifacts":	[],
 			"dwellings":	[],
@@ -504,19 +731,19 @@
 					"id":	"guardian_calabria",
 					"static":	true,
 					"army":	[{
-						"troop":	"barbarians",
+						"troop":	"sarmatae",
 						"count":	4
 					}, {
-						"troop":	"trolls",
+						"troop":	"antaei",
 						"count":	2
 					}, {
-						"troop":	"ogres",
+						"troop":	"cyclopes",
 						"count":	2
 					}, {
-						"troop":	"knights",
+						"troop":	"praetoriani",
 						"count":	1
 					}, {
-						"troop":	"archers",
+						"troop":	"velites",
 						"count":	4
 					}]
 				}, {
@@ -525,13 +752,13 @@
 					"id":	"guardian_sardinia_1",
 					"static":	true,
 					"army":	[{
-						"troop":	"militia",
+						"troop":	"tirones",
 						"count":	12
 					}, {
-						"troop":	"orcs",
+						"troop":	"baleares",
 						"count":	8
 					}, {
-						"troop":	"archers",
+						"troop":	"velites",
 						"count":	4
 					}]
 				}, {
@@ -540,13 +767,13 @@
 					"id":	"guardian_sardinia_2",
 					"static":	true,
 					"army":	[{
-						"troop":	"pikemen",
+						"troop":	"hastati",
 						"count":	12
 					}, {
-						"troop":	"nomads",
+						"troop":	"numidae",
 						"count":	8
 					}, {
-						"troop":	"ghosts",
+						"troop":	"manes",
 						"count":	6
 					}]
 				}, {
@@ -555,16 +782,16 @@
 					"id":	"guardian_sardinia_3",
 					"static":	true,
 					"army":	[{
-						"troop":	"ogres",
+						"troop":	"cyclopes",
 						"count":	8
 					}, {
-						"troop":	"trolls",
+						"troop":	"antaei",
 						"count":	6
 					}, {
-						"troop":	"vampires",
+						"troop":	"striges",
 						"count":	5
 					}, {
-						"troop":	"knights",
+						"troop":	"praetoriani",
 						"count":	4
 					}]
 				}, {
@@ -664,12 +891,12 @@
 					"y":	82,
 					"id":	"wandering_army_023"
 				}, {
-					"x":	49,
-					"y":	60,
+					"x":	48,
+					"y":	58,
 					"id":	"wandering_army_024"
 				}, {
 					"x":	13,
-					"y":	68,
+					"y":	70,
 					"id":	"wandering_army_025"
 				}, {
 					"x":	15,
@@ -691,6 +918,35 @@
 					"x":	45,
 					"y":	122,
 					"id":	"wandering_army_030"
+				}, {
+					"x":	31,
+					"y":	71,
+					"id":	"guardian_capri",
+					"static":	true,
+					"army":	[{
+							"troop":	"manes",
+							"count":	6
+						}, {
+							"troop":	"sarmatae",
+							"count":	3
+						}, {
+							"troop":	"velites",
+							"count":	6
+						}, {
+							"troop":	"cyclopes",
+							"count":	2
+						}, {
+							"troop":	"hastati",
+							"count":	4
+						}]
+				}, {
+					"x":	6,
+					"y":	10,
+					"id":	"wandering_army_031"
+				}, {
+					"x":	53,
+					"y":	97,
+					"id":	"wandering_army_032"
 				}]
 		}, {
 			"id":	"galliae",
@@ -711,6 +967,10 @@
 							"artifact":	"anchor"
 						}],
 					"effects":	[{
+							"x":	13,
+							"y":	29,
+							"tile":	"."
+						}, {
 							"x":	14,
 							"y":	29,
 							"tile":	"."
@@ -723,11 +983,31 @@
 							"y":	29,
 							"tile":	"\\xd2"
 						}]
+				}, {
+					"id":	"oppidum",
+					"x":	54,
+					"y":	33,
+					"scene":	"art/scenes/oppidum.png",
+					"title":	"The Oppidum",
+					"hint":	"The hill fort's gate is barred. Its chieftain will open it to no one but the bearer of a decree of the Senate itself.",
+					"body":	"You show the chieftain the Senatus Consultum, and he knows the Senate's seal. The gate swings open, and the fort's treasury is yours by right.",
+					"requires":	[{
+							"artifact":	"articles"
+						}],
+					"effects":	[{
+							"x":	54,
+							"y":	34,
+							"tile":	"."
+						}, {
+							"x":	54,
+							"y":	35,
+							"tile":	"."
+						}]
 				}],
 			"town_backdrop":	"art/ui/backdrop_town_galliae.png",
 			"treasure_scene":	"art/scenes/treasure_galliae.png",
 			"tile_set":	"galliae",
-			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06", "grass_07", "grass_08", "grass_09", "grass_10", "grass_variant", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_w", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18"],
+			"tile_set_arts":	["bridge_ew", "bridge_river_ew", "bridge_river_ns", "bridge_ns", "forest", "forest_edge_nw", "forest_edge_sw", "forest_edge_ne", "forest_edge_es", "forest_inner_es", "forest_inner_ne", "forest_inner_sw", "forest_inner_nw", "forest_edge_e", "forest_edge_w", "forest_edge_n", "forest_edge_s", "forest_edge_ns", "forest_edge_ew", "forest_edge_nes", "forest_edge_esw", "forest_edge_nsw", "forest_edge_new", "forest_edge_nesw", "grass", "mountain", "mountain_edge_nw", "mountain_edge_sw", "mountain_edge_ne", "mountain_edge_es", "mountain_inner_es", "mountain_inner_ne", "mountain_inner_sw", "mountain_inner_nw", "mountain_edge_e", "mountain_edge_w", "mountain_edge_n", "mountain_edge_s", "mountain_edge_ns", "mountain_edge_ew", "mountain_edge_nes", "mountain_edge_esw", "mountain_edge_nsw", "mountain_edge_new", "mountain_edge_nesw", "river_e", "river_es", "river_ew", "river_forest_e", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_ne", "river_forest_ns", "river_forest_s", "river_forest_sw", "river_forest_w", "river_forest_nw", "river_mountain_e", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_ne", "river_mountain_ns", "river_mountain_s", "river_mountain_sw", "river_mountain_w", "river_mountain_nw", "river_mouth_ne", "river_mouth_es", "river_mouth_nw", "river_mouth_sw", "river_n", "river_ne", "river_ns", "river_s", "river_sw", "river_w", "river_nw", "road_c_ne", "road_c_nw", "road_c_es", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_es", "road_n_sw", "road_ne", "road_diag_ne", "road_ns", "road_diag_nw", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_es", "road_nw", "water", "water_edge_ne", "water_edge_nw", "water_edge_sw", "water_edge_es", "water_inner_es", "water_inner_ne", "water_inner_sw", "water_inner_nw", "water_edge_e", "water_edge_w", "water_edge_n", "water_edge_s", "water_edge_ns", "water_edge_ew", "water_edge_nesw", "forest_fill_ne", "forest_fill_nw", "forest_fill_es", "forest_fill_sw", "mountain_fill_ne", "mountain_fill_nw", "mountain_fill_es", "mountain_fill_sw", "forest_v1", "forest_v2", "mountain_v1", "mountain_v2", "fields_plough", "fields_wheat", "fields_plough_edge_nw", "fields_plough_edge_sw", "fields_plough_edge_ne", "fields_plough_edge_es", "fields_plough_inner_es", "fields_plough_inner_ne", "fields_plough_inner_sw", "fields_plough_inner_nw", "fields_plough_edge_e", "fields_plough_edge_w", "fields_plough_edge_n", "fields_plough_edge_s", "fields_wheat_edge_nw", "fields_wheat_edge_sw", "fields_wheat_edge_ne", "fields_wheat_edge_es", "fields_wheat_inner_es", "fields_wheat_inner_ne", "fields_wheat_inner_sw", "fields_wheat_inner_nw", "fields_wheat_edge_e", "fields_wheat_edge_w", "fields_wheat_edge_n", "fields_wheat_edge_s", "forest_apron_n_v1", "forest_apron_n_v2", "forest_apron_n_v3", "forest_apron_e_v1", "forest_apron_e_v2", "forest_apron_e_v3", "forest_apron_s_v1", "forest_apron_s_v2", "forest_apron_s_v3", "forest_apron_w_v1", "forest_apron_w_v2", "forest_apron_w_v3", "mountain_apron_n_v1", "mountain_apron_n_v2", "mountain_apron_n_v3", "mountain_apron_e_v1", "mountain_apron_e_v2", "mountain_apron_e_v3", "mountain_apron_s_v1", "mountain_apron_s_v2", "mountain_apron_s_v3", "mountain_apron_w_v1", "mountain_apron_w_v2", "mountain_apron_w_v3", "detail_v1", "detail_v2", "detail_v3", "detail_v4", "mountain_edge_e_v1", "mountain_edge_e_v2", "mountain_edge_w_v1", "mountain_edge_w_v2"],
 			"army_art":	"wandering_army_galliae",
 			"width":	64,
 			"height":	64,
@@ -739,12 +1019,12 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["dwarves", "zombies", "druids", "elves", "ogres", "elves"],
+				"preferred_troops":	["ligures", "lemures", "druidae", "silvani", "cyclopes", "silvani"],
 				"dwelling_range":	[1, 14]
 			},
 			"chests":	[{
 					"id":	"chest_sein",
-					"x":	13,
+					"x":	12,
 					"y":	29,
 					"fixed":	true,
 					"gold":	5000
@@ -830,8 +1110,8 @@
 					"y":	25
 				}, {
 					"id":	"chest_21",
-					"x":	60,
-					"y":	27
+					"x":	62,
+					"y":	28
 				}, {
 					"id":	"chest_22",
 					"x":	60,
@@ -868,6 +1148,158 @@
 					"id":	"chest_30",
 					"x":	16,
 					"y":	60
+				}, {
+					"id":	"chest_grove",
+					"x":	59,
+					"y":	25,
+					"fixed":	true,
+					"gold":	6000
+				}, {
+					"id":	"chest_oppidum",
+					"x":	54,
+					"y":	36,
+					"fixed":	true,
+					"gold":	6000
+				}, {
+					"id":	"chest_31",
+					"x":	17,
+					"y":	4
+				}, {
+					"id":	"chest_32",
+					"x":	28,
+					"y":	12
+				}, {
+					"id":	"chest_33",
+					"x":	17,
+					"y":	18
+				}, {
+					"id":	"chest_34",
+					"x":	16,
+					"y":	15
+				}, {
+					"id":	"chest_35",
+					"x":	23,
+					"y":	14
+				}, {
+					"id":	"chest_36",
+					"x":	7,
+					"y":	11
+				}, {
+					"id":	"chest_37",
+					"x":	3,
+					"y":	15
+				}, {
+					"id":	"chest_38",
+					"x":	11,
+					"y":	15
+				}, {
+					"id":	"chest_39",
+					"x":	42,
+					"y":	24
+				}, {
+					"id":	"chest_40",
+					"x":	49,
+					"y":	20
+				}, {
+					"id":	"chest_41",
+					"x":	28,
+					"y":	29
+				}, {
+					"id":	"chest_42",
+					"x":	46,
+					"y":	21
+				}, {
+					"id":	"chest_43",
+					"x":	34,
+					"y":	25
+				}, {
+					"id":	"chest_44",
+					"x":	27,
+					"y":	33
+				}, {
+					"id":	"chest_45",
+					"x":	49,
+					"y":	43
+				}, {
+					"id":	"chest_46",
+					"x":	46,
+					"y":	36
+				}, {
+					"id":	"chest_47",
+					"x":	49,
+					"y":	33
+				}, {
+					"id":	"chest_48",
+					"x":	31,
+					"y":	36
+				}, {
+					"id":	"chest_49",
+					"x":	50,
+					"y":	40
+				}, {
+					"id":	"chest_50",
+					"x":	55,
+					"y":	17
+				}, {
+					"id":	"chest_51",
+					"x":	56,
+					"y":	23
+				}, {
+					"id":	"chest_52",
+					"x":	58,
+					"y":	29
+				}, {
+					"id":	"chest_53",
+					"x":	55,
+					"y":	26
+				}, {
+					"id":	"chest_54",
+					"x":	14,
+					"y":	55
+				}, {
+					"id":	"chest_55",
+					"x":	23,
+					"y":	43
+				}, {
+					"id":	"chest_56",
+					"x":	3,
+					"y":	56
+				}, {
+					"id":	"chest_57",
+					"x":	21,
+					"y":	61
+				}, {
+					"id":	"chest_58",
+					"x":	8,
+					"y":	49
+				}, {
+					"id":	"chest_59",
+					"x":	25,
+					"y":	59
+				}, {
+					"id":	"chest_60",
+					"x":	4,
+					"y":	47
+				}, {
+					"id":	"chest_61",
+					"x":	21,
+					"y":	55
+				}, {
+					"id":	"chest_62",
+					"x":	25,
+					"y":	54
+				}, {
+					"id":	"chest_63",
+					"x":	9,
+					"y":	60
+				}, {
+					"id":	"chest_64",
+					"x":	5,
+					"y":	43
+				}, {
+					"id":	"chest_65",
+					"x":	20,
+					"y":	4
 				}],
 			"signs":	[{
 				"x":	46,
@@ -974,16 +1406,16 @@
 					"id":	"guardian_hadrian",
 					"static":	true,
 					"army":	[{
-						"troop":	"dwarves",
+						"troop":	"ligures",
 						"count":	12
 					}, {
-						"troop":	"barbarians",
+						"troop":	"sarmatae",
 						"count":	10
 					}, {
-						"troop":	"elves",
+						"troop":	"silvani",
 						"count":	8
 					}, {
-						"troop":	"druids",
+						"troop":	"druidae",
 						"count":	6
 					}]
 				}, {
@@ -992,16 +1424,16 @@
 					"id":	"guardian_rhenus",
 					"static":	true,
 					"army":	[{
-						"troop":	"barbarians",
+						"troop":	"sarmatae",
 						"count":	15
 					}, {
-						"troop":	"trolls",
+						"troop":	"antaei",
 						"count":	8
 					}, {
-						"troop":	"ogres",
+						"troop":	"cyclopes",
 						"count":	6
 					}, {
-						"troop":	"cavalry",
+						"troop":	"equites",
 						"count":	6
 					}]
 				}, {
@@ -1060,6 +1492,67 @@
 					"x":	17,
 					"y":	48,
 					"id":	"wandering_army_013"
+				}, {
+					"x":	59,
+					"y":	27,
+					"id":	"guardian_grove",
+					"static":	true,
+					"army":	[{
+							"troop":	"druidae",
+							"count":	8
+						}, {
+							"troop":	"antaei",
+							"count":	6
+						}, {
+							"troop":	"sarmatae",
+							"count":	6
+						}, {
+							"troop":	"silvani",
+							"count":	10
+						}, {
+							"troop":	"lupi",
+							"count":	12
+						}]
+				}, {
+					"x":	29,
+					"y":	17,
+					"id":	"wandering_army_014"
+				}, {
+					"x":	10,
+					"y":	10,
+					"id":	"wandering_army_015"
+				}, {
+					"x":	49,
+					"y":	30,
+					"id":	"wandering_army_016"
+				}, {
+					"x":	41,
+					"y":	27,
+					"id":	"wandering_army_017"
+				}, {
+					"x":	30,
+					"y":	32,
+					"id":	"wandering_army_018"
+				}, {
+					"x":	34,
+					"y":	35,
+					"id":	"wandering_army_019"
+				}, {
+					"x":	63,
+					"y":	22,
+					"id":	"wandering_army_020"
+				}, {
+					"x":	22,
+					"y":	50,
+					"id":	"wandering_army_021"
+				}, {
+					"x":	28,
+					"y":	46,
+					"id":	"wandering_army_022"
+				}, {
+					"x":	13,
+					"y":	60,
+					"id":	"wandering_army_023"
 				}]
 		}, {
 			"id":	"africa",
@@ -1081,11 +1574,32 @@
 					"effects":	[{
 							"reveal":	true
 						}]
+				}, {
+					"id":	"tophet",
+					"x":	21,
+					"y":	12,
+					"scene":	"art/scenes/tophet.png",
+					"title":	"The Tophet of Carthage",
+					"hint":	"Carved stelae crowd a sanctuary sealed in the rock. Its keepers will roll the stone aside for an offering of 2000 gold.",
+					"body":	"The keepers take your gold and roll the stone aside. Among the stelae lie the offerings of generations, and the keepers swear Baal will not miss them.",
+					"requires":	[{
+							"gold":	2000,
+							"consume":	true
+						}],
+					"effects":	[{
+							"x":	21,
+							"y":	11,
+							"tile":	"."
+						}, {
+							"x":	21,
+							"y":	10,
+							"tile":	"."
+						}]
 				}],
 			"town_backdrop":	"art/ui/backdrop_town_africa.png",
 			"treasure_scene":	"art/scenes/treasure_africa.png",
 			"tile_set":	"africa",
-			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_01", "desert_edge_02", "desert_edge_03", "desert_edge_04", "desert_edge_05", "desert_edge_06", "desert_edge_07", "desert_edge_08", "desert_edge_09", "desert_edge_10", "desert_edge_11", "desert_edge_12", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06", "grass_07", "grass_08", "grass_09", "grass_10", "grass_variant", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_w", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18"],
+			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_nw", "desert_edge_sw", "desert_edge_ne", "desert_edge_es", "desert_inner_es", "desert_inner_ne", "desert_inner_sw", "desert_inner_nw", "desert_edge_e", "desert_edge_w", "desert_edge_n", "desert_edge_s", "forest", "forest_edge_nw", "forest_edge_sw", "forest_edge_ne", "forest_edge_es", "forest_inner_es", "forest_inner_ne", "forest_inner_sw", "forest_inner_nw", "forest_edge_e", "forest_edge_w", "forest_edge_n", "forest_edge_s", "forest_edge_ns", "forest_edge_ew", "forest_edge_nes", "forest_edge_esw", "forest_edge_nsw", "forest_edge_new", "forest_edge_nesw", "grass", "mountain", "mountain_edge_nw", "mountain_edge_sw", "mountain_edge_ne", "mountain_edge_es", "mountain_inner_es", "mountain_inner_ne", "mountain_inner_sw", "mountain_inner_nw", "mountain_edge_e", "mountain_edge_w", "mountain_edge_n", "mountain_edge_s", "mountain_edge_ns", "mountain_edge_ew", "mountain_edge_nes", "mountain_edge_esw", "mountain_edge_nsw", "mountain_edge_new", "mountain_edge_nesw", "river_e", "river_es", "river_ew", "river_forest_e", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_ne", "river_forest_ns", "river_forest_s", "river_forest_sw", "river_forest_w", "river_forest_nw", "river_mountain_e", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_ne", "river_mountain_ns", "river_mountain_s", "river_mountain_sw", "river_mountain_w", "river_mountain_nw", "river_mouth_ne", "river_mouth_es", "river_mouth_nw", "river_mouth_sw", "river_n", "river_ne", "river_ns", "river_s", "river_sw", "river_w", "river_nw", "road_c_ne", "road_c_nw", "road_c_es", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_es", "road_n_sw", "road_ne", "road_diag_ne", "road_ns", "road_diag_nw", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_es", "road_nw", "water", "water_edge_ne", "water_edge_nw", "water_edge_sw", "water_edge_es", "water_inner_es", "water_inner_ne", "water_inner_sw", "water_inner_nw", "water_edge_e", "water_edge_w", "water_edge_n", "water_edge_s", "water_edge_ns", "water_edge_ew", "water_edge_nesw", "water_sand_edge_ne", "water_sand_edge_nw", "water_sand_edge_sw", "water_sand_edge_es", "water_sand_inner_es", "water_sand_inner_ne", "water_sand_inner_sw", "water_sand_inner_nw", "water_sand_edge_e", "water_sand_edge_w", "water_sand_edge_n", "water_sand_edge_s", "water_sand_edge_ns", "water_sand_edge_ew", "water_sand_edge_nesw", "mountain_sand_edge_nw", "mountain_sand_edge_sw", "mountain_sand_edge_ne", "mountain_sand_edge_es", "mountain_sand_inner_es", "mountain_sand_inner_ne", "mountain_sand_inner_sw", "mountain_sand_inner_nw", "mountain_sand_edge_e", "mountain_sand_edge_w", "mountain_sand_edge_n", "mountain_sand_edge_s", "forest_sand_edge_nw", "forest_sand_edge_sw", "forest_sand_edge_ne", "forest_sand_edge_es", "forest_sand_inner_es", "forest_sand_inner_ne", "forest_sand_edge_e", "forest_sand_edge_w", "forest_sand_edge_n", "forest_sand_edge_s", "forest_fill_ne", "forest_fill_nw", "forest_fill_es", "forest_fill_sw", "mountain_fill_ne", "mountain_fill_nw", "mountain_fill_es", "mountain_fill_sw", "forest_sand_fill_ne", "forest_sand_fill_nw", "forest_sand_fill_es", "forest_sand_fill_sw", "mountain_sand_fill_ne", "mountain_sand_fill_nw", "mountain_sand_fill_es", "mountain_sand_fill_sw", "forest_v1", "forest_v2", "mountain_v1", "mountain_v2", "fields_plough", "fields_wheat", "fields_plough_edge_nw", "fields_plough_edge_sw", "fields_plough_edge_ne", "fields_plough_edge_es", "fields_plough_inner_es", "fields_plough_inner_ne", "fields_plough_inner_sw", "fields_plough_inner_nw", "fields_plough_edge_e", "fields_plough_edge_w", "fields_plough_edge_n", "fields_plough_edge_s", "fields_wheat_edge_nw", "fields_wheat_edge_sw", "fields_wheat_edge_ne", "fields_wheat_edge_es", "fields_wheat_inner_es", "fields_wheat_inner_ne", "fields_wheat_inner_sw", "fields_wheat_inner_nw", "fields_wheat_edge_e", "fields_wheat_edge_w", "fields_wheat_edge_n", "fields_wheat_edge_s", "forest_apron_n_v1", "forest_apron_n_v2", "forest_apron_n_v3", "forest_apron_e_v1", "forest_apron_e_v2", "forest_apron_e_v3", "forest_apron_s_v1", "forest_apron_s_v2", "forest_apron_s_v3", "forest_apron_w_v1", "forest_apron_w_v2", "forest_apron_w_v3", "mountain_apron_n_v1", "mountain_apron_n_v2", "mountain_apron_n_v3", "mountain_apron_e_v1", "mountain_apron_e_v2", "mountain_apron_e_v3", "mountain_apron_s_v1", "mountain_apron_s_v2", "mountain_apron_s_v3", "mountain_apron_w_v1", "mountain_apron_w_v2", "mountain_apron_w_v3", "detail_v1", "detail_v2", "detail_v3", "detail_v4", "mountain_edge_e_v1", "mountain_edge_e_v2", "mountain_edge_w_v1", "mountain_edge_w_v2"],
 			"army_art":	"wandering_army_africa",
 			"width":	64,
 			"height":	28,
@@ -1097,7 +1611,7 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["ghosts", "barbarians", "trolls", "nomads"],
+				"preferred_troops":	["manes", "sarmatae", "antaei", "numidae"],
 				"dwelling_range":	[2, 14]
 			},
 			"chests":	[{
@@ -1122,12 +1636,12 @@
 					"y":	10
 				}, {
 					"id":	"chest_6",
-					"x":	12,
+					"x":	13,
 					"y":	12
 				}, {
 					"id":	"chest_7",
-					"x":	19,
-					"y":	10
+					"x":	16,
+					"y":	11
 				}, {
 					"id":	"chest_8",
 					"x":	23,
@@ -1170,8 +1684,8 @@
 					"y":	21
 				}, {
 					"id":	"chest_18",
-					"x":	49,
-					"y":	23
+					"x":	50,
+					"y":	24
 				}, {
 					"id":	"chest_19",
 					"x":	49,
@@ -1220,6 +1734,62 @@
 					"id":	"chest_30",
 					"x":	24,
 					"y":	21
+				}, {
+					"id":	"chest_oasis",
+					"x":	12,
+					"y":	23,
+					"fixed":	true,
+					"gold":	8000
+				}, {
+					"id":	"chest_tophet",
+					"x":	21,
+					"y":	9,
+					"fixed":	true,
+					"gold":	8000
+				}, {
+					"id":	"chest_31",
+					"x":	14,
+					"y":	5
+				}, {
+					"id":	"chest_32",
+					"x":	18,
+					"y":	12
+				}, {
+					"id":	"chest_33",
+					"x":	26,
+					"y":	19
+				}, {
+					"id":	"chest_34",
+					"x":	57,
+					"y":	25
+				}, {
+					"id":	"chest_35",
+					"x":	0,
+					"y":	25
+				}, {
+					"id":	"chest_36",
+					"x":	11,
+					"y":	15
+				}, {
+					"id":	"chest_37",
+					"x":	13,
+					"y":	16
+				}, {
+					"id":	"chest_38",
+					"x":	26,
+					"y":	23
+				}, {
+					"id":	"chest_39",
+					"x":	21,
+					"y":	15
+				}, {
+					"id":	"chest_40",
+					"x":	1,
+					"y":	22
+				}, {
+					"id":	"chest_41",
+					"x":	14,
+					"y":	7
 				}],
 			"signs":	[{
 					"x":	23,
@@ -1336,16 +1906,16 @@
 					"id":	"guardian_mulucha",
 					"static":	true,
 					"army":	[{
-							"troop":	"nomads",
+							"troop":	"numidae",
 							"count":	15
 						}, {
-							"troop":	"orcs",
+							"troop":	"baleares",
 							"count":	12
 						}, {
-							"troop":	"archers",
+							"troop":	"velites",
 							"count":	10
 						}, {
-							"troop":	"cavalry",
+							"troop":	"equites",
 							"count":	6
 						}]
 				}, {
@@ -1354,16 +1924,16 @@
 					"id":	"guardian_amun",
 					"static":	true,
 					"army":	[{
-							"troop":	"ghosts",
+							"troop":	"manes",
 							"count":	12
 						}, {
-							"troop":	"skeletons",
+							"troop":	"larvae",
 							"count":	15
 						}, {
-							"troop":	"zombies",
+							"troop":	"lemures",
 							"count":	12
 						}, {
-							"troop":	"vampires",
+							"troop":	"striges",
 							"count":	5
 						}]
 				}, {
@@ -1411,8 +1981,8 @@
 					"y":	23,
 					"id":	"wandering_army_010"
 				}, {
-					"x":	28,
-					"y":	20,
+					"x":	30,
+					"y":	19,
 					"id":	"wandering_army_011"
 				}, {
 					"x":	7,
@@ -1422,6 +1992,31 @@
 					"x":	16,
 					"y":	22,
 					"id":	"wandering_army_013"
+				}, {
+					"x":	12,
+					"y":	25,
+					"id":	"guardian_oasis",
+					"static":	true,
+					"army":	[{
+							"troop":	"numidae",
+							"count":	12
+						}, {
+							"troop":	"equites",
+							"count":	6
+						}, {
+							"troop":	"velites",
+							"count":	8
+						}, {
+							"troop":	"baleares",
+							"count":	10
+						}, {
+							"troop":	"elephanti",
+							"count":	1
+						}]
+				}, {
+					"x":	27,
+					"y":	26,
+					"id":	"wandering_army_014"
 				}]
 		}, {
 			"id":	"oriens",
@@ -1431,11 +2026,32 @@
 			"town_backdrop":	"art/ui/backdrop_town_oriens.png",
 			"treasure_scene":	"art/scenes/treasure_oriens.png",
 			"tile_set":	"oriens",
-			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_01", "desert_edge_02", "desert_edge_03", "desert_edge_04", "desert_edge_05", "desert_edge_06", "desert_edge_07", "desert_edge_08", "desert_edge_09", "desert_edge_10", "desert_edge_11", "desert_edge_12", "forest", "forest_edge_01", "forest_edge_02", "forest_edge_03", "forest_edge_04", "forest_edge_05", "forest_edge_06", "forest_edge_07", "forest_edge_08", "forest_edge_09", "forest_edge_10", "forest_edge_11", "forest_edge_12", "forest_edge_13", "forest_edge_14", "forest_edge_15", "forest_edge_16", "forest_edge_17", "forest_edge_18", "forest_edge_19", "grass", "grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06", "grass_07", "grass_08", "grass_09", "grass_10", "grass_variant", "mountain", "mountain_edge_01", "mountain_edge_02", "mountain_edge_03", "mountain_edge_04", "mountain_edge_05", "mountain_edge_06", "mountain_edge_07", "mountain_edge_08", "mountain_edge_09", "mountain_edge_10", "mountain_edge_11", "mountain_edge_12", "mountain_edge_13", "mountain_edge_14", "mountain_edge_15", "mountain_edge_16", "mountain_edge_17", "mountain_edge_18", "mountain_edge_19", "river_c_ne", "river_c_nw", "river_c_se", "river_c_sw", "river_e", "river_e_nw", "river_e_sw", "river_es", "river_ew", "river_forest_c_ne", "river_forest_c_nw", "river_forest_c_se", "river_forest_c_sw", "river_forest_e", "river_forest_e_nw", "river_forest_e_sw", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_n_se", "river_forest_n_sw", "river_forest_ne", "river_forest_nesw", "river_forest_ns", "river_forest_nwse", "river_forest_s", "river_forest_s_ne", "river_forest_s_nw", "river_forest_sw", "river_forest_w", "river_forest_w_ne", "river_forest_w_se", "river_forest_wn", "river_mountain_c_ne", "river_mountain_c_nw", "river_mountain_c_se", "river_mountain_c_sw", "river_mountain_e", "river_mountain_e_nw", "river_mountain_e_sw", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_n_se", "river_mountain_n_sw", "river_mountain_ne", "river_mountain_nesw", "river_mountain_ns", "river_mountain_nwse", "river_mountain_s", "river_mountain_s_ne", "river_mountain_s_nw", "river_mountain_sw", "river_mountain_w", "river_mountain_w_ne", "river_mountain_w_se", "river_mountain_wn", "river_mouth_e", "river_mouth_w", "river_n", "river_n_se", "river_n_sw", "river_ne", "river_nesw", "river_ns", "river_nwse", "river_s", "river_s_ne", "river_s_nw", "river_sw", "river_w", "river_w_ne", "river_w_se", "river_wn", "road_c_ne", "road_c_nw", "road_c_se", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_se", "road_n_sw", "road_ne", "road_nesw", "road_ns", "road_nwse", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_se", "road_wn", "water", "water_edge_00", "water_edge_01", "water_edge_02", "water_edge_03", "water_edge_04", "water_edge_05", "water_edge_06", "water_edge_07", "water_edge_08", "water_edge_09", "water_edge_10", "water_edge_11", "water_edge_12", "water_edge_13", "water_edge_18"],
+			"tile_set_arts":	["bridge_river_ew", "bridge_river_ns", "desert", "desert_edge_nw", "desert_edge_sw", "desert_edge_ne", "desert_edge_es", "desert_inner_es", "desert_inner_ne", "desert_inner_sw", "desert_inner_nw", "desert_edge_e", "desert_edge_w", "desert_edge_n", "desert_edge_s", "forest", "forest_edge_nw", "forest_edge_sw", "forest_edge_ne", "forest_edge_es", "forest_inner_es", "forest_inner_ne", "forest_inner_sw", "forest_inner_nw", "forest_edge_e", "forest_edge_w", "forest_edge_n", "forest_edge_s", "forest_edge_ns", "forest_edge_ew", "forest_edge_nes", "forest_edge_esw", "forest_edge_nsw", "forest_edge_new", "forest_edge_nesw", "grass", "mountain", "mountain_edge_nw", "mountain_edge_sw", "mountain_edge_ne", "mountain_edge_es", "mountain_inner_es", "mountain_inner_ne", "mountain_inner_sw", "mountain_inner_nw", "mountain_edge_e", "mountain_edge_w", "mountain_edge_n", "mountain_edge_s", "mountain_edge_ns", "mountain_edge_ew", "mountain_edge_nes", "mountain_edge_esw", "mountain_edge_nsw", "mountain_edge_new", "mountain_edge_nesw", "river_e", "river_es", "river_ew", "river_forest_e", "river_forest_es", "river_forest_ew", "river_forest_n", "river_forest_ne", "river_forest_ns", "river_forest_s", "river_forest_sw", "river_forest_w", "river_forest_nw", "river_mountain_e", "river_mountain_es", "river_mountain_ew", "river_mountain_n", "river_mountain_ne", "river_mountain_ns", "river_mountain_s", "river_mountain_sw", "river_mountain_w", "river_mountain_nw", "river_mouth_ne", "river_mouth_es", "river_mouth_nw", "river_mouth_sw", "river_n", "river_ne", "river_ns", "river_s", "river_sw", "river_w", "river_nw", "road_c_ne", "road_c_nw", "road_c_es", "road_c_sw", "road_e", "road_e_nw", "road_e_sw", "road_es", "road_ew", "road_n", "road_n_es", "road_n_sw", "road_ne", "road_diag_ne", "road_ns", "road_diag_nw", "road_s", "road_s_ne", "road_s_nw", "road_sw", "road_w", "road_w_ne", "road_w_es", "road_nw", "water", "water_edge_ne", "water_edge_nw", "water_edge_sw", "water_edge_es", "water_inner_es", "water_inner_ne", "water_inner_sw", "water_inner_nw", "water_edge_e", "water_edge_w", "water_edge_n", "water_edge_s", "water_edge_ns", "water_edge_ew", "water_edge_nesw", "water_sand_edge_ne", "water_sand_edge_nw", "water_sand_edge_sw", "water_sand_edge_es", "water_sand_inner_es", "water_sand_inner_ne", "water_sand_inner_sw", "water_sand_inner_nw", "water_sand_edge_e", "water_sand_edge_w", "water_sand_edge_n", "water_sand_edge_s", "water_sand_edge_ns", "water_sand_edge_ew", "water_sand_edge_nesw", "mountain_sand_edge_nw", "mountain_sand_edge_sw", "mountain_sand_edge_ne", "mountain_sand_edge_es", "mountain_sand_inner_es", "mountain_sand_inner_ne", "mountain_sand_inner_sw", "mountain_sand_inner_nw", "mountain_sand_edge_e", "mountain_sand_edge_w", "mountain_sand_edge_n", "mountain_sand_edge_s", "forest_sand_edge_nw", "forest_sand_edge_sw", "forest_sand_edge_ne", "forest_sand_edge_es", "forest_sand_inner_es", "forest_sand_inner_ne", "forest_sand_edge_e", "forest_sand_edge_w", "forest_sand_edge_n", "forest_sand_edge_s", "forest_fill_ne", "forest_fill_nw", "forest_fill_es", "forest_fill_sw", "mountain_fill_ne", "mountain_fill_nw", "mountain_fill_es", "mountain_fill_sw", "forest_sand_fill_ne", "forest_sand_fill_nw", "forest_sand_fill_es", "forest_sand_fill_sw", "mountain_sand_fill_ne", "mountain_sand_fill_nw", "mountain_sand_fill_es", "mountain_sand_fill_sw", "forest_v1", "forest_v2", "mountain_v1", "mountain_v2", "fields_plough", "fields_wheat", "fields_plough_edge_nw", "fields_plough_edge_sw", "fields_plough_edge_ne", "fields_plough_edge_es", "fields_plough_inner_es", "fields_plough_inner_ne", "fields_plough_inner_sw", "fields_plough_inner_nw", "fields_plough_edge_e", "fields_plough_edge_w", "fields_plough_edge_n", "fields_plough_edge_s", "fields_wheat_edge_nw", "fields_wheat_edge_sw", "fields_wheat_edge_ne", "fields_wheat_edge_es", "fields_wheat_inner_es", "fields_wheat_inner_ne", "fields_wheat_inner_sw", "fields_wheat_inner_nw", "fields_wheat_edge_e", "fields_wheat_edge_w", "fields_wheat_edge_n", "fields_wheat_edge_s", "forest_apron_n_v1", "forest_apron_n_v2", "forest_apron_n_v3", "forest_apron_e_v1", "forest_apron_e_v2", "forest_apron_e_v3", "forest_apron_s_v1", "forest_apron_s_v2", "forest_apron_s_v3", "forest_apron_w_v1", "forest_apron_w_v2", "forest_apron_w_v3", "mountain_apron_n_v1", "mountain_apron_n_v2", "mountain_apron_n_v3", "mountain_apron_e_v1", "mountain_apron_e_v2", "mountain_apron_e_v3", "mountain_apron_s_v1", "mountain_apron_s_v2", "mountain_apron_s_v3", "mountain_apron_w_v1", "mountain_apron_w_v2", "mountain_apron_w_v3", "detail_v1", "detail_v2", "detail_v3", "detail_v4", "mountain_edge_e_v1", "mountain_edge_e_v2", "mountain_edge_w_v1", "mountain_edge_w_v2"],
 			"army_art":	"wandering_army_oriens",
 			"width":	64,
 			"height":	44,
 			"neighbors":	["italia", "africa"],
+			"events":	[{
+					"id":	"gordian",
+					"x":	16,
+					"y":	13,
+					"scene":	"art/scenes/gordian.png",
+					"title":	"The Gordian Knot",
+					"hint":	"An old ox cart's yoke is lashed to a post with a knot no one has ever untied. They say whoever looses it will rule all Asia.",
+					"body":	"You draw the Gladius of Mars and cut the knot through in one stroke. The priests of Gordium cry out, then bow, and open the temple treasury to you.",
+					"requires":	[{
+							"artifact":	"sword"
+						}],
+					"effects":	[{
+							"x":	16,
+							"y":	11,
+							"tile":	"."
+						}, {
+							"x":	16,
+							"y":	12,
+							"tile":	"."
+						}]
+				}],
 			"salt":	{
 				"artifacts":	2,
 				"navmaps":	1,
@@ -1443,7 +2059,7 @@
 				"telecaves":	2,
 				"dwellings":	10,
 				"friendly_foes":	5,
-				"preferred_troops":	["giants", "vampires", "archmages", "dragons", "demons"],
+				"preferred_troops":	["gigantes", "striges", "furiae", "dracones", "empusae"],
 				"dwelling_range":	[20, 26]
 			},
 			"chests":	[{
@@ -1468,7 +2084,7 @@
 					"y":	8
 				}, {
 					"id":	"chest_6",
-					"x":	24,
+					"x":	20,
 					"y":	8
 				}, {
 					"id":	"chest_7",
@@ -1516,8 +2132,8 @@
 					"y":	23
 				}, {
 					"id":	"chest_thrace_road",
-					"x":	3,
-					"y":	2,
+					"x":	7,
+					"y":	0,
 					"fixed":	true,
 					"artifact":	"shield"
 				}, {
@@ -1572,6 +2188,250 @@
 					"id":	"chest_30",
 					"x":	60,
 					"y":	11
+				}, {
+					"id":	"chest_siq",
+					"x":	47,
+					"y":	39,
+					"fixed":	true,
+					"gold":	10000
+				}, {
+					"id":	"chest_gordian",
+					"x":	16,
+					"y":	10,
+					"fixed":	true,
+					"gold":	10000
+				}, {
+					"id":	"chest_31",
+					"x":	8,
+					"y":	18
+				}, {
+					"id":	"chest_32",
+					"x":	2,
+					"y":	8
+				}, {
+					"id":	"chest_33",
+					"x":	5,
+					"y":	7
+				}, {
+					"id":	"chest_34",
+					"x":	12,
+					"y":	16
+				}, {
+					"id":	"chest_35",
+					"x":	10,
+					"y":	15
+				}, {
+					"id":	"chest_36",
+					"x":	8,
+					"y":	14
+				}, {
+					"id":	"chest_37",
+					"x":	24,
+					"y":	5
+				}, {
+					"id":	"chest_38",
+					"x":	27,
+					"y":	2
+				}, {
+					"id":	"chest_39",
+					"x":	15,
+					"y":	15
+				}, {
+					"id":	"chest_40",
+					"x":	23,
+					"y":	3
+				}, {
+					"id":	"chest_41",
+					"x":	19,
+					"y":	7
+				}, {
+					"id":	"chest_42",
+					"x":	13,
+					"y":	12
+				}, {
+					"id":	"chest_43",
+					"x":	18,
+					"y":	14
+				}, {
+					"id":	"chest_44",
+					"x":	35,
+					"y":	2
+				}, {
+					"id":	"chest_45",
+					"x":	41,
+					"y":	12
+				}, {
+					"id":	"chest_46",
+					"x":	28,
+					"y":	4
+				}, {
+					"id":	"chest_47",
+					"x":	38,
+					"y":	13
+				}, {
+					"id":	"chest_48",
+					"x":	30,
+					"y":	11
+				}, {
+					"id":	"chest_49",
+					"x":	34,
+					"y":	12
+				}, {
+					"id":	"chest_50",
+					"x":	37,
+					"y":	9
+				}, {
+					"id":	"chest_51",
+					"x":	37,
+					"y":	28
+				}, {
+					"id":	"chest_52",
+					"x":	37,
+					"y":	22
+				}, {
+					"id":	"chest_53",
+					"x":	35,
+					"y":	26
+				}, {
+					"id":	"chest_54",
+					"x":	62,
+					"y":	43
+				}, {
+					"id":	"chest_55",
+					"x":	40,
+					"y":	33
+				}, {
+					"id":	"chest_56",
+					"x":	30,
+					"y":	42
+				}, {
+					"id":	"chest_57",
+					"x":	30,
+					"y":	32
+				}, {
+					"id":	"chest_58",
+					"x":	32,
+					"y":	31
+				}, {
+					"id":	"chest_59",
+					"x":	54,
+					"y":	32
+				}, {
+					"id":	"chest_60",
+					"x":	29,
+					"y":	37
+				}, {
+					"id":	"chest_61",
+					"x":	49,
+					"y":	35
+				}, {
+					"id":	"chest_62",
+					"x":	27,
+					"y":	42
+				}, {
+					"id":	"chest_63",
+					"x":	49,
+					"y":	31
+				}, {
+					"id":	"chest_64",
+					"x":	63,
+					"y":	40
+				}, {
+					"id":	"chest_65",
+					"x":	34,
+					"y":	32
+				}, {
+					"id":	"chest_66",
+					"x":	56,
+					"y":	43
+				}, {
+					"id":	"chest_67",
+					"x":	58,
+					"y":	39
+				}, {
+					"id":	"chest_68",
+					"x":	51,
+					"y":	21
+				}, {
+					"id":	"chest_69",
+					"x":	44,
+					"y":	29
+				}, {
+					"id":	"chest_70",
+					"x":	61,
+					"y":	20
+				}, {
+					"id":	"chest_71",
+					"x":	51,
+					"y":	25
+				}, {
+					"id":	"chest_72",
+					"x":	54,
+					"y":	20
+				}, {
+					"id":	"chest_73",
+					"x":	56,
+					"y":	28
+				}, {
+					"id":	"chest_74",
+					"x":	47,
+					"y":	21
+				}, {
+					"id":	"chest_75",
+					"x":	43,
+					"y":	34
+				}, {
+					"id":	"chest_76",
+					"x":	58,
+					"y":	17
+				}, {
+					"id":	"chest_77",
+					"x":	55,
+					"y":	26
+				}, {
+					"id":	"chest_78",
+					"x":	49,
+					"y":	32
+				}, {
+					"id":	"chest_79",
+					"x":	50,
+					"y":	5
+				}, {
+					"id":	"chest_80",
+					"x":	63,
+					"y":	0
+				}, {
+					"id":	"chest_81",
+					"x":	45,
+					"y":	6
+				}, {
+					"id":	"chest_82",
+					"x":	57,
+					"y":	7
+				}, {
+					"id":	"chest_83",
+					"x":	55,
+					"y":	11
+				}, {
+					"id":	"chest_84",
+					"x":	56,
+					"y":	3
+				}, {
+					"id":	"chest_85",
+					"x":	51,
+					"y":	11
+				}, {
+					"id":	"chest_86",
+					"x":	61,
+					"y":	3
+				}, {
+					"id":	"chest_87",
+					"x":	60,
+					"y":	6
+				}, {
+					"id":	"chest_88",
+					"x":	51,
+					"y":	32
 				}],
 			"signs":	[{
 					"x":	40,
@@ -1618,10 +2478,10 @@
 				}],
 			"dwellings":	[{
 					"id":	"apamea",
-					"x":	37,
-					"y":	26,
+					"x":	35,
+					"y":	28,
 					"kind":	"plains",
-					"troop":	"elephants"
+					"troop":	"elephanti"
 				}],
 			"hero_spawn":	{
 				"x":	5,
@@ -1686,16 +2546,16 @@
 					"id":	"guardian_euphrates",
 					"static":	true,
 					"army":	[{
-							"troop":	"nomads",
+							"troop":	"numidae",
 							"count":	15
 						}, {
 							"troop":	"sagittarii",
 							"count":	10
 						}, {
-							"troop":	"barbarians",
+							"troop":	"sarmatae",
 							"count":	10
 						}, {
-							"troop":	"cavalry",
+							"troop":	"equites",
 							"count":	8
 						}]
 				}, {
@@ -1703,41 +2563,41 @@
 					"y":	8,
 					"id":	"guardian_armenia",
 					"static":	true,
-					"requires_troop":	"elephants",
+					"requires_troop":	"elephanti",
 					"scene":	"art/scenes/pass.png",
 					"title":	"The Armenian Pass",
 					"army":	[{
-							"troop":	"dwarves",
+							"troop":	"ligures",
 							"count":	14
 						}, {
-							"troop":	"barbarians",
+							"troop":	"sarmatae",
 							"count":	10
 						}, {
-							"troop":	"trolls",
+							"troop":	"antaei",
 							"count":	8
 						}, {
-							"troop":	"ogres",
+							"troop":	"cyclopes",
 							"count":	6
 						}]
 				}, {
-					"x":	8,
-					"y":	1,
+					"x":	3,
+					"y":	0,
 					"id":	"guardian_thrace",
 					"static":	true,
 					"army":	[{
-							"troop":	"giants",
+							"troop":	"gigantes",
 							"count":	8
 						}, {
-							"troop":	"trolls",
+							"troop":	"antaei",
 							"count":	10
 						}, {
-							"troop":	"vampires",
+							"troop":	"striges",
 							"count":	8
 						}, {
-							"troop":	"knights",
+							"troop":	"praetoriani",
 							"count":	10
 						}, {
-							"troop":	"archmages",
+							"troop":	"furiae",
 							"count":	8
 						}]
 				}, {
@@ -1769,7 +2629,7 @@
 					"y":	23,
 					"id":	"wandering_army_006"
 				}, {
-					"x":	48,
+					"x":	52,
 					"y":	39,
 					"id":	"wandering_army_007"
 				}, {
@@ -1796,56 +2656,149 @@
 					"x":	54,
 					"y":	0,
 					"id":	"wandering_army_013"
+				}, {
+					"x":	47,
+					"y":	37,
+					"id":	"guardian_siq",
+					"static":	true,
+					"army":	[{
+							"troop":	"gigantes",
+							"count":	4
+						}, {
+							"troop":	"praetoriani",
+							"count":	6
+						}, {
+							"troop":	"equites",
+							"count":	8
+						}, {
+							"troop":	"numidae",
+							"count":	15
+						}, {
+							"troop":	"sagittarii",
+							"count":	12
+						}]
+				}, {
+					"x":	7,
+					"y":	16,
+					"id":	"wandering_army_014"
+				}, {
+					"x":	10,
+					"y":	13,
+					"id":	"wandering_army_015"
+				}, {
+					"x":	20,
+					"y":	3,
+					"id":	"wandering_army_016"
+				}, {
+					"x":	24,
+					"y":	14,
+					"id":	"wandering_army_017"
+				}, {
+					"x":	34,
+					"y":	6,
+					"id":	"wandering_army_018"
+				}, {
+					"x":	41,
+					"y":	7,
+					"id":	"wandering_army_019"
+				}, {
+					"x":	25,
+					"y":	19,
+					"id":	"wandering_army_020"
+				}, {
+					"x":	39,
+					"y":	17,
+					"id":	"wandering_army_021"
+				}, {
+					"x":	40,
+					"y":	36,
+					"id":	"wandering_army_022"
+				}, {
+					"x":	56,
+					"y":	36,
+					"id":	"wandering_army_023"
+				}, {
+					"x":	48,
+					"y":	32,
+					"id":	"wandering_army_024"
+				}, {
+					"x":	56,
+					"y":	32,
+					"id":	"wandering_army_025"
+				}, {
+					"x":	47,
+					"y":	35,
+					"id":	"wandering_army_026"
+				}, {
+					"x":	51,
+					"y":	35,
+					"id":	"wandering_army_027"
+				}, {
+					"x":	45,
+					"y":	28,
+					"id":	"wandering_army_028"
+				}, {
+					"x":	54,
+					"y":	4,
+					"id":	"wandering_army_029"
+				}, {
+					"x":	51,
+					"y":	8,
+					"id":	"wandering_army_030"
+				}, {
+					"x":	57,
+					"y":	10,
+					"id":	"wandering_army_031"
 				}]
 		}],
 	"portraits":	[{
 			"id":	"informant_market",
-			"anim":	["art/portraits/informant_market_00.png", "art/portraits/informant_market_01.png", "art/portraits/informant_market_02.png", "art/portraits/informant_market_03.png", "art/portraits/informant_market_04.png", "art/portraits/informant_market_05.png", "art/portraits/informant_market_06.png", "art/portraits/informant_market_07.png", "art/portraits/informant_market_08.png", "art/portraits/informant_market_09.png", "art/portraits/informant_market_10.png", "art/portraits/informant_market_11.png", "art/portraits/informant_market_12.png", "art/portraits/informant_market_13.png"]
+			"anim":	["art/characters/informant_market_00.png", "art/characters/informant_market_01.png", "art/characters/informant_market_02.png", "art/characters/informant_market_03.png", "art/characters/informant_market_04.png", "art/characters/informant_market_05.png", "art/characters/informant_market_06.png", "art/characters/informant_market_07.png", "art/characters/informant_market_08.png", "art/characters/informant_market_09.png", "art/characters/informant_market_10.png", "art/characters/informant_market_11.png", "art/characters/informant_market_12.png", "art/characters/informant_market_13.png"]
 		}, {
 			"id":	"informant_taverner",
-			"anim":	["art/portraits/informant_taverner_00.png", "art/portraits/informant_taverner_01.png", "art/portraits/informant_taverner_02.png", "art/portraits/informant_taverner_03.png", "art/portraits/informant_taverner_04.png", "art/portraits/informant_taverner_05.png", "art/portraits/informant_taverner_06.png", "art/portraits/informant_taverner_07.png"]
+			"anim":	["art/characters/informant_taverner_00.png", "art/characters/informant_taverner_01.png", "art/characters/informant_taverner_02.png", "art/characters/informant_taverner_03.png", "art/characters/informant_taverner_04.png", "art/characters/informant_taverner_05.png", "art/characters/informant_taverner_06.png", "art/characters/informant_taverner_07.png"]
 		}, {
 			"id":	"informant_veteran",
-			"anim":	["art/portraits/informant_veteran_00.png", "art/portraits/informant_veteran_01.png", "art/portraits/informant_veteran_02.png", "art/portraits/informant_veteran_03.png", "art/portraits/informant_veteran_04.png", "art/portraits/informant_veteran_05.png", "art/portraits/informant_veteran_06.png", "art/portraits/informant_veteran_07.png"]
+			"anim":	["art/characters/informant_veteran_00.png", "art/characters/informant_veteran_01.png", "art/characters/informant_veteran_02.png", "art/characters/informant_veteran_03.png", "art/characters/informant_veteran_04.png", "art/characters/informant_veteran_05.png", "art/characters/informant_veteran_06.png", "art/characters/informant_veteran_07.png"]
 		}, {
 			"id":	"informant_urchin",
-			"anim":	["art/portraits/informant_urchin_00.png", "art/portraits/informant_urchin_01.png", "art/portraits/informant_urchin_02.png", "art/portraits/informant_urchin_03.png", "art/portraits/informant_urchin_04.png", "art/portraits/informant_urchin_05.png", "art/portraits/informant_urchin_06.png", "art/portraits/informant_urchin_07.png"]
+			"anim":	["art/characters/informant_urchin_00.png", "art/characters/informant_urchin_01.png", "art/characters/informant_urchin_02.png", "art/characters/informant_urchin_03.png", "art/characters/informant_urchin_04.png", "art/characters/informant_urchin_05.png", "art/characters/informant_urchin_06.png", "art/characters/informant_urchin_07.png"]
 		}, {
 			"id":	"pontifex_italia",
-			"anim":	["art/portraits/pontifex_italia_00.png", "art/portraits/pontifex_italia_01.png", "art/portraits/pontifex_italia_02.png", "art/portraits/pontifex_italia_03.png", "art/portraits/pontifex_italia_04.png", "art/portraits/pontifex_italia_05.png", "art/portraits/pontifex_italia_06.png", "art/portraits/pontifex_italia_07.png"]
+			"anim":	["art/characters/pontifex_italia_00.png", "art/characters/pontifex_italia_01.png", "art/characters/pontifex_italia_02.png", "art/characters/pontifex_italia_03.png", "art/characters/pontifex_italia_04.png", "art/characters/pontifex_italia_05.png", "art/characters/pontifex_italia_06.png", "art/characters/pontifex_italia_07.png"]
 		}, {
 			"id":	"pontifex_galliae",
-			"anim":	["art/portraits/pontifex_galliae_00.png", "art/portraits/pontifex_galliae_01.png", "art/portraits/pontifex_galliae_02.png", "art/portraits/pontifex_galliae_03.png", "art/portraits/pontifex_galliae_04.png", "art/portraits/pontifex_galliae_05.png", "art/portraits/pontifex_galliae_06.png", "art/portraits/pontifex_galliae_07.png", "art/portraits/pontifex_galliae_08.png", "art/portraits/pontifex_galliae_09.png", "art/portraits/pontifex_galliae_10.png", "art/portraits/pontifex_galliae_11.png", "art/portraits/pontifex_galliae_12.png", "art/portraits/pontifex_galliae_13.png"]
+			"anim":	["art/characters/pontifex_galliae_00.png", "art/characters/pontifex_galliae_01.png", "art/characters/pontifex_galliae_02.png", "art/characters/pontifex_galliae_03.png", "art/characters/pontifex_galliae_04.png", "art/characters/pontifex_galliae_05.png", "art/characters/pontifex_galliae_06.png", "art/characters/pontifex_galliae_07.png", "art/characters/pontifex_galliae_08.png", "art/characters/pontifex_galliae_09.png", "art/characters/pontifex_galliae_10.png", "art/characters/pontifex_galliae_11.png", "art/characters/pontifex_galliae_12.png", "art/characters/pontifex_galliae_13.png"]
 		}, {
 			"id":	"pontifex_africa",
-			"anim":	["art/portraits/pontifex_africa_00.png", "art/portraits/pontifex_africa_01.png", "art/portraits/pontifex_africa_02.png", "art/portraits/pontifex_africa_03.png", "art/portraits/pontifex_africa_04.png", "art/portraits/pontifex_africa_05.png", "art/portraits/pontifex_africa_06.png", "art/portraits/pontifex_africa_07.png"]
+			"anim":	["art/characters/pontifex_africa_00.png", "art/characters/pontifex_africa_01.png", "art/characters/pontifex_africa_02.png", "art/characters/pontifex_africa_03.png", "art/characters/pontifex_africa_04.png", "art/characters/pontifex_africa_05.png", "art/characters/pontifex_africa_06.png", "art/characters/pontifex_africa_07.png"]
 		}, {
 			"id":	"pontifex_oriens",
-			"anim":	["art/portraits/pontifex_oriens_00.png", "art/portraits/pontifex_oriens_01.png", "art/portraits/pontifex_oriens_02.png", "art/portraits/pontifex_oriens_03.png", "art/portraits/pontifex_oriens_04.png", "art/portraits/pontifex_oriens_05.png", "art/portraits/pontifex_oriens_06.png", "art/portraits/pontifex_oriens_07.png"]
+			"anim":	["art/characters/pontifex_oriens_00.png", "art/characters/pontifex_oriens_01.png", "art/characters/pontifex_oriens_02.png", "art/characters/pontifex_oriens_03.png", "art/characters/pontifex_oriens_04.png", "art/characters/pontifex_oriens_05.png", "art/characters/pontifex_oriens_06.png", "art/characters/pontifex_oriens_07.png"]
 		}, {
 			"id":	"boatmaster_italia",
-			"anim":	["art/portraits/boatmaster_italia_00.png", "art/portraits/boatmaster_italia_01.png", "art/portraits/boatmaster_italia_02.png", "art/portraits/boatmaster_italia_03.png", "art/portraits/boatmaster_italia_04.png", "art/portraits/boatmaster_italia_05.png", "art/portraits/boatmaster_italia_06.png", "art/portraits/boatmaster_italia_07.png"]
+			"anim":	["art/characters/boatmaster_italia_00.png", "art/characters/boatmaster_italia_01.png", "art/characters/boatmaster_italia_02.png", "art/characters/boatmaster_italia_03.png", "art/characters/boatmaster_italia_04.png", "art/characters/boatmaster_italia_05.png", "art/characters/boatmaster_italia_06.png", "art/characters/boatmaster_italia_07.png"]
 		}, {
 			"id":	"boatmaster_galliae",
-			"anim":	["art/portraits/boatmaster_galliae_00.png", "art/portraits/boatmaster_galliae_01.png", "art/portraits/boatmaster_galliae_02.png", "art/portraits/boatmaster_galliae_03.png", "art/portraits/boatmaster_galliae_04.png", "art/portraits/boatmaster_galliae_05.png", "art/portraits/boatmaster_galliae_06.png", "art/portraits/boatmaster_galliae_07.png"]
+			"anim":	["art/characters/boatmaster_galliae_00.png", "art/characters/boatmaster_galliae_01.png", "art/characters/boatmaster_galliae_02.png", "art/characters/boatmaster_galliae_03.png", "art/characters/boatmaster_galliae_04.png", "art/characters/boatmaster_galliae_05.png", "art/characters/boatmaster_galliae_06.png", "art/characters/boatmaster_galliae_07.png"]
 		}, {
 			"id":	"boatmaster_africa",
-			"anim":	["art/portraits/boatmaster_africa_00.png", "art/portraits/boatmaster_africa_01.png", "art/portraits/boatmaster_africa_02.png", "art/portraits/boatmaster_africa_03.png", "art/portraits/boatmaster_africa_04.png", "art/portraits/boatmaster_africa_05.png", "art/portraits/boatmaster_africa_06.png", "art/portraits/boatmaster_africa_07.png"]
+			"anim":	["art/characters/boatmaster_africa_00.png", "art/characters/boatmaster_africa_01.png", "art/characters/boatmaster_africa_02.png", "art/characters/boatmaster_africa_03.png", "art/characters/boatmaster_africa_04.png", "art/characters/boatmaster_africa_05.png", "art/characters/boatmaster_africa_06.png", "art/characters/boatmaster_africa_07.png"]
 		}, {
 			"id":	"boatmaster_oriens",
-			"anim":	["art/portraits/boatmaster_oriens_00.png", "art/portraits/boatmaster_oriens_01.png", "art/portraits/boatmaster_oriens_02.png", "art/portraits/boatmaster_oriens_03.png", "art/portraits/boatmaster_oriens_04.png", "art/portraits/boatmaster_oriens_05.png", "art/portraits/boatmaster_oriens_06.png", "art/portraits/boatmaster_oriens_07.png"]
+			"anim":	["art/characters/boatmaster_oriens_00.png", "art/characters/boatmaster_oriens_01.png", "art/characters/boatmaster_oriens_02.png", "art/characters/boatmaster_oriens_03.png", "art/characters/boatmaster_oriens_04.png", "art/characters/boatmaster_oriens_05.png", "art/characters/boatmaster_oriens_06.png", "art/characters/boatmaster_oriens_07.png"]
 		}, {
 			"id":	"siege_italia",
-			"anim":	["art/portraits/siege_italia_00.png", "art/portraits/siege_italia_01.png", "art/portraits/siege_italia_02.png", "art/portraits/siege_italia_03.png", "art/portraits/siege_italia_04.png", "art/portraits/siege_italia_05.png", "art/portraits/siege_italia_06.png", "art/portraits/siege_italia_07.png"]
+			"anim":	["art/characters/siege_italia_00.png", "art/characters/siege_italia_01.png", "art/characters/siege_italia_02.png", "art/characters/siege_italia_03.png", "art/characters/siege_italia_04.png", "art/characters/siege_italia_05.png", "art/characters/siege_italia_06.png", "art/characters/siege_italia_07.png"]
 		}, {
 			"id":	"siege_galliae",
-			"anim":	["art/portraits/siege_galliae_00.png", "art/portraits/siege_galliae_01.png", "art/portraits/siege_galliae_02.png", "art/portraits/siege_galliae_03.png", "art/portraits/siege_galliae_04.png", "art/portraits/siege_galliae_05.png", "art/portraits/siege_galliae_06.png", "art/portraits/siege_galliae_07.png", "art/portraits/siege_galliae_08.png", "art/portraits/siege_galliae_09.png", "art/portraits/siege_galliae_10.png", "art/portraits/siege_galliae_11.png", "art/portraits/siege_galliae_12.png", "art/portraits/siege_galliae_13.png"]
+			"anim":	["art/characters/siege_galliae_00.png", "art/characters/siege_galliae_01.png", "art/characters/siege_galliae_02.png", "art/characters/siege_galliae_03.png", "art/characters/siege_galliae_04.png", "art/characters/siege_galliae_05.png", "art/characters/siege_galliae_06.png", "art/characters/siege_galliae_07.png", "art/characters/siege_galliae_08.png", "art/characters/siege_galliae_09.png", "art/characters/siege_galliae_10.png", "art/characters/siege_galliae_11.png", "art/characters/siege_galliae_12.png", "art/characters/siege_galliae_13.png"]
 		}, {
 			"id":	"siege_africa",
-			"anim":	["art/portraits/siege_africa_00.png", "art/portraits/siege_africa_01.png", "art/portraits/siege_africa_02.png", "art/portraits/siege_africa_03.png", "art/portraits/siege_africa_04.png", "art/portraits/siege_africa_05.png", "art/portraits/siege_africa_06.png", "art/portraits/siege_africa_07.png"]
+			"anim":	["art/characters/siege_africa_00.png", "art/characters/siege_africa_01.png", "art/characters/siege_africa_02.png", "art/characters/siege_africa_03.png", "art/characters/siege_africa_04.png", "art/characters/siege_africa_05.png", "art/characters/siege_africa_06.png", "art/characters/siege_africa_07.png"]
 		}, {
 			"id":	"siege_oriens",
-			"anim":	["art/portraits/siege_oriens_00.png", "art/portraits/siege_oriens_01.png", "art/portraits/siege_oriens_02.png", "art/portraits/siege_oriens_03.png", "art/portraits/siege_oriens_04.png", "art/portraits/siege_oriens_05.png", "art/portraits/siege_oriens_06.png", "art/portraits/siege_oriens_07.png"]
+			"anim":	["art/characters/siege_oriens_00.png", "art/characters/siege_oriens_01.png", "art/characters/siege_oriens_02.png", "art/characters/siege_oriens_03.png", "art/characters/siege_oriens_04.png", "art/characters/siege_oriens_05.png", "art/characters/siege_oriens_06.png", "art/characters/siege_oriens_07.png"]
 		}, {
 			"id":	"headman_italia",
 			"anim":	["art/ui/headman_italia_00.png", "art/ui/headman_italia_01.png", "art/ui/headman_italia_02.png", "art/ui/headman_italia_03.png", "art/ui/headman_italia_04.png", "art/ui/headman_italia_05.png", "art/ui/headman_italia_06.png", "art/ui/headman_italia_07.png"]
@@ -1860,25 +2813,25 @@
 			"anim":	["art/ui/headman_oriens_00.png", "art/ui/headman_oriens_01.png", "art/ui/headman_oriens_02.png", "art/ui/headman_oriens_03.png", "art/ui/headman_oriens_04.png", "art/ui/headman_oriens_05.png", "art/ui/headman_oriens_06.png", "art/ui/headman_oriens_07.png"]
 		}, {
 			"id":	"townhead_italia",
-			"anim":	["art/portraits/townhead_italia_00.png", "art/portraits/townhead_italia_01.png", "art/portraits/townhead_italia_02.png", "art/portraits/townhead_italia_03.png", "art/portraits/townhead_italia_04.png", "art/portraits/townhead_italia_05.png", "art/portraits/townhead_italia_06.png", "art/portraits/townhead_italia_07.png"]
+			"anim":	["art/characters/townhead_italia_00.png", "art/characters/townhead_italia_01.png", "art/characters/townhead_italia_02.png", "art/characters/townhead_italia_03.png", "art/characters/townhead_italia_04.png", "art/characters/townhead_italia_05.png", "art/characters/townhead_italia_06.png", "art/characters/townhead_italia_07.png"]
 		}, {
 			"id":	"townhead_galliae",
-			"anim":	["art/portraits/townhead_galliae_00.png", "art/portraits/townhead_galliae_01.png", "art/portraits/townhead_galliae_02.png", "art/portraits/townhead_galliae_03.png", "art/portraits/townhead_galliae_04.png", "art/portraits/townhead_galliae_05.png", "art/portraits/townhead_galliae_06.png", "art/portraits/townhead_galliae_07.png"]
+			"anim":	["art/characters/townhead_galliae_00.png", "art/characters/townhead_galliae_01.png", "art/characters/townhead_galliae_02.png", "art/characters/townhead_galliae_03.png", "art/characters/townhead_galliae_04.png", "art/characters/townhead_galliae_05.png", "art/characters/townhead_galliae_06.png", "art/characters/townhead_galliae_07.png"]
 		}, {
 			"id":	"townhead_africa",
-			"anim":	["art/portraits/townhead_africa_00.png", "art/portraits/townhead_africa_01.png", "art/portraits/townhead_africa_02.png", "art/portraits/townhead_africa_03.png", "art/portraits/townhead_africa_04.png", "art/portraits/townhead_africa_05.png", "art/portraits/townhead_africa_06.png", "art/portraits/townhead_africa_07.png"]
+			"anim":	["art/characters/townhead_africa_00.png", "art/characters/townhead_africa_01.png", "art/characters/townhead_africa_02.png", "art/characters/townhead_africa_03.png", "art/characters/townhead_africa_04.png", "art/characters/townhead_africa_05.png", "art/characters/townhead_africa_06.png", "art/characters/townhead_africa_07.png"]
 		}, {
 			"id":	"townhead_oriens",
-			"anim":	["art/portraits/townhead_oriens_00.png", "art/portraits/townhead_oriens_01.png", "art/portraits/townhead_oriens_02.png", "art/portraits/townhead_oriens_03.png", "art/portraits/townhead_oriens_04.png", "art/portraits/townhead_oriens_05.png", "art/portraits/townhead_oriens_06.png", "art/portraits/townhead_oriens_07.png"]
+			"anim":	["art/characters/townhead_oriens_00.png", "art/characters/townhead_oriens_01.png", "art/characters/townhead_oriens_02.png", "art/characters/townhead_oriens_03.png", "art/characters/townhead_oriens_04.png", "art/characters/townhead_oriens_05.png", "art/characters/townhead_oriens_06.png", "art/characters/townhead_oriens_07.png"]
 		}, {
 			"id":	"emperor_traianus",
-			"anim":	["art/portraits/emperor_traianus_00.png", "art/portraits/emperor_traianus_01.png", "art/portraits/emperor_traianus_02.png", "art/portraits/emperor_traianus_03.png", "art/portraits/emperor_traianus_04.png", "art/portraits/emperor_traianus_05.png", "art/portraits/emperor_traianus_06.png", "art/portraits/emperor_traianus_07.png", "art/portraits/emperor_traianus_08.png", "art/portraits/emperor_traianus_09.png", "art/portraits/emperor_traianus_10.png", "art/portraits/emperor_traianus_11.png", "art/portraits/emperor_traianus_12.png", "art/portraits/emperor_traianus_13.png"]
+			"anim":	["art/characters/emperor_traianus_00.png", "art/characters/emperor_traianus_01.png", "art/characters/emperor_traianus_02.png", "art/characters/emperor_traianus_03.png", "art/characters/emperor_traianus_04.png", "art/characters/emperor_traianus_05.png", "art/characters/emperor_traianus_06.png", "art/characters/emperor_traianus_07.png", "art/characters/emperor_traianus_08.png", "art/characters/emperor_traianus_09.png", "art/characters/emperor_traianus_10.png", "art/characters/emperor_traianus_11.png", "art/characters/emperor_traianus_12.png", "art/characters/emperor_traianus_13.png"]
 		}, {
 			"id":	"emperor_traianus_figure",
 			"anim":	["art/ui/emperor_traianus_figure_00.png", "art/ui/emperor_traianus_figure_01.png", "art/ui/emperor_traianus_figure_02.png", "art/ui/emperor_traianus_figure_03.png", "art/ui/emperor_traianus_figure_04.png", "art/ui/emperor_traianus_figure_05.png", "art/ui/emperor_traianus_figure_06.png", "art/ui/emperor_traianus_figure_07.png"]
 		}, {
 			"id":	"praefectus_castrorum",
-			"anim":	["art/portraits/praefectus_castrorum_00.png", "art/portraits/praefectus_castrorum_01.png", "art/portraits/praefectus_castrorum_02.png", "art/portraits/praefectus_castrorum_03.png", "art/portraits/praefectus_castrorum_04.png", "art/portraits/praefectus_castrorum_05.png", "art/portraits/praefectus_castrorum_06.png", "art/portraits/praefectus_castrorum_07.png"]
+			"anim":	["art/characters/praefectus_castrorum_00.png", "art/characters/praefectus_castrorum_01.png", "art/characters/praefectus_castrorum_02.png", "art/characters/praefectus_castrorum_03.png", "art/characters/praefectus_castrorum_04.png", "art/characters/praefectus_castrorum_05.png", "art/characters/praefectus_castrorum_06.png", "art/characters/praefectus_castrorum_07.png"]
 		}, {
 			"id":	"palace_usher",
 			"anim":	[
@@ -1896,7 +2849,7 @@
 			"anim":	["art/ui/praefectus_castrorum_figure_00.png", "art/ui/praefectus_castrorum_figure_01.png", "art/ui/praefectus_castrorum_figure_02.png", "art/ui/praefectus_castrorum_figure_03.png", "art/ui/praefectus_castrorum_figure_04.png", "art/ui/praefectus_castrorum_figure_05.png", "art/ui/praefectus_castrorum_figure_06.png", "art/ui/praefectus_castrorum_figure_07.png"]
 		}, {
 			"id":	"intro_crier",
-			"anim":	["art/portraits/intro_crier_00.png", "art/portraits/intro_crier_01.png", "art/portraits/intro_crier_02.png", "art/portraits/intro_crier_03.png", "art/portraits/intro_crier_04.png", "art/portraits/intro_crier_05.png", "art/portraits/intro_crier_06.png", "art/portraits/intro_crier_07.png"]
+			"anim":	["art/characters/crier_00.png", "art/characters/crier_01.png", "art/characters/crier_02.png", "art/characters/crier_03.png", "art/characters/crier_04.png", "art/characters/crier_05.png", "art/characters/crier_06.png", "art/characters/crier_07.png"]
 		}, {
 			"id":	"promotion_rank_1",
 			"anim":	["art/ui/promotion_rank_1.png"]
@@ -2746,10 +3699,10 @@
 		}],
 	"troops":	[{
 			"index":	0,
-			"id":	"peasants",
+			"id":	"coloni",
 			"name":	"Coloni",
 			"sprite":	"art/troops/coloni_00.png",
-			"portrait":	"art/portraits/troop_coloni.png",
+			"portrait":	"art/troops/coloni_portrait.png",
 			"skill_level":	1,
 			"hit_points":	1,
 			"move_rate":	1,
@@ -2766,10 +3719,10 @@
 			"tier_counts":	[10, 20, 50, 100]
 		}, {
 			"index":	1,
-			"id":	"sprites",
+			"id":	"lares",
 			"name":	"Lares",
 			"sprite":	"art/troops/lares_00.png",
-			"portrait":	"art/portraits/troop_lares.png",
+			"portrait":	"art/troops/lares_portrait.png",
 			"skill_level":	1,
 			"hit_points":	1,
 			"move_rate":	1,
@@ -2786,10 +3739,10 @@
 			"tier_counts":	[10, 15, 30, 50]
 		}, {
 			"index":	2,
-			"id":	"militia",
+			"id":	"tirones",
 			"name":	"Tirones",
 			"sprite":	"art/troops/tirones_00.png",
-			"portrait":	"art/portraits/troop_tirones.png",
+			"portrait":	"art/troops/tirones_portrait.png",
 			"skill_level":	2,
 			"hit_points":	2,
 			"move_rate":	2,
@@ -2806,10 +3759,10 @@
 			"tier_counts":	[0, 5, 15, 30]
 		}, {
 			"index":	3,
-			"id":	"wolves",
+			"id":	"lupi",
 			"name":	"Lupi",
 			"sprite":	"art/troops/lupi_00.png",
-			"portrait":	"art/portraits/troop_lupi.png",
+			"portrait":	"art/troops/lupi_portrait.png",
 			"skill_level":	2,
 			"hit_points":	3,
 			"move_rate":	3,
@@ -2826,10 +3779,10 @@
 			"tier_counts":	[5, 10, 20, 40]
 		}, {
 			"index":	4,
-			"id":	"skeletons",
+			"id":	"larvae",
 			"name":	"Larvae",
 			"sprite":	"art/troops/larvae_00.png",
-			"portrait":	"art/portraits/troop_larvae.png",
+			"portrait":	"art/troops/larvae_portrait.png",
 			"skill_level":	2,
 			"hit_points":	3,
 			"move_rate":	2,
@@ -2846,10 +3799,10 @@
 			"tier_counts":	[5, 10, 15, 25]
 		}, {
 			"index":	5,
-			"id":	"zombies",
+			"id":	"lemures",
 			"name":	"Lemures",
 			"sprite":	"art/troops/lemures_00.png",
-			"portrait":	"art/portraits/troop_lemures.png",
+			"portrait":	"art/troops/lemures_portrait.png",
 			"skill_level":	2,
 			"hit_points":	5,
 			"move_rate":	1,
@@ -2866,10 +3819,10 @@
 			"tier_counts":	[5, 10, 15, 20]
 		}, {
 			"index":	6,
-			"id":	"gnomes",
+			"id":	"fauni",
 			"name":	"Fauni",
 			"sprite":	"art/troops/fauni_00.png",
-			"portrait":	"art/portraits/troop_fauni.png",
+			"portrait":	"art/troops/fauni_portrait.png",
 			"skill_level":	2,
 			"hit_points":	5,
 			"move_rate":	1,
@@ -2886,10 +3839,10 @@
 			"tier_counts":	[5, 10, 15, 20]
 		}, {
 			"index":	7,
-			"id":	"orcs",
+			"id":	"baleares",
 			"name":	"Baleares",
 			"sprite":	"art/troops/baleares_00.png",
-			"portrait":	"art/portraits/troop_baleares.png",
+			"portrait":	"art/troops/baleares_portrait.png",
 			"skill_level":	2,
 			"hit_points":	5,
 			"move_rate":	2,
@@ -2906,10 +3859,10 @@
 			"tier_counts":	[5, 10, 12, 20]
 		}, {
 			"index":	8,
-			"id":	"archers",
+			"id":	"velites",
 			"name":	"Velites",
 			"sprite":	"art/troops/velites_00.png",
-			"portrait":	"art/portraits/troop_velites.png",
+			"portrait":	"art/troops/velites_portrait.png",
 			"skill_level":	2,
 			"hit_points":	10,
 			"move_rate":	2,
@@ -2926,10 +3879,10 @@
 			"tier_counts":	[5, 8, 12, 18]
 		}, {
 			"index":	9,
-			"id":	"elves",
+			"id":	"silvani",
 			"name":	"Silvani",
 			"sprite":	"art/troops/silvani_00.png",
-			"portrait":	"art/portraits/troop_silvani.png",
+			"portrait":	"art/troops/silvani_portrait.png",
 			"skill_level":	3,
 			"hit_points":	10,
 			"move_rate":	3,
@@ -2946,10 +3899,10 @@
 			"tier_counts":	[5, 8, 10, 15]
 		}, {
 			"index":	10,
-			"id":	"pikemen",
+			"id":	"hastati",
 			"name":	"Hastati",
 			"sprite":	"art/troops/hastati_00.png",
-			"portrait":	"art/portraits/troop_hastati.png",
+			"portrait":	"art/troops/hastati_portrait.png",
 			"skill_level":	3,
 			"hit_points":	10,
 			"move_rate":	2,
@@ -2966,10 +3919,10 @@
 			"tier_counts":	[0, 5, 8, 15]
 		}, {
 			"index":	11,
-			"id":	"nomads",
+			"id":	"numidae",
 			"name":	"Numidae",
 			"sprite":	"art/troops/numidae_00.png",
-			"portrait":	"art/portraits/troop_numidae.png",
+			"portrait":	"art/troops/numidae_portrait.png",
 			"skill_level":	3,
 			"hit_points":	15,
 			"move_rate":	2,
@@ -2986,10 +3939,10 @@
 			"tier_counts":	[5, 8, 12, 18]
 		}, {
 			"index":	12,
-			"id":	"dwarves",
+			"id":	"ligures",
 			"name":	"Ligures",
 			"sprite":	"art/troops/ligures_00.png",
-			"portrait":	"art/portraits/troop_ligures.png",
+			"portrait":	"art/troops/ligures_portrait.png",
 			"skill_level":	3,
 			"hit_points":	20,
 			"move_rate":	1,
@@ -3006,10 +3959,10 @@
 			"tier_counts":	[5, 6, 8, 12]
 		}, {
 			"index":	13,
-			"id":	"ghosts",
+			"id":	"manes",
 			"name":	"Manes",
 			"sprite":	"art/troops/manes_00.png",
-			"portrait":	"art/portraits/troop_manes.png",
+			"portrait":	"art/troops/manes_portrait.png",
 			"skill_level":	4,
 			"hit_points":	10,
 			"move_rate":	3,
@@ -3026,10 +3979,10 @@
 			"tier_counts":	[2, 4, 6, 8]
 		}, {
 			"index":	14,
-			"id":	"knights",
+			"id":	"praetoriani",
 			"name":	"Praetoriani",
 			"sprite":	"art/troops/praetoriani_00.png",
-			"portrait":	"art/portraits/troop_praetoriani.png",
+			"portrait":	"art/troops/praetoriani_portrait.png",
 			"skill_level":	5,
 			"hit_points":	35,
 			"move_rate":	1,
@@ -3046,10 +3999,10 @@
 			"tier_counts":	[0, 2, 5, 8]
 		}, {
 			"index":	15,
-			"id":	"ogres",
+			"id":	"cyclopes",
 			"name":	"Cyclopes",
 			"sprite":	"art/troops/cyclopes_00.png",
-			"portrait":	"art/portraits/troop_cyclopes.png",
+			"portrait":	"art/troops/cyclopes_portrait.png",
 			"skill_level":	4,
 			"hit_points":	40,
 			"move_rate":	1,
@@ -3066,10 +4019,10 @@
 			"tier_counts":	[2, 3, 5, 8]
 		}, {
 			"index":	16,
-			"id":	"barbarians",
+			"id":	"sarmatae",
 			"name":	"Sarmatae",
 			"sprite":	"art/troops/sarmatae_00.png",
-			"portrait":	"art/portraits/troop_sarmatae.png",
+			"portrait":	"art/troops/sarmatae_portrait.png",
 			"skill_level":	4,
 			"hit_points":	40,
 			"move_rate":	3,
@@ -3086,10 +4039,10 @@
 			"tier_counts":	[2, 3, 5, 8]
 		}, {
 			"index":	17,
-			"id":	"trolls",
+			"id":	"antaei",
 			"name":	"Antaei",
 			"sprite":	"art/troops/antaei_00.png",
-			"portrait":	"art/portraits/troop_antaei.png",
+			"portrait":	"art/troops/antaei_portrait.png",
 			"skill_level":	4,
 			"hit_points":	50,
 			"move_rate":	1,
@@ -3106,10 +4059,10 @@
 			"tier_counts":	[2, 3, 4, 6]
 		}, {
 			"index":	18,
-			"id":	"cavalry",
+			"id":	"equites",
 			"name":	"Equites",
 			"sprite":	"art/troops/equites_00.png",
-			"portrait":	"art/portraits/troop_equites.png",
+			"portrait":	"art/troops/equites_portrait.png",
 			"skill_level":	4,
 			"hit_points":	20,
 			"move_rate":	4,
@@ -3126,10 +4079,10 @@
 			"tier_counts":	[0, 2, 4, 6]
 		}, {
 			"index":	19,
-			"id":	"druids",
+			"id":	"druidae",
 			"name":	"Druidae",
 			"sprite":	"art/troops/druidae_00.png",
-			"portrait":	"art/portraits/troop_druidae.png",
+			"portrait":	"art/troops/druidae_portrait.png",
 			"skill_level":	5,
 			"hit_points":	25,
 			"move_rate":	2,
@@ -3146,10 +4099,10 @@
 			"tier_counts":	[2, 3, 4, 6]
 		}, {
 			"index":	20,
-			"id":	"archmages",
+			"id":	"furiae",
 			"name":	"Furiae",
 			"sprite":	"art/troops/furiae_00.png",
-			"portrait":	"art/portraits/troop_furiae.png",
+			"portrait":	"art/troops/furiae_portrait.png",
 			"skill_level":	5,
 			"hit_points":	25,
 			"move_rate":	1,
@@ -3166,10 +4119,10 @@
 			"tier_counts":	[2, 3, 4, 5]
 		}, {
 			"index":	21,
-			"id":	"vampires",
+			"id":	"striges",
 			"name":	"Striges",
 			"sprite":	"art/troops/striges_00.png",
-			"portrait":	"art/portraits/troop_striges.png",
+			"portrait":	"art/troops/striges_portrait.png",
 			"skill_level":	5,
 			"hit_points":	30,
 			"move_rate":	1,
@@ -3186,10 +4139,10 @@
 			"tier_counts":	[1, 2, 3, 5]
 		}, {
 			"index":	22,
-			"id":	"giants",
+			"id":	"gigantes",
 			"name":	"Gigantes",
 			"sprite":	"art/troops/gigantes_00.png",
-			"portrait":	"art/portraits/troop_gigantes.png",
+			"portrait":	"art/troops/gigantes_portrait.png",
 			"skill_level":	5,
 			"hit_points":	60,
 			"move_rate":	3,
@@ -3206,10 +4159,10 @@
 			"tier_counts":	[1, 2, 3, 5]
 		}, {
 			"index":	23,
-			"id":	"demons",
+			"id":	"empusae",
 			"name":	"Empusae",
 			"sprite":	"art/troops/empusae_00.png",
-			"portrait":	"art/portraits/troop_empusae.png",
+			"portrait":	"art/troops/empusae_portrait.png",
 			"skill_level":	6,
 			"hit_points":	50,
 			"move_rate":	1,
@@ -3226,10 +4179,10 @@
 			"tier_counts":	[1, 2, 3, 4]
 		}, {
 			"index":	24,
-			"id":	"dragons",
+			"id":	"dracones",
 			"name":	"Dracones",
 			"sprite":	"art/troops/dracones_00.png",
-			"portrait":	"art/portraits/troop_dracones.png",
+			"portrait":	"art/troops/dracones_portrait.png",
 			"skill_level":	6,
 			"hit_points":	200,
 			"move_rate":	1,
@@ -3249,7 +4202,7 @@
 			"id":	"sagittarii",
 			"name":	"Sagittarii",
 			"sprite":	"art/troops/sagittarii_00.png",
-			"portrait":	"art/portraits/troop_sagittarii.png",
+			"portrait":	"art/troops/sagittarii_portrait.png",
 			"skill_level":	2,
 			"hit_points":	10,
 			"move_rate":	2,
@@ -3266,10 +4219,10 @@
 			"tier_counts":	[0, 5, 10, 15]
 		}, {
 			"index":	26,
-			"id":	"elephants",
+			"id":	"elephanti",
 			"name":	"Elephanti",
 			"sprite":	"art/troops/elephanti_00.png",
-			"portrait":	"art/portraits/troop_elephanti.png",
+			"portrait":	"art/troops/elephanti_portrait.png",
 			"skill_level":	5,
 			"hit_points":	80,
 			"move_rate":	2,
@@ -3284,7 +4237,75 @@
 			"morale_group":	"C",
 			"tier_counts":	[0, 1, 2, 3],
 			"anim":	["art/troops/elephanti_00.png", "art/troops/elephanti_01.png", "art/troops/elephanti_02.png", "art/troops/elephanti_03.png", "art/troops/elephanti_04.png", "art/troops/elephanti_05.png"]
+		}, {
+			"index":	27,
+			"id":	"ifrit",
+			"name":	"Ifrit",
+			"sprite":	"art/troops/ifrit_00.png",
+			"portrait":	"art/troops/ifrit_portrait.png",
+			"skill_level":	6,
+			"hit_points":	250,
+			"move_rate":	2,
+			"melee":	[30, 50],
+			"ranged":	[50, 0, 3],
+			"recruit_cost":	6000,
+			"spoils_factor":	600,
+			"abilities":	"FLY|IMMUNE|MAGIC",
+			"dwelling":	"",
+			"max_population":	0,
+			"growth_per_week":	0,
+			"morale_group":	"D",
+			"tier_counts":	[0, 0, 0, 0],
+			"anim":	["art/troops/ifrit_00.png", "art/troops/ifrit_01.png", "art/troops/ifrit_02.png", "art/troops/ifrit_03.png", "art/troops/ifrit_04.png", "art/troops/ifrit_05.png"]
+		}, {
+			"index":	28,
+			"id":	"athanatoi",
+			"name":	"Athanatoi",
+			"sprite":	"art/troops/athanatoi_00.png",
+			"portrait":	"art/troops/athanatoi_portrait.png",
+			"skill_level":	7,
+			"hit_points":	100,
+			"move_rate":	2,
+			"melee":	[20, 30],
+			"ranged":	[0, 0, 0],
+			"recruit_cost":	4000,
+			"spoils_factor":	400,
+			"abilities":	"ABSORB|REGEN|IMMUNE",
+			"dwelling":	"",
+			"max_population":	0,
+			"growth_per_week":	0,
+			"morale_group":	"D",
+			"tier_counts":	[0, 0, 0, 0],
+			"anim":	["art/troops/athanatoi_00.png", "art/troops/athanatoi_01.png", "art/troops/athanatoi_02.png", "art/troops/athanatoi_03.png", "art/troops/athanatoi_04.png", "art/troops/athanatoi_05.png"]
 		}],
+	"troop_aliases":	{
+		"peasants":	"coloni",
+		"sprites":	"lares",
+		"militia":	"tirones",
+		"wolves":	"lupi",
+		"skeletons":	"larvae",
+		"zombies":	"lemures",
+		"gnomes":	"fauni",
+		"orcs":	"baleares",
+		"archers":	"velites",
+		"elves":	"silvani",
+		"pikemen":	"hastati",
+		"nomads":	"numidae",
+		"dwarves":	"ligures",
+		"ghosts":	"manes",
+		"knights":	"praetoriani",
+		"ogres":	"cyclopes",
+		"barbarians":	"sarmatae",
+		"trolls":	"antaei",
+		"cavalry":	"equites",
+		"druids":	"druidae",
+		"archmages":	"furiae",
+		"vampires":	"striges",
+		"giants":	"gigantes",
+		"demons":	"empusae",
+		"dragons":	"dracones",
+		"elephants":	"elephanti"
+	},
 	"spells":	[{
 			"index":	0,
 			"id":	"clone",
@@ -3374,7 +4395,7 @@
 			"index":	0,
 			"id":	"knight",
 			"name":	"Legatus",
-			"portrait":	"art/classes/legatus.png",
+			"portrait":	"art/classes/legatus_portrait.png",
 			"hero":	{
 				"tile":	"art/classes/legatus_hero.png",
 				"disgraced":	"art/ui/disgraced_legatus.png",
@@ -3382,10 +4403,10 @@
 			},
 			"starting_gold":	7500,
 			"starting_troops":	[{
-					"id":	"militia",
+					"id":	"tirones",
 					"count":	20
 				}, {
-					"id":	"archers",
+					"id":	"velites",
 					"count":	2
 				}],
 			"ranks":	[{
@@ -3433,7 +4454,7 @@
 			"index":	1,
 			"id":	"paladin",
 			"name":	"Praetorianus",
-			"portrait":	"art/classes/praetorianus.png",
+			"portrait":	"art/classes/praetorianus_portrait.png",
 			"hero":	{
 				"tile":	"art/classes/praetorianus_hero.png",
 				"disgraced":	"art/ui/disgraced_praetorianus.png",
@@ -3441,10 +4462,10 @@
 			},
 			"starting_gold":	10000,
 			"starting_troops":	[{
-					"id":	"peasants",
+					"id":	"coloni",
 					"count":	20
 				}, {
-					"id":	"militia",
+					"id":	"tirones",
 					"count":	20
 				}],
 			"ranks":	[{
@@ -3492,7 +4513,7 @@
 			"index":	2,
 			"id":	"sorceress",
 			"name":	"Sibylla",
-			"portrait":	"art/classes/sibylla.png",
+			"portrait":	"art/classes/sibylla_portrait.png",
 			"hero":	{
 				"tile":	"art/classes/sibylla_hero.png",
 				"disgraced":	"art/ui/disgraced_sibylla.png",
@@ -3500,10 +4521,10 @@
 			},
 			"starting_gold":	10000,
 			"starting_troops":	[{
-					"id":	"peasants",
+					"id":	"coloni",
 					"count":	30
 				}, {
-					"id":	"sprites",
+					"id":	"lares",
 					"count":	10
 				}],
 			"ranks":	[{
@@ -3551,7 +4572,7 @@
 			"index":	3,
 			"id":	"barbarian",
 			"name":	"Dux",
-			"portrait":	"art/classes/dux.png",
+			"portrait":	"art/classes/dux_portrait.png",
 			"hero":	{
 				"tile":	"art/classes/dux_hero.png",
 				"disgraced":	"art/ui/disgraced_dux.png",
@@ -3559,7 +4580,7 @@
 			},
 			"starting_gold":	7500,
 			"starting_troops":	[{
-					"id":	"wolves",
+					"id":	"lupi",
 					"count":	20
 				}],
 			"ranks":	[{
@@ -3614,20 +4635,20 @@
 			"portrait":	"art/villains/catiline_00.png",
 			"anim":	["art/villains/catiline_00.png", "art/villains/catiline_01.png", "art/villains/catiline_02.png", "art/villains/catiline_03.png", "art/villains/catiline_04.png", "art/villains/catiline_05.png", "art/villains/catiline_06.png", "art/villains/catiline_07.png"],
 			"army":	[{
-					"troop":	"peasants",
-					"count":	6
+					"troop":	"coloni",
+					"count":	103
 				}, {
-					"troop":	"peasants",
-					"count":	6
+					"troop":	"coloni",
+					"count":	103
 				}, {
-					"troop":	"militia",
-					"count":	6
+					"troop":	"tirones",
+					"count":	34
 				}, {
-					"troop":	"militia",
-					"count":	6
+					"troop":	"tirones",
+					"count":	34
 				}, {
-					"troop":	"wolves",
-					"count":	6
+					"troop":	"hastati",
+					"count":	4
 				}]
 		}, {
 			"index":	1,
@@ -3639,20 +4660,20 @@
 			"portrait":	"art/villains/spartacus_00.png",
 			"anim":	["art/villains/spartacus_00.png", "art/villains/spartacus_01.png", "art/villains/spartacus_02.png", "art/villains/spartacus_03.png", "art/villains/spartacus_04.png", "art/villains/spartacus_05.png", "art/villains/spartacus_06.png", "art/villains/spartacus_07.png"],
 			"army":	[{
-					"troop":	"peasants",
-					"count":	7
+					"troop":	"coloni",
+					"count":	128
 				}, {
-					"troop":	"peasants",
-					"count":	7
+					"troop":	"coloni",
+					"count":	128
 				}, {
-					"troop":	"militia",
-					"count":	7
+					"troop":	"tirones",
+					"count":	43
 				}, {
-					"troop":	"pikemen",
-					"count":	4
+					"troop":	"tirones",
+					"count":	43
 				}, {
-					"troop":	"wolves",
-					"count":	7
+					"troop":	"hastati",
+					"count":	5
 				}]
 		}, {
 			"index":	2,
@@ -3664,20 +4685,20 @@
 			"portrait":	"art/villains/brennus_00.png",
 			"anim":	["art/villains/brennus_00.png", "art/villains/brennus_01.png", "art/villains/brennus_02.png", "art/villains/brennus_03.png", "art/villains/brennus_04.png", "art/villains/brennus_05.png", "art/villains/brennus_06.png", "art/villains/brennus_07.png"],
 			"army":	[{
-					"troop":	"peasants",
-					"count":	8
+					"troop":	"coloni",
+					"count":	128
 				}, {
-					"troop":	"nomads",
-					"count":	5
+					"troop":	"tirones",
+					"count":	51
 				}, {
-					"troop":	"orcs",
-					"count":	8
+					"troop":	"ligures",
+					"count":	10
 				}, {
-					"troop":	"wolves",
-					"count":	8
+					"troop":	"ligures",
+					"count":	10
 				}, {
-					"troop":	"nomads",
-					"count":	5
+					"troop":	"druidae",
+					"count":	2
 				}]
 		}, {
 			"index":	3,
@@ -3689,20 +4710,20 @@
 			"portrait":	"art/villains/pyrrhus_00.png",
 			"anim":	["art/villains/pyrrhus_00.png", "art/villains/pyrrhus_01.png", "art/villains/pyrrhus_02.png", "art/villains/pyrrhus_03.png", "art/villains/pyrrhus_04.png", "art/villains/pyrrhus_05.png", "art/villains/pyrrhus_06.png", "art/villains/pyrrhus_07.png"],
 			"army":	[{
-					"troop":	"nomads",
-					"count":	5
+					"troop":	"hastati",
+					"count":	26
 				}, {
-					"troop":	"nomads",
-					"count":	5
+					"troop":	"hastati",
+					"count":	26
 				}, {
-					"troop":	"orcs",
-					"count":	9
+					"troop":	"velites",
+					"count":	17
 				}, {
-					"troop":	"archers",
-					"count":	5
+					"troop":	"tirones",
+					"count":	51
 				}, {
-					"troop":	"wolves",
-					"count":	9
+					"troop":	"elephanti",
+					"count":	2
 				}]
 		}, {
 			"index":	4,
@@ -3714,20 +4735,20 @@
 			"portrait":	"art/villains/alaric_00.png",
 			"anim":	["art/villains/alaric_00.png", "art/villains/alaric_01.png", "art/villains/alaric_02.png", "art/villains/alaric_03.png", "art/villains/alaric_04.png", "art/villains/alaric_05.png", "art/villains/alaric_06.png", "art/villains/alaric_07.png"],
 			"army":	[{
-					"troop":	"peasants",
-					"count":	10
+					"troop":	"coloni",
+					"count":	171
 				}, {
-					"troop":	"elves",
-					"count":	6
+					"troop":	"hastati",
+					"count":	26
 				}, {
-					"troop":	"barbarians",
+					"troop":	"sarmatae",
 					"count":	3
 				}, {
-					"troop":	"gnomes",
-					"count":	10
+					"troop":	"larvae",
+					"count":	68
 				}, {
-					"troop":	"druids",
-					"count":	3
+					"troop":	"lemures",
+					"count":	68
 				}]
 		}, {
 			"index":	5,
@@ -3739,20 +4760,20 @@
 			"portrait":	"art/villains/attila_00.png",
 			"anim":	["art/villains/attila_00.png", "art/villains/attila_01.png", "art/villains/attila_02.png", "art/villains/attila_03.png", "art/villains/attila_04.png", "art/villains/attila_05.png", "art/villains/attila_06.png", "art/villains/attila_07.png"],
 			"army":	[{
-					"troop":	"pikemen",
-					"count":	6
+					"troop":	"numidae",
+					"count":	34
 				}, {
-					"troop":	"archers",
-					"count":	6
+					"troop":	"numidae",
+					"count":	34
 				}, {
-					"troop":	"elves",
-					"count":	6
+					"troop":	"sagittarii",
+					"count":	34
 				}, {
-					"troop":	"barbarians",
-					"count":	3
+					"troop":	"sarmatae",
+					"count":	5
 				}, {
-					"troop":	"cavalry",
-					"count":	3
+					"troop":	"equites",
+					"count":	17
 				}]
 		}, {
 			"index":	6,
@@ -3764,20 +4785,20 @@
 			"portrait":	"art/villains/boudica_00.png",
 			"anim":	["art/villains/boudica_00.png", "art/villains/boudica_01.png", "art/villains/boudica_02.png", "art/villains/boudica_03.png", "art/villains/boudica_04.png", "art/villains/boudica_05.png", "art/villains/boudica_06.png", "art/villains/boudica_07.png"],
 			"army":	[{
-					"troop":	"barbarians",
-					"count":	4
+					"troop":	"coloni",
+					"count":	256
 				}, {
-					"troop":	"elves",
-					"count":	7
+					"troop":	"coloni",
+					"count":	256
 				}, {
-					"troop":	"gnomes",
-					"count":	12
+					"troop":	"ligures",
+					"count":	34
 				}, {
-					"troop":	"dwarves",
-					"count":	7
+					"troop":	"sarmatae",
+					"count":	13
 				}, {
-					"troop":	"trolls",
-					"count":	4
+					"troop":	"druidae",
+					"count":	10
 				}]
 		}, {
 			"index":	7,
@@ -3789,20 +4810,20 @@
 			"portrait":	"art/villains/civilis_00.png",
 			"anim":	["art/villains/civilis_00.png", "art/villains/civilis_01.png", "art/villains/civilis_02.png", "art/villains/civilis_03.png", "art/villains/civilis_04.png", "art/villains/civilis_05.png", "art/villains/civilis_06.png", "art/villains/civilis_07.png"],
 			"army":	[{
-					"troop":	"barbarians",
-					"count":	4
+					"troop":	"hastati",
+					"count":	51
 				}, {
-					"troop":	"elves",
-					"count":	7
+					"troop":	"hastati",
+					"count":	51
 				}, {
-					"troop":	"dwarves",
-					"count":	7
+					"troop":	"sagittarii",
+					"count":	34
 				}, {
-					"troop":	"druids",
-					"count":	4
+					"troop":	"equites",
+					"count":	34
 				}, {
-					"troop":	"trolls",
-					"count":	4
+					"troop":	"sarmatae",
+					"count":	13
 				}]
 		}, {
 			"index":	8,
@@ -3814,20 +4835,20 @@
 			"portrait":	"art/villains/vercingetorix_00.png",
 			"anim":	["art/villains/vercingetorix_00.png", "art/villains/vercingetorix_01.png", "art/villains/vercingetorix_02.png", "art/villains/vercingetorix_03.png", "art/villains/vercingetorix_04.png", "art/villains/vercingetorix_05.png", "art/villains/vercingetorix_06.png", "art/villains/vercingetorix_07.png"],
 			"army":	[{
-					"troop":	"barbarians",
-					"count":	4
+					"troop":	"ligures",
+					"count":	51
 				}, {
-					"troop":	"elves",
-					"count":	8
+					"troop":	"sarmatae",
+					"count":	21
 				}, {
-					"troop":	"trolls",
-					"count":	4
+					"troop":	"sarmatae",
+					"count":	21
 				}, {
-					"troop":	"druids",
-					"count":	4
+					"troop":	"equites",
+					"count":	51
 				}, {
-					"troop":	"gnomes",
-					"count":	14
+					"troop":	"druidae",
+					"count":	26
 				}]
 		}, {
 			"index":	9,
@@ -3839,17 +4860,20 @@
 			"portrait":	"art/villains/arminius_00.png",
 			"anim":	["art/villains/arminius_00.png", "art/villains/arminius_01.png", "art/villains/arminius_02.png", "art/villains/arminius_03.png", "art/villains/arminius_04.png", "art/villains/arminius_05.png", "art/villains/arminius_06.png", "art/villains/arminius_07.png"],
 			"army":	[{
-					"troop":	"nomads",
-					"count":	8
+					"troop":	"silvani",
+					"count":	51
 				}, {
-					"troop":	"orcs",
-					"count":	15
+					"troop":	"silvani",
+					"count":	51
 				}, {
-					"troop":	"barbarians",
-					"count":	5
+					"troop":	"sarmatae",
+					"count":	13
 				}, {
-					"troop":	"ogres",
-					"count":	5
+					"troop":	"sarmatae",
+					"count":	13
+				}, {
+					"troop":	"sarmatae",
+					"count":	13
 				}]
 		}, {
 			"index":	10,
@@ -3861,17 +4885,20 @@
 			"portrait":	"art/villains/tacfarinas_00.png",
 			"anim":	["art/villains/tacfarinas_00.png", "art/villains/tacfarinas_01.png", "art/villains/tacfarinas_02.png", "art/villains/tacfarinas_03.png", "art/villains/tacfarinas_04.png", "art/villains/tacfarinas_05.png", "art/villains/tacfarinas_06.png", "art/villains/tacfarinas_07.png"],
 			"army":	[{
-					"troop":	"pikemen",
-					"count":	9
+					"troop":	"numidae",
+					"count":	60
 				}, {
-					"troop":	"cavalry",
-					"count":	5
+					"troop":	"numidae",
+					"count":	60
 				}, {
-					"troop":	"archers",
-					"count":	9
+					"troop":	"hastati",
+					"count":	51
 				}, {
-					"troop":	"ogres",
-					"count":	5
+					"troop":	"velites",
+					"count":	43
+				}, {
+					"troop":	"sagittarii",
+					"count":	43
 				}]
 		}, {
 			"index":	11,
@@ -3883,14 +4910,20 @@
 			"portrait":	"art/villains/jugurtha_00.png",
 			"anim":	["art/villains/jugurtha_00.png", "art/villains/jugurtha_01.png", "art/villains/jugurtha_02.png", "art/villains/jugurtha_03.png", "art/villains/jugurtha_04.png", "art/villains/jugurtha_05.png", "art/villains/jugurtha_06.png", "art/villains/jugurtha_07.png"],
 			"army":	[{
-					"troop":	"nomads",
-					"count":	9
+					"troop":	"numidae",
+					"count":	68
 				}, {
-					"troop":	"elves",
-					"count":	9
+					"troop":	"numidae",
+					"count":	68
 				}, {
-					"troop":	"druids",
-					"count":	5
+					"troop":	"numidae",
+					"count":	68
+				}, {
+					"troop":	"equites",
+					"count":	43
+				}, {
+					"troop":	"elephanti",
+					"count":	7
 				}]
 		}, {
 			"index":	12,
@@ -3902,20 +4935,20 @@
 			"portrait":	"art/villains/gildo_00.png",
 			"anim":	["art/villains/gildo_00.png", "art/villains/gildo_01.png", "art/villains/gildo_02.png", "art/villains/gildo_03.png", "art/villains/gildo_04.png", "art/villains/gildo_05.png", "art/villains/gildo_06.png", "art/villains/gildo_07.png"],
 			"army":	[{
-					"troop":	"nomads",
-					"count":	10
+					"troop":	"hastati",
+					"count":	68
 				}, {
-					"troop":	"giants",
-					"count":	1
+					"troop":	"equites",
+					"count":	51
 				}, {
-					"troop":	"barbarians",
-					"count":	6
+					"troop":	"sagittarii",
+					"count":	51
 				}, {
-					"troop":	"ogres",
-					"count":	6
+					"troop":	"numidae",
+					"count":	60
 				}, {
-					"troop":	"cavalry",
-					"count":	6
+					"troop":	"velites",
+					"count":	43
 				}]
 		}, {
 			"index":	13,
@@ -3927,20 +4960,20 @@
 			"portrait":	"art/villains/hannibal_00.png",
 			"anim":	["art/villains/hannibal_00.png", "art/villains/hannibal_01.png", "art/villains/hannibal_02.png", "art/villains/hannibal_03.png", "art/villains/hannibal_04.png", "art/villains/hannibal_05.png", "art/villains/hannibal_06.png", "art/villains/hannibal_07.png"],
 			"army":	[{
-					"troop":	"barbarians",
-					"count":	6
+					"troop":	"elephanti",
+					"count":	17
 				}, {
-					"troop":	"archmages",
-					"count":	1
+					"troop":	"numidae",
+					"count":	77
 				}, {
-					"troop":	"cavalry",
-					"count":	6
+					"troop":	"baleares",
+					"count":	128
 				}, {
-					"troop":	"giants",
-					"count":	1
+					"troop":	"hastati",
+					"count":	68
 				}, {
-					"troop":	"vampires",
-					"count":	1
+					"troop":	"equites",
+					"count":	51
 				}]
 		}, {
 			"index":	14,
@@ -3952,20 +4985,20 @@
 			"portrait":	"art/villains/mithridates_00.png",
 			"anim":	["art/villains/mithridates_00.png", "art/villains/mithridates_01.png", "art/villains/mithridates_02.png", "art/villains/mithridates_03.png", "art/villains/mithridates_04.png", "art/villains/mithridates_05.png", "art/villains/mithridates_06.png", "art/villains/mithridates_07.png"],
 			"army":	[{
-					"troop":	"barbarians",
-					"count":	6
+					"troop":	"hastati",
+					"count":	86
 				}, {
-					"troop":	"giants",
-					"count":	1
+					"troop":	"sarmatae",
+					"count":	86
 				}, {
-					"troop":	"cavalry",
-					"count":	6
+					"troop":	"equites",
+					"count":	128
 				}, {
-					"troop":	"archmages",
-					"count":	1
+					"troop":	"sagittarii",
+					"count":	86
 				}, {
-					"troop":	"dragons",
-					"count":	1
+					"troop":	"dracones",
+					"count":	21
 				}]
 		}, {
 			"index":	15,
@@ -3977,20 +5010,20 @@
 			"portrait":	"art/villains/zenobia_00.png",
 			"anim":	["art/villains/zenobia_00.png", "art/villains/zenobia_01.png", "art/villains/zenobia_02.png", "art/villains/zenobia_03.png", "art/villains/zenobia_04.png", "art/villains/zenobia_05.png", "art/villains/zenobia_06.png", "art/villains/zenobia_07.png"],
 			"army":	[{
-					"troop":	"barbarians",
-					"count":	7
+					"troop":	"equites",
+					"count":	214
 				}, {
-					"troop":	"trolls",
-					"count":	7
+					"troop":	"ifrit",
+					"count":	26
 				}, {
-					"troop":	"demons",
-					"count":	1
+					"troop":	"sagittarii",
+					"count":	128
 				}, {
-					"troop":	"vampires",
-					"count":	1
+					"troop":	"empusae",
+					"count":	51
 				}, {
-					"troop":	"dragons",
-					"count":	1
+					"troop":	"striges",
+					"count":	51
 				}]
 		}, {
 			"index":	16,
@@ -4002,20 +5035,20 @@
 			"portrait":	"art/villains/shapur_00.png",
 			"anim":	["art/villains/shapur_00.png", "art/villains/shapur_01.png", "art/villains/shapur_02.png", "art/villains/shapur_03.png", "art/villains/shapur_04.png", "art/villains/shapur_05.png", "art/villains/shapur_06.png", "art/villains/shapur_07.png"],
 			"army":	[{
-					"troop":	"dragons",
-					"count":	1
+					"troop":	"equites",
+					"count":	342
 				}, {
-					"troop":	"demons",
-					"count":	1
+					"troop":	"elephanti",
+					"count":	68
 				}, {
-					"troop":	"vampires",
-					"count":	1
+					"troop":	"sagittarii",
+					"count":	256
 				}, {
-					"troop":	"barbarians",
-					"count":	7
+					"troop":	"dracones",
+					"count":	26
 				}, {
-					"troop":	"archmages",
-					"count":	1
+					"troop":	"athanatoi",
+					"count":	128
 				}]
 		}],
 	"artifacts":	[{
@@ -4101,20 +5134,15 @@
 		}],
 	"tile_codes":	{
 		"*":	{
-			"art":	"desert_edge_01",
+			"art":	"desert_edge_nw",
 			"terrain":	"desert"
 		},
 		"+":	{
-			"art":	"desert_edge_02",
+			"art":	"desert_edge_sw",
 			"terrain":	"desert"
 		},
-		",":	{
-			"art":	"grass_variant",
-			"terrain":	"grass",
-			"variants":	["grass_01", "grass_02", "grass_03", "grass_04", "grass_05", "grass_06", "grass_07", "grass_08", "grass_09", "grass_10"]
-		},
 		"-":	{
-			"art":	"desert_edge_03",
+			"art":	"desert_edge_ne",
 			"terrain":	"desert"
 		},
 		".":	{
@@ -4122,78 +5150,78 @@
 			"terrain":	"grass"
 		},
 		"/":	{
-			"art":	"desert_edge_04",
+			"art":	"desert_edge_es",
 			"terrain":	"desert"
 		},
 		"0":	{
-			"art":	"desert_edge_05",
+			"art":	"desert_inner_es",
 			"terrain":	"desert"
 		},
 		"1":	{
-			"art":	"desert_edge_06",
+			"art":	"desert_inner_ne",
 			"terrain":	"desert"
 		},
 		"2":	{
-			"art":	"desert_edge_07",
+			"art":	"desert_inner_sw",
 			"terrain":	"desert"
 		},
 		"3":	{
-			"art":	"desert_edge_08",
+			"art":	"desert_inner_nw",
 			"terrain":	"desert"
 		},
 		"4":	{
-			"art":	"desert_edge_09",
+			"art":	"desert_edge_e",
 			"terrain":	"desert"
 		},
 		"5":	{
-			"art":	"desert_edge_10",
+			"art":	"desert_edge_w",
 			"terrain":	"desert"
 		},
 		"6":	{
-			"art":	"desert_edge_11",
+			"art":	"desert_edge_n",
 			"terrain":	"desert"
 		},
 		"7":	{
-			"art":	"desert_edge_12",
+			"art":	"desert_edge_s",
 			"terrain":	"desert"
 		},
 		"<":	{
-			"art":	"forest_edge_01",
+			"art":	"forest_edge_nw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"=":	{
-			"art":	"forest_edge_02",
+			"art":	"forest_edge_sw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		">":	{
-			"art":	"forest_edge_03",
+			"art":	"forest_edge_ne",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"?":	{
-			"art":	"forest_edge_04",
+			"art":	"forest_edge_es",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"@":	{
-			"art":	"forest_edge_05",
+			"art":	"forest_inner_es",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"A":	{
-			"art":	"forest_edge_06",
+			"art":	"forest_inner_ne",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"B":	{
-			"art":	"forest_edge_07",
+			"art":	"forest_inner_sw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"C":	{
-			"art":	"forest_edge_08",
+			"art":	"forest_inner_nw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
@@ -4202,141 +5230,145 @@
 			"terrain":	"desert"
 		},
 		"E":	{
-			"art":	"forest_edge_09",
+			"art":	"forest_edge_e",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"F":	{
 			"art":	"forest",
 			"terrain":	"forest",
-			"blocks_foot":	true
+			"blocks_foot":	true,
+			"variants":	["forest_v1", "forest_v2"]
 		},
 		"G":	{
-			"art":	"forest_edge_10",
+			"art":	"forest_edge_w",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"H":	{
-			"art":	"forest_edge_11",
+			"art":	"forest_edge_n",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"I":	{
-			"art":	"forest_edge_12",
+			"art":	"forest_edge_s",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"J":	{
-			"art":	"mountain_edge_01",
+			"art":	"mountain_edge_nw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"K":	{
-			"art":	"mountain_edge_02",
+			"art":	"mountain_edge_sw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"L":	{
-			"art":	"mountain_edge_03",
+			"art":	"mountain_edge_ne",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"M":	{
-			"art":	"mountain_edge_04",
+			"art":	"mountain_edge_es",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"N":	{
-			"art":	"mountain_edge_05",
+			"art":	"mountain_inner_es",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"O":	{
-			"art":	"mountain_edge_06",
+			"art":	"mountain_inner_ne",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"P":	{
-			"art":	"mountain_edge_07",
+			"art":	"mountain_inner_sw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"Q":	{
-			"art":	"mountain_edge_08",
+			"art":	"mountain_inner_nw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"R":	{
-			"art":	"mountain_edge_09",
+			"art":	"mountain_edge_e",
 			"terrain":	"mountain",
-			"blocks_foot":	true
+			"blocks_foot":	true,
+			"variants":	["mountain_edge_e_v1", "mountain_edge_e_v2"]
 		},
 		"S":	{
-			"art":	"mountain_edge_10",
+			"art":	"mountain_edge_w",
 			"terrain":	"mountain",
-			"blocks_foot":	true
+			"blocks_foot":	true,
+			"variants":	["mountain_edge_w_v1", "mountain_edge_w_v2"]
 		},
 		"T":	{
-			"art":	"mountain_edge_11",
+			"art":	"mountain_edge_n",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"U":	{
-			"art":	"mountain_edge_12",
+			"art":	"mountain_edge_s",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"Y":	{
-			"art":	"water_edge_00",
+			"art":	"water_edge_ne",
 			"terrain":	"water"
 		},
 		"Z":	{
-			"art":	"water_edge_01",
+			"art":	"water_edge_nw",
 			"terrain":	"water"
 		},
 		"[":	{
-			"art":	"water_edge_02",
+			"art":	"water_edge_sw",
 			"terrain":	"water"
 		},
 		"\\":	{
-			"art":	"water_edge_03",
+			"art":	"water_edge_es",
 			"terrain":	"water"
 		},
 		"]":	{
-			"art":	"water_edge_04",
+			"art":	"water_inner_es",
 			"terrain":	"water"
 		},
 		"^":	{
 			"art":	"mountain",
 			"terrain":	"mountain",
-			"blocks_foot":	true
+			"blocks_foot":	true,
+			"variants":	["mountain_v1", "mountain_v2"]
 		},
 		"_":	{
-			"art":	"water_edge_05",
+			"art":	"water_inner_ne",
 			"terrain":	"water"
 		},
 		"`":	{
-			"art":	"water_edge_06",
+			"art":	"water_inner_sw",
 			"terrain":	"water"
 		},
 		"a":	{
-			"art":	"water_edge_07",
+			"art":	"water_inner_nw",
 			"terrain":	"water"
 		},
 		"b":	{
-			"art":	"water_edge_08",
+			"art":	"water_edge_e",
 			"terrain":	"water"
 		},
 		"c":	{
-			"art":	"water_edge_09",
+			"art":	"water_edge_w",
 			"terrain":	"water"
 		},
 		"d":	{
-			"art":	"water_edge_10",
+			"art":	"water_edge_n",
 			"terrain":	"water"
 		},
 		"e":	{
-			"art":	"water_edge_11",
+			"art":	"water_edge_s",
 			"terrain":	"water"
 		},
 		"f":	{
@@ -4360,15 +5392,15 @@
 			"terrain":	"grass"
 		},
 		"k":	{
-			"art":	"road_wn",
+			"art":	"road_nw",
 			"terrain":	"grass"
 		},
 		"l":	{
-			"art":	"road_nesw",
+			"art":	"road_diag_ne",
 			"terrain":	"grass"
 		},
 		"m":	{
-			"art":	"road_nwse",
+			"art":	"road_diag_nw",
 			"terrain":	"grass"
 		},
 		"n":	{
@@ -4376,7 +5408,7 @@
 			"terrain":	"grass"
 		},
 		"o":	{
-			"art":	"road_n_se",
+			"art":	"road_n_es",
 			"terrain":	"grass"
 		},
 		"p":	{
@@ -4400,7 +5432,7 @@
 			"terrain":	"grass"
 		},
 		"u":	{
-			"art":	"road_w_se",
+			"art":	"road_w_es",
 			"terrain":	"grass"
 		},
 		"v":	{
@@ -4416,7 +5448,7 @@
 			"terrain":	"grass"
 		},
 		"y":	{
-			"art":	"road_c_se",
+			"art":	"road_c_es",
 			"terrain":	"grass"
 		},
 		"\\x80":	{
@@ -4436,85 +5468,85 @@
 			"terrain":	"grass"
 		},
 		"!":	{
-			"art":	"forest_edge_13",
+			"art":	"forest_edge_ns",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"$":	{
-			"art":	"forest_edge_14",
+			"art":	"forest_edge_ew",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"%":	{
-			"art":	"forest_edge_15",
+			"art":	"forest_edge_nes",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"&":	{
-			"art":	"forest_edge_16",
+			"art":	"forest_edge_esw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"'":	{
-			"art":	"forest_edge_17",
+			"art":	"forest_edge_nsw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"(":	{
-			"art":	"forest_edge_18",
+			"art":	"forest_edge_new",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		")":	{
-			"art":	"forest_edge_19",
+			"art":	"forest_edge_nesw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"8":	{
-			"art":	"mountain_edge_13",
+			"art":	"mountain_edge_ns",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"9":	{
-			"art":	"mountain_edge_14",
+			"art":	"mountain_edge_ew",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		":":	{
-			"art":	"mountain_edge_15",
+			"art":	"mountain_edge_nes",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		";":	{
-			"art":	"mountain_edge_16",
+			"art":	"mountain_edge_esw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"V":	{
-			"art":	"mountain_edge_17",
+			"art":	"mountain_edge_nsw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"W":	{
-			"art":	"mountain_edge_18",
+			"art":	"mountain_edge_new",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"X":	{
-			"art":	"mountain_edge_19",
+			"art":	"mountain_edge_nesw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"z":	{
-			"art":	"water_edge_12",
+			"art":	"water_edge_ns",
 			"terrain":	"water"
 		},
 		"{":	{
-			"art":	"water_edge_13",
+			"art":	"water_edge_ew",
 			"terrain":	"water"
 		},
 		"|":	{
-			"art":	"water_edge_18",
+			"art":	"water_edge_nesw",
 			"terrain":	"water"
 		},
 		"~":	{
@@ -4526,21 +5558,7 @@
 		"\\x86":	{"art":	"river_ne", "terrain":	"river"},
 		"\\x87":	{"art":	"river_es", "terrain":	"river"},
 		"\\x88":	{"art":	"river_sw", "terrain":	"river"},
-		"\\x89":	{"art":	"river_wn", "terrain":	"river"},
-		"\\x8a":	{"art":	"river_nesw", "terrain":	"river"},
-		"\\x8b":	{"art":	"river_nwse", "terrain":	"river"},
-		"\\x8c":	{"art":	"river_n_sw", "terrain":	"river"},
-		"\\x8d":	{"art":	"river_n_se", "terrain":	"river"},
-		"\\x8e":	{"art":	"river_s_nw", "terrain":	"river"},
-		"\\x8f":	{"art":	"river_s_ne", "terrain":	"river"},
-		"\\x90":	{"art":	"river_e_nw", "terrain":	"river"},
-		"\\x91":	{"art":	"river_e_sw", "terrain":	"river"},
-		"\\x92":	{"art":	"river_w_ne", "terrain":	"river"},
-		"\\x93":	{"art":	"river_w_se", "terrain":	"river"},
-		"\\x94":	{"art":	"river_c_nw", "terrain":	"river"},
-		"\\x95":	{"art":	"river_c_ne", "terrain":	"river"},
-		"\\x96":	{"art":	"river_c_sw", "terrain":	"river"},
-		"\\x97":	{"art":	"river_c_se", "terrain":	"river"},
+		"\\x89":	{"art":	"river_nw", "terrain":	"river"},
 		"\\x98":	{"art":	"river_n", "terrain":	"river"},
 		"\\x99":	{"art":	"river_e", "terrain":	"river"},
 		"\\x9a":	{"art":	"river_s", "terrain":	"river"},
@@ -4550,21 +5568,7 @@
 		"\\x9e":	{"art":	"river_forest_ne", "terrain":	"river"},
 		"\\x9f":	{"art":	"river_forest_es", "terrain":	"river"},
 		"\\xa0":	{"art":	"river_forest_sw", "terrain":	"river"},
-		"\\xa1":	{"art":	"river_forest_wn", "terrain":	"river"},
-		"\\xa2":	{"art":	"river_forest_nesw", "terrain":	"river"},
-		"\\xa3":	{"art":	"river_forest_nwse", "terrain":	"river"},
-		"\\xa4":	{"art":	"river_forest_n_sw", "terrain":	"river"},
-		"\\xa5":	{"art":	"river_forest_n_se", "terrain":	"river"},
-		"\\xa6":	{"art":	"river_forest_s_nw", "terrain":	"river"},
-		"\\xa7":	{"art":	"river_forest_s_ne", "terrain":	"river"},
-		"\\xa8":	{"art":	"river_forest_e_nw", "terrain":	"river"},
-		"\\xa9":	{"art":	"river_forest_e_sw", "terrain":	"river"},
-		"\\xaa":	{"art":	"river_forest_w_ne", "terrain":	"river"},
-		"\\xab":	{"art":	"river_forest_w_se", "terrain":	"river"},
-		"\\xac":	{"art":	"river_forest_c_nw", "terrain":	"river"},
-		"\\xad":	{"art":	"river_forest_c_ne", "terrain":	"river"},
-		"\\xae":	{"art":	"river_forest_c_sw", "terrain":	"river"},
-		"\\xaf":	{"art":	"river_forest_c_se", "terrain":	"river"},
+		"\\xa1":	{"art":	"river_forest_nw", "terrain":	"river"},
 		"\\xb0":	{"art":	"river_forest_n", "terrain":	"river"},
 		"\\xb1":	{"art":	"river_forest_e", "terrain":	"river"},
 		"\\xb2":	{"art":	"river_forest_s", "terrain":	"river"},
@@ -4574,33 +5578,117 @@
 		"\\xb6":	{"art":	"river_mountain_ne", "terrain":	"river"},
 		"\\xb7":	{"art":	"river_mountain_es", "terrain":	"river"},
 		"\\xb8":	{"art":	"river_mountain_sw", "terrain":	"river"},
-		"\\xb9":	{"art":	"river_mountain_wn", "terrain":	"river"},
-		"\\xba":	{"art":	"river_mountain_nesw", "terrain":	"river"},
-		"\\xbb":	{"art":	"river_mountain_nwse", "terrain":	"river"},
-		"\\xbc":	{"art":	"river_mountain_n_sw", "terrain":	"river"},
-		"\\xbd":	{"art":	"river_mountain_n_se", "terrain":	"river"},
-		"\\xbe":	{"art":	"river_mountain_s_nw", "terrain":	"river"},
-		"\\xbf":	{"art":	"river_mountain_s_ne", "terrain":	"river"},
-		"\\xc0":	{"art":	"river_mountain_e_nw", "terrain":	"river"},
-		"\\xc1":	{"art":	"river_mountain_e_sw", "terrain":	"river"},
-		"\\xc2":	{"art":	"river_mountain_w_ne", "terrain":	"river"},
-		"\\xc3":	{"art":	"river_mountain_w_se", "terrain":	"river"},
-		"\\xc4":	{"art":	"river_mountain_c_nw", "terrain":	"river"},
-		"\\xc5":	{"art":	"river_mountain_c_ne", "terrain":	"river"},
-		"\\xc6":	{"art":	"river_mountain_c_sw", "terrain":	"river"},
-		"\\xc7":	{"art":	"river_mountain_c_se", "terrain":	"river"},
+		"\\xb9":	{"art":	"river_mountain_nw", "terrain":	"river"},
 		"\\xc8":	{"art":	"river_mountain_n", "terrain":	"river"},
 		"\\xc9":	{"art":	"river_mountain_e", "terrain":	"river"},
 		"\\xca":	{"art":	"river_mountain_s", "terrain":	"river"},
 		"\\xcb":	{"art":	"river_mountain_w", "terrain":	"river"},
 		"\\xcc":	{"art":	"bridge_river_ns", "terrain":	"grass", "is_bridge":	true},
 		"\\xcd":	{"art":	"bridge_river_ew", "terrain":	"grass", "is_bridge":	true},
-		"\\xd0":	{"art":	"pharos", "ground":	"grass", "terrain":	"grass"},
-		"\\xd1":	{"art":	"temple_ocean", "ground":	"grass", "terrain":	"grass"},
-		"\\xd2":	{"art":	"bridge_h", "terrain":	"grass", "is_bridge":	true},
-		"\\xd3":	{"art":	"bridge_v", "terrain":	"grass", "is_bridge":	true},
-		"\\xce":	{"art":	"river_mouth_e", "terrain":	"river"},
-		"\\xcf":	{"art":	"river_mouth_w", "terrain":	"river"}
+		"\\xd0":	{"art":	"pharos", "object":	true, "ground":	"grass", "terrain":	"grass"},
+		"\\xd1":	{"art":	"temple_ocean", "object":	true, "ground":	"grass", "terrain":	"grass"},
+		"\\xd2":	{"art":	"bridge_ew", "terrain":	"grass", "is_bridge":	true},
+		"\\xd3":	{"art":	"bridge_ns", "terrain":	"grass", "is_bridge":	true},
+		"\\xce":	{"art":	"river_mouth_ne", "terrain":	"river"},
+		"\\xcf":	{"art":	"river_mouth_nw", "terrain":	"river"},
+		"\\xd4":	{"art":	"river_mouth_es", "terrain":	"river"},
+		"\\xd5":	{"art":	"river_mouth_sw", "terrain":	"river"},
+		"\\xd6":	{"art":	"water_sand_edge_ne", "terrain":	"water"},
+		"\\xd7":	{"art":	"water_sand_edge_nw", "terrain":	"water"},
+		"\\xd8":	{"art":	"water_sand_edge_sw", "terrain":	"water"},
+		"\\xd9":	{"art":	"water_sand_edge_es", "terrain":	"water"},
+		"\\xda":	{"art":	"water_sand_inner_es", "terrain":	"water"},
+		"\\xdb":	{"art":	"water_sand_inner_ne", "terrain":	"water"},
+		"\\xdc":	{"art":	"water_sand_inner_sw", "terrain":	"water"},
+		"\\xdd":	{"art":	"water_sand_inner_nw", "terrain":	"water"},
+		"\\xde":	{"art":	"water_sand_edge_e", "terrain":	"water"},
+		"\\xdf":	{"art":	"water_sand_edge_w", "terrain":	"water"},
+		"\\xe0":	{"art":	"water_sand_edge_n", "terrain":	"water"},
+		"\\xe1":	{"art":	"water_sand_edge_s", "terrain":	"water"},
+		"\\xe2":	{"art":	"water_sand_edge_ns", "terrain":	"water"},
+		"\\xe3":	{"art":	"water_sand_edge_ew", "terrain":	"water"},
+		"\\xe4":	{"art":	"water_sand_edge_nesw", "terrain":	"water"},
+		"\\xe5":	{"art":	"mountain_sand_edge_nw", "terrain":	"mountain"},
+		"\\xe6":	{"art":	"mountain_sand_edge_sw", "terrain":	"mountain"},
+		"\\xe7":	{"art":	"mountain_sand_edge_ne", "terrain":	"mountain"},
+		"\\xe8":	{"art":	"mountain_sand_edge_es", "terrain":	"mountain"},
+		"\\xe9":	{"art":	"mountain_sand_inner_es", "terrain":	"mountain"},
+		"\\xea":	{"art":	"mountain_sand_inner_ne", "terrain":	"mountain"},
+		"\\xeb":	{"art":	"mountain_sand_inner_sw", "terrain":	"mountain"},
+		"\\xec":	{"art":	"mountain_sand_inner_nw", "terrain":	"mountain"},
+		"\\xed":	{"art":	"mountain_sand_edge_e", "terrain":	"mountain"},
+		"\\xee":	{"art":	"mountain_sand_edge_w", "terrain":	"mountain"},
+		"\\xef":	{"art":	"mountain_sand_edge_n", "terrain":	"mountain"},
+		"\\xf0":	{"art":	"mountain_sand_edge_s", "terrain":	"mountain"},
+		"\\xf1":	{"art":	"forest_sand_edge_nw", "terrain":	"forest"},
+		"\\xf2":	{"art":	"forest_sand_edge_sw", "terrain":	"forest"},
+		"\\xf3":	{"art":	"forest_sand_edge_ne", "terrain":	"forest"},
+		"\\xf4":	{"art":	"forest_sand_edge_es", "terrain":	"forest"},
+		"\\xf5":	{"art":	"forest_sand_inner_es", "terrain":	"forest"},
+		"\\xf6":	{"art":	"forest_sand_inner_ne", "terrain":	"forest"},
+		"\\xf9":	{"art":	"forest_sand_edge_e", "terrain":	"forest"},
+		"\\xfa":	{"art":	"forest_sand_edge_w", "terrain":	"forest"},
+		"\\xfb":	{"art":	"forest_sand_edge_n", "terrain":	"forest"},
+		"\\xfc":	{"art":	"forest_sand_edge_s", "terrain":	"forest"},
+		"\\xfd":	{"art":	"landmark_rubicon", "object":	true, "ground":	"road_ew", "terrain":	"grass"},
+		"\\xfe":	{"art":	"landmark_sibyl", "object":	true, "ground":	"grass", "terrain":	"grass"},
+		"\\xff":	{"art":	"landmark_oppidum", "object":	true, "ground":	"grass", "terrain":	"grass"},
+		"\\xf7":	{"art":	"landmark_tophet", "object":	true, "ground":	"grass", "terrain":	"grass"},
+		"\\xf8":	{"art":	"landmark_gordian", "object":	true, "ground":	"grass", "terrain":	"grass"},
+		"\\xa2":	{"art":	"fields_plough", "terrain":	"grass"},
+		"\\xa3":	{"art":	"fields_wheat", "terrain":	"grass"},
+		"\\xa4":	{"art":	"fields_plough_edge_nw", "terrain":	"grass"},
+		"\\xa5":	{"art":	"fields_plough_edge_sw", "terrain":	"grass"},
+		"\\xa6":	{"art":	"fields_plough_edge_ne", "terrain":	"grass"},
+		"\\xa7":	{"art":	"fields_plough_edge_es", "terrain":	"grass"},
+		"\\xa8":	{"art":	"fields_plough_inner_es", "terrain":	"grass"},
+		"\\xa9":	{"art":	"fields_plough_inner_ne", "terrain":	"grass"},
+		"\\xaa":	{"art":	"fields_plough_inner_sw", "terrain":	"grass"},
+		"\\xab":	{"art":	"fields_plough_inner_nw", "terrain":	"grass"},
+		"\\xac":	{"art":	"fields_plough_edge_e", "terrain":	"grass"},
+		"\\xad":	{"art":	"fields_plough_edge_w", "terrain":	"grass"},
+		"\\xae":	{"art":	"fields_plough_edge_n", "terrain":	"grass"},
+		"\\xaf":	{"art":	"fields_plough_edge_s", "terrain":	"grass"},
+		"\\xba":	{"art":	"fields_wheat_edge_nw", "terrain":	"grass"},
+		"\\xbb":	{"art":	"fields_wheat_edge_sw", "terrain":	"grass"},
+		"\\xbc":	{"art":	"fields_wheat_edge_ne", "terrain":	"grass"},
+		"\\xbd":	{"art":	"fields_wheat_edge_es", "terrain":	"grass"},
+		"\\xbe":	{"art":	"fields_wheat_inner_es", "terrain":	"grass"},
+		"\\xbf":	{"art":	"fields_wheat_inner_ne", "terrain":	"grass"},
+		"\\xc0":	{"art":	"fields_wheat_inner_sw", "terrain":	"grass"},
+		"\\xc1":	{"art":	"fields_wheat_inner_nw", "terrain":	"grass"},
+		"\\xc2":	{"art":	"fields_wheat_edge_e", "terrain":	"grass"},
+		"\\xc3":	{"art":	"fields_wheat_edge_w", "terrain":	"grass"},
+		"\\xc4":	{"art":	"fields_wheat_edge_n", "terrain":	"grass"},
+		"\\xc5":	{"art":	"fields_wheat_edge_s", "terrain":	"grass"},
+		"\\x8a":	{"art":	"dock_n", "ground":	"water_edge_n", "terrain":	"water"},
+		"\\x8f":	{"art":	"dock_s", "ground":	"water_edge_s", "terrain":	"water"},
+		"\\x90":	{"art":	"dock_e", "ground":	"water_edge_e", "terrain":	"water"},
+		"\\x91":	{"art":	"dock_w", "ground":	"water_edge_w", "terrain":	"water"},
+		"\\x8b":	{"art":	"piece_farmstead", "object":	true, "ground":	"grass", "terrain":	"grass", "blocks_foot":	true},
+		"\\x8c":	{"art":	"piece_ruin", "object":	true, "ground":	"grass", "terrain":	"grass", "blocks_foot":	true},
+		"\\x8d":	{"art":	"piece_shrine", "object":	true, "ground":	"grass", "terrain":	"grass", "blocks_foot":	true},
+		"\\x8e":	{"art":	"piece_well", "object":	true, "ground":	"grass", "terrain":	"grass", "blocks_foot":	true}
+	},
+	"map_art":	{
+		"default":	"grass",
+		"cleared_water":	"water",
+		"terrain_ground":	{"grass":	"grass", "forest":	"forest", "mountain":	"mountain", "water":	"water", "desert":	"desert", "river":	""},
+		"bridges":	{"ew":	"bridge_ew", "ns":	"bridge_ns", "river_ew":	"bridge_river_ew", "river_ns":	"bridge_river_ns"},
+		"objects":	{"chest":	"chest", "artifact_chest":	"artifact_chest", "artifact_ring":	"artifact_ring", "sign":	"sign", "town":	"town", "wandering_army":	"wandering_army", "alcove":	"alcove", "dwelling_plains":	"dwelling_plains", "dwelling_forest":	"dwelling_forest", "dwelling_hills":	"dwelling_hills", "dwelling_dungeon":	"dwelling_dungeon"},
+		"castle_3x2":	{"tl":	"castle_tl", "tm":	"castle_tm", "tr":	"castle_tr", "ml":	"castle_ml", "gate":	"castle_gate", "mr":	"castle_mr"},
+		"castle_1x1":	"castle",
+		"details":	["detail_v1", "detail_v2", "detail_v3", "detail_v4"],
+		"aprons":	{
+			"forest":	{"n":	["forest_apron_n_v1", "forest_apron_n_v2", "forest_apron_n_v3"], "e":	["forest_apron_e_v1", "forest_apron_e_v2", "forest_apron_e_v3"], "s":	["forest_apron_s_v1", "forest_apron_s_v2", "forest_apron_s_v3"], "w":	["forest_apron_w_v1", "forest_apron_w_v2", "forest_apron_w_v3"]},
+			"mountain":	{"n":	["mountain_apron_n_v1", "mountain_apron_n_v2", "mountain_apron_n_v3"], "e":	["mountain_apron_e_v1", "mountain_apron_e_v2", "mountain_apron_e_v3"], "s":	["mountain_apron_s_v1", "mountain_apron_s_v2", "mountain_apron_s_v3"], "w":	["mountain_apron_w_v1", "mountain_apron_w_v2", "mountain_apron_w_v3"]}
+		},
+		"fills":	{
+			"forest":	{"ne":	"forest_fill_ne", "es":	"forest_fill_es", "sw":	"forest_fill_sw", "nw":	"forest_fill_nw"},
+			"forest_sand":	{"ne":	"forest_sand_fill_ne", "es":	"forest_sand_fill_es", "sw":	"forest_sand_fill_sw", "nw":	"forest_sand_fill_nw"},
+			"mountain":	{"ne":	"mountain_fill_ne", "es":	"mountain_fill_es", "sw":	"mountain_fill_sw", "nw":	"mountain_fill_nw"},
+			"mountain_sand":	{"ne":	"mountain_sand_fill_ne", "es":	"mountain_sand_fill_es", "sw":	"mountain_sand_fill_sw", "nw":	"mountain_sand_fill_nw"}
+		}
 	},
 	"spawn":	{
 		"calm_radius":	12,
@@ -4608,7 +5696,7 @@
 		"calm_max_stacks":	2,
 		"kind_chance_curve":	[[[60, 90, 94, 98, 101], [20, 70, 82, 95, 99], [10, 20, 35, 50, 90], [3, 6, 8, 10, 40]], null, null, null],
 		"tier_chance_curve":	[[60, 90, 98, 101], [20, 70, 95, 99], [10, 20, 50, 90], [3, 6, 10, 40]],
-		"tier_troop_pool":	[["peasants", "wolves", "archers", "nomads", "barbarians", "archmages"], ["sprites", "gnomes", "elves", "trolls", "druids"], ["orcs", "dwarves", "ogres", "giants", "dragons"], ["skeletons", "zombies", "ghosts", "vampires", "demons"]]
+		"tier_troop_pool":	[["coloni", "lupi", "velites", "numidae", "sarmatae", "furiae"], ["lares", "fauni", "silvani", "antaei", "druidae"], ["baleares", "ligures", "cyclopes", "gigantes", "dracones"], ["larvae", "lemures", "manes", "striges", "empusae"]]
 	},
 	"contract":	{
 		"cycle_length":	5,
@@ -4619,44 +5707,37 @@
 				"id":	"delay",
 				"label":	"Delay",
 				"type":	"numeric",
-				"range":	10,
-				"default":	5
+				"range":	10
 			}, {
 				"id":	"sounds",
 				"audio":	true,
 				"label":	"Sounds",
-				"type":	"bool",
-				"default":	1
+				"type":	"bool"
 			}, {
 				"id":	"walk_beep",
 				"label":	"Walk Beep",
-				"type":	"bool",
-				"default":	1
+				"type":	"bool"
 			}, {
 				"id":	"animation",
 				"label":	"Animation",
-				"type":	"bool",
-				"default":	1
+				"type":	"bool"
 			}, {
 				"id":	"cga",
 				"label":	"CGA",
 				"type":	"numeric",
 				"range":	8,
-				"default":	0,
 				"hidden":	true
 			}, {
 				"id":	"music",
 				"audio":	true,
 				"label":	"Music",
-				"type":	"bool",
-				"default":	0
+				"type":	"bool"
 			}, {
 				"id":	"volume",
 				"audio":	true,
 				"label":	"Volume",
 				"type":	"numeric",
-				"range":	10,
-				"default":	5
+				"range":	10
 			}]
 	},
 	"sprites":	{
@@ -4680,7 +5761,7 @@
 			"scene_column_shaft":	"art/ui/scene_column_shaft.png",
 			"scene_column_base":	"art/ui/scene_column_base.png",
 			"alcove_figure":	"art/ui/alcove_augur_00.png",
-			"alcove_portrait":	"art/portraits/augur_portrait.png",
+			"alcove_portrait":	"art/characters/augur.png",
 			"alcove_figure_place":	{
 				"x":	50,
 				"y":	43,
@@ -4731,7 +5812,6 @@
 	},
 	"ending":	{
 		"carpet_tile":	"art/ui/end_carpet.png",
-		"throne_backdrop":	"art/ui/end_lose_screen.png",
 		"grid_width":	6,
 		"grid_height":	5,
 		"carpet_column":	4,
@@ -4781,7 +5861,8 @@
 			"walk":	"audio/tune_walk.wav",
 			"bump":	"audio/tune_bump.wav",
 			"chest":	"audio/tune_chest.wav",
-			"defeat":	"audio/tune_defeat.wav"
+			"defeat":	"audio/tune_defeat.wav",
+			"victory":	"audio/tune_victory.wav"
 		}
 	}
 }

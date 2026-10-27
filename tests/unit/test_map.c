@@ -193,7 +193,7 @@ TEST clearing_an_overlay_restores_the_cells_own_art(void) {
         for (int x = 0; x < m->width; x++) {
             const Tile *t = MapGetTile(m, x, y);
             if (t->interactive != INTERACT_NONE) continue;
-            if (dx < 0 && strcmp(TileArt(m, t), "grass_variant") == 0) { dx = x; dy = y; }
+            if (dx < 0 && strcmp(TileArt(m, t), "grass_v1") == 0) { dx = x; dy = y; }
             if (mx < 0 && t->terrain == TERRAIN_MOUNTAIN) { mx = x; my = y; }
         }
     ASSERT(dx >= 0 && mx >= 0);

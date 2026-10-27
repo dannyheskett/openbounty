@@ -180,29 +180,15 @@ static void draw_character(const Game *g, const Sprites *s) {
 //  THE ARMY -- five rows, one troop each
 // ---------------------------------------------------------------------------
 
-// Compare this slot's group against
-// every other occupied slot. Any 'L' => Low; all 'H' => High; else Normal.
-// Single-stack armies always report High. Labels come from res.ui.morale_*.
+// The stack's army-view morale (GameArmySlotMorale) as its label from
+// res.ui.morale_*.
 static const char *army_slot_morale(const Game *g, int slot) {
     const ResUI *ui = &g->res->ui;
-    const TroopDef *me = troop_by_id(g->army[slot].id);
-    if (!me) return ui->morale_normal;
-
-    int others = 0, low = 0, high = 0;
-    for (int j = 0; j < GAME_ARMY_SLOTS; j++) {
-        if (j == slot) continue;
-        if (!g->army[j].id[0] || g->army[j].count == 0) continue;
-        const TroopDef *o = troop_by_id(g->army[j].id);
-        if (!o) continue;
-        others++;
-        char r = morale_result(me->morale_group, o->morale_group);
-        if (r == 'L') low++;
-        else if (r == 'H') high++;
+    switch (GameArmySlotMorale(g, slot)) {
+    case 'H': return ui->morale_high;
+    case 'L': return ui->morale_low;
+    default:  return ui->morale_normal;
     }
-    if (others == 0)    return ui->morale_high;
-    if (low > 0)        return ui->morale_low;
-    if (high == others) return ui->morale_high;
-    return ui->morale_normal;
 }
 
 static void draw_army(const Game *g, const Sprites *s) {
@@ -348,8 +334,8 @@ static void draw_contract(const Game *g, const Sprites *s) {
 // (-1 = artifact 0, ...), non-negative values are villain indices.
 
 // Lazy-loaded scepter-zone map. The puzzle-view background shows the
-// scepter location with its 5x5 surroundings revealed cell-by-cell
-// (). We load the scepter's continent into a
+// scepter location with its 5x5 surroundings revealed cell-by-cell.
+// We load the scepter's continent into a
 // scratch Map the first time the puzzle view opens; reload only if
 // the scepter zone changes.
 static Map  s_puzzle_scepter_map;
@@ -606,7 +592,8 @@ static bool worldmap_orb_row(void *ctx, int i, char *label, char *right, int cap
     (void)i;
     const Game *g = (const Game *)ctx;
     const ResUI *ui = &g->res->ui;
-    right[0] = '\0';
+    // Space toggles it too: the row says so.
+    snprintf(right, (size_t)cap, "%s", ui->key_space);
     snprintf(label, (size_t)cap, "%s", views_render_worldmap_whole() ? ui->worldmap_row_your_map
                                                                      : ui->worldmap_row_whole_map);
     return true;

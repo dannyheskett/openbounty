@@ -42,38 +42,6 @@
 // combat_present_public, so the replay animator draws a throwaway Combat
 // without duplicating the render path.
 
-// Build the CombatTarget for the pending flow on the live (pre-fight) game --
-// the same target the headless resolution builds from the same pending flow.
-// Returns false if there is no pending combat flow.
-static bool replay_build_target(Game *g, CombatMode *out_mode,
-                                CombatTarget *out_tgt) {
-    memset(out_tgt, 0, sizeof *out_tgt);
-    if (pending_flow == FLOW_SIEGE_MONSTER || pending_flow == FLOW_SIEGE_VILLAIN) {
-        *out_mode = COMBAT_MODE_CASTLE;
-        CastleRecord *cr = GameFindCastle(g, pending_castle_id);
-        const ResCastle *rc = resources_castle_by_id(g->res, pending_castle_id);
-        const VillainDef *v = (cr && cr->villain_id[0])
-                                ? villain_by_id(cr->villain_id) : NULL;
-        out_tgt->name = v && v->name[0] ? v->name
-                      : (rc && rc->name[0] ? rc->name : pending_castle_id);
-        out_tgt->seed_key = pending_castle_id;
-        if (cr) { out_tgt->garrison = cr->garrison;
-                  out_tgt->garrison_slots = GAME_ARMY_SLOTS; }
-        return true;
-    }
-    if (pending_flow == FLOW_ATTACK_FOE) {
-        *out_mode = COMBAT_MODE_FOE;
-        FoeState *foe = pending_foe_id[0] ? GameFindFoe(g, pending_foe_id) : NULL;
-        out_tgt->name = "Hostile band";
-        out_tgt->seed_key = pending_foe_id;
-        if (foe) { out_tgt->garrison = foe->garrison;
-                   out_tgt->garrison_slots = GAME_ARMY_SLOTS;
-                   out_tgt->full_band = CL_IS_MODERN && foe->is_static; }
-        return true;
-    }
-    return false;
-}
-
 // Pace one beat: present the current board for ~one beat (0.15s, scaled by
 // the driver's step delay so the driver's pace also speeds/slows fights),
 // pumping audio + screenshots + window-close each frame. A troop that struck
@@ -136,7 +104,7 @@ CombatReplayStatus RenderCombatRecord(void *shell_ctx, CombatMode mode,
     Game *g = ctx->game;
 
     CombatMode tmode; CombatTarget tgt;
-    if (!replay_build_target(g, &tmode, &tgt)) return COMBAT_REPLAY_OK;
+    if (!CombatTargetForPendingFlow(g, &tmode, &tgt)) return COMBAT_REPLAY_OK;
     (void)mode;   // the live pending flow is authoritative for the target
 
     // Clear any adventure-mode modal still up from the step that triggered this

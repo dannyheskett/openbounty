@@ -68,12 +68,6 @@ void screen_dwelling_open(Game *g,
              r->view_cost = recruit_cost; r->view_gold = gold; r->view_cap = cap; }
 }
 
-void screen_dwelling_refresh(int dwelling_pop, int gold, int cap) {
-    s_pop  = dwelling_pop;
-    s_gold = gold;
-    s_cap  = cap;
-}
-
 static int loc_kind_for(DwellingKind k) {
     switch (k) {
         case DWELLING_KIND_PLAINS:  return SCREEN_LOC_PLAINS;

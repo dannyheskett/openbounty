@@ -121,7 +121,6 @@ static double speed_read_dwell(void) {
     }
 }
 
-bool   shell_autoplay_active(void) { return s_active; }
 double shell_autoplay_step_delay(void) { return speed_step_delay(); }
 double shell_autoplay_read_dwell(void) { return speed_read_dwell(); }
 
@@ -188,27 +187,10 @@ static void animate_pending_combat(ShellCtx *ctx) {
     // Build the target from the live pending flow on the COPY.
     {
         CombatTarget tgt;
-        memset(&tgt, 0, sizeof tgt);
-        if (mode == COMBAT_MODE_CASTLE) {
-            CastleRecord *cr = GameFindCastle(&tmp, pending_castle_id);
-            tgt.name = pending_castle_id;
-            tgt.seed_key = pending_castle_id;
-            if (cr) {
-                tgt.garrison = cr->garrison;
-                tgt.garrison_slots = GAME_ARMY_SLOTS;
-            }
-        } else {
-            FoeState *foe = pending_foe_id[0] ? GameFindFoe(&tmp,
-                                                            pending_foe_id)
-                                              : NULL;
-            tgt.name = "Hostile band";
-            tgt.seed_key = pending_foe_id;
-            if (foe) {
-                tgt.garrison = foe->garrison;
-                tgt.garrison_slots = GAME_ARMY_SLOTS;
-                tgt.full_band = CL_IS_MODERN && foe->is_static;
-            }
-        }
+        if (mode == COMBAT_MODE_CASTLE)
+            CombatTargetForCastle(&tmp, pending_castle_id, &tgt);
+        else
+            CombatTargetForFoe(&tmp, pending_foe_id, &tgt);
         combat_run_headless_rec(&tmp, mode, &tgt, COMBAT_MAX_ROUNDS, autoplay_combat_policy,
                                 NULL, &rec);
     }

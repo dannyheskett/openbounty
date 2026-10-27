@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 #define ASSET_PATH "assets/kings-bounty/game.json"
-#define SAVE_PATH  "/tmp/openbounty_unit_save.dat"
+#define SAVE_PATH  "build/openbounty_unit_save.dat"
 
 static int populate(Resources *res, Game *g, Map *m, Fog *f, unsigned long seed) {
     if (!resources_load(res, ASSET_PATH)) return 0;

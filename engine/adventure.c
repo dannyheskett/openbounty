@@ -192,7 +192,7 @@ InteractResult adventure_handle_interact(const Map *map, const Tile *t, const ch
     }
 
     if (t->interactive == INTERACT_TELECAVE) {
-        // : teleport to the paired cave.
+        // teleport to the paired cave.
         // We carry the placement id so step.c can resolve the pairing.
         r.opened_telecave = true;
         snprintf(r.telecave_id, sizeof r.telecave_id, "%s", TileId(map, t));

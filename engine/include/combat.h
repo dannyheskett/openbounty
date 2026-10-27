@@ -35,10 +35,29 @@ typedef struct {
     // outcome for the same foe. See combat_seed_rng.
     const char *seed_key;
     // Open field fields the first three garrison slots, the quirk the original
-    // shipped. A modern pack's hand-placed guardian is a gate rather than a
-    // wandering band, so it fields all five; the shell sets this.
+    // shipped. A fixed guardian in a pack with combat.guardian_full_band
+    // fields all five (CombatFoeFieldsFullBand).
     bool        full_band;
 } CombatTarget;
+
+// The one place a fight's target is built, for the game, autoplay, the demo
+// and the replay alike. The target points into the Game and at the id passed
+// in, so both must outlive it. An id the Game doesn't hold gives a target
+// with no garrison.
+// A foe: "Hostile band", its placement id as the RNG identity, its garrison,
+// and the full band when CombatFoeFieldsFullBand says so.
+void CombatTargetForFoe(const Game *g, const char *foe_id, CombatTarget *out);
+// A castle: named for its villain, else the castle, else the id; the castle
+// id as the RNG identity; its garrison.
+void CombatTargetForCastle(const Game *g, const char *castle_id,
+                           CombatTarget *out);
+// The target of the combat flow that is up (a siege, or an attack on a foe),
+// and its mode. False when no combat flow is pending.
+bool CombatTargetForPendingFlow(const Game *g, CombatMode *out_mode,
+                                CombatTarget *out);
+// True when the foe fields all five stacks: it is a fixed guardian and the
+// pack sets combat.guardian_full_band.
+bool CombatFoeFieldsFullBand(const Game *g, const FoeState *foe);
 
 // ----- Battlefield constants -------------------------------------------------
 #define COMBAT_W       6
@@ -365,12 +384,6 @@ int  combat_deal_damage(Combat *c, int a_side, int a_id,
 // Spells
 int  spell_damage_value(int base, int sp);
 
-// Deterministic direct damage one cast of `spell_idx` deals to a non-IMMUNE
-// target stack (the same bases combat_cast_spell applies); 0 for enhancer
-// spells (clone/teleport/freeze/resurrect) whose value has no closed form.
-// turn_undead bites only UNDEAD targets -- pass whether the target is one.
-// Planning layers size loadouts with THIS, never with restated formulas.
-int  combat_spell_direct_damage(int spell_idx, int spell_power, bool target_undead);
 int  spell_damage(Combat *c, int t_side, int t_slot, int dmg);
 void spell_clone(Combat *c, int t_side, int t_slot, int sp);
 void spell_teleport(Combat *c, int from_side, int from_slot, int to_x, int to_y);
@@ -414,6 +427,7 @@ typedef enum {
 //   - heroes[side]->stats.knows_magic
 //   - c->spells_this_round < 1   (one cast per side activation)
 //   - spell_idx in [0,6] and heroes[side]->spells.counts[spell_idx] > 0
+//   - Turn Undead: the target is a live enemy undead (PICK_FILTER_UNDEAD)
 // On a successful cast decrements the charge and bumps spells_this_round.
 int combat_cast_spell(Combat *c, int side, int spell_idx,
                       int t_side, int t_slot, int dest_x, int dest_y);

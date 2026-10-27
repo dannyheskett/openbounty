@@ -1,5 +1,5 @@
 {
- "_note": "Where tools/mapbuild.py place scatters Oriens' chests and wandering armies. Boxes are inclusive tile ranges; only open grass and sand inside them is used. The three static guardians are placed by \"fixed\".",
+ "_note": "Where tools/romeart.py map place scatters Oriens' chests and wandering armies. Boxes are inclusive tile ranges; only open grass and sand inside them is used. The three static guardians are placed by \"fixed\".",
  "seed": 2029,
  "spacing": 1,
  "fixed": {
@@ -14,6 +14,22 @@
   "guardian_thrace": [
    8,
    1
+  ],
+  "chest_thrace_road": [
+   3,
+   2
+  ],
+  "guardian_siq": [
+   47,
+   37
+  ],
+  "chest_siq": [
+   47,
+   40
+  ],
+  "chest_gordian": [
+   16,
+   10
   ]
  },
  "regions": [
@@ -25,8 +41,8 @@
     12,
     18
    ],
-   "chests": 3,
-   "armies": 1
+   "chests": 9,
+   "armies": 3
   },
   {
    "name": "Bithynia and Galatia",
@@ -36,8 +52,8 @@
     27,
     15
    ],
-   "chests": 4,
-   "armies": 2
+   "chests": 11,
+   "armies": 4
   },
   {
    "name": "Pontus and Cappadocia",
@@ -47,8 +63,8 @@
     42,
     15
    ],
-   "chests": 4,
-   "armies": 2
+   "chests": 11,
+   "armies": 4
   },
   {
    "name": "Cilicia and Syria",
@@ -58,8 +74,8 @@
     40,
     31
    ],
-   "chests": 4,
-   "armies": 2
+   "chests": 9,
+   "armies": 4
   },
   {
    "name": "Cyprus",
@@ -80,8 +96,8 @@
     63,
     43
    ],
-   "chests": 3,
-   "armies": 2
+   "chests": 17,
+   "armies": 6
   },
   {
    "name": "Mesopotamia, beyond the Euphrates",
@@ -91,8 +107,8 @@
     63,
     35
    ],
-   "chests": 5,
-   "armies": 3
+   "chests": 16,
+   "armies": 6
   },
   {
    "name": "Armenia, beyond the pass",
@@ -102,8 +118,8 @@
     63,
     11
    ],
-   "chests": 5,
-   "armies": 2
+   "chests": 13,
+   "armies": 5
   }
  ]
 }

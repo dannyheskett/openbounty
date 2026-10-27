@@ -144,13 +144,11 @@ bool shell_pump_note(Game *g) {
     dialog_req_kind = r->kind;
     dialog_face_kind = (int)r->face;
     dialog_face_idx = r->face_index;
-    player_io_ack(g);   // consumed: it now lives in the shell dialog
+    player_io_ack(g);   // consumed: the shell dialog holds it
     return true;
 }
 
 int dialog_page_current(void)  { return dialog_page; }
-void dialog_page_next(void)    { dialog_page++; }
-
 // Advance to the next page if available. Returns true if advanced, false if on last page.
 bool dialog_advance(void) {
     const char *body = dialog_body;

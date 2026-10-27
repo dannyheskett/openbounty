@@ -1,10 +1,11 @@
 // engine/goto.c -- Goto (#70): the hero's route to a tile the player picked.
 //
-// Dijkstra over three layers of the province's cells: on foot, in the boat,
-// in flight. Only seen tiles are used (unexplored ground is a wall); an object
-// is a wall unless it is the target; the only way onto the water is the boat
-// parked in this province (the boarding rule of engine/step.c); land beside
-// the water is a landing. A step costs 1, a desert step the rest of a day.
+// Dijkstra over four layers of the province's cells: on foot, in the boat,
+// in flight, and on foot after a landing. Only seen tiles are used (unexplored
+// ground is a wall); an object other than a sign is a wall unless it is the
+// target; the only way onto the water is the boat parked in this province (the
+// boarding rule of engine/step.c), boarded once; land beside the water is a
+// landing. A step costs 1, a desert step the rest of a day.
 
 #include "goto.h"
 #include "adventure.h"
@@ -13,7 +14,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-enum { L_FOOT, L_BOAT, L_FLY, L_COUNT };
+// On foot before sailing, in the boat, flying, and on foot after a landing.
+// The boat stays where the hero left it, so a route that has landed cannot
+// plan to board again: L_LANDED never boards.
+enum { L_FOOT, L_BOAT, L_FLY, L_LANDED, L_COUNT };
 
 static const int DX[8] = { 1, -1, 0, 0, 1, 1, -1, -1 };
 static const int DY[8] = { 0, 0, 1, -1, 1, -1, 1, -1 };
@@ -65,16 +69,18 @@ static bool water(const Tile *t) {
 
 // The layer a step from `layer` onto (x, y) lands in, or -1 when it cannot.
 // The target is entered under the engine's own rules; anything else must
-// also hold no object.
+// hold no object but a sign, which the hero stands on to read (the walk
+// stops at its message).
 static int enter(const Game *g, const Tile *t, int layer, int x, int y, bool target) {
     if (layer == L_FLY) return L_FLY;
-    if (!target && t->interactive != INTERACT_NONE) return -1;
-    if (layer == L_FOOT) {
-        if (boat_at(g, x, y)) return L_BOAT;
-        return adventure_walkable_on_foot(t) ? L_FOOT : -1;
+    if (!target && t->interactive != INTERACT_NONE && t->interactive != INTERACT_SIGN)
+        return -1;
+    if (layer == L_FOOT || layer == L_LANDED) {
+        if (layer == L_FOOT && boat_at(g, x, y)) return L_BOAT;
+        return adventure_walkable_on_foot(t) ? layer : -1;
     }
-    if (water(t)) return L_BOAT;                       // sailing on
-    return adventure_walkable_on_foot(t) ? L_FOOT : -1; // a landing
+    if (water(t)) return L_BOAT;                         // sailing on
+    return adventure_walkable_on_foot(t) ? L_LANDED : -1; // a landing
 }
 
 // Days the steps take to finish, counting from the hero's day: a desert step

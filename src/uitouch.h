@@ -2,10 +2,9 @@
 //
 // The one place the shell hands a rect to the touch layer.
 //
-// Every screen used to call touch_region* itself: 25 sites in 12 files, each
-// deciding its own size, its own order and its own dismissal rule. The
-// widgets here own those decisions instead, so a screen says what a thing IS
-// and never how a finger finds it.
+// The widgets here own each target's size, order and dismissal rule, so a
+// screen says what a thing IS and never how a finger finds it; no screen calls
+// touch_region* itself.
 //
 // Three modes, every widget, no exceptions:
 //

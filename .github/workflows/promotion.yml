@@ -1,20 +1,26 @@
-# Promotion gate: main takes pull requests from staging only.
+# Branch flow gate. Work branches merge into staging only; main takes pull
+# requests from staging only.
 #
 # Work lands on staging, squashed, through a pull request per change. A
-# staging -> main pull request, merged with a merge commit, is the release. The
-# main ruleset requires this check, because GitHub has no setting that limits a
-# pull request's source branch.
+# staging -> main pull request, merged with a merge commit, builds and tags the
+# release (build.yml). The rulesets require these checks, because GitHub has no
+# setting that limits a pull request's source branch.
 name: promotion
 
 on:
   pull_request:
-    branches: [main]
-    # 'edited' matters: retargeting a pull request to main is an edit.
+    branches: [main, staging]
+    # 'edited' matters: retargeting a pull request is an edit.
     types: [opened, synchronize, reopened, edited]
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   from-staging:
     name: from staging
+    if: ${{ github.base_ref == 'main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -29,3 +35,20 @@ jobs:
             echo "::error::main takes pull requests from staging only, not $HEAD_REPO:$HEAD_REF"
             exit 1
           fi
+
+  into-staging:
+    name: into staging
+    if: ${{ github.base_ref == 'staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: The source branch is a work branch, not main
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ "$HEAD_REF" = main ] && [ "$HEAD_REPO" = "$GITHUB_REPOSITORY" ]; then
+            echo "::error::staging takes pull requests from work branches, not from main"
+            exit 1
+          fi
+          echo "work branch $HEAD_REPO:$HEAD_REF"

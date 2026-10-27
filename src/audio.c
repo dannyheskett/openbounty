@@ -148,6 +148,7 @@ static void load_assets(const Resources *res) {
             res->audio.tune_bump,
             res->audio.tune_chest,
             res->audio.tune_defeat,
+            res->audio.tune_victory,
         };
         for (int i = 0; i < AUDIO_TUNE_COUNT; i++) {
             if (!paths[i] || !paths[i][0]) continue;
@@ -333,10 +334,6 @@ void audio_tick(void) {
 
     AudioStreamId m = track_music(s_active_track);
     if (m != AUDIO_NONE) audio_backend_stream_update(m);
-}
-
-bool audio_is_available(void) {
-    return s_inited;
 }
 
 void audio_set_sounds_enabled(bool on) {

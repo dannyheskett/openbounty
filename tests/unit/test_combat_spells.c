@@ -165,6 +165,32 @@ TEST spell_resurrect_skips_dead_stack(void) {
     resources_free(res); free(res); PASS();
 }
 
+// Turn Undead takes only an enemy undead, whoever casts it: a living target
+// is refused with the charge kept.
+TEST turn_undead_refuses_the_living(void) {
+    Resources *res; Game *g; Map *m; Fog *f;
+    ASSERT(fx_init_game_full(&res, &g, &m, &f, NULL, FIXTURE_SEED));
+    g->stats.knows_magic = true;
+    g->spells.counts[COMBAT_SPELL_TURN_UNDEAD] = 2;
+    static Combat c; spell_combat_reset(&c);
+    c.heroes[COMBAT_SIDE_PLAYER] = g;
+    spell_place(&c, COMBAT_SIDE_PLAYER, 0, "peasants", 10, 0, 0);
+    c.side = COMBAT_SIDE_PLAYER; c.unit_id = 0;
+    spell_place(&c, COMBAT_SIDE_AI, 0, "peasants", 50, 5, 0);
+    spell_place(&c, COMBAT_SIDE_AI, 1, "skeletons", 50, 5, 1);
+    ASSERT_EQ(COMBAT_CAST_ILLEGAL,
+              combat_cast_spell(&c, COMBAT_SIDE_PLAYER, COMBAT_SPELL_TURN_UNDEAD,
+                                COMBAT_SIDE_AI, 0, 0, 0));
+    ASSERT_EQ(50, c.units[COMBAT_SIDE_AI][0].count);
+    ASSERT_EQ(2, g->spells.counts[COMBAT_SPELL_TURN_UNDEAD]);
+    ASSERT_EQ(COMBAT_CAST_OK,
+              combat_cast_spell(&c, COMBAT_SIDE_PLAYER, COMBAT_SPELL_TURN_UNDEAD,
+                                COMBAT_SIDE_AI, 1, 0, 0));
+    ASSERT_EQ(1, g->spells.counts[COMBAT_SPELL_TURN_UNDEAD]);
+    fx_free_game_full(res, g, m, f);
+    PASS();
+}
+
 SUITE(unit_combat_spells_suite) {
     RUN_TEST(spell_damage_value_scales_with_sp);
     RUN_TEST(spell_damage_value_clamps_low_sp);
@@ -179,4 +205,5 @@ SUITE(unit_combat_spells_suite) {
     RUN_TEST(spell_resurrect_revives_up_to_max);
     RUN_TEST(spell_resurrect_no_op_on_full_stack);
     RUN_TEST(spell_resurrect_skips_dead_stack);
+    RUN_TEST(turn_undead_refuses_the_living);
 }

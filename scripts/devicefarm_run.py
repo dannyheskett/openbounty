@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upload the Glory of Rome app (.apk or .ipa) to AWS Device Farm and run a
+"""Upload The Glory of Rome app (.apk or .ipa) to AWS Device Farm and run a
 Fuzz test on a real device, reporting pass/fail. Used by the devicefarm CI
 workflow.
 
@@ -143,7 +143,7 @@ def main():
     run = df.schedule_run(
         projectArn=PROJECT,
         appArn=up["arn"],
-        name=f"Glory of Rome CI fuzz ({PLATFORM})",
+        name=f"The Glory of Rome CI fuzz ({PLATFORM})",
         test=test_spec,
         deviceSelectionConfiguration={
             "filters": filters,

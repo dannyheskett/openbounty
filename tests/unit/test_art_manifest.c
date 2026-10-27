@@ -2,7 +2,8 @@
 // use". Art used to be reachable four different ways -- explicit game.json
 // paths, bare tile_codes names, a list hardcoded in the shell, and villain
 // frames derived from a portrait filename -- plus a fifth, the placed-object
-// names map.c stamps by interact kind. Nothing could enumerate a pack.
+// names map.c stamped by interact kind. Nothing could enumerate a pack. Those
+// names are game.json's "map_art" now, so the pack declares every one.
 //
 // The invariant worth guarding is that every path it reports actually exists
 // in the pack. A dangling entry means art the game will try to load and fail
@@ -54,7 +55,7 @@ TEST manifest_covers_every_category(void) {
         if (strstr(p, "art/troops/"))   troop   = true;
         if (strstr(p, "art/villains/")) villain = true;
         if (strstr(p, "art/tiles/grass.png"))       tile   = true;
-        if (strstr(p, "art/tiles/castle_gate.png")) object = true;
+        if (strstr(p, "art/objects/castle_gate.png")) object = true;
     }
     ASSERT(hero); ASSERT(combat); ASSERT(font); ASSERT(troop);
     ASSERT(villain); ASSERT(tile); ASSERT(object);
@@ -62,27 +63,55 @@ TEST manifest_covers_every_category(void) {
     PASS();
 }
 
-TEST placed_object_names_are_asked_for_not_copied(void) {
-    // map.c owns these names; the manifest must source them from there so the
-    // two cannot drift. Castle art is served per footprint (REQ-228).
-    int n = 0;
-    const char *const *names = map_object_art_names(&n);
-    ASSERT(names);
-    ASSERT(n >= 10);
-    for (int i = 0; i < n; i++) ASSERT(strcmp(names[i], "wandering_army") != 0);
-    for (int i = 0; i < n; i++) ASSERT(strncmp(names[i], "castle", 6) != 0);
-    for (int i = 0; i < n; i++) ASSERT(strcmp(names[i], "town") != 0);
-    int n3 = 0;
-    const char *const *c3 = map_castle_art_names(RES_CASTLE_FOOTPRINT_3X2, &n3);
-    ASSERT_EQ(6, n3);
-    bool gate = false;
-    for (int i = 0; i < n3; i++)
-        if (strcmp(c3[i], "castle_gate") == 0) gate = true;
-    ASSERT(gate);
-    int n1 = 0;
-    const char *const *c1 = map_castle_art_names(RES_CASTLE_FOOTPRINT_1X1, &n1);
-    ASSERT_EQ(1, n1);
-    ASSERT_STR_EQ("castle", c1[0]);
+TEST placed_object_names_come_from_map_art(void) {
+    // map.c stamps the names game.json's "map_art" declares, each a stem under
+    // art/objects/; a pack that leaves one out gets the standard name.
+    Resources *r = fx_load_resources();
+    ASSERT(r);
+    const ResMapArt *m = resources_map_art(r);
+    ASSERT_STR_EQ("chest", m->chest);
+    ASSERT_STR_EQ("castle_gate", m->castle_3x2[RES_CASTLE_GATE]);
+    ASSERT_STR_EQ("castle_tm", m->castle_3x2[RES_CASTLE_TM]);
+    ASSERT(resources_art_is_object(r, "chest"));
+    ASSERT(resources_art_is_object(r, "castle_gate"));
+    ASSERT_FALSE(resources_art_is_object(r, "grass"));
+    ASSERT_STR_EQ("bridge_ew", resources_map_art(NULL)->bridge[0][0]);
+    ASSERT_STR_EQ("castle", resources_map_art(NULL)->castle_1x1);
+    int n = resources_art_manifest(r, &s_list);
+    for (int i = 0; i < n; i++)
+        ASSERT_FALSE(strncmp(s_paths[i], "art/tiles/castle", 16) == 0 || strcmp(s_paths[i], "art/tiles/chest.png") == 0);
+    resources_free(r); free(r);
+    PASS();
+}
+
+TEST every_rome_manifest_path_exists(void) {
+    // Rome draws from four tile sets, map art overlays and art/objects/: the
+    // manifest names each file from the folder the game loads it from, so a
+    // sand edge only a province's set has is never asked of the master set.
+    Pack *p = pack_open("assets/glory-of-rome");
+    ASSERT(p);
+    pack_stack_push(p);
+    Resources *r = calloc(1, sizeof *r);
+    bool ok = r && resources_load(r, "game.json");
+    int n = ok ? resources_art_manifest(r, &s_list) : 0;
+    static char missing[RES_PATH_LEN];       // static: greatest prints it after we return
+    missing[0] = 0;
+    int objects = 0, sets = 0, overlays = 0;
+    for (int i = 0; i < n; i++) {
+        size_t sz = 0;
+        if (!pack_stack_read(s_paths[i], &sz) && !missing[0]) snprintf(missing, sizeof missing, "%s", s_paths[i]);
+        objects  += strncmp(s_paths[i], "art/objects/", 12) == 0;
+        sets     += strncmp(s_paths[i], "art/tiles/africa/", 17) == 0;
+        overlays += strstr(s_paths[i], "_apron_") != NULL;
+    }
+    if (r) resources_free(r);
+    free(r);
+    pack_stack_pop();
+    ASSERT(ok);
+    if (missing[0]) FAILm(missing);
+    ASSERT(objects > 20);
+    ASSERT(sets > 100);
+    ASSERT(overlays >= 24);
     PASS();
 }
 
@@ -99,20 +128,20 @@ TEST castle_art_follows_the_footprint(void) {
     ASSERT(r);
     ASSERT(r->castle_count > 1);
     int n = resources_art_manifest(r, &s_list);
-    ASSERT(manifest_has(n, "art/tiles/castle_gate.png"));
-    ASSERT_FALSE(manifest_has(n, "art/tiles/castle.png"));
+    ASSERT(manifest_has(n, "art/objects/castle_gate.png"));
+    ASSERT_FALSE(manifest_has(n, "art/objects/castle.png"));
 
     for (int i = 0; i < r->castle_count; i++)
         r->castles[i].footprint = RES_CASTLE_FOOTPRINT_1X1;
     n = resources_art_manifest(r, &s_list);
-    ASSERT(manifest_has(n, "art/tiles/castle.png"));
-    ASSERT_FALSE(manifest_has(n, "art/tiles/castle_gate.png"));
-    ASSERT_FALSE(manifest_has(n, "art/tiles/castle_tl.png"));
+    ASSERT(manifest_has(n, "art/objects/castle.png"));
+    ASSERT_FALSE(manifest_has(n, "art/objects/castle_gate.png"));
+    ASSERT_FALSE(manifest_has(n, "art/objects/castle_tm.png"));   // the decorations keep tl, tr, ml, mr
 
     r->castles[0].footprint = RES_CASTLE_FOOTPRINT_3X2;
     n = resources_art_manifest(r, &s_list);
-    ASSERT(manifest_has(n, "art/tiles/castle.png"));
-    ASSERT(manifest_has(n, "art/tiles/castle_gate.png"));
+    ASSERT(manifest_has(n, "art/objects/castle.png"));
+    ASSERT(manifest_has(n, "art/objects/castle_gate.png"));
     resources_free(r); free(r);
     PASS();
 }
@@ -133,7 +162,7 @@ TEST terrain_art_is_listed_per_tile_set(void) {
     n = resources_art_manifest(r, &s_list);
     ASSERT(manifest_has(n, "art/tiles/grass.png"));
     ASSERT(manifest_has(n, "art/tiles/alpha/grass.png"));
-    ASSERT(manifest_has(n, "art/tiles/alpha/water_edge_01.png"));
+    ASSERT(manifest_has(n, "art/tiles/alpha/water_edge_nw.png"));
 
     for (int i = 0; i < r->zone_count; i++) strcpy(r->zones[i].tile_set, "alpha");
     n = resources_art_manifest(r, &s_list);
@@ -180,17 +209,17 @@ TEST town_art_is_listed_per_catalog_entry(void) {
     ASSERT(r);
     ASSERT(r->town_count >= 2);
     int n = resources_art_manifest(r, &s_list);
-    ASSERT(manifest_has(n, "art/tiles/town.png"));
-    ASSERT_FALSE(manifest_has(n, "art/tiles/town_x.png"));
+    ASSERT(manifest_has(n, "art/objects/town.png"));
+    ASSERT_FALSE(manifest_has(n, "art/objects/town_x.png"));
     strcpy(r->towns[0].art, "town_x");
     n = resources_art_manifest(r, &s_list);
-    ASSERT(manifest_has(n, "art/tiles/town.png"));
-    ASSERT(manifest_has(n, "art/tiles/town_x.png"));
+    ASSERT(manifest_has(n, "art/objects/town.png"));
+    ASSERT(manifest_has(n, "art/objects/town_x.png"));
     for (int i = 0; i < r->town_count; i++) strcpy(r->towns[i].art, "town_x");
     n = resources_art_manifest(r, &s_list);
-    ASSERT_FALSE(manifest_has(n, "art/tiles/town.png"));
+    ASSERT_FALSE(manifest_has(n, "art/objects/town.png"));
     int c = 0;
-    for (int i = 0; i < n; i++) if (strcmp(s_paths[i], "art/tiles/town_x.png") == 0) c++;
+    for (int i = 0; i < n; i++) if (strcmp(s_paths[i], "art/objects/town_x.png") == 0) c++;
     ASSERT_EQ(1, c);
     resources_free(r); free(r);
     PASS();
@@ -201,14 +230,14 @@ TEST army_art_is_listed_per_zone(void) {
     ASSERT(r);
     ASSERT(r->zone_count >= 2);
     int n = resources_art_manifest(r, &s_list);
-    ASSERT(manifest_has(n, "art/tiles/wandering_army.png"));
+    ASSERT(manifest_has(n, "art/objects/wandering_army.png"));
     strcpy(r->zones[0].army_art, "army_x");
     n = resources_art_manifest(r, &s_list);
-    ASSERT(manifest_has(n, "art/tiles/wandering_army.png"));
-    ASSERT(manifest_has(n, "art/tiles/army_x.png"));
+    ASSERT(manifest_has(n, "art/objects/wandering_army.png"));
+    ASSERT(manifest_has(n, "art/objects/army_x.png"));
     for (int i = 0; i < r->zone_count; i++) strcpy(r->zones[i].army_art, "army_x");
     n = resources_art_manifest(r, &s_list);
-    ASSERT_FALSE(manifest_has(n, "art/tiles/wandering_army.png"));
+    ASSERT_FALSE(manifest_has(n, "art/objects/wandering_army.png"));
     resources_free(r); free(r);
     PASS();
 }
@@ -315,7 +344,8 @@ SUITE(unit_art_manifest_suite) {
     RUN_TEST(siege_grid_is_listed_only_when_declared);
     RUN_TEST(every_manifest_path_exists_in_the_pack);
     RUN_TEST(manifest_covers_every_category);
-    RUN_TEST(placed_object_names_are_asked_for_not_copied);
+    RUN_TEST(placed_object_names_come_from_map_art);
+    RUN_TEST(every_rome_manifest_path_exists);
     RUN_TEST(castle_art_follows_the_footprint);
     RUN_TEST(terrain_art_is_listed_per_tile_set);
     RUN_TEST(a_tile_set_may_override_single_arts);

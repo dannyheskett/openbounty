@@ -71,11 +71,6 @@ int textsel_move(int cursor, int dx, int dy, bool numeric) {
 }
 
 int textsel_w(bool numeric, int cell_w) { return textsel_cols(numeric) * cell_w; }
-int textsel_h(bool numeric, int cell_h) {
-    int cols = textsel_cols(numeric), n = textsel_count(numeric);
-    return ((n + cols - 1) / cols) * cell_h;
-}
-
 static void apply(int ch, char *buf, int *len, int cap,
                   bool (*allow)(const char *, int, int)) {
     if (ch == TEXTSEL_DEL) {

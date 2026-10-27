@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define SAVE_PATH "/tmp/openbounty_save_more.dat"
+#define SAVE_PATH "build/openbounty_save_more.dat"
 
 TEST save_preserves_army_contents(void) {
     Resources *res; Game *g; Map *m; Fog *f;

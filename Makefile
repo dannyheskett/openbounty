@@ -18,8 +18,8 @@ AAC_INC      := -Ithird_party/vo-aacenc/aacenc/inc -Ithird_party/vo-aacenc/aacen
 # OPENBOUNTY_VERSION explicitly from the dispatched release-N tag. For
 # local dev builds with no override, derive from the most recent
 # release-N tag (digits only) and fall back to 0 if there are no tags.
-# RELEASE_VERSION is the project-neutral name the release workflow passes, so every
-# repo's release.yml is byte-identical. OPENBOUNTY_VERSION still works as an explicit
+# RELEASE_VERSION is the project-neutral name the build workflow passes, so every
+# repo's build.yml passes the same variable. OPENBOUNTY_VERSION still works as an explicit
 # override (command-line vars beat ?=), and a bare `make dist` still derives from tags.
 RELEASE_VERSION         ?= $(shell git tag --list 'release-*' 2>/dev/null | sed -n 's/^release-\([1-9][0-9]*\)$$/\1/p' | sort -n | tail -1 | grep . || echo 0)
 OPENBOUNTY_VERSION         ?= $(RELEASE_VERSION)
@@ -50,7 +50,7 @@ LDFLAGS_release := -L$(RAYLIB)/lib -lraylib -lm -lpthread -ldl -lrt \
                    -static-libgcc -Wl,-Bsymbolic
 LDFLAGS := $(LDFLAGS_$(BUILD))
 
-ENGINE_SRC := engine/game.c engine/map.c engine/fog.c engine/pack.c engine/tile.c engine/savegame.c engine/state_serialize.c engine/savepath.c engine/tables.c engine/adventure.c engine/resources.c engine/pending.c engine/player_io.c engine/flows.c engine/flow_resolve.c engine/step.c engine/spells_adventure.c engine/fatal.c engine/assets_bytes.c engine/combat.c engine/combat_log.c engine/goto.c
+ENGINE_SRC := engine/game.c engine/game_storage.c engine/game_world.c engine/game_army.c engine/game_foes.c engine/map.c engine/fog.c engine/pack.c engine/tile.c engine/savegame.c engine/state_serialize.c engine/savepath.c engine/tables.c engine/adventure.c engine/resources.c engine/resources_strings.c engine/resources_intro.c engine/resources_art.c engine/pending.c engine/player_io.c engine/flows.c engine/flow_resolve.c engine/step.c engine/spells_adventure.c engine/fatal.c engine/assets_bytes.c engine/combat.c engine/combat_log.c engine/goto.c
 
 # Demo mode (demo/), the human-like player agent. Engine-only: includes nothing
 # from src/, and src/ may not include demo/.
@@ -66,7 +66,7 @@ DEMO_OBJ     := $(patsubst %.c,$(DEMO_OBJ_DIR)/%.o,$(DEMO_SRC))
 AUTOPLAY_SRC := autoplay/autoplay.c autoplay/planner.c autoplay/goals.c autoplay/prereq.c autoplay/baltree.c autoplay/search.c autoplay/primitives.c autoplay/exec_move.c autoplay/exec_fight.c autoplay/exec_recruit.c autoplay/exec_loc.c autoplay/recording.c autoplay/worldsnap.c autoplay/plan.c autoplay/exec_replay.c autoplay/exec_ledger.c autoplay/diag.c
 AUTOPLAY_OBJ_DIR := build/$(BUILD)/objs/autoplay
 AUTOPLAY_OBJ     := $(patsubst %.c,$(AUTOPLAY_OBJ_DIR)/%.o,$(AUTOPLAY_SRC))
-SHELL_SRC  := src/main.c src/plat_android.c src/plat_ios.c src/safe_area.c src/gfx_raylib.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_goto.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/audio_raylib.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_mp4_aac.c src/intro_mix.c src/encode_dialog.c src/bfont.c src/text.c src/font_raylib.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/modern/page.c src/modern/rail.c src/input.c src/input_host.c src/touch.c src/uitouch.c src/frame_host.c src/prompt.c src/startup.c src/intro.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
+SHELL_SRC  := src/main.c src/cli_flags.c src/plat_android.c src/plat_ios.c src/safe_area.c src/gfx_raylib.c src/layout.c src/present.c src/shell_menu.c src/shell_tempdeath.c src/shell_weekend.c src/shell_audience.c src/shell_cheats.c src/shell_gate.c src/shell_fastquit.c src/shell_frame.c src/shell_promptdispatch.c src/shell_actions.c src/shell_demo.c src/shell_autoplay.c src/shell_earlyexit.c src/shell_pack.c src/shell_goto.c src/shell_gallery.c src/assets.c src/pack_select.c src/recorder.c src/audio.c src/audio_raylib.c src/encode_mp4.c src/encode_mp4_h264.c src/encode_mp4_mux.c src/encode_mp4_aac.c src/intro_mix.c src/encode_dialog.c src/bfont.c src/text.c src/font_raylib.c src/select.c src/textsel.c src/tilevar.c src/tile_cache.c src/sprites.c src/views.c src/ui.c src/screenshot.c src/combat_loop.c src/combat_render.c src/combat_replay.c src/palette.c src/chrome.c src/lattice.c src/hud.c src/map_render.c src/overlay.c src/legacy/overlay.c src/modern/overlay.c src/views_render.c src/legacy/views_render.c src/modern/views_render.c src/legacy/prompt.c src/modern/prompt.c src/modern/mlayout.c src/modern/castle.c src/modern/mlist.c src/modern/saveslots.c src/modern/gamemenu.c src/modern/location.c src/modern/uikit.c src/modern/page.c src/modern/rail.c src/input.c src/input_host.c src/touch.c src/uitouch.c src/frame_host.c src/prompt.c src/startup.c src/intro.c src/end_cartoon.c src/screens/home_castle.c src/screens/recruit_soldiers.c src/screens/own_castle.c src/screens/dwelling.c src/screens/alcove.c src/screens/end_game.c
 # plat_android.c is NOT here: its non-Android branch is two no-ops, and
 # main.c calls them on every platform.
 IOS_SKIP := src/gfx_raylib.c src/frame_host.c src/input_host.c \
@@ -103,7 +103,7 @@ PACK_DIR   := build/$(BUILD)/assets
 PACKS := $(addprefix $(PACK_DIR)/,$(addsuffix .openbounty,$(PACK_NAMES)))
 
 OUT_TEST      := build/openbounty-test
-OUT_ENGLIB    := build/libobengine.a
+OUT_ENGLIB    := build/$(BUILD)/libobengine.a
 LIBTEST_STAMP := build/libtest-pass.stamp
 TOUCH_STAMP := build/touch-guard.stamp
 PAGE_STAMP  := build/page-guard.stamp
@@ -294,11 +294,12 @@ WEB_CFLAGS := -std=c99 -Wall -Wextra -O2 -DPLATFORM_WEB \
 # -sSTACK_SIZE=8388608 mirrors the Windows target's --stack=8388608 and for
 #   the same reason: several main.c locals are large (Resources ~3.9 MB,
 #   Map ~848 KB) and Emscripten's 64 KB default stack overflows instantly.
-# -sINITIAL_MEMORY=67108864 (64 MiB) is a FIXED heap, deliberately not
+# -sINITIAL_MEMORY=134217728 (128 MiB) is a FIXED heap, deliberately not
 #   ALLOW_MEMORY_GROWTH: a growable wasm heap hands out resizable
-#   ArrayBuffers, which browsers reject in WebGL texImage2D. Measured peak
-#   over boot / save load / roaming with zone reloads is a flat 32.8 MB --
-#   growth never fired -- so 64 MiB is 2x headroom.
+#   ArrayBuffers, which browsers reject in WebGL texImage2D. Boot, save load
+#   and roaming peak at about 33 MB, but the Introduction's pictures and
+#   sounds ran a 64 MiB heap out of memory near its end (#192); at 128 MiB
+#   it plays through and returns to the title menu.
 # -lidbfs.js provides the IDBFS the shell mounts at /saves so saves survive
 #   a page reload (engine/savepath.c's __EMSCRIPTEN__ branch).
 # A wasm module embeds its pack, so there is one build PER PACK, each in its
@@ -308,13 +309,13 @@ WEB_CFLAGS := -std=c99 -Wall -Wextra -O2 -DPLATFORM_WEB \
 #   workflow's asset guard is unaffected -- and `web` is deliberately NOT part
 #   of `dist`.
 WEB_LDFLAGS := -L$(RAYLIB_WEB)/lib -lraylib -lidbfs.js \
-               -sUSE_GLFW=3 -sASYNCIFY -sINITIAL_MEMORY=67108864 \
+               -sUSE_GLFW=3 -sASYNCIFY -sINITIAL_MEMORY=134217728 \
                -sSTACK_SIZE=8388608 -sFORCE_FILESYSTEM \
                -sEXPORTED_RUNTIME_METHODS=FS,IDBFS,addRunDependency,removeRunDependency
 
 # The packs that get a web build. `make web` builds both, and dist-web
 # packages each as its own zip (openbounty-* for King's Bounty, gloryofrome-*
-# for Glory of Rome).
+# for The Glory of Rome).
 WEB_PACK_NAMES := kings-bounty glory-of-rome
 WEB_OUTS       := $(foreach p,$(WEB_PACK_NAMES),build/web/$(p)/openbounty.html)
 OUT_WEB_ROME   := build/web/glory-of-rome/openbounty.html
@@ -359,8 +360,7 @@ web-serve: $(WEB_OUTS)
 #
 # MOBILE SHIPS GLORY OF ROME ONLY. The pack goes into the APK's assets/ and
 # src/plat_android.c opens it from there; there is no pack discovery, no
-# picker, and King's Bounty (DOS-extracted, copyright-restricted) is never
-# packaged.
+# picker, and King's Bounty is not packaged.
 #
 # Pass the toolchain on the make command line, never through the environment:
 #   make android ANDROID_NDK=<ndk root> ANDROID_SDK_ROOT=<sdk root>
@@ -660,7 +660,7 @@ define ios_build
 	sed -e "s|<string>1</string>|<string>$(IOS_BUILD_NUMBER)</string>|" \
 	    -e "s|<string>1.0</string>|<string>$(IOS_VERSION_NAME)</string>|" \
 	    ios/Info.plist > $(3)/Info.plist
-	# Glory of Rome only: the one pack, as a bundle resource.
+	# The Glory of Rome only: the one pack, as a bundle resource.
 	cp $(PACK_DIR)/$(ANDROID_PACK).openbounty $(3)/
 endef
 
@@ -763,13 +763,10 @@ dist-ios: $(IOS_IPA)
 # Distribution archives (consumed by GitHub Actions release workflow).
 # Each `dist-<platform>` target stages the platform-specific binary plus
 # README.txt (rendered from dist/README.txt.in with $(OPENBOUNTY_VERSION)
-# substituted), LICENSE, and NOTICES.md, then archives them. The output
-# lands in dist/ next to the build/ tree.
-#
-# CRITICAL: no .openbounty pack file is ever included in a release
-# archive, the asset pack is DOS-extracted and copyright-restricted.
-# The release workflow has a CI-side belt-and-braces check that fails
-# if any dist/*.tar.gz or dist/*.zip contains a .openbounty file.
+# substituted), LICENSE, NOTICES.md and the King's Bounty pack in assets/,
+# then archives them. The output lands in dist/ next to the build/ tree.
+# Each game's archives carry its own pack only, and the release workflow
+# checks it (scripts/verify_release_packs.sh).
 # ---------------------------------------------------------------------------
 DIST    := dist
 STAGING := build/staging
@@ -779,9 +776,12 @@ STAGING := build/staging
 # The release workflow invokes it from its own job.
 dist: dist-linux dist-windows dist-mac
 
-dist-linux: release
-	@rm -rf $(STAGING)/linux && mkdir -p $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)
+KB_PACK_FILE := $(PACK_DIR)/kings-bounty.openbounty
+
+dist-linux: release $(KB_PACK_FILE)
+	@rm -rf $(STAGING)/linux && mkdir -p $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets
 	cp build/release/openbounty $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty
+	cp $(KB_PACK_FILE) $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets/kings-bounty.openbounty
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/linux/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	@mkdir -p $(DIST)
@@ -793,22 +793,25 @@ dist-linux: release
 # saw the exit status of its last one -- the zip. A failing `cp LICENSE
 # NOTICES.md` left make reporting success and shipped archives with no licence
 # text. The other five games are written this way; this one was the exception.
-dist-windows: $(OUT_WIN64) $(OUT_WIN32)
+dist-windows: $(OUT_WIN64) $(OUT_WIN32) $(KB_PACK_FILE)
 	@rm -rf $(STAGING)/win-x86_64 $(STAGING)/win-i686 && mkdir -p $(DIST) \
-	    $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG) \
-	    $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)
+	    $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets \
+	    $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets
 	cp $(OUT_WIN64) $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe
+	cp $(KB_PACK_FILE) $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets/kings-bounty.openbounty
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/win-x86_64/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	cp $(OUT_WIN32) $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty.exe
+	cp $(KB_PACK_FILE) $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets/kings-bounty.openbounty
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/win-i686/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
 	(cd $(STAGING)/win-x86_64 && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-windows-x86_64.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
 	(cd $(STAGING)/win-i686 && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-windows-i686.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
 
-dist-mac: $(OUT_MAC)
-	@rm -rf $(STAGING)/mac && mkdir -p $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)
+dist-mac: $(OUT_MAC) $(KB_PACK_FILE)
+	@rm -rf $(STAGING)/mac && mkdir -p $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets
 	cp $(OUT_MAC) $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty
+	cp $(KB_PACK_FILE) $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/assets/kings-bounty.openbounty
 	codesign --force --sign - --options runtime $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/openbounty
 	sed "s/<version>/$(OPENBOUNTY_VERSION_DISPLAY)/g" $(DIST)/README.txt.in > $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/README.txt
 	cp LICENSE NOTICES.md $(STAGING)/mac/openbounty-$(OPENBOUNTY_VERSION_SLUG)/
@@ -816,11 +819,12 @@ dist-mac: $(OUT_MAC)
 	(cd $(STAGING)/mac && zip -qr ../../../$(DIST)/openbounty-$(OPENBOUNTY_VERSION_SLUG)-macos-universal.zip openbounty-$(OPENBOUNTY_VERSION_SLUG))
 
 # ---------------------------------------------------------------------------
-# Glory of Rome desktop packages: the same binary as the OpenBounty archives
+# The Glory of Rome desktop packages: the same binary as the OpenBounty archives
 # above, plus the Rome pack in assets/ beside it -- the directory pack
 # discovery already searches (src/main.c), so the game starts with no flags.
-# Rome's pack is ours to ship; King's Bounty's never is, and the release
-# workflow checks both halves of that rule.
+# Each game's archives carry its own pack only: the gloryofrome-* ones carry
+# Rome's and nothing of King's Bounty, and the release workflow checks it
+# (scripts/verify_release_packs.sh).
 # ---------------------------------------------------------------------------
 ROME_PACK_FILE := $(PACK_DIR)/glory-of-rome.openbounty
 ROME_SLUG      := gloryofrome-$(OPENBOUNTY_VERSION_SLUG)
@@ -854,7 +858,7 @@ dist-rome-mac: $(OUT_MAC) $(ROME_PACK_FILE)
 # module, the .data pack image, and the .html shell. Serve them over HTTP --
 # browsers refuse to fetch .wasm/.data over file://.
 # Two zips, one per game: openbounty-* carries King's Bounty and gloryofrome-*
-# Glory of Rome, each with its pack embedded in the .data image. The site pulls
+# The Glory of Rome, each with its pack embedded in the .data image. The site pulls
 # each by its prefix into its own URL.
 # $(call web_stage,<pack-name>,<zip-prefix>,<readme-template>)
 define web_stage
@@ -874,8 +878,7 @@ dist-web: build/web/kings-bounty/openbounty.html $(OUT_WEB_ROME)
 
 # Android ships as the APK and the AAB themselves -- no archive, no README
 # alongside: a store artifact is a single signed file. Both carry the Glory of
-# Rome pack inside them, which is ours to distribute (the release workflow's
-# guard is about King's Bounty's DOS-extracted pack, which never reaches here).
+# Rome pack inside them, and only that pack.
 dist-android: $(ANDROID_APK)
 	@mkdir -p $(DIST)
 	cp $(ANDROID_APK) $(DIST)/gloryofrome-$(OPENBOUNTY_VERSION_SLUG)-android-arm64.apk
@@ -901,7 +904,12 @@ TEST_SRC := $(filter-out src/main.c,$(SHELL_SRC)) $(TOOL_SRC) \
             $(DEMO_SRC) $(AUTOPLAY_SRC) \
             $(TEST_ONLY_SRC)
 
-$(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
+# One gcc call compiles every source, so no .d files track its headers: it
+# depends on every header and included .inc file instead, and an edited one
+# rebuilds it.
+TEST_HDR := $(wildcard engine/include/*.h engine/*.h src/*.h src/*/*.h src/*.inc demo/*.h autoplay/*.h tools/*.h tools/*.inc tests/*.h)
+
+$(OUT_TEST): $(TEST_SRC) $(TEST_HDR) $(OUT_ENGLIB) build/version.h Makefile | build
 	gcc $(CFLAGS) -Ithird_party/greatest -Itests $(TEST_SRC) $(OUT_ENGLIB) -o $(OUT_TEST) $(LDFLAGS)
 
 # ---------------------------------------------------------------------------
@@ -914,9 +922,9 @@ $(OUT_TEST): $(TEST_SRC) $(OUT_ENGLIB) build/version.h Makefile | build
 # the library itself has no raylib dependency.
 # ---------------------------------------------------------------------------
 ENGLIB_SRC := $(ENGINE_SRC) $(VENDOR_SRC)
-ENGLIB_OBJ_DIR := build/objs/englib
+ENGLIB_OBJ_DIR := build/$(BUILD)/objs/englib
 ENGLIB_OBJ := $(patsubst %.c,$(ENGLIB_OBJ_DIR)/%.o,$(ENGLIB_SRC))
-ENGLIB_CFLAGS := -std=c99 -Wall -Wextra -O2 -fPIC $(OB_EXTRA_CFLAGS) -Iengine/headless -Iengine/include -Ibuild -Ithird_party/cjson -Ithird_party/miniz -DOB_HEADLESS
+ENGLIB_CFLAGS := -std=c99 -Wall -Wextra $(CFLAGS_$(BUILD)) -fPIC $(OB_EXTRA_CFLAGS) -Iengine/headless -Iengine/include -Ibuild -Ithird_party/cjson -Ithird_party/miniz -DOB_HEADLESS
 
 $(ENGLIB_OBJ_DIR)/%.o: %.c Makefile | $(ENGLIB_OBJ_DIR) build/version.h
 	@mkdir -p $(dir $@)
@@ -936,7 +944,10 @@ $(ENGLIB_OBJ_DIR):
 ALL_OBJS := $(SHELL_OBJ) $(TOOL_OBJ) $(ENGLIB_OBJ)
 -include $(ALL_OBJS:.o=.d)
 
+# Rebuilt whole: `ar rcs` only adds and replaces members, so an object whose
+# source has gone (a renamed or split file) would otherwise stay in the archive.
 $(OUT_ENGLIB): $(ENGLIB_OBJ) | build
+	@rm -f $@
 	ar rcs $@ $(ENGLIB_OBJ)
 
 # Single test command. greatest runs the entire suite: unit tests,
@@ -946,6 +957,11 @@ $(OUT_ENGLIB): $(ENGLIB_OBJ) | build
 # `make all` time.
 test: $(OUT_TEST)
 	@./$(OUT_TEST)
+
+# The Glory of Rome maps: each .dat is what its art/maps source builds, and
+# the map checks of tools/romeart.py hold (what CI's linux job runs).
+check-maps:
+	@scripts/check_maps.sh assets/glory-of-rome
 
 # ---------------------------------------------------------------------------
 # Library boundary check. Compiles a minimal consumer against
@@ -1091,4 +1107,4 @@ clean:
 	rm -rf build
 	rm -f dist/*.tar.gz dist/*.zip
 
-.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play ios ios-sim dist-ios dist-rome-linux dist-rome-windows dist-rome-mac clean test extract extract-pack dist dist-linux dist-windows dist-mac dist-web
+.PHONY: all run release run-release windows windows-debug mac web web-kings-bounty web-glory-of-rome web-serve android android-play dist-android dist-android-play ios ios-sim dist-ios dist-rome-linux dist-rome-windows dist-rome-mac clean test check-maps extract extract-pack dist dist-linux dist-windows dist-mac dist-web

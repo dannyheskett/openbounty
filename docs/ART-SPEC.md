@@ -4,14 +4,14 @@ Authoring dimensions for a complete pack of game graphics.
 
 No size here has been compiled into the renderer. Every size below has been
 derived from numbers a pack declares in `game.json`, so this document has been
-a worked example, not a set of constants. Glory of Rome's block:
+a worked example, not a set of constants. The Glory of Rome's block:
 
 ```json
 "render": { "mode": "modern", "tile_w": 96, "tile_h": 96, "tiles_w": 5, "tiles_h": 5,
             "ui_scale": 1, "dim": 30, "native_w": 800, "native_h": 504 }
 ```
 
-Glory of Rome has been the target this spec is written for: **96 x 96 tiles,
+The Glory of Rome has been the target this spec has been written for: **96 x 96 tiles,
 authored at native resolution.** King's Bounty has been `mode: legacy`,
 48 x 34, `ui_scale` 1, and every formula below has evaluated to its legacy
 value at those settings, so the legacy pack has been unaffected by anything
@@ -28,20 +28,20 @@ Two numbers, each with one job:
 | `tile_w` / `tile_h` | one map or combat cell | 96 x 96 |
 | `ui_scale` | the chrome bands and fixed UI furniture | 1 |
 
-**The text has been one sixth of a tile.** The original sized its glyph at one
+**The text has been one sixth of a tile.** The original has sized its glyph at one
 sixth of its tile (8 against 48), and the HUD has been built on that ratio:
 the gold counter has been drawn inside a one-tile sidebar panel, so a font
-that grows faster than the tile has overflowed it. At `ui_scale` 4 a
+that has grown faster than the tile has overflowed it. At `ui_scale` 4 a
 four-digit gold total has been 128 px wide against a 96 px panel and has
 spilled out of the sidebar. A pack on the bitmap strip font has had an
 `8 * ui_scale` glyph, so it has kept the ratio with `ui_scale` =
 `tile_w / 48`. Rome has declared a TrueType face at 16 px instead (section 2,
 Font), the same one-sixth of its 96 px tile, so it has declared `ui_scale` 1.
 
-The whole picture has been shown at the largest whole scale the screen allows
+The whole picture has been shown at the largest whole scale the screen has allowed
 (`DESIGN-SPEC.md`), which has changed nothing about what you author.
 
-Everything an artist delivers has fallen into one of two classes:
+Everything an artist has delivered has fallen into one of two classes:
 
 **Tile-shaped art** — anything that occupies a map cell, a combat cell, or a
 sidebar panel. Authored at exactly `tile_w x tile_h`: **96 x 96**.
@@ -64,12 +64,13 @@ the size in the "authored" column.
 
 | category | path |
 |---|---|
-| terrain and map objects | `art/tiles/` (a zone with `tile_set` draws its terrain from `art/tiles/<set>/` instead; objects stay shared) |
+| terrain | `art/tiles/` (a zone with `tile_set` draws its terrain from `art/tiles/<set>/` instead), named by shape: `forest_edge_n`, `water_inner_es`, `road_nw` (PACK-FORMAT §4.3) |
+| map objects: towns, castles, landmarks, set pieces, dwellings, chests, signs, wandering armies | `art/objects/` (the same in every zone) |
 | zone terrain sets | `art/tiles/africa/`, `galliae/`, `oriens/` |
-| troop sprites and their animation frames | `art/troops/` |
+| troop sprites, their animation frames and portraits | `art/troops/` (`<troop>_NN`, `<troop>_portrait`) |
 | villain portraits and frames | `art/villains/` |
-| character portraits and frames | `art/portraits/` |
-| hero figures and walk frames | `art/classes/` |
+| the people met in town: portraits and frames | `art/characters/` |
+| class portraits, hero figures and walk frames | `art/classes/` (`<class>_portrait`, `_hero`, `_walk_NN`) |
 | boat frames | `art/sprites/` |
 | obstacles, castle spike, cursors | `art/combat/` |
 | HUD panels, inventory icons, location figures | `art/ui/` |
@@ -81,13 +82,13 @@ rectangle of content centred in it scaled to 576 x 480 and cut into 30 cells
 of 96 x 96 in `art/combat/field/` (PACK-FORMAT, "Field grid"). Italia's has
 shipped from `art/fields/italia_calm.png`, the supplied light meadow
 `art/fields/italia.png` with its boulders, ferns, clover and earth patches
-painted out (`romeart.py fieldcalm`), so the troops stand out on it; Galliae,
+painted out (`romeart.py fieldcalm`), so the troops have stood out on it; Galliae,
 Africa and Oriens have shipped from windows of that calmed painting, flipped
 and colour-graded for each land (`romeart.py fieldgrade`, ART-PIPELINE).
 
 These have been one class on purpose: the same troop PNG has been drawn into a
 combat cell, an army-roster row, a location screen and the victory cartoon.
-One square size has meant it is correct in all of them.
+One square size has meant it has been correct in all of them.
 
 ### Screen-shaped
 

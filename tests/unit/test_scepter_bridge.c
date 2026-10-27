@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define TINY_DIR "/tmp/ob_bridge_pack"
+#define TINY_DIR "build/ob_bridge_pack"
 
 static void set_item(cJSON *obj, const char *key, cJSON *item) {
     if (cJSON_GetObjectItem(obj, key)) cJSON_ReplaceItemInObject(obj, key, item);
@@ -56,7 +56,7 @@ static bool write_tiny_pack(void) {
     if (!grass) { cJSON_Delete(d); return false; }
     // The bridge code: grass terrain over a river, as the Rome pack declares it.
     cJSON *bridge = cJSON_CreateObject();
-    cJSON_AddStringToObject(bridge, "art", "bridge_h");
+    cJSON_AddStringToObject(bridge, "art", "bridge_ew");
     cJSON_AddStringToObject(bridge, "terrain", "grass");
     cJSON_AddTrueToObject(bridge, "is_bridge");
     set_item(codes, "B", bridge);

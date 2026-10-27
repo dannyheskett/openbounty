@@ -248,10 +248,6 @@ void views_gate_open(const GateDestination *dests, int count, bool is_town) {
 int views_gate_row(void) { return gate_view.row; }
 
 int  views_gate_count(void)   { return gate_view.count; }
-int  views_gate_rows_per_column(void) {
-    int n = (gate_view.count + VIEWS_GATE_COLUMNS - 1) / VIEWS_GATE_COLUMNS;
-    return n < 1 ? 1 : n;
-}
 bool views_gate_is_town(void) { return gate_view.is_town; }
 int  views_gate_cursor(void)  { return gate_view.cursor; }
 
@@ -573,7 +569,7 @@ bool shell_pump_player_io_view(Game *g) {
         if (replace) views_set(v);
         else         views_push(v);
     }
-    player_io_ack(g);   // transport complete; the view now lives on the stack
+    player_io_ack(g);   // transport complete; the view is on the stack
     return true;
 }
 
@@ -872,7 +868,7 @@ static void town_do_info(const Game *g) {
 }
 
 static void town_format_intel(const Game *g, char *out, size_t cap) {
-    // : this town reports intel
+    // this town reports intel
     // on the castle named in its intel_castle field. Display:
     //   "Castle <name> is under
     //    <owner>'s rule.

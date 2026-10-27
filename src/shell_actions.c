@@ -88,6 +88,7 @@ void shell_dispatch_action(ShellCtx *ctx, const InputState *in) {
                                       r_->banners.body_save_confirm,
                                       NULL, 0);
             player_io_note(g, NULL, body);
+            fast_quit_set_save_message(true);
         }
         break;
     }

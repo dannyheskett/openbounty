@@ -2,6 +2,7 @@
 // (see mlist.h).
 
 #include "modern/mlist.h"
+#include "input.h"        // the gamepad: d-pad, A, B
 #include "modern/uikit.h"
 #include "gfx.h"
 #include "modern/mlayout.h"
@@ -167,7 +168,10 @@ int ml_key_code(const char *name) {
 
 MlEvent ml_list_input(MlList *l, int touch_list, int *row) {
     if (row) *row = -1;
-    if (!l || l->n <= 0) return input_key_pressed(KEY_ESCAPE) ? ML_EV_BACK : ML_EV_NONE;
+    // A gamepad answers as the keys do: the d-pad or stick moves, A acts,
+    // B goes back.
+    if (!l || l->n <= 0)
+        return input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel() ? ML_EV_BACK : ML_EV_NONE;
     if (l->cursor < 0 || l->cursor >= l->n) l->cursor = 0;
     #define ENABLED(i) (!l->enabled || l->enabled[i])
     if (touch_list) {
@@ -179,7 +183,9 @@ MlEvent ml_list_input(MlList *l, int touch_list, int *row) {
             return ML_EV_ACT;
         }
     }
-    if (input_key_pressed(KEY_ESCAPE)) return ML_EV_BACK;
+    if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) return ML_EV_BACK;
+    int gx = 0, gy = 0;
+    bool pad = input_gamepad_dir(&gx, &gy);
     for (int i = 0; l->keys && i < l->n; i++) {
         int k = ml_key_code(l->keys[i]);
         bool digit = k >= KEY_ZERO && k <= KEY_ZERO + 9;
@@ -193,16 +199,19 @@ MlEvent ml_list_input(MlList *l, int touch_list, int *row) {
     // Left and Right move along a row of answers side by side (ml_hrow_draw)
     // as Up and Down move down a column.
     if (input_key_pressed(KEY_UP) || input_key_pressed(KEY_KP_8) ||
-        input_key_pressed(KEY_LEFT) || input_key_pressed(KEY_KP_4)) {
+        input_key_pressed(KEY_LEFT) || input_key_pressed(KEY_KP_4) ||
+        (pad && (gy < 0 || gx < 0))) {
         l->cursor = (l->cursor - 1 + l->n) % l->n;
         return ML_EV_MOVED;
     }
     if (input_key_pressed(KEY_DOWN) || input_key_pressed(KEY_KP_2) ||
-        input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) {
+        input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6) ||
+        (pad && (gy > 0 || gx > 0))) {
         l->cursor = (l->cursor + 1) % l->n;
         return ML_EV_MOVED;
     }
-    if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) || input_key_pressed(KEY_SPACE)) {
+    if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) || input_key_pressed(KEY_SPACE) ||
+        input_gamepad_confirm()) {
         if (!ENABLED(l->cursor)) return ML_EV_NONE;
         if (row) *row = l->cursor;
         return ML_EV_ACT;

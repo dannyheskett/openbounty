@@ -203,29 +203,15 @@ static void draw_character(const Game *g, const Sprites *s) {
 //  5 rows, each showing one troop stack.
 // ---------------------------------------------------------------------------
 
-// Compare this slot's group against
-// every other occupied slot. Any 'L' => Low; all 'H' => High; else Normal.
-// Single-stack armies always report High. Labels come from res.ui.morale_*.
+// The stack's army-view morale (GameArmySlotMorale) as its label from
+// res.ui.morale_*.
 static const char *army_slot_morale(const Game *g, int slot) {
     const ResUI *ui = &g->res->ui;
-    const TroopDef *me = troop_by_id(g->army[slot].id);
-    if (!me) return ui->morale_normal;
-
-    int others = 0, low = 0, high = 0;
-    for (int j = 0; j < GAME_ARMY_SLOTS; j++) {
-        if (j == slot) continue;
-        if (!g->army[j].id[0] || g->army[j].count == 0) continue;
-        const TroopDef *o = troop_by_id(g->army[j].id);
-        if (!o) continue;
-        others++;
-        char r = morale_result(me->morale_group, o->morale_group);
-        if (r == 'L') low++;
-        else if (r == 'H') high++;
+    switch (GameArmySlotMorale(g, slot)) {
+    case 'H': return ui->morale_high;
+    case 'L': return ui->morale_low;
+    default:  return ui->morale_normal;
     }
-    if (others == 0)    return ui->morale_high;
-    if (low > 0)        return ui->morale_low;
-    if (high == others) return ui->morale_high;
-    return ui->morale_normal;
 }
 
 static void draw_army(const Game *g, const Sprites *s) {
@@ -347,9 +333,9 @@ static void draw_contract(const Game *g, const Sprites *s) {
     // (3 tiles tall = 102px). Top map row + bottom map row remain visible;
     // HUD sidebar untouched. Don't override the status bar -- it stays
     // normal ("Options / Controls / Days Left:NNN").
-    // x and w must come from the SAME rect. They used to be the content rect
-    // and the pane respectively, which put the left edge at the centred panel
-    // and the right edge a pane-width further on -- off the screen entirely.
+    // x and w must come from the SAME rect: taking x from the content rect
+    // and w from the pane would put the right edge a pane-width past the
+    // centred panel, off the screen.
     int panel_x = FULL_VIEW_X + 2 * CL_UI;
     int panel_y = VIEW_Y + CL_TILE_H;        // 1 tile down
     int panel_w = FULL_VIEW_W - 4 * CL_UI;   // 2px inset on each side
@@ -426,7 +412,7 @@ static void draw_contract(const Game *g, const Sprites *s) {
     int sy = ty;
     char buf[96];
 
-    // All header labels in YELLOW (). Lines: Name,
+    // All header labels in YELLOW. Lines: Name,
     // Alias, Reward, Last Seen, Castle.
     {
         ResTemplateVar v_[] = { { "VALUE", v->name } };
@@ -501,8 +487,8 @@ static void draw_contract(const Game *g, const Sprites *s) {
 // scepter deduction reads the same table.
 
 // Lazy-loaded scepter-zone map. The puzzle-view background shows the
-// scepter location with its 5x5 surroundings revealed cell-by-cell
-// (). We load the scepter's continent into a
+// scepter location with its 5x5 surroundings revealed cell-by-cell.
+// We load the scepter's continent into a
 // scratch Map the first time the puzzle view opens; reload only if
 // the scepter zone changes.
 static Map  s_puzzle_scepter_map;
@@ -625,8 +611,8 @@ static void draw_puzzle(const Game *g, const Sprites *s) {
             if (reveal_step < seq[j][i]) caught = false;
 
             if (caught) {
-                // Reveal: show the underlying scepter-location terrain
-                // (). Each puzzle cell maps to a
+                // Reveal: show the underlying scepter-location terrain.
+                // Each puzzle cell maps to a
                 // map tile at (cam_x + i, cam_y + j).
                 bool drew = false;
                 if (s_puzzle_scepter_loaded) {

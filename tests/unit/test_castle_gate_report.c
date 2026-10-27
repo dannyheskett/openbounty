@@ -154,7 +154,8 @@ TEST same_troop_stacks_share_a_line(void) {
     ASSERT(t);
     memset(cr->garrison, 0, sizeof cr->garrison);
     for (int s = 0; s < 2; s++) {
-        snprintf(cr->garrison[s].id, sizeof cr->garrison[s].id, "%s", t->id);
+        ASSERT(snprintf(cr->garrison[s].id, sizeof cr->garrison[s].id, "%s", t->id)
+               < (int)sizeof cr->garrison[s].id);
         cr->garrison[s].count = 3;
     }
     char report[PLAYER_IO_BODY_CAP];

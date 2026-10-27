@@ -81,6 +81,10 @@ typedef struct {
     int  tier_counts[4];
 } TroopDef;
 
+// The catalog lookups, the same five shapes for troops, spells, classes,
+// villains and artifacts: by id, by index (the entry's position, which its
+// `index` must equal), and the count. NULL for an unknown id or an index out
+// of range, and before resources_load has published a catalog.
 const TroopDef *troop_by_id(const char *id);
 const TroopDef *troop_by_index(int idx);
 int             troops_count(void);
@@ -108,6 +112,9 @@ typedef struct {
 const SpellDef *spell_by_id(const char *id);
 const SpellDef *spell_by_index(int idx);
 int             spells_count(void);
+// Changes whenever the published catalog does (a pack loaded, freed or
+// republished); a memo over the catalog rebuilds when it moves.
+unsigned        resources_generation(void);
 
 // Resolve a spell id to its slot in Game.spells.counts[]. Returns -1 if the
 // id is not present in the loaded catalog. Use this instead of hardcoding

@@ -155,8 +155,8 @@ void layout_min_window(int *out_w, int *out_h) {
     //   The map viewport will not shrink below CL_TILES_MIN tiles plus the
     //   one-tile sidebar.
     //
-    // For the 48x34 pack these come out equal and give exactly 320x200 -- the
-    // value that used to be hardcoded -- because the sidebar is one tile wide,
+    // For the 48x34 pack these come out equal and give exactly 320x200, the
+    // original's screen, because the sidebar is one tile wide,
     // so CL_TILES_MIN + 1 == COMBAT_W. A pack that changes either number gets a
     // floor that still holds.
     int need_w = COMBAT_W * g_layout.tile_w;
@@ -201,8 +201,8 @@ bool layout_fit_window(int win_w, int win_h, int scale) {
                - CL_FRAME_BOTTOM_H;
 
     // Floor the pane at the smallest viewport, so a window too small to hold
-    // the minimum falls back to the old behaviour: a buffer larger than the
-    // window, which present_scaled centres.
+    // the minimum gets a buffer larger than the window, which present_scaled
+    // centres.
     int min_w = g_layout.tile_w * CL_TILES_MIN;
     int min_h = g_layout.tile_h * CL_TILES_MIN;
     if (pane_w < min_w) pane_w = min_w;

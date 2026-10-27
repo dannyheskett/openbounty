@@ -1,5 +1,5 @@
 // raylib backend for src/audio_backend.h: the device, four decoded tunes and
-// two streamed tracks, exactly as src/audio.c used to call raylib for them.
+// two streamed tracks.
 // iOS compiles ios/audio_ios.mm instead and never builds this file.
 //
 // Handles are indices into two small fixed tables rather than raylib's Sound /

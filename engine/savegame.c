@@ -29,7 +29,7 @@ static char *read_whole_file(const char *path, size_t *out_len) {
     return buf;
 }
 
-// Forward direction (Difficulty -> id) lives in state_serialize.c now.
+// The reverse (Difficulty -> id) is in state_serialize.c.
 static Difficulty difficulty_from_id(const char *s) {
     if (!s) return DIFFICULTY_EASY;
     if (strcmp(s, "normal") == 0) return DIFFICULTY_NORMAL;
@@ -37,14 +37,14 @@ static Difficulty difficulty_from_id(const char *s) {
     if (strcmp(s, "impossible") == 0) return DIFFICULTY_IMPOSSIBLE;
     return DIFFICULTY_EASY;
 }
-// Forward direction (Mount -> id) lives in state_serialize.c now.
+// The reverse (Mount -> id) is in state_serialize.c.
 static Mount mount_from_id(const char *s) {
     if (!s) return MOUNT_RIDE;
     if (strcmp(s, "sail") == 0) return MOUNT_SAIL;
     if (strcmp(s, "fly")  == 0) return MOUNT_FLY;
     return MOUNT_RIDE;
 }
-// Forward direction (CastleOwnerKind -> id) lives in state_serialize.c now.
+// The reverse (CastleOwnerKind -> id) is in state_serialize.c.
 static CastleOwnerKind castle_owner_from_id(const char *s) {
     if (!s) return CASTLE_OWNER_PLAYER;
     if (strcmp(s, "monsters") == 0) return CASTLE_OWNER_MONSTERS;
@@ -54,7 +54,7 @@ static CastleOwnerKind castle_owner_from_id(const char *s) {
 }
 
 // ----- Fog encoding ---------------------------------------------------------
-// Encode lives in state_serialize.c now. Decode (load path) stays here.
+// Decoding, for the load; the encoder is in state_serialize.c.
 static bool decode_fog_row(Fog *fog, int row, int width, const char *s) {
     int nibbles = (width + 3) / 4;
     if ((int)strlen(s) != nibbles) return false;
@@ -75,7 +75,7 @@ static bool decode_fog_row(Fog *fog, int row, int width, const char *s) {
 }
 
 // ----- Unit array (troops + counts) ----------------------------------------
-// Build lives in state_serialize.c now. Parse (load path) stays here.
+// Parsing, for the load; the writer is in state_serialize.c.
 static void parse_unit_array(const cJSON *arr, Unit *out, int max) {
     memset(out, 0, sizeof(Unit) * max);
     if (!cJSON_IsArray(arr)) return;
@@ -115,10 +115,17 @@ SaveResult SaveGameWrite(const char *path,
 
     FILE *f = fopen(path, "wb");
     if (!f) { free(out); return SAVE_ERR_IO; }
-    fwrite(out, 1, strlen(out), f);
-    fclose(f);
+    size_t len = strlen(out);
+    bool wrote = fwrite(out, 1, len, f) == len;
+    if (fclose(f) != 0) wrote = false;
     free(out);
-    return SAVE_OK;
+    return wrote ? SAVE_OK : SAVE_ERR_IO;
+}
+
+static void copy_string(char *dst, size_t dst_sz, const char *src) {
+    size_t i = 0;
+    while (i + 1 < dst_sz && src[i]) { dst[i] = src[i]; i++; }
+    dst[i] = '\0';
 }
 
 static void copy_json_string(char *dst, size_t dst_sz, const cJSON *j) {
@@ -126,6 +133,33 @@ static void copy_json_string(char *dst, size_t dst_sz, const cJSON *j) {
     size_t i = 0;
     while (i + 1 < dst_sz && j->valuestring[i]) { dst[i] = j->valuestring[i]; i++; }
     dst[i] = '\0';
+}
+
+// A save written before its pack renamed a troop holds the old id; map each
+// one to the id the pack uses now ("troop_aliases"), so the save plays on.
+static void alias_troop_id(const Resources *res, char *id, size_t cap) {
+    const char *now = resources_troop_alias(res, id);
+    if (now) copy_string(id, cap, now);
+}
+
+static void alias_saved_troops(Game *g) {
+    const Resources *res = g->res;
+    if (!res || res->troop_alias_count <= 0) return;
+    for (int s = 0; s < GAME_ARMY_SLOTS; s++)
+        alias_troop_id(res, g->army[s].id, sizeof g->army[s].id);
+    for (int i = 0; g->castles && i < g->castle_count; i++)
+        for (int s = 0; s < GAME_ARMY_SLOTS; s++)
+            alias_troop_id(res, g->castles[i].garrison[s].id,
+                           sizeof g->castles[i].garrison[s].id);
+    for (int i = 0; g->foes && i < g->foe_count; i++) {
+        FoeState *f = &g->foes[i];
+        for (int s = 0; s < GAME_ARMY_SLOTS; s++)
+            alias_troop_id(res, f->garrison[s].id, sizeof f->garrison[s].id);
+        alias_troop_id(res, f->requires_troop, sizeof f->requires_troop);
+    }
+    for (int i = 0; g->dwellings && i < g->dwelling_count; i++)
+        alias_troop_id(res, g->dwellings[i].troop_id,
+                       sizeof g->dwellings[i].troop_id);
 }
 
 SaveResult SaveGameRead(const char *path,
@@ -610,6 +644,28 @@ SaveResult SaveGameRead(const char *path,
             } else {
                 f->friendly = (strstr(f->placement_id, "friendly") != NULL);
             }
+            // A guardian's traits. Absent in saves written before they were
+            // saved, so taken from the zone army the foe was spawned from
+            // rather than bumping SAVE_VERSION and orphaning those saves.
+            const ResZoneArmy *za = GameFoeArmy(g, f);
+            cJSON *jst = cJSON_GetObjectItem(m, "static");
+            cJSON *jrt = cJSON_GetObjectItem(m, "requires_troop");
+            cJSON *jsi = cJSON_GetObjectItem(m, "scene_index");
+            cJSON *jstl = cJSON_GetObjectItem(m, "scene_title");
+            f->is_static = cJSON_IsBool(jst) ? cJSON_IsTrue(jst)
+                                             : (za && za->is_static);
+            if (cJSON_IsString(jrt))
+                copy_json_string(f->requires_troop, sizeof(f->requires_troop), jrt);
+            else
+                copy_string(f->requires_troop, sizeof(f->requires_troop),
+                            za ? za->requires_troop : "");
+            f->scene_index = cJSON_IsNumber(jsi) ? jsi->valueint
+                                                 : (za ? za->scene_index : -1);
+            if (cJSON_IsString(jstl))
+                copy_json_string(f->scene_title, sizeof(f->scene_title), jstl);
+            else
+                copy_string(f->scene_title, sizeof(f->scene_title),
+                            za ? za->title : "");
             for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
                 f->garrison[s].id[0] = '\0';
                 f->garrison[s].count = 0;
@@ -706,6 +762,7 @@ SaveResult SaveGameRead(const char *path,
         }
     }
 
+    alias_saved_troops(g);
     cJSON_Delete(root);
     return SAVE_OK;
 }

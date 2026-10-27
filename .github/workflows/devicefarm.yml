@@ -33,6 +33,12 @@ permissions:
   id-token: write   # mint the OIDC token to assume the AWS role
   contents: read
 
+# bash -eo pipefail for every step: a failing command, including one inside a
+# pipe, fails its step.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   android:
     name: build APK + Device Farm fuzz (Android)
@@ -78,7 +84,7 @@ jobs:
             ANDROID_BUILD_TOOLS="${ANDROID_BUILD_TOOLS}" \
             ANDROID_PLATFORM_VER="${ANDROID_PLATFORM_VER}"
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-west-2
@@ -107,7 +113,10 @@ jobs:
 
   ios:
     name: build .ipa + Device Farm fuzz (iOS)
-    if: inputs.platform == 'ios' || inputs.platform == 'both'
+    # After Android, and only if it passed (or was not selected): one failure
+    # stops the run.
+    needs: android
+    if: ${{ !cancelled() && (inputs.platform == 'ios' || (inputs.platform == 'both' && needs.android.result == 'success')) }}
     runs-on: macos-15
     timeout-minutes: 45
     steps:
@@ -121,7 +130,7 @@ jobs:
       - name: Build device .ipa (unsigned — Device Farm re-signs on upload)
         run: make ios PACK_TOOL=build/openbounty-mac
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-west-2

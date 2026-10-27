@@ -56,6 +56,4 @@ bool planstep_is_done(const Game *g, const PlanStep *step);
 const FoeState *plan_find_foe(const Game *g, const char *placement_id,
                               int zone_index);
 
-const char *plan_kind_name(PlanKind k);
-
 #endif

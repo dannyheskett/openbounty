@@ -1,8 +1,7 @@
 // src/shell_promptdispatch.c
 //
 // Shell ADAPTER for prompt-flow resolution. The state-mutation half
-// of each flow now lives in the engine (engine/flow_resolve.c) so autoplay can
-// share it. This file keeps the three host-side concerns:
+// of each flow is the engine's (engine/flow_resolve.c), shared with autoplay. This file keeps the three host-side concerns:
 //   - reading the answer (prompt_update / prompt_text_input_value);
 //   - running combat for siege/attack flows via RunCombat (rendered), then
 //     handing the CombatResult to the engine apply-core;
@@ -72,28 +71,17 @@ void shell_set_combat_ground(ShellCtx *ctx) {
         return;
     }
     const Tile *t = MapGetTile(ctx->map, ctx->game->position.x, ctx->game->position.y);
-    const char *terrain = t ? TerrainName(t->terrain) : "grass";
-    if (strcmp(terrain, "water") == 0) terrain = "grass";
+    Terrain terrain = t && t->terrain != TERRAIN_WATER ? (Terrain)t->terrain : TERRAIN_GRASS;
+    const char *stem = resources_map_art(ctx->res)->ground[terrain];
     char art[TILE_ART_NAME_LEN];
-    combat_render_set_ground(tile_cache_get(MapTerrainArt(ctx->map, terrain, art, sizeof art)));
+    combat_render_set_ground(stem[0] ? tile_cache_get(MapTerrainArt(ctx->map, stem, art, sizeof art)) : none);
 }
 
 static CombatResult run_castle_combat(ShellCtx *ctx, const char *castle_id) {
     shell_set_combat_ground(ctx);
-    Game            *g  = ctx->game;
-    const Resources *r_ = ctx->res;
-    CastleRecord *cr = GameFindCastle(g, castle_id);
-    const ResCastle *rc = resources_castle_by_id(r_, castle_id);
-    const VillainDef *v = (cr && cr->villain_id[0])
-                        ? villain_by_id(cr->villain_id) : NULL;
-    CombatTarget tgt = { 0 };
-    tgt.name = v && v->name[0] ? v->name
-             : (rc && rc->name[0] ? rc->name : castle_id);
-    tgt.seed_key = castle_id;            // stable identity for RNG seed
-    if (cr) {
-        tgt.garrison = cr->garrison;
-        tgt.garrison_slots = GAME_ARMY_SLOTS;
-    }
+    Game *g = ctx->game;
+    CombatTarget tgt;
+    CombatTargetForCastle(g, castle_id, &tgt);
     return RunCombat(g, ctx->map, ctx->fog, ctx->sprites, ctx->render_target,
                      COMBAT_MODE_CASTLE, &tgt);
 }
@@ -179,14 +167,8 @@ bool prompt_dispatch_tick(ShellCtx *ctx) {
                                             : PLAYER_IO_COMBAT_LOST;
     } else if (r == PROMPT_RESULT_YES && flow == FLOW_ATTACK_FOE &&
                pending_foe_id[0]) {
-        FoeState *foe = GameFindFoe(g, pending_foe_id);
-        CombatTarget tgt = { 0 };
-        tgt.name = "Hostile band";
-        tgt.seed_key = pending_foe_id;      // stable identity for RNG seed
-        if (foe) { tgt.garrison = foe->garrison;
-                   tgt.garrison_slots = GAME_ARMY_SLOTS;
-                   // A modern pack's fixed guardian fields all five.
-                   tgt.full_band = CL_IS_MODERN && foe->is_static; }
+        CombatTarget tgt;
+        CombatTargetForFoe(g, pending_foe_id, &tgt);
         shell_set_combat_ground(ctx);
         CombatResult cr = RunCombat(g, ctx->map, ctx->fog, ctx->sprites, ctx->render_target,
                                     COMBAT_MODE_FOE, &tgt);

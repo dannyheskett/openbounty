@@ -41,13 +41,6 @@ void loc_deal_absorb(const char *text) {
 
 bool loc_deal_pending(void) { return deal.pending; }
 
-const char *loc_deal_title(const Game *g, bool temple) {
-    if (!g || !g->res) return "";
-    const ResBanners *bn = &g->res->banners;
-    bool paid = deal.begun && deal.gold_after < deal.gold_before;
-    if (temple) return paid ? bn->loc_title_taught : deal.begun ? bn->loc_title_refused : bn->loc_title_known;
-    return deal.recruited > 0 ? bn->loc_title_joined : bn->loc_title_none;
-}
 bool loc_deal_revealed(void) { return deal.begun || deal.revealed; }
 void loc_deal_reveal(void)   { deal.revealed = true; }
 int *loc_deal_cursor(void)   { return &deal.cursor; }

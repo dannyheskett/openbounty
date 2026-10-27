@@ -147,8 +147,6 @@ void text_shutdown(void) {
     free(s_owned); s_owned = NULL;
 }
 
-bool text_ready(void) { return s_ready; }
-
 void text_set_zoom(int zoom) {
     if (zoom < 1) zoom = 1;
     s_want_zoom = zoom;

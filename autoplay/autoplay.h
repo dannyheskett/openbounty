@@ -67,6 +67,12 @@ bool autoplay_run(const AutoplayConfig *cfg, AutoplayResult *out);
 
 const char *autoplay_verdict_str(const AutoplayResult *r);
 
+// The [SIEGE] diagnostic: one line per villain siege on the last run's
+// committed line (day, villain, hero and garrison HP, hero losses). Valid
+// until the next autoplay_run; the callers print it under --verbose.
+void autoplay_print_sieges(void);
+void siege_notes_reset(void);
+
 // The one dumb replay applier (AP-023): apply one recorded primitive to the
 // live world. A fingerprint mismatch is a HARD FAILURE -- reported
 // ([REPLAY-DIVERGE]) and aborted, never played through. Shared verbatim by

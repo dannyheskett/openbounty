@@ -273,10 +273,12 @@ static void demo_temp_death(Game *g, Map *map, Fog *fog, const Resources *res) {
         g->army[i].count = 0;
     }
     g->stats.siege_weapons = 0;
-    const TroopDef *peas = troop_by_id("peasants");
-    if (peas) {
-        snprintf(g->army[0].id, sizeof g->army[0].id, "%s", peas->id);
-        g->army[0].count = 20;
+    // The engine's own consolation army (tuning.temp_death): the pack's
+    // troop and count, the cheapest troop when the pack names none.
+    const TroopDef *cons = troop_by_id(res->tuning.temp_death_troop);
+    if (cons) {
+        snprintf(g->army[0].id, sizeof g->army[0].id, "%s", cons->id);
+        g->army[0].count = res->tuning.temp_death_count;
     }
     g->boat.has_boat = false;
     g->boat.x = g->boat.y = -1;
@@ -357,27 +359,15 @@ static bool resolve_combat_flow(Game *g, Map *map, Fog *fog,
                   pending_flow == FLOW_SIEGE_VILLAIN);
     bool villain = (pending_flow == FLOW_SIEGE_VILLAIN);
     CombatTarget tgt;
-    memset(&tgt, 0, sizeof tgt);
     char key[32] = { 0 };
     if (siege) {
         snprintf(key, sizeof key, "%s", pending_castle_id);
         const CastleRecord *cr = GameFindCastleConst(g, key);
-        tgt.name = "Castle garrison";
-        tgt.seed_key = key;
-        if (cr) {
-            tgt.garrison = cr->garrison;
-            tgt.garrison_slots = GAME_ARMY_SLOTS;
-        }
+        CombatTargetForCastle(g, key, &tgt);
         intel_put(key, villain, (villain && cr) ? cr->villain_id : NULL);
     } else {
         snprintf(key, sizeof key, "%s", pending_foe_id);
-        const FoeState *foe = GameFindFoeConst(g, key);
-        tgt.name = "Hostile band";
-        tgt.seed_key = key;
-        if (foe) {
-            tgt.garrison = foe->garrison;
-            tgt.garrison_slots = GAME_ARMY_SLOTS;
-        }
+        CombatTargetForFoe(g, key, &tgt);
     }
     long ours = demo_army_power(g);
     // A villain castle is only worth a siege while its contract is active --
@@ -1311,11 +1301,7 @@ replan:
         const FoeState *target = NULL;
         for (int i = 0; i < nr && !target; i++) {
             CombatTarget jt;
-            memset(&jt, 0, sizeof jt);
-            jt.name = "Hostile band";
-            jt.seed_key = foes_r[i]->placement_id;
-            jt.garrison = foes_r[i]->garrison;
-            jt.garrison_slots = GAME_ARMY_SLOTS;
+            CombatTargetForFoe(g, foes_r[i]->placement_id, &jt);
             if (demo_predict_boost(g, COMBAT_MODE_FOE, &jt, 1, NULL, NULL) >= 0)
                 target = foes_r[i];
         }

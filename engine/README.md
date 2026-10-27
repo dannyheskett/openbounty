@@ -24,6 +24,7 @@ engine/
 │   ├── fog.h
 │   ├── game.h            # Game state, GameInit
 │   ├── game_fwd.h        # Forward declaration of Game
+│   ├── goto.h            # Goto's route over the seen map
 │   ├── map.h
 │   ├── pack.h            # Pack discovery and access
 │   ├── pending.h         # Deferred-action scratch
@@ -73,15 +74,17 @@ engine/
 ## Building the library
 
 ```
-make build/libobengine.a
+make build/debug/libobengine.a                  # BUILD=debug, the default
+make BUILD=release build/release/libobengine.a
 ```
 
-The archive has been produced at `build/libobengine.a`. Internal `.o` files
-have lived in `build/objs/englib/`.
+The archive has been produced at `build/<BUILD>/libobengine.a`, its `.o`
+files in `build/<BUILD>/objs/englib/`. It has been compiled with the build's
+own flags: `-O0 -g` for debug, `-O2 -DNDEBUG` for release.
 
-Compile flags used (from the Makefile):
+Compile flags used (from the Makefile, release shown):
 ```
-gcc -std=c99 -Wall -Wextra -O2 -fPIC \
+gcc -std=c99 -Wall -Wextra -O2 -DNDEBUG -fPIC \
     -Iengine/headless -Iengine/include -Ibuild \
     -Ithird_party/cjson -Ithird_party/miniz \
     -DOB_HEADLESS \
@@ -90,9 +93,9 @@ ar rcs libobengine.a <objects>
 ```
 
 The engine library compile has used **no `-Isrc`**: engine sources have never
-included a shell header. Everything the engine needs from the host (dialog,
+included a shell header. Everything the engine has needed from the host (dialog,
 prompt, audio, recorder, asset bytes) has been declared in `engine/include`
-(`ui_host.h`, `assets_bytes.h`). If an engine `.c` ever reaches into `src/`,
+(`ui_host.h`, `assets_bytes.h`). If an engine `.c` has ever reached into `src/`,
 this compile has failed: the missing include path has been the enforcement.
 
 ## Linking against the library
@@ -103,21 +106,21 @@ The simplest version has used the bundled `engine/host_noop.c`:
 ```
 gcc -std=c99 -O2 \
     -Iengine/headless -Iengine/include -Ithird_party/cjson \
-    my_consumer.c engine/host_noop.c build/libobengine.a \
+    my_consumer.c engine/host_noop.c build/release/libobengine.a \
     -o my_consumer \
     -lm -lpthread
 ```
 
 The link line has included **only `-lm -lpthread`**: no raylib, no X11, no
-audio device. If a consumer accidentally pulls those, the link has failed.
+audio device. If a consumer has accidentally pulled those, the link has failed.
 
 For a working example, see `tests/library/consumer.c`. `make all` has built
 the same consumer + host_noop + libobengine.a, with the demo and autoplay
 objects linked beside them, as a link-time boundary check;
 the resulting binary has been discarded and a stamp file
-(`build/libtest-pass.stamp`) has recorded success. A build that produces the
-stamp has proved the library consumable in isolation. If the engine ever
-depends on shell headers or shell symbols, that link has failed and `make
+(`build/libtest-pass.stamp`) has recorded success. A build that has produced the
+stamp has proved the library consumable in isolation. If the engine has ever
+depended on shell headers or shell symbols, that link has failed and `make
 all` has failed.
 
 ## Required host callbacks

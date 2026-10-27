@@ -9,7 +9,7 @@
 //              VGA-mode graphics (.256 files).
 //
 // Outputs (written to the output directory, default assets/kings-bounty/):
-//   audio/tune_{walk,bump,chest,defeat}.wav
+//   audio/tune_{walk,bump,chest,defeat,victory}.wav
 //   maps/{continentia,forestria,archipelia,saharia}.dat
 //   palettes/palette.bin
 //   art/font/kb-font.png
@@ -32,9 +32,6 @@
 //   puzzle_cover.png             -- synthesized procedurally (ex_emit_synth);
 //                                   9x6 black border + palette-color-4
 //                                   interior.
-//   throne_backdrop              -- game.json points throne_backdrop at
-//                                   end_lose_screen.png; there is no
-//                                   separate throne art.
 //
 // These sources compile into the game binary, not a separate tool.
 // Run:    ./build/debug/openbounty --extract [--out-dir <dir>]
@@ -47,6 +44,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -127,6 +126,24 @@ int extract_run(const char *in_dir, const char *out_dir) {
     // `cc` directly.
     {
         cJSON *gj = ex_gamejson_synthesize(&cc, exe_unpacked, exe_unpacked_len);
+        // The strings are the pack's strings/en.json, not part of game.json.
+        cJSON *strings = gj ? cJSON_DetachItemFromObject(gj, "strings") : NULL;
+        if (strings) {
+            char sdir[512], spath[600];
+            snprintf(sdir, sizeof sdir, "%s/strings", out_dir);
+            snprintf(spath, sizeof spath, "%s/en.json", sdir);
+            char *stext = cJSON_Print(strings);
+            cJSON_Delete(strings);
+            if (!stext || ex_mkdir_p(sdir) != 0 ||
+                ex_write_file(spath, (const uint8_t *)stext, strlen(stext)) != 0) {
+                fprintf(stderr, "extract: cannot write %s\n", spath);
+                free(stext);
+                cJSON_Delete(gj);
+                return 1;
+            }
+            fprintf(stderr, "extract: wrote %s (%zu bytes)\n", spath, strlen(stext));
+            free(stext);
+        }
         if (gj) {
             char *text = cJSON_Print(gj);
             cJSON_Delete(gj);
@@ -250,15 +267,15 @@ typedef struct { unsigned char b; const char *art; } TileMapEntry;
 // .dat. So those rows fall through to '.'.
 static const TileMapEntry TILE_MAP[] = {
     { 0x00, "grass" },
-    { 0x01, "grass_variant" },
+    { 0x01, "grass_v1" },
     { 0x02, "castle_tl" },
     { 0x03, "castle_ml" },
-    { 0x04, "castle_br" },
+    { 0x04, "castle_tm" },
     { 0x05, "castle_gate" },
     { 0x06, "castle_tr" },
     { 0x07, "castle_mr" },
-    { 0x08, "bridge_h" },
-    { 0x09, "bridge_v" },
+    { 0x08, "bridge_ew" },
+    { 0x09, "bridge_ns" },
     { 0x0A, "town" },
     { 0x0B, "chest" },
     { 0x0C, "dwelling_plains" },
@@ -270,28 +287,28 @@ static const TileMapEntry TILE_MAP[] = {
     { 0x12, "artifact_ring" },
     { 0x13, "artifact_chest" },
     // Water variants 0x14..0x20.
-    { 0x14, "water_edge_00" }, { 0x15, "water_edge_01" }, { 0x16, "water_edge_02" },
-    { 0x17, "water_edge_03" }, { 0x18, "water_edge_04" }, { 0x19, "water_edge_05" },
-    { 0x1A, "water_edge_06" }, { 0x1B, "water_edge_07" }, { 0x1C, "water_edge_08" },
-    { 0x1D, "water_edge_09" }, { 0x1E, "water_edge_10" }, { 0x1F, "water_edge_11" },
+    { 0x14, "water_edge_ne" }, { 0x15, "water_edge_nw" }, { 0x16, "water_edge_sw" },
+    { 0x17, "water_edge_es" }, { 0x18, "water_inner_es" }, { 0x19, "water_inner_ne" },
+    { 0x1A, "water_inner_sw" }, { 0x1B, "water_inner_nw" }, { 0x1C, "water_edge_e" },
+    { 0x1D, "water_edge_w" }, { 0x1E, "water_edge_n" }, { 0x1F, "water_edge_s" },
     { 0x20, "water" },
     // Forest: anchor at 0x2D, edges 0x21..0x2C.
-    { 0x21, "forest_edge_01" }, { 0x22, "forest_edge_02" }, { 0x23, "forest_edge_03" },
-    { 0x24, "forest_edge_04" }, { 0x25, "forest_edge_05" }, { 0x26, "forest_edge_06" },
-    { 0x27, "forest_edge_07" }, { 0x28, "forest_edge_08" }, { 0x29, "forest_edge_09" },
-    { 0x2A, "forest_edge_10" }, { 0x2B, "forest_edge_11" }, { 0x2C, "forest_edge_12" },
+    { 0x21, "forest_edge_nw" }, { 0x22, "forest_edge_sw" }, { 0x23, "forest_edge_ne" },
+    { 0x24, "forest_edge_es" }, { 0x25, "forest_inner_es" }, { 0x26, "forest_inner_ne" },
+    { 0x27, "forest_inner_sw" }, { 0x28, "forest_inner_nw" }, { 0x29, "forest_edge_e" },
+    { 0x2A, "forest_edge_w" }, { 0x2B, "forest_edge_n" }, { 0x2C, "forest_edge_s" },
     { 0x2D, "forest" },
     // Desert: anchor at 0x3A, edges 0x2E..0x39.
-    { 0x2E, "desert_edge_01" }, { 0x2F, "desert_edge_02" }, { 0x30, "desert_edge_03" },
-    { 0x31, "desert_edge_04" }, { 0x32, "desert_edge_05" }, { 0x33, "desert_edge_06" },
-    { 0x34, "desert_edge_07" }, { 0x35, "desert_edge_08" }, { 0x36, "desert_edge_09" },
-    { 0x37, "desert_edge_10" }, { 0x38, "desert_edge_11" }, { 0x39, "desert_edge_12" },
+    { 0x2E, "desert_edge_nw" }, { 0x2F, "desert_edge_sw" }, { 0x30, "desert_edge_ne" },
+    { 0x31, "desert_edge_es" }, { 0x32, "desert_inner_es" }, { 0x33, "desert_inner_ne" },
+    { 0x34, "desert_inner_sw" }, { 0x35, "desert_inner_nw" }, { 0x36, "desert_edge_e" },
+    { 0x37, "desert_edge_w" }, { 0x38, "desert_edge_n" }, { 0x39, "desert_edge_s" },
     { 0x3A, "desert" },
     // Mountain: anchor at 0x47, edges 0x3B..0x46.
-    { 0x3B, "mountain_edge_01" }, { 0x3C, "mountain_edge_02" }, { 0x3D, "mountain_edge_03" },
-    { 0x3E, "mountain_edge_04" }, { 0x3F, "mountain_edge_05" }, { 0x40, "mountain_edge_06" },
-    { 0x41, "mountain_edge_07" }, { 0x42, "mountain_edge_08" }, { 0x43, "mountain_edge_09" },
-    { 0x44, "mountain_edge_10" }, { 0x45, "mountain_edge_11" }, { 0x46, "mountain_edge_12" },
+    { 0x3B, "mountain_edge_nw" }, { 0x3C, "mountain_edge_sw" }, { 0x3D, "mountain_edge_ne" },
+    { 0x3E, "mountain_edge_es" }, { 0x3F, "mountain_inner_es" }, { 0x40, "mountain_inner_ne" },
+    { 0x41, "mountain_inner_sw" }, { 0x42, "mountain_inner_nw" }, { 0x43, "mountain_edge_e" },
+    { 0x44, "mountain_edge_w" }, { 0x45, "mountain_edge_n" }, { 0x46, "mountain_edge_s" },
     { 0x47, "mountain" },
 };
 #define TILE_MAP_N (sizeof TILE_MAP / sizeof TILE_MAP[0])
@@ -531,18 +548,40 @@ int ex_emit_wavs(const uint8_t *kb, size_t klen, const char *out_dir) {
     // Original freq palette was at 0x189D1; our freq_off is wherever we
     // found it. Delta = freq_off - 0x189D1.
     int delta = freq_off - 0x189D1;
+    // That estimate holds for the image it was measured on; another build of
+    // KB.EXE moves the data a few bytes against the palette. The tunes pin it
+    // down: each ends in 0xFF just before the next one starts, so take the
+    // nearest shift at which all ten line up that way.
+    {
+        int best = INT_MIN;
+        for (int dd = delta - 1024; dd <= delta + 1024; dd++) {
+            bool aligned = true;
+            for (int s = 0; s + 1 < TUNE_PTR_N && aligned; s++) {
+                long o = (long)KB_DATA_SEGMENT + tune_ptrs[s + 1] + dd - 1;
+                aligned = o >= 0 && o < (long)klen && kb[o] == 0xFF;
+            }
+            if (aligned && (best == INT_MIN || abs(dd - delta) < abs(best - delta)))
+                best = dd;
+        }
+        if (best == INT_MIN) {
+            fprintf(stderr, "extract: cannot line up the tune table\n");
+            return -1;
+        }
+        delta = best;
+    }
 
-    static const struct { int slot; const char *name; } tunes[4] = {
-        { 0, "walk"   },
-        { 1, "bump"   },
-        { 5, "chest"  },
-        { 7, "defeat" },
+    static const struct { int slot; const char *name; } tunes[5] = {
+        { 0, "walk"    },
+        { 1, "bump"    },
+        { 3, "victory" },
+        { 5, "chest"   },
+        { 7, "defeat"  },
     };
 
     const int SR = 22050;
     const int AMP = 0x4000;
 
-    for (int t = 0; t < 4; t++) {
+    for (int t = 0; t < (int)(sizeof tunes / sizeof tunes[0]); t++) {
         long file_off = (long)KB_DATA_SEGMENT + tune_ptrs[tunes[t].slot] + delta;
         if (file_off < 0 || file_off >= (long)klen) {
             fprintf(stderr, "extract: tune %s offset 0x%lx out of range\n",

@@ -21,8 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BIG_DIR   "/tmp/ob_nolimits_pack"
-#define BIG_SAVE  "/tmp/ob_nolimits_save.json"
+#define BIG_DIR   "build/ob_nolimits_pack"
+#define BIG_SAVE  "build/ob_nolimits_save.json"
 #define BIG_W     300
 #define BIG_H     300
 #define BIG_ARMIES 120   // hostile armies in one zone

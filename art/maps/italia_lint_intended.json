@@ -1,0 +1,115 @@
+{
+ "coast": [
+  {
+   "box": [
+    30,
+    3,
+    38,
+    18
+   ],
+   "reason": "the Po plain's marsh-wood Adriatic coast, which no boat can land on (the Rubicon gate)"
+  },
+  {
+   "box": [
+    30,
+    19,
+    32,
+    29
+   ],
+   "reason": "the marsh-wood coast continued south to the Rubicon's mouth"
+  },
+  {
+   "box": [
+    7,
+    66,
+    17,
+    78
+   ],
+   "reason": "Corsica's coast of wood and rock"
+  },
+  {
+   "box": [
+    7,
+    79,
+    17,
+    97
+   ],
+   "reason": "Sardinia's coast of wood and rock all round, so a boat lands only at Olbia's harbour"
+  },
+  {
+   "box": [
+    24,
+    66,
+    35,
+    78
+   ],
+   "reason": "Capri, #222's rock islet in the bay south of Ostia, cliffs to the sea all round, landed on only at its east cell where its guardian stands"
+  },
+  {
+   "box": [
+    40,
+    48,
+    51,
+    63
+   ],
+   "reason": "the Apennine cliffs and the rocky headland round the two boat-only coves south of Ancona"
+  },
+  {
+   "box": [
+    44,
+    83,
+    52,
+    87
+   ],
+   "reason": "the Calabrian ridge closing the toe from the western sea to the one pass, which guardian_calabria holds"
+  },
+  {
+   "box": [
+    36,
+    0,
+    38,
+    2
+   ],
+   "reason": "the Alps coming down to the head of the Adriatic"
+  }
+ ],
+ "edge": [
+  {
+   "box": [
+    0,
+    0,
+    38,
+    35
+   ],
+   "reason": "the Alps and the Maritime Alps run off the map's north and west edges"
+  }
+ ],
+ "shape": [
+  {
+   "box": [
+    31,
+    27,
+    31,
+    29
+   ],
+   "rules": [
+    "notch",
+    "strand"
+   ],
+   "reason": "the marsh wood's stub at the Rubicon's mouth: without it a boat lands on the Po coast and the Rubicon gate is bypassed"
+  },
+  {
+   "box": [
+    36,
+    0,
+    38,
+    2
+   ],
+   "rules": [
+    "pair",
+    "step"
+   ],
+   "reason": "where the Alps meet the Adriatic marsh wood: opening these cells lets the hero round the Alps into the Po plain"
+  }
+ ]
+}

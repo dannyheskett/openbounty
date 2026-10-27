@@ -27,34 +27,8 @@ int autoplay_apply_recorded_combat(struct ExecCtx *ctx, const RecPrim *p) {
     Game *g = ctx->g;
     CombatMode mode;
     CombatTarget tgt;
-    memset(&tgt, 0, sizeof tgt);
-    if (pending_flow == FLOW_SIEGE_MONSTER ||
-        pending_flow == FLOW_SIEGE_VILLAIN) {
-        mode = COMBAT_MODE_CASTLE;
-        CastleRecord *cr = GameFindCastle(g, pending_castle_id);
-        const ResCastle *rc = resources_castle_by_id(g->res, pending_castle_id);
-        const VillainDef *v = (cr && cr->villain_id[0])
-                                  ? villain_by_id(cr->villain_id) : NULL;
-        tgt.name = v && v->name[0] ? v->name
-                   : (rc && rc->name[0] ? rc->name : pending_castle_id);
-        tgt.seed_key = pending_castle_id;
-        if (cr) {
-            tgt.garrison = cr->garrison;
-            tgt.garrison_slots = GAME_ARMY_SLOTS;
-        }
-    } else if (pending_flow == FLOW_ATTACK_FOE) {
-        mode = COMBAT_MODE_FOE;
-        FoeState *foe = pending_foe_id[0] ? GameFindFoe(g, pending_foe_id)
-                                          : NULL;
-        tgt.name = "Hostile band";
-        tgt.seed_key = pending_foe_id;
-        if (foe) {
-            tgt.garrison = foe->garrison;
-            tgt.garrison_slots = GAME_ARMY_SLOTS;
-        }
-    } else {
+    if (!CombatTargetForPendingFlow(g, &mode, &tgt))
         return (int)PLAYER_IO_COMBAT_NOT_RUN;
-    }
     CombatResult r = combat_run_headless_ex(g, mode, &tgt, COMBAT_MAX_ROUNDS,
                                             autoplay_combat_policy, NULL);
     return (int)(r == COMBAT_RESULT_WIN ? PLAYER_IO_COMBAT_WON

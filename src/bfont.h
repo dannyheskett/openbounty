@@ -60,7 +60,6 @@ int     bfont_take_line(const char **p, int max_w, char *out, int cap);
 
 int     bfont_text_width(const char *text);
 void    bfont_draw_right(const char *text, int x_right, int y, Color c);
-bool    bfont_ready(void);
 
 // `text` may contain '\n'; newlines advance y by BFONT_GLYPH_H.
 // Out-of-range bytes are rendered as spaces.

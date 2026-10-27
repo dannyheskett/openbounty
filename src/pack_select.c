@@ -135,10 +135,9 @@ bool pack_select_flow(const PackEntry *list, int n, int *chosen) {
         EndDrawing();
         // EndDrawing is raylib's one poll per frame and the yield follows it,
         // the order frame_host.h requires (poll, yield, read). A second
-        // PollInputEvents() here used to copy the fresh key state into the
-        // previous state before the loop read it, so on desktop no key ever
-        // showed a press edge and the picker answered nothing but the close
-        // box (#102). frame_host_end_frame() is not used because its touch
+        // PollInputEvents() here would copy the fresh key state into the
+        // previous state before the loop read it, so no key would show a
+        // press edge (#102). frame_host_end_frame() is not used because its touch
         // hook needs the game's render target, which this pre-pack screen
         // has not got; the loop samples touch itself above.
         frame_host_yield();

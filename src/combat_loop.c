@@ -77,7 +77,8 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
     }
 
     int dx = 0, dy = 0;
-    if      (input_key_pressed(KEY_UP)    || input_key_pressed(KEY_KP_8)) dy = -1;
+    if (input_gamepad_dir(&dx, &dy)) { /* the d-pad or stick moves the cursor */ }
+    else if (input_key_pressed(KEY_UP)    || input_key_pressed(KEY_KP_8)) dy = -1;
     else if (input_key_pressed(KEY_DOWN)  || input_key_pressed(KEY_KP_2)) dy =  1;
     if      (input_key_pressed(KEY_LEFT)  || input_key_pressed(KEY_KP_4)) dx = -1;
     else if (input_key_pressed(KEY_RIGHT) || input_key_pressed(KEY_KP_6)) dx =  1;
@@ -96,7 +97,8 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
 
     if (input_key_pressed(KEY_ENTER) || input_key_pressed(KEY_KP_ENTER) ||
         input_key_pressed(KEY_SPACE) ||
-        input_key_pressed(KEY_A)     || input_key_pressed(KEY_C)) {
+        input_key_pressed(KEY_A)     || input_key_pressed(KEY_C) ||
+        input_gamepad_confirm()) {
         if (combat_cell_passes_filter(c, c->cursor_x, c->cursor_y,
                                        c->side, c->pick_filter)) {
             if (out_x) *out_x = c->cursor_x;
@@ -105,7 +107,7 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
         }
         // Filter rejected -- leave cursor for another step.
     }
-    if (input_key_pressed(KEY_ESCAPE)) {
+    if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
         if (out_cancelled) *out_cancelled = true;
     }
     return false;
@@ -116,6 +118,7 @@ bool combat_pick_step(Combat *c, const Game *g, const Sprites *sprites,
 static bool combat_read_dir(int *dx, int *dy) {
     *dx = 0; *dy = 0;
     if (input_key_pressed(KEY_KP_5)) return false;
+    if (input_gamepad_dir(dx, dy)) return true;            // the d-pad or stick
     if (input_key_pressed(KEY_UP)        || input_key_pressed(KEY_KP_8)) { *dy = -1; return true; }
     if (input_key_pressed(KEY_DOWN)      || input_key_pressed(KEY_KP_2)) { *dy =  1; return true; }
     if (input_key_pressed(KEY_LEFT)      || input_key_pressed(KEY_KP_4)) { *dx = -1; return true; }
@@ -248,13 +251,11 @@ int combat_cast_step(Combat *c, Game *g, const Sprites *sprites,
         // Fall through to APPLY this same frame.
     }
     if (c->cast_phase == COMBAT_CAST_APPLY) {
-        // The index->effect dispatch now lives in the engine (combat_cast_spell)
-        // -- shared with the autoplay casting policy so the spell dynamics
-        // exist in exactly one place. The shell still owns the UI phases above
+        // The index->effect dispatch is the engine's (combat_cast_spell),
+        // shared with the autoplay casting policy so the spell dynamics exist
+        // in exactly one place. The shell owns the UI phases above
         // (PICK_SPELL / PICK_TARGET) that populated cast_spell_idx + the target;
-        // here it just applies and clears its UI phase. Behavior is identical to
-        // the old inline switch: same effects, logs, charge decrement, and the
-        // spells_this_round latch.
+        // here it applies the cast and clears its UI phase.
         int r = combat_cast_spell(c, c->side, c->cast_spell_idx,
                                   c->pick_t1_side, c->pick_t1_slot,
                                   c->cast_dest_x, c->cast_dest_y);
@@ -813,7 +814,7 @@ static void combat_present(const Combat *c, const Game *g, const Map *m, const F
     // Victory dialog : centered modal
     // floating over the still-rendered battlefield. Defeat does not
     // draw here -- combat exits silently and perform_temp_death shows
-    // the disgrace message at the home castle ().
+    // the disgrace message at the home castle.
     if (dialog_is_active()) overlay_draw_note();
     // Give-up confirm and any other y/n / numeric prompt draws on top
     // of everything else as a bottom-frame modal.
@@ -1047,7 +1048,7 @@ CombatResult RunCombat(Game *g, const Map *m, const Fog *f, const Sprites *sprit
         // backs the action out (no turn spent). Without this, ESC was swallowed
         // here and a no-target spell (e.g. Turn Undead with no undead on the
         // field) trapped the turn with no way out.
-        if (input_key_pressed(KEY_ESCAPE)) {
+        if (input_key_pressed(KEY_ESCAPE) || gamepad_pressed_cancel()) {
             if (views_active() != VIEW_NONE) {
                 views_dismiss();
                 continue;
@@ -1332,6 +1333,7 @@ settle:
         }
         GameCompactArmy(g);
         recorder_capture("combat:end:win");
+        audio_play_tune(AUDIO_TUNE_VICTORY);   // silent when the pack has none
         audio_set_track(AUDIO_TRACK_OPENWORLD);
         return COMBAT_RESULT_WIN;
     }

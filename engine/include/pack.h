@@ -27,6 +27,7 @@ Pack *pack_open(const char *path);
 // ownership of `data`.
 Pack *pack_open_mem(const void *data, size_t size, const char *name);
 
+// Release a pack and every byte pack_read has lent from it.
 void  pack_close(Pack *p);
 
 // Borrow bytes for pack-relative entry `rel` (e.g. "art/font/kb-font.png").
@@ -35,7 +36,8 @@ void  pack_close(Pack *p);
 // pack_close. Callers MUST NOT free.
 const unsigned char *pack_read(const Pack *p, const char *rel, size_t *out_size);
 
-// Pack identity, read at open time from the embedded game.json.
+// Pack identity, read at open time from the embedded game.json (pack_id,
+// pack_name, pack_kind); pack_path is the path it was opened from.
 // Returns "" if the pack lacks the field.
 const char *pack_id(const Pack *p);
 const char *pack_name(const Pack *p);
@@ -51,10 +53,14 @@ const char *pack_hash(const Pack *p);
 // ---- Global pack stack -----------------------------------------------------
 // Lookup walks top-down: the topmost pack containing `rel` wins.
 
+// Push a pack on top, the stack taking ownership; pop the top one, closing it;
+// empty the stack, closing every pack.
 void pack_stack_push(Pack *p);
 void pack_stack_pop(void);
 void pack_stack_clear(void);
+// pack_read on the topmost pack holding `rel`, or NULL when none does.
 const unsigned char *pack_stack_read(const char *rel, size_t *out_size);
+// The pack on top, or NULL when the stack is empty.
 const Pack *pack_stack_top(void);
 
 // ---- Discovery -------------------------------------------------------------

@@ -361,16 +361,14 @@ cJSON *state_build_snapshot(const Game *g,
             cJSON_AddNumberToObject(sp, sd->id, g->spells.counts[i]);
         }
         cJSON_AddItemToObject(root, "spells", sp);
-        // The spells learned at a temple, only where they renew (#157).
-        if (g->res && g->res->economy.spell_weekly_renewal) {
-            cJSON *learned = cJSON_CreateArray();
-            for (int i = 0; i < g->spells.count; i++) {
-                const SpellDef *sd = spell_by_index(i);
-                if (sd && g->spells.learned[i])
-                    cJSON_AddItemToArray(learned, cJSON_CreateString(sd->id));
-            }
-            cJSON_AddItemToObject(root, "spells_learned", learned);
+        // The spells learned at a temple (#157).
+        cJSON *learned = cJSON_CreateArray();
+        for (int i = 0; i < g->spells.count; i++) {
+            const SpellDef *sd = spell_by_index(i);
+            if (sd && g->spells.learned[i])
+                cJSON_AddItemToArray(learned, cJSON_CreateString(sd->id));
         }
+        cJSON_AddItemToObject(root, "spells_learned", learned);
     }
 
     // ---- contract ----
@@ -592,6 +590,10 @@ cJSON *state_build_snapshot(const Game *g,
             cJSON_AddStringToObject(m, "id", f->placement_id);
             cJSON_AddBoolToObject  (m, "alive", f->alive);
             cJSON_AddBoolToObject  (m, "friendly", f->friendly);
+            cJSON_AddBoolToObject  (m, "static", f->is_static);
+            cJSON_AddStringToObject(m, "requires_troop", f->requires_troop);
+            cJSON_AddNumberToObject(m, "scene_index", f->scene_index);
+            cJSON_AddStringToObject(m, "scene_title", f->scene_title);
             cJSON *gar = cJSON_CreateArray();
             for (int s = 0; s < GAME_ARMY_SLOTS; s++) {
                 cJSON *u = cJSON_CreateObject();

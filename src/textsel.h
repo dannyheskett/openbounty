@@ -64,6 +64,5 @@ int  textsel_cell_w(void);
 int  textsel_cell_h(void);
 
 int  textsel_w(bool numeric, int cell_w);
-int  textsel_h(bool numeric, int cell_h);
 
 #endif

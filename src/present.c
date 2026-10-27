@@ -79,10 +79,6 @@ void present_set_scale(int scale) {
     s_scale = (scale > 0) ? scale : 1;
 }
 
-int present_get_scale(void) {
-    return s_scale;
-}
-
 int present_max_scale(int win_w, int win_h) {
     if (!CL_IS_MODERN) return CL_SCALE_MAX;
     // A declared buffer is shown at the largest whole scale that fits. The

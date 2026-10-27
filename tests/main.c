@@ -35,6 +35,10 @@ SUITE_EXTERN(unit_player_io_suite);
 SUITE_EXTERN(unit_resources_suite);
 SUITE_EXTERN(unit_anim_frames_suite);
 SUITE_EXTERN(unit_facing_suite);
+SUITE_EXTERN(unit_extract_constants_suite);
+SUITE_EXTERN(unit_savepath_suite);
+SUITE_EXTERN(unit_cli_flags_suite);
+SUITE_EXTERN(unit_save_foes_suite);
 SUITE_EXTERN(unit_touch_map_suite);
 SUITE_EXTERN(unit_touch_regions_suite);
 SUITE_EXTERN(unit_layout_suite);
@@ -63,6 +67,7 @@ SUITE_EXTERN(unit_spawn_calm_suite);
 SUITE_EXTERN(unit_scepter_zone_suite);
 SUITE_EXTERN(unit_map_clear_ground_suite);
 SUITE_EXTERN(unit_rome_salt_suite);
+SUITE_EXTERN(unit_rome_villains_suite);
 SUITE_EXTERN(unit_intro_suite);
 SUITE_EXTERN(unit_castle_gate_report_suite);
 SUITE_EXTERN(unit_scepter_ground_suite);
@@ -88,6 +93,7 @@ SUITE_EXTERN(e2e_goto_walk_suite);
 SUITE_EXTERN(e2e_score_suite);
 SUITE_EXTERN(e2e_combat_input_suite);
 SUITE_EXTERN(e2e_save_suite);
+SUITE_EXTERN(e2e_rome_troop_ids_suite);
 SUITE_EXTERN(e2e_save_more_suite);
 SUITE_EXTERN(e2e_no_limits_suite);
 
@@ -118,6 +124,10 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_resources_suite);
     RUN_SUITE(unit_anim_frames_suite);
     RUN_SUITE(unit_facing_suite);
+    RUN_SUITE(unit_extract_constants_suite);
+    RUN_SUITE(unit_savepath_suite);
+    RUN_SUITE(unit_cli_flags_suite);
+    RUN_SUITE(unit_save_foes_suite);
     RUN_SUITE(unit_touch_map_suite);
     RUN_SUITE(unit_touch_regions_suite);
     RUN_SUITE(unit_layout_suite);
@@ -146,6 +156,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(unit_scepter_zone_suite);
     RUN_SUITE(unit_map_clear_ground_suite);
     RUN_SUITE(unit_rome_salt_suite);
+    RUN_SUITE(unit_rome_villains_suite);
     RUN_SUITE(unit_intro_suite);
     RUN_SUITE(unit_castle_gate_report_suite);
     RUN_SUITE(unit_scepter_ground_suite);
@@ -171,6 +182,7 @@ int main(int argc, char **argv) {
     RUN_SUITE(e2e_score_suite);
     RUN_SUITE(e2e_combat_input_suite);
     RUN_SUITE(e2e_save_suite);
+    RUN_SUITE(e2e_rome_troop_ids_suite);
     RUN_SUITE(e2e_save_more_suite);
     RUN_SUITE(e2e_no_limits_suite);
 

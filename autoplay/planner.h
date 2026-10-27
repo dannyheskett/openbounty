@@ -100,9 +100,6 @@ bool planner_step_sacrifice(ExecCtx *ctx, PlannerRun *run);
 // each node's progress must be exact -- calls this after every step.
 void planner_refresh_done(ExecCtx *ctx, PlannerRun *run);
 
-// Goal test: every enumerated objective (scepter included) done.
-bool planner_done(const ExecCtx *ctx, const PlannerRun *run);
-
 // The first objective (enumeration order) `run` left undone, for a
 // pack-validation report: its display label and a short cause phrase. Writes
 // empty strings when everything is done. Reads the CURRENT enumeration, so

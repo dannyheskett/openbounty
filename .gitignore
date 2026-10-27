@@ -65,3 +65,14 @@ __pycache__/
 *.pem
 *.p12
 *.p8
+*.keystore
+*.jks
+.env
+
+# Mobile build output
+*.apk
+*.aab
+*.ipa
+
+# The original game's files for --extract (KB.EXE and its data)
+legacy/

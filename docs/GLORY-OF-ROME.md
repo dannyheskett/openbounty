@@ -1,6 +1,6 @@
-# Glory of Rome, Pack Design
+# The Glory of Rome, Pack Design
 
-The design of Glory of Rome, the second OpenBounty pack: a mythic-Roman total
+The design of The Glory of Rome, the second OpenBounty pack: a mythic-Roman total
 re-theme of the King's Bounty ruleset. Each section has given the choice and
 the reason for it.
 
@@ -34,7 +34,7 @@ What he *has been*, and what the dialogue has built on:
   the provinces in the Emperor's name.
 - **Not yet a great man.** He has begun at the bottom of his ladder with a
   handful of troops and a modest purse. The rank titles have been the story of
-  his career; the Emperor's audience has been where that career is
+  his career; the Emperor's audience has been where that career has been
   acknowledged.
 - **Motivated by the Aquila.** A lost eagle has been a standing humiliation
   Rome has spent decades erasing — Augustus has made the recovery of Crassus's
@@ -45,10 +45,10 @@ What he *has been*, and what the dialogue has built on:
 ### 1.2 The Emperor
 
 The home castle's occupant has been **Imperator Traianus** — Trajan. He has
-been the source of contracts, the place rank is conferred, and the only
+been the source of contracts, the place rank has been conferred, and the only
 castle that can never be besieged.
 
-Trajan has been the right man for a game called Glory of Rome: his reign has
+Trajan has been the right man for a game called The Glory of Rome: his reign has
 marked the empire's greatest territorial extent, he has taken Dacia and
 campaigned in the East, and the Senate has awarded him *optimus princeps*,
 the best of emperors. He has read as an authority worth serving rather than a
@@ -112,13 +112,13 @@ Forest and mountain have blocked foot movement entirely, so **Galliae** has
 become a country of wooded corridors and **Oriens** a plateau of passes.
 
 Each zone has been its own map (§10.3), not a slice of one world map, so
-"geographic accuracy" has meant each map resembles its region's coastline at
+"geographic accuracy" has meant each map has resembled its region's coastline at
 its own scale.
 
 ### 2.3 Castles and towns
 
 Named for **real Roman cities**, with the count per zone set by what each
-map's geography supports rather than by a target number. The engine has sized
+map's geography has supported rather than by a target number. The engine has sized
 both from the pack (§8), so there has been no filler obligation.
 
 The towns: Ostia, Puteoli, Cumae, Tarracina, Pisae, Ancona, Ravenna,
@@ -144,7 +144,7 @@ Sardinia.
 ## 3. Villains
 
 Seventeen, distributed 6 / 4 / 4 / 3 across the four zones, placed by where
-their power base or campaign sat.
+their power base or campaign has sat.
 
 | Zone | Villains |
 |---|---|
@@ -173,31 +173,29 @@ from the zone's tier.
 
 What the zone tier *has* driven has been ambient danger only: monster-castle
 garrisons (`difficulty_tier` → `repopulate_castle`), wandering-foe strength
-(`tier_chance_curve`), and the chest tables. One exception since 2026-09-28
-(#69, a tester met giants north of Roma and worse south of it on day one):
+(`tier_chance_curve`), and the chest tables. One exception (#69):
 hostile foes within 12 cells of a zone's `hero_spawn` have rolled only the
 two weakest troops of each kind in at most two stacks (`spawn.calm_radius`,
 `calm_max_slot`, `calm_max_stacks`, PACK-FORMAT); the King's Bounty pack
-declares none and rolls as the original did.
+has declared none and has rolled as the original has.
 
 The monster castles' `difficulty_tier` has stepped up with the province as
-the reference pack's does (Continentia 0, Forestria 1, Archipelia 2, Saharia
-3): Italia 0 and 1, Galliae 1, Africa 2, Oriens 3. Until #105 (2026-09-29)
-Africa sat at 1 with Galliae and Oriens at 2, so no Rome castle rolled from
-the top tier and the last sieges were easy; a castle left empty and retaken
-(REQ-302) refills at the same tier.
+the reference pack's has (Continentia 0, Forestria 1, Archipelia 2, Saharia
+3): Italia 0 and 1, Galliae 1, Africa 2, Oriens 3 (#105), so the last
+province's sieges have rolled from the top tier. A castle left empty and
+retaken (REQ-302) has refilled at the same tier.
 
 A castle gate has reported on its castle (`world.castle_gate_report`, #71):
-without siege engines the hero learns whose rule it is under ("Under
-Catiline's rule.", the castle already named in the title) and what holds it
-in vague words, each troop once, before turning back; with them the same
-report stands above "Lay siege?" (#139). King's Bounty keeps the original's
-silent bounce.
+without siege engines the hero has learned whose rule it is under ("Under
+Catiline's rule.", the castle already named in the title) and what has held
+it in vague words, each troop once, before turning back; with them the same
+report has stood above "Lay siege?" (#139). King's Bounty has kept the
+original's silent bounce.
 
 **The pacing lever has been catalog order.** The contract cycle has been
 seeded with the *first five villains in catalog order*, and `max_contract`
 has walked the array from there. Catalog position, not zone, has decided what
-the Emperor sends the player after first.
+the Emperor has sent the player after first.
 
 **Catalog order has run zone by zone** — Italia, Galliae, Africa, Oriens — so
 the contracts have started in the home province and moved outward, and the
@@ -207,36 +205,43 @@ ladder.
 ### 3.2 Armies and rewards
 
 Armies have been composed from the §7 roster and have been far smaller than
-the reference pack's, whose last villain fields 150 dragons in three troops.
+the reference pack's, whose last villain has fielded 150 dragons in three troops.
 Troop stats, tier curves, chest tables and economy have been the reference
 pack's (§7), so the villain blocks and the maps have been what a failing seed
-points at: `--validate-pack` has named the first objective a seed has not
+has pointed at: `--validate-pack` has named the first objective a seed has not
 cleared and the binding cause — gold, stock, leadership or reach.
 
 ### 3.3 The roster
 
 The table has been the catalog: index 0 the Emperor's first commission, index
-16 the last.
+16 the last. The armies have been sized against autoplay on seed 0 at normal,
+the one seed the tuning has used: 340 days, solved, against a target of 350
+(the armies before had taken 244). Italia has stayed the gentle opening,
+Coloni in stacks of over a hundred, and each province after has climbed.
+Oriens has matched the reference pack's last three in size and has fielded the
+two villain-only troops (§7.6), so the tricks that had taken Oriens with no
+losses (a Simulacrum-swollen stack of Striges whose leech healed every loss,
+and spells) no longer have (#200).
 
 | # | Villain | Zone | Reward | Army | The idea |
 |---|---|---|---|---|---|
-| 0 | **Catiline** | Italia | 5,000 | 6 Coloni, 6 Coloni, 6 Tirones, 6 Tirones, 6 Lupi | A conspiracy, not an army: debtors and disaffected veterans |
-| 1 | **Spartacus** | Italia | 6,000 | 7 Coloni, 7 Coloni, 7 Tirones, 4 Hastati, 7 Lupi | Slaves, with a hard core of trained gladiators |
-| 2 | **Brennus** | Italia | 7,000 | 8 Coloni, 5 Numidae, 8 Baleares, 8 Lupi, 5 Numidae | The Gallic host that sacked Rome in 390 BC |
-| 3 | **Pyrrhus** | Italia | 8,000 | 5 Numidae, 5 Numidae, 9 Baleares, 5 Velites, 9 Lupi | The Hellenistic king whose victories cost him more than defeats |
-| 4 | **Alaric** | Italia | 9,000 | 10 Coloni, 6 Silvani, 3 Sarmatae, 10 Fauni, 3 Druidae | The Goth who sacked Rome in 410 |
-| 5 | **Attila** | Italia | 10,000 | 6 Hastati, 6 Velites, 6 Silvani, 3 Sarmatae, 3 Equites | The Scourge of God, who marched on Italy in 452 |
-| 6 | **Boudica** | Galliae | 12,000 | 4 Sarmatae, 7 Silvani, 12 Fauni, 7 Ligures, 4 Antaei | A mass rising: numbers, poor equipment, druids behind it |
-| 7 | **Civilis** | Galliae | 14,000 | 4 Sarmatae, 7 Silvani, 7 Ligures, 4 Druidae, 4 Antaei | Batavian auxiliaries who mutinied against Rome |
-| 8 | **Vercingetorix** | Galliae | 16,000 | 4 Sarmatae, 8 Silvani, 4 Antaei, 4 Druidae, 14 Fauni | All Gaul united for the first time |
-| 9 | **Arminius** | Galliae | 18,000 | 8 Numidae, 15 Baleares, 5 Sarmatae, 5 Cyclopes | Teutoburg, the ambush that cost Rome three legions |
-| 10 | **Tacfarinas** | Africa | 20,000 | 9 Hastati, 5 Equites, 9 Velites, 5 Cyclopes | A Roman deserter turned desert raider |
-| 11 | **Jugurtha** | Africa | 25,000 | 9 Numidae, 9 Silvani, 5 Druidae | A king with real cavalry who bought Roman senators |
-| 12 | **Gildo** | Africa | 30,000 | 10 Numidae, 1 Gigantes, 6 Sarmatae, 6 Cyclopes, 6 Equites | The revolt that cut Rome's grain supply |
-| 13 | **Hannibal** | Africa | 35,000 | 6 Sarmatae, 1 Furiae, 6 Equites, 1 Gigantes, 1 Striges | The army Rome never solved in the field |
-| 14 | **Mithridates** | Oriens | 40,000 | 6 Sarmatae, 1 Gigantes, 6 Equites, 1 Furiae, 1 Dracones | Decades of war and the levies of half of Anatolia |
-| 15 | **Zenobia** | Oriens | 45,000 | 7 Sarmatae, 7 Antaei, 1 Empusae, 1 Striges, 1 Dracones | Palmyra's queen, who took the East from Rome |
-| 16 | **Shapur** | Oriens | 50,000 | 1 Dracones, 1 Empusae, 1 Striges, 7 Sarmatae, 1 Furiae | The Sassanid who took an emperor alive |
+| 0 | **Catiline** | Italia | 5,000 | 103 Coloni, 103 Coloni, 34 Tirones, 34 Tirones, 4 Hastati | A conspiracy, not an army: debtors and disaffected veterans |
+| 1 | **Spartacus** | Italia | 6,000 | 128 Coloni, 128 Coloni, 43 Tirones, 43 Tirones, 5 Hastati | Slaves, with a hard core of trained gladiators |
+| 2 | **Brennus** | Italia | 7,000 | 128 Coloni, 51 Tirones, 10 Ligures, 10 Ligures, 2 Druidae | The Gallic host that sacked Rome in 390 BC |
+| 3 | **Pyrrhus** | Italia | 8,000 | 26 Hastati, 26 Hastati, 17 Velites, 51 Tirones, 2 Elephanti | The Hellenistic king whose victories cost him more than defeats |
+| 4 | **Alaric** | Italia | 9,000 | 171 Coloni, 26 Hastati, 3 Sarmatae, 68 Larvae, 68 Lemures | The Goth who sacked Rome in 410 |
+| 5 | **Attila** | Italia | 10,000 | 34 Numidae, 34 Numidae, 34 Sagittarii, 5 Sarmatae, 17 Equites | The Scourge of God, who marched on Italy in 452 |
+| 6 | **Boudica** | Galliae | 12,000 | 256 Coloni, 256 Coloni, 34 Ligures, 13 Sarmatae, 10 Druidae | A mass rising: numbers, poor equipment, druids behind it |
+| 7 | **Civilis** | Galliae | 14,000 | 51 Hastati, 51 Hastati, 34 Sagittarii, 34 Equites, 13 Sarmatae | Batavian auxiliaries who mutinied against Rome |
+| 8 | **Vercingetorix** | Galliae | 16,000 | 51 Ligures, 21 Sarmatae, 21 Sarmatae, 51 Equites, 26 Druidae | All Gaul united for the first time |
+| 9 | **Arminius** | Galliae | 18,000 | 51 Silvani, 51 Silvani, 13 Sarmatae, 13 Sarmatae, 13 Sarmatae | Teutoburg, the ambush that cost Rome three legions |
+| 10 | **Tacfarinas** | Africa | 20,000 | 60 Numidae, 60 Numidae, 51 Hastati, 43 Velites, 43 Sagittarii | A Roman deserter turned desert raider |
+| 11 | **Jugurtha** | Africa | 25,000 | 68 Numidae, 68 Numidae, 68 Numidae, 43 Equites, 7 Elephanti | A king with real cavalry who bought Roman senators |
+| 12 | **Gildo** | Africa | 30,000 | 68 Hastati, 51 Equites, 51 Sagittarii, 60 Numidae, 43 Velites | The revolt that cut Rome's grain supply |
+| 13 | **Hannibal** | Africa | 35,000 | 17 Elephanti, 77 Numidae, 128 Baleares, 68 Hastati, 51 Equites | The army Rome never solved in the field |
+| 14 | **Mithridates** | Oriens | 40,000 | 86 Hastati, 86 Sarmatae, 128 Equites, 86 Sagittarii, 21 Dracones | Decades of war and the levies of half of Anatolia |
+| 15 | **Zenobia** | Oriens | 45,000 | 214 Equites, 26 Ifrit, 128 Sagittarii, 51 Empusae, 51 Striges | Palmyra's queen, who took the East from Rome |
+| 16 | **Shapur** | Oriens | 50,000 | 342 Equites, 68 Elephanti, 256 Sagittarii, 26 Dracones, 128 Athanatoi | The Sassanid who took an emperor alive |
 
 ---
 
@@ -251,9 +256,9 @@ been authentic Roman objects rather than invented ones.
 | `quarter_protection` | **The Scutum of Aeneas** | The shield carried from burning Troy |
 | `double_leadership` | **The Corona Triumphalis** | The triumphal laurel — command itself |
 | `increase_commission` | **The Senatus Consultum** | A standing decree of the Senate, and a standing stipend |
-| `double_spell_power` | **The Bulla of Jupiter** | A *bulla*, the real amulet a Roman child wore against harm |
+| `double_spell_power` | **The Bulla of Jupiter** | A *bulla*, the real amulet a Roman child has worn against harm |
 | `double_max_spells` | **The Anulus Aureus** | The gold ring of equestrian rank, a real badge of station |
-| *(none — no effect)* | **The Sibylline Fragment** | The Sibylline Books, consulted in crisis and mostly burned. A surviving scrap nobody can read makes a better joke than the Book of Necros. |
+| *(none — no effect)* | **The Sibylline Fragment** | The Sibylline Books, consulted in crisis and mostly burned. A surviving scrap nobody can read has made a better joke than the Book of Necros. |
 | `cheaper_boat_rental` | **The Anchor of Neptune** | |
 
 **The Sibylline Fragment has stayed inert.** No power, faithful to the Book
@@ -268,15 +273,15 @@ Two per zone, sited by theme (`local_idx` 0 and 1).
 
 | Zone | Artifacts | Why there |
 |---|---|---|
-| **Italia** | Senatus Consultum, Sibylline Fragment | The Senate sits in Rome, and the Sibylline Books were kept in Rome with the Sibyl herself at Cumae |
-| **Galliae** | Gladius of Mars, Anchor of Neptune | The Rhine frontier is Rome's endless war; the zone is also the sea-heaviest, holding the Atlantic, the Channel and Gibraltar |
-| **Africa** | Bulla of Jupiter, Anulus Aureus | Jupiter Ammon's oracle is at Siwa; the equestrian order's gold ring belongs with the grain wealth of the African provinces |
-| **Oriens** | Corona Triumphalis, Scutum of Aeneas | Eastern conquest is what Roman triumphs were awarded for, and Aeneas carried his shield out of burning Troy, which stands in Anatolia |
+| **Italia** | Senatus Consultum, Sibylline Fragment | The Senate has sat in Rome, and the Sibylline Books have been kept in Rome with the Sibyl herself at Cumae |
+| **Galliae** | Gladius of Mars, Anchor of Neptune | The Rhine frontier has been Rome's endless war; the zone has also been the sea-heaviest, holding the Atlantic, the Channel and Gibraltar |
+| **Africa** | Bulla of Jupiter, Anulus Aureus | Jupiter Ammon's oracle has been at Siwa; the equestrian order's gold ring has belonged with the grain wealth of the African provinces |
+| **Oriens** | Corona Triumphalis, Scutum of Aeneas | Eastern conquest has been what Roman triumphs have been awarded for, and Aeneas has carried his shield out of burning Troy, which has stood in Anatolia |
 
 The Senatus Consultum has not been salted: the chest at the end of Sardinia's
 guarded trail has pinned it (`"artifact"` on a zone chest, PACK-FORMAT), so
 the three guardians on that road have always kept an artifact, not a purse.
-The Sibylline Fragment has been pinned too since 2026-09-27, in the mountain cove (#66), so Italia's salt has scattered no artifact of its own.
+The Sibylline Fragment has been pinned too, in the mountain cove (#66), so Italia's salt has scattered no artifact of its own.
 The Scutum of Aeneas has been pinned at the end of the Thracian road in
 Oriens, behind `guardian_thrace` (#66), so Oriens' salt has scattered only the
 Corona Triumphalis.
@@ -293,7 +298,8 @@ REQ-321, REQ-540):
 
 - **A limit for each spell** (`max_per_spell`): the spell capacity has been
   the most charges the hero can carry of each spell, so a temple has refused
-  a sale only when that spell is full.
+  a sale only when that spell is full. A chest whose spell is full has held
+  gold instead.
 - **Weekly renewal** (`weekly_renewal`): a spell bought at a temple has been
   learned, and each week end one learned spell, drawn like the week's
   creature, has been filled to the limit, named under the creature ("The
@@ -311,21 +317,21 @@ REQ-321, REQ-540):
 | teleport | **Mercury's Passage** | |
 | fireball | **Vulcan's Fire** | |
 | lightning | **Fulmen** | Jupiter's bolt — *the* Roman divine intervention |
-| freeze | **Medusa's Gaze** | Petrification reads better than ice |
+| freeze | **Medusa's Gaze** | Petrification has read better than ice |
 | resurrect | **Rite of Aesculapius** | |
-| turn_undead | **Rite of the Lemuria** | The real May festival at which Romans expelled the restless dead from their houses |
+| turn_undead | **Rite of the Lemuria** | The real May festival at which Romans have expelled the restless dead from their houses |
 
 **Adventure (7)**
 
 | Engine effect | Name | Note |
 |---|---|---|
-| bridge | **Pontifex** | *Pontifex* literally means "bridge-builder." The priestly title and the spell are the same word. |
+| bridge | **Pontifex** | *Pontifex* has literally meant "bridge-builder." The priestly title and the spell have been the same word. |
 | time_stop | **Iter Magnum** | The forced march |
 | find_villain | **Augury** | |
 | castle_gate | **Cursus Publicus** | The imperial relay network |
 | town_gate | **Via** | The road |
 | instant_army | **Dilectus** | The levy |
-| raise_control | **Imperium** | The legal authority to command — exactly what leadership is |
+| raise_control | **Imperium** | The legal authority to command — exactly what leadership has been |
 
 ---
 
@@ -352,9 +358,10 @@ famous case — which has been exactly the Barbarian class's position.
 
 ## 7. Troops
 
-Twenty-seven troops in five dwelling families: the reference pack's
-twenty-five, renamed, and two Roman additions (Sagittarii and Elephanti, §7.1
-and §7.2). The renamed stat lines have been the reference pack's, with three
+Twenty-nine troops. Twenty-seven have come in five dwelling families: the
+reference pack's twenty-five, renamed, and two Roman additions (Sagittarii and
+Elephanti, §7.1 and §7.2). Two more have been villain-only, sold by no
+dwelling (Ifrit and Athanatoi, §7.6). The renamed stat lines have been the reference pack's, with three
 exceptions: the Velites have recruited at a plains dwelling rather than the
 castle, with wandering-army tiers of 5/8/12/18 rather than 0/5/10/15, and the
 Praetoriani, like every castle troop, have had no population cap. Names have
@@ -362,6 +369,12 @@ followed the *mechanics*, not just the family: a line with `FLY` has been a
 thing that flies, a line with a ranged attack a thing that shoots, and
 `MAGIC`, `REGEN`, `ABSORB`, `LEECH`, `SCYTHE` and `IMMUNE` have each named
 something the myth actually does.
+
+**Ids.** Each troop's id has been its Roman name in lower case (`coloni`,
+`praetoriani`, `striges`, `elephanti`). No King's Bounty id has stayed in the
+pack: the "Base" column below has named the reference troop each line came
+from, not an id the pack uses. The old ids have been kept only in
+`troop_aliases`, so a save from before the rename has loaded (#228).
 
 ### 7.1 Castra — the legion (castle family)
 
@@ -384,7 +397,7 @@ Recruited only at the Emperor's seat.
 | 8 | archers | **Velites** | 2/10/2, ranged 1–3 | Javelin skirmishers raised from the provinces |
 | 11 | nomads | **Numidae** | 3/15/2 | Numidian light horse, the most famous irregular cavalry of the ancient world |
 | 16 | barbarians | **Sarmatae** | 4/40/3 | Steppe warriors; fast, heavy, and genuinely of the plains |
-| 20 | archmages | **Furiae** | 5/25/1, `FLY\|MAGIC` | The Furies are winged avenging spirits who strike at range — the flight and the magic are both the myth |
+| 20 | archmages | **Furiae** | 5/25/1, `FLY\|MAGIC` | The Furies have been winged avenging spirits who strike at range — the flight and the magic have both been the myth |
 | 26 | — | **Elephanti** | 5/80/2 | War elephants, Hannibal's and Rome's |
 
 ### 7.3 Lucus — the sacred wood (forest family)
@@ -393,18 +406,18 @@ Recruited only at the Emperor's seat.
 |---|---|---|---|---|
 | 1 | sprites | **Lares** | 1/1/1, `FLY` | Household and place-spirits: tiny, numerous, incorporeal |
 | 6 | gnomes | **Fauni** | 2/5/1 | Woodland half-goats, small and rustic |
-| 9 | elves | **Silvani** | 3/10/3, ranged 2–4, 24 shots | Wood-dwellers of Silvanus; the deepest ammunition in the game suits forest ambushers |
-| 17 | trolls | **Antaei** | 4/50/1, `REGEN` | Antaeus regained his strength whenever he touched the earth. Regeneration *is* his myth |
-| 19 | druids | **Druidae** | 5/25/2, `MAGIC` | Kept — Celtic forest priests, and Rome really did fight them at Anglesey |
+| 9 | elves | **Silvani** | 3/10/3, ranged 2–4, 24 shots | Wood-dwellers of Silvanus; the deepest ammunition in the game has suited forest ambushers |
+| 17 | trolls | **Antaei** | 4/50/1, `REGEN` | Antaeus has regained his strength whenever he touched the earth. Regeneration *has been* his myth |
+| 19 | druids | **Druidae** | 5/25/2, `MAGIC` | Kept — Celtic forest priests, and Rome has really fought them at Anglesey |
 
 ### 7.4 Specus — the caves (hill family)
 
 | # | Base | Roman | SL/HP/MV | Why |
 |---|---|---|---|---|
 | 7 | orcs | **Baleares** | 2/5/2, ranged 1–2 | Balearic slingers, antiquity's most feared missile troops, out of the island hills |
-| 12 | dwarves | **Ligures** | 3/20/1 | Ligurian mountain tribes; Rome fought them for a century |
+| 12 | dwarves | **Ligures** | 3/20/1 | Ligurian mountain tribes; Rome has fought them for a century |
 | 15 | ogres | **Cyclopes** | 4/40/1 | Cave-dwelling one-eyed giants who forge under Etna |
-| 22 | giants | **Gigantes** | 5/60/3, ranged 5–10 | The Gigantomachy's giants fought by hurling boulders — the ranged attack is literal |
+| 22 | giants | **Gigantes** | 5/60/3, ranged 5–10 | The Gigantomachy's giants have fought by hurling boulders — the ranged attack has been literal |
 | 24 | dragons | **Dracones** | 6/200/1, `FLY\|IMMUNE` | Also the name of the Roman cavalry windsock standard |
 
 ### 7.5 Hypogeum — the dead below (dungeon family)
@@ -413,13 +426,27 @@ Rome has supplied this tier natively; none of it has been borrowed fantasy.
 
 | # | Base | Roman | SL/HP/MV | Why |
 |---|---|---|---|---|
-| 4 | skeletons | **Larvae** | 2/3/2, `UNDEAD` | The Latin word meant precisely a skeletal ghost |
+| 4 | skeletons | **Larvae** | 2/3/2, `UNDEAD` | The Latin word has meant precisely a skeletal ghost |
 | 5 | zombies | **Lemures** | 2/5/1, `UNDEAD` | The restless dead of the Lemuria — the same rite the Turn Undead spell is named for |
-| 13 | ghosts | **Manes** | 4/10/3, `ABSORB\|UNDEAD` | Ancestral shades. A host of the dead that swells as it kills is exactly what `ABSORB` does |
-| 21 | vampires | **Striges** | 5/30/1, `FLY\|LEECH\|UNDEAD` | Screech-owl blood-drinkers — a genuine Roman vampire, and `FLY\|LEECH` is the myth verbatim |
+| 13 | ghosts | **Manes** | 4/10/3, `ABSORB\|UNDEAD` | Ancestral shades. A host of the dead that swells as it kills has been exactly what `ABSORB` does |
+| 21 | vampires | **Striges** | 5/30/1, `FLY\|LEECH\|UNDEAD` | Screech-owl blood-drinkers — a genuine Roman vampire, and `FLY\|LEECH` has been the myth verbatim |
 | 23 | demons | **Empusae** | 6/50/1, `FLY\|SCYTHE` | Shape-shifting devourers in Hecate's service |
 
-### 7.6 Consequences worth noting
+### 7.6 Hostes — the villains' own (no dwelling)
+
+No dwelling has sold these, no wandering army has drawn them, and no tier pool
+has held them. They have been fielded only in Oriens's last two garrisons, so
+the hero has never recruited or cloned one. Each has been a mix of existing
+abilities no other troop has had, chosen to break the two tricks the hero had
+used to take Oriens with no losses: a Striges stack swollen by Simulacrum,
+whose leech healed every loss, and spells (#200).
+
+| # | Base | Roman | SL/HP/MV | Why |
+|---|---|---|---|---|
+| 27 | — | **Ifrit** | 6/250/2, magic 50, 3 shots, `FLY\|IMMUNE\|MAGIC` | Zenobia's: the fire-jinn of the Arabian desert, the "something far worse than armoured horsemen" her crimes have promised. Its bolts have never missed and have drawn no retaliation, and no hero spell has touched it |
+| 28 | — | **Athanatoi** | 7/100/2, `ABSORB\|REGEN\|IMMUNE` | Shapur's: the Persian royal guard, the Immortals, kept at strength by stepping a new man into every gap. Every troop they have killed has joined them, their wounded have healed every round, and no spell has touched them |
+
+### 7.7 Consequences worth noting
 
 **Dwelling names.** The engine's `dwelling` field has stayed
 `plains` / `forest` / `hill` / `dungeon` / `castle` — those have been matched
@@ -429,9 +456,10 @@ in code. Only the *display* names have changed (`dwelling_kind_*` in
 recruited at the Emperor's seat and has had no dwelling screen.
 
 **Morale groups.** The five groups have been the reference pack's letters, A
-to E, which is all the morale chart reads; the game has shown no label for
+to E, which has been all the morale chart has read; the game has shown no label for
 them. Baleares, human slingers, have sat in group D with wolves and dragons,
-and Gigantes in group C with allied peoples.
+and Gigantes in group C with allied peoples. The two villain-only troops have sat in
+group D; only the hero's side has had morale, so it has never been read.
 
 **Field obstacles.** An open-field battle has stamped an obstacle (rubble, a
 bramble or a broken wall) in each cell of the middle three columns at 12%
@@ -457,7 +485,7 @@ These have been the engine's limits, and they have bound the design.
   needed comfortably more than six castles.
 - **No catalog limits.** Troops, villains, artifacts and spells have been
   sized from the pack (`tests/e2e/test_no_limits.c` has loaded a pack far past
-  this one's 27 / 17 / 8 / 14).
+  this one's 29 / 17 / 8 / 14).
 - **The puzzle grid has been fixed at 5 × 5 = 25 cells**, and 17 villains + 8
   artifacts have filled it exactly. Changing either count would break it.
 
@@ -465,7 +493,7 @@ These have been the engine's limits, and they have bound the design.
 
 ## 9. Shipping
 
-Glory of Rome has been the pack of the `gloryofrome-*` release files: the
+The Glory of Rome has been the pack of the `gloryofrome-*` release files: the
 desktop archives, the browser build (danheskett.com/dist/gloryofrome/), the
 iOS app and the Android app. It has been original, where `kings-bounty` has
 been DOS-extracted. `scripts/verify_release_packs.sh` has checked every
@@ -484,7 +512,7 @@ tile, resolved through `tile_codes` in `game.json`.
 
 Zone `width`/`height` have been parsed per-zone and defaulted to 64; short
 rows have padded with grass. The map's tiles, its string pool and its fog
-have been heap, sized to the zone, so any size has loaded (a test loads a
+have been heap, sized to the zone, so any size has loaded (a test has loaded a
 300×300 zone). Fog has been encoded from each zone's own `width`/`height`, so
 size has not been a save-format concern. The cost has been memory: every
 autoplay search node has copied the used map area (AP-204), so large maps
@@ -537,7 +565,7 @@ The rule has been about *docks*, not about enclosed water as such. All four
 been winnable, because **boats have only ever spawned at a town's dock**, so a
 pond nothing can launch into has been decorative and completely harmless.
 
-What *has been* lethal is a dock on such a pond, because a boat launched into
+What *has been* lethal has been a dock on such a pond, because a boat launched into
 an enclosed body has been unrecoverable: rental has been charged weekly and
 forever, and cancellation has been refused mid-sail. The oracle would suffer
 for it too — the mover has priced every rentable town dock as a boarding edge
@@ -549,7 +577,7 @@ both realistic and sailable.
 ### 10.6 Islands have needed a coastline, not a dock
 
 Britannia across water inside Galliae has needed **a coastline and one dock
-town somewhere on the same sea** — that is all.
+town somewhere on the same sea** — that has been all.
 
 An island has not needed its own dock. Disembarking has parked the boat on
 whatever coastal land tile the hero steps onto (REQ-243), so any shore has
@@ -561,50 +589,94 @@ pocket** — land enclosed by forest or mountain with no coast at all. That has
 been reachable only by flight or a gate. It has not been fatal, because the
 autoplay fetch has had a flight fallback (AP-188) and the reference pack's
 `saharia` has contained exactly one such chest, but it has been deliberate
-rather than accidental wherever it appears.
+rather than accidental wherever it has appeared.
 
 ### 10.6.1 Furnishing has been author-time, permanently
 
 The `.dat` file has contained the **fully rendered map**, edge variants and
 all (REQ-229). Nothing about a map's appearance has been computed at game
-time, and `furnish_map` in the engine has stayed a no-op. The variants have
-been baked into the `.dat` when the map is authored.
+time. The variants have
+been baked into the `.dat` when the map has been authored.
 
 ### 10.6.1a Authoring: a source and a builder
 
 Italia has been drawn by hand as a source grid, `art/maps/italia.txt` -- one
 character per tile: `~` sea, `.` grass, `,` grass variant, `f` forest, `^`
 mountain, `d` desert; overlays `r` / `R` / `M` river on grass / in forest / in
-mountains, `=` road, `H` bridge. `tools/mapbuild.py build` has baked it into
+mountains, `=` road, `H` bridge; `p` / `w` ploughed and wheat fields (grass
+to the engine, soft-edged into the grass round them); `P T S O K G` the
+vistas' landmarks on grass (the Pharos, the ocean temple, the Sibyl's cave,
+the Oppidum's gate, the Tophet's stelae, the Gordian cart); and the
+settlement set pieces (#63): `n` a farmhouse, `e` a well, `h` a shrine, `u` a
+ruin, solid on grass (`blocks_foot`), and `j` a jetty, a sea cell off one
+straight grass shore drawn as `dock_<side>` over that shore's water edge. `tools/romeart.py map build` has baked it into
 `maps/italia.dat`: the edge variants (REQ-229a/e), the river and road pieces
 by their links, the mouths, the bridges. The `.dat` has never been edited by
-hand; the source has. Rivers have linked only orthogonally, because the hero
-moves 8-way with no corner rule and would step across a diagonal river.
+hand; the source has, and `scripts/check_maps.sh` has failed any `.dat` that
+is not what its source builds. Rivers have linked only orthogonally, because
+the hero has moved 8-way with no corner rule and would step across a diagonal
+river. A river whose straight run reaches the map's edge has flowed off it.
+A mouth has had the sea on its outflow side and along its top
+(`river_mouth_ne`/`_nw`), or along its foot (`river_mouth_es`/`_sw`, the same
+art the other way up). The builder has warned, cell by cell, about shapes the
+art draws badly: a mouth with sea on both or neither of its north and south
+sides, a river ending in open ground, a forest- or mountain-banked river
+beside another terrain, and a sea tile whose different diagonal no water
+variant shows; `--strict`, which `scripts/check_maps.sh` has used, has made
+those errors. A land tile's corner no variant shows has been counted only.
+Desert meeting the sea has kept its own ground to the coast, the sea's edge
+drawing the shore line as sand (`water_sand_*`, where every land beside
+it has been desert); forest and rock have kept their grass fringe, since
+drawn solid to the water they stop in a straight line at the tile's edge.
+`tools/romeart.py map lint`, run by `scripts/check_maps.sh`, has failed any terrain
+shape the edge pieces draw badly, in the source or the built `.dat` -- a
+one-cell stair step, a strand in no 2x2 block, a cut corner, two masses side
+by side, a mass at the sea or within two cells of the world's edge outside the
+zone's intended coasts and edges (`art/maps/<zone>_lint_intended.json`, each
+with its reason; a field never; its `shape` list names the few other shapes
+the hero's reach depends on) -- beyond the findings still to clear in
+`art/maps/<zone>_lint_allow.json`, whose count has only fallen, and any change
+in the hero's reach from `art/maps/<zone>_reach.json`.
 
-`tools/mapbuild.py place` has scattered the zone's chests and wandering
+The shell (modern) has drawn four cosmetic layers over the baked tiles,
+picked per cell so a map has looked the same every time (#63; the art from
+`romeart.py fills`, `aprons`, `details`, ART-PIPELINE): an inner-corner fill
+where a grass or sand cell has had a wood or range on two adjacent sides; an
+apron of stray trees or loose rocks along a wood's or range's side; now and
+then a bush or a stone on open ground; and every object, set piece and
+landmark drawn again on top. `tools/romeart.py map render --tiles` has drawn the
+same, and so has been the picture to review a map by. None of them has
+changed what a cell is.
+
+`tools/romeart.py map place` has scattered the zone's chests and wandering
 armies from a fixed seed inside the region boxes in
-`art/maps/italia_regions.json`, and kept a static guardian where it says
-(`guardian_calabria` holds the one pass into the toe; `guardian_sardinia_1`
-to `_3` hold the three gates of Sardinia's southern trail, whose last chamber
+`art/maps/italia_regions.json`, clear of towns, castles, signs, dwellings,
+events and the tiles an event changes; `--write` has written them into
+`game.json`, touching only those two arrays, and `--add` has kept every object
+where it stands and placed only what each region's count still lacks. It has
+kept a static guardian where it has said
+(`guardian_calabria` has held the one pass into the toe; `guardian_sardinia_1`
+to `_3` have held the three gates of Sardinia's southern trail, whose last chamber
 has held the pinned Senatus Consultum). Sardinia has had Olbia on its east
 coast facing Ostia, the Augur inland on the road between the town and the
 trail, a mountain ridge down its east side, a river from the ridge to the
 western sea, and a coast of wood and rock all round, so that a boat has
 landed only at Olbia's harbour, the two grass cells beside the town. A sign
-at the trail's head has said what the road guards. `tools/mapbuild.py
-check` has proved every object stands on walkable ground and every dock is on
+at the trail's head has said what the road has guarded. `tools/romeart.py
+map check` has proved every object stands on walkable ground and every dock is on
 the open sea, and printed what the hero reaches from the spawn on foot and by
-boat -- a boat sails only the water it is rented on -- first with every river
+boat -- a boat has sailed only the water it has been rented on -- first with every river
 shut, then with them bridged.
 
-**The two coves** (2026-09-27, #66: sailing had had no purpose on the
-peninsula itself). Two pockets on the Adriatic coast have been reachable only
+**The two coves** (#66), which have given sailing a purpose on the
+peninsula itself. Two pockets on the Adriatic coast have been reachable only
 from the water, rented at Ancona's harbour: a winding channel into the
-Apennine cliffs east of the spine (in at column 43 of row 52, three cells
-west, two south, two west), whose last chamber has held the pinned Sibylline
-Fragment, and a winding grass path inside a ring of wood on the headland
-south of it (in at column 51 of row 58, four west, two south, two east),
-ending in a fixed chest. Only the entry cell of each has touched the sea, so
+Apennine cliffs east of the spine (in at column 42 of row 52, two cells west,
+one south, one south-west), whose last chamber, (39,54), has held the pinned
+Sibylline Fragment, and a grass
+path inside a ring of rock on the headland south of it (in at column 50 of
+row 58, two west, one south-west, one south), ending in a fixed chest at
+(47,60). Only the entry cell of each has touched the sea, so
 a boat has landed there and nowhere else along the channel; `check` has
 shown both ends unreachable on foot and reachable by boat, with every town
 and castle reached as before. A sign beside Ancona's harbour has said the
@@ -623,7 +695,7 @@ casting the bridge by hand: holding the Pontifex rite and stepping onto the
 crossing at (31,31) has spent one charge, played the scene
 (`art/scenes/rubicon.png`: a legion crossing far off) and left a bridge at
 (30,30) for good. The sign has read it as a sacred boundary no army crosses
-without the gods' leave, in either direction. `mapbuild.py check` has carried
+without the gods' leave, in either direction. `romeart.py map check` has carried
 a "vistas played" column for it.
 
 **Galliae** has been built the same way, from `art/maps/galliae.txt` and
@@ -661,7 +733,7 @@ Euphrates), and `guardian_armenia` the one pass in the mountain ring round
 Armenia (Artaxata inside it, behind a Pontic coast of mountain). Neither
 region has had a coast a boat can land on.
 
-**The Thracian road** (#66: sailing had had little purpose in Oriens). Thrace,
+**The Thracian road** (#66), which has given sailing a purpose in Oriens. Thrace,
 in the map's north-west corner across the strait from Nicomedia, has been
 reachable only by boat: a coast of rock all round with one beach at (1,3), the
 only Thracian cell a boat can land on. From the beach a one-cell road has wound
@@ -674,17 +746,34 @@ road and another by Nicomedia have said that a war band holds it. `check` has
 shown the chest unreachable on foot and with the guardian standing, reachable
 by boat once it is beaten, with every town and castle reached as before.
 
+**The mini-quests** (#63) have been two to a province, one held by a
+guardian and one shut until a vista plays, each ending in a fixed gold chest
+(4,000 in Italia, 6,000 in Galliae, 8,000 in Africa, 10,000 in Oriens) inside
+a ring of rock or wood with one way in:
+
+| Province | Guardian lair | Vista gate |
+|---|---|---|
+| Italia | **Capri**: a rock islet in the bay south of Ostia, landed on only at its east cell (31,70), where `guardian_capri` has stood | **The Sibyl's Cave**: a ring of rock east of the Apennines; 1,500 gold at (49,67) has cut (49,66) open (`art/scenes/sibyl.png`) |
+| Galliae | **The Druid Grove**: a clearing in a ring of wood east of the Rhenus, `guardian_grove` in its one gap at (59,27) | **The Oppidum**: a ring of rock in southern Gaul; the Senatus Consultum shown at (11,50) has opened (11,49) (`art/scenes/oppidum.png`) |
+| Africa | **The Oasis**: a ring of palms round a pool in the desert, `guardian_oasis` in its gap at (12,25) | **The Tophet of Carthage**: a cell in the ridge south of the river; 2,000 gold at (21,10) has opened (21,9) (`art/scenes/tophet.png`) |
+| Oriens | **The Siq**: a one-cell canyon into a basin in the Arabian desert, `guardian_siq` inside it at (47,38) | **The Gordian Knot**: a ring of wood in Bithynia; the Gladius of Mars at (16,13) has cut (16,12) open (`art/scenes/gordian.png`) |
+
+Every vista has asked for gold or an artifact, never a troop, because
+autoplay has had no way to raise a troop for a vista. Each artifact has been
+one found in an earlier province. Each guardian has been about as strong as
+the province's others, measured by the recruit cost of its stacks.
+
 ### 10.6.2 The checker
 
-`tools/mapcheck.py` has enforced all of the above:
+`tools/romeart.py map sanity` has enforced all of the above:
 
 ```sh
-tools/mapcheck.py <pack-dir> <map.dat> [WxH] [zone-id]
+tools/romeart.py map sanity <pack-dir> <map.dat> [WxH] [zone-id]
 ```
 
 It has verified dimensions and tile codes, flagged a dock on landlocked
 water, reported objectives stranded in inland pockets (a pocket walled by a
-river is a gate the bridge spell opens, reported as a note), and printed the
+river has been a gate the bridge spell has opened, reported as a note), and printed the
 terrain breakdown. It has been **calibrated against the reference pack**:
 three of the four `kings-bounty` maps have passed clean, and the fourth has
 reported only that one real `saharia` chest. A checker that fails known-good
@@ -698,22 +787,20 @@ Real requirements, not guidelines:
   them (REQ-231): 2 artifacts + 1 navmap + 1 orb + 2 telecaves + 10 dwellings
   + 5 friendly foes. Anything above 21 has remained a real chest. Reference
   zones have carried 45–75; Rome's have carried 30–40.
-- **Lairs have risen with the province** (2026-09-28, #106). The ten salted
-  dwellings take the zone's `preferred_troops` first and roll the rest from
-  its `dwelling_range`, so each province carries its own, on the reference
+- **Lairs have risen with the province** (#106). The ten salted
+  dwellings have taken the zone's `preferred_troops` first and rolled the rest from
+  its `dwelling_range`, so each province has carried its own, on the reference
   pack's curve with the flavour swapped where Rome demands it: Italia the
   Coloni, Lares, Baleares, Larvae, Lupi and Fauni from the catalog's first
   fifteen; Galliae the Ligures, Lemures, Druidae, Silvani, Cyclopes and
   Silvani again, range `[1, 14]`; Africa the Manes, Sarmatae, Antaei and
   Numidae, range `[2, 14]`; Oriens the Gigantes, Striges, Furiae, Dracones
-  and Empusae, range `[20, 26]`, which reaches the Elephanti. Until then all
-  four provinces copied Italia's list, so the last province had peasants'
-  lairs and Baleares everywhere.
+  and Empusae, range `[20, 26]`, which reaches the Elephanti.
 - **More contract-eligible castles than villains, with margin.** Italia has
   hosted six and has had ten.
 - **Castles have been single tiles.** Every catalog entry has declared
   `"footprint": "1x1"` (REQ-228): the gate tile alone, drawn with
-  `art/tiles/castle.png`, the way a town sits on the map. No wall tiles, so
+  `art/objects/castle.png`, the way a town has sat on the map. No wall tiles, so
   the only room a castle has needed is its tile and the gate landing below
   it.
 - Exactly one `is_home` zone (Italia); one `magic_alcove` and one

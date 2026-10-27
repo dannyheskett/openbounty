@@ -6,6 +6,7 @@
 #include "fixtures.h"
 #include "resources.h"
 #include "pack.h"
+#include "cJSON.h"
 
 #include <string.h>
 
@@ -171,12 +172,13 @@ static void copy_file(const char *from, const char *to) {
 }
 
 TEST catalog_has_no_troop_limit(void) {
-    const char *dir = "/tmp/ob_manytroops_pack";
+    const char *dir = "build/ob_manytroops_pack";
     char cmd[512];
     snprintf(cmd, sizeof cmd, "rm -rf %s && mkdir -p %s/strings", dir, dir);
     ASSERT_EQ(0, system(cmd));
-    copy_file("tests/fixtures/animpack/strings/en.json", "/tmp/ob_manytroops_pack/strings/en.json");
-    // Rewrite troops[] with 40 extra entries after the fixture's own.
+    copy_file("tests/fixtures/animpack/strings/en.json", "build/ob_manytroops_pack/strings/en.json");
+    // Rewrite troops[] with 40 extra entries after the fixture's own, each
+    // indexed by its position, as the loader requires.
     FILE *f = fopen("tests/fixtures/animpack/game.json", "rb");
     ASSERT(f);
     fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
@@ -185,18 +187,31 @@ TEST catalog_has_no_troop_limit(void) {
     ASSERT_EQ((size_t)len, fread(txt, 1, (size_t)len, f));
     txt[len] = '\0';
     fclose(f);
-    char *at = strstr(txt, "\"troops\"");
-    ASSERT(at);
-    char *open = strchr(at, '[');
-    ASSERT(open);
-    FILE *o = fopen("/tmp/ob_manytroops_pack/game.json", "wb");
-    ASSERT(o);
-    fwrite(txt, 1, (size_t)(open - txt) + 1, o);
-    for (int i = 0; i < 40; i++)
-        fprintf(o, "{\"index\": %d, \"id\": \"extra_%d\", \"name\": \"Extra %d\", \"dwelling\": \"plains\"},", 1000 + i, i, i);
-    fputs(open + 1, o);
-    fclose(o);
+    cJSON *root = cJSON_Parse(txt);
     free(txt);
+    ASSERT(root);
+    cJSON *troops = cJSON_GetObjectItem(root, "troops");
+    ASSERT(cJSON_IsArray(troops));
+    int own = cJSON_GetArraySize(troops);
+    for (int i = 0; i < 40; i++) {
+        char id[32], name[32];
+        snprintf(id, sizeof id, "extra_%d", i);
+        snprintf(name, sizeof name, "Extra %d", i);
+        cJSON *t = cJSON_CreateObject();
+        cJSON_AddNumberToObject(t, "index", own + i);
+        cJSON_AddStringToObject(t, "id", id);
+        cJSON_AddStringToObject(t, "name", name);
+        cJSON_AddStringToObject(t, "dwelling", "plains");
+        cJSON_AddItemToArray(troops, t);
+    }
+    char *out = cJSON_Print(root);
+    cJSON_Delete(root);
+    ASSERT(out);
+    FILE *o = fopen("build/ob_manytroops_pack/game.json", "wb");
+    ASSERT(o);
+    fputs(out, o);
+    fclose(o);
+    free(out);
 
     Pack *p = pack_open(dir);
     ASSERT(p);
@@ -205,7 +220,7 @@ TEST catalog_has_no_troop_limit(void) {
     ASSERT(r);
     bool ok = resources_load(r, "game.json");
     int n = r->troops_count;
-    bool last_ok = n > 40 && strcmp(r->troops[39].id, "extra_39") == 0;
+    bool last_ok = n > 40 && strcmp(r->troops[n - 1].id, "extra_39") == 0;
     resources_free(r);
     free(r);
     pack_stack_pop();
@@ -215,8 +230,96 @@ TEST catalog_has_no_troop_limit(void) {
     PASS();
 }
 
+// Troops, spells, classes and artifacts are found by their index as an array
+// position, so a pack whose index is not the entry's position is refused.
+TEST catalog_index_must_be_its_position(void) {
+    const char *dir = "build/ob_badindex_pack";
+    char cmd[512];
+    snprintf(cmd, sizeof cmd, "rm -rf %s && mkdir -p %s/strings", dir, dir);
+    ASSERT_EQ(0, system(cmd));
+    copy_file("tests/fixtures/animpack/strings/en.json", "build/ob_badindex_pack/strings/en.json");
+    FILE *f = fopen("tests/fixtures/animpack/game.json", "rb");
+    ASSERT(f);
+    fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
+    char *txt = malloc((size_t)len + 1);
+    ASSERT(txt);
+    ASSERT_EQ((size_t)len, fread(txt, 1, (size_t)len, f));
+    txt[len] = '\0';
+    fclose(f);
+    cJSON *root = cJSON_Parse(txt);
+    free(txt);
+    ASSERT(root);
+    cJSON *troops = cJSON_GetObjectItem(root, "troops");
+    ASSERT(cJSON_GetArraySize(troops) >= 1);
+    cJSON_ReplaceItemInObject(cJSON_GetArrayItem(troops, 0), "index",
+                              cJSON_CreateNumber(1));
+    char *out = cJSON_Print(root);
+    cJSON_Delete(root);
+    ASSERT(out);
+    FILE *o = fopen("build/ob_badindex_pack/game.json", "wb");
+    ASSERT(o);
+    fputs(out, o);
+    fclose(o);
+    free(out);
+
+    Pack *p = pack_open(dir);
+    ASSERT(p);
+    pack_stack_push(p);
+    Resources *r = calloc(1, sizeof *r);
+    ASSERT(r);
+    bool ok = resources_load(r, "game.json");
+    resources_free(r);
+    free(r);
+    pack_stack_pop();
+    ASSERT_FALSE(ok);
+    PASS();
+}
+
+// A strings group the pack must have is refused when absent, like a key.
+TEST a_missing_strings_group_is_refused(void) {
+    const char *dir = "build/ob_nogroup_pack";
+    char cmd[512];
+    snprintf(cmd, sizeof cmd, "rm -rf %s && mkdir -p %s/strings && cp tests/fixtures/animpack/game.json %s/",
+             dir, dir, dir);
+    ASSERT_EQ(0, system(cmd));
+    FILE *f = fopen("tests/fixtures/animpack/strings/en.json", "rb");
+    ASSERT(f);
+    fseek(f, 0, SEEK_END); long len = ftell(f); fseek(f, 0, SEEK_SET);
+    char *txt = malloc((size_t)len + 1);
+    ASSERT(txt);
+    ASSERT_EQ((size_t)len, fread(txt, 1, (size_t)len, f));
+    txt[len] = '\0';
+    fclose(f);
+    cJSON *root = cJSON_Parse(txt);
+    free(txt);
+    ASSERT(root);
+    cJSON_DeleteItemFromObject(root, "stats");
+    char *out = cJSON_Print(root);
+    cJSON_Delete(root);
+    ASSERT(out);
+    FILE *o = fopen("build/ob_nogroup_pack/strings/en.json", "wb");
+    ASSERT(o);
+    fputs(out, o);
+    fclose(o);
+    free(out);
+
+    Pack *p = pack_open(dir);
+    ASSERT(p);
+    pack_stack_push(p);
+    Resources *r = calloc(1, sizeof *r);
+    ASSERT(r);
+    bool ok = resources_load(r, "game.json");
+    resources_free(r);
+    free(r);
+    pack_stack_pop();
+    ASSERT_FALSE(ok);
+    PASS();
+}
+
 SUITE(unit_resources_suite) {
     RUN_TEST(catalog_has_no_troop_limit);
+    RUN_TEST(catalog_index_must_be_its_position);
+    RUN_TEST(a_missing_strings_group_is_refused);
     RUN_TEST(spawn_five_troop_pool_walks_as_before);
     RUN_TEST(spawn_six_troop_pool_uses_its_own_curve);
     RUN_TEST(tile_code_key_names_a_byte);

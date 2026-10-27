@@ -1,0 +1,20 @@
+{
+ "id": "scenes/sibyl",
+ "prompt": "a dark cave mouth cut into a grey limestone cliff above a calm bay of the sea, a long trapezoidal passage of dressed stone running back into shadow, a single oil lamp burning at its far end, a few laurel bushes and fallen rocks at the entrance, warm evening light on the cliff, no people",
+ "style": "rd_pro__default",
+ "width": 240,
+ "height": 102,
+ "seed": 6611,
+ "bypass_prompt_expansion": true,
+ "raw_only": true,
+ "figure": false,
+ "target": [
+  240,
+  102
+ ],
+ "_pack_path": "art/scenes/sibyl.png",
+ "_note": "The Italia vista: the Sibyl's cave opened (the toll paid at the rock). Location-backdrop route, rd_pro__default 240x102, opaque, the same as the Rubicon's.",
+ "pack": [
+  "art/scenes/sibyl.png"
+ ]
+}

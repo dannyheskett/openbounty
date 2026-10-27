@@ -26,16 +26,22 @@ typedef enum {
 // file that includes map.h.
 #include "game_fwd.h"
 
+// Write the Game and the fog to `path` as JSON (engine/state_serialize.c).
+// SAVE_ERR_IO when the file cannot be written in full.
 SaveResult SaveGameWrite(const char *path,
                          const Game *game,
                          const Map *map,
                          const Fog *fog);
 
+// Read a save into `game` and `fog`, refusing another SAVE_VERSION or another
+// pack. The map is not read: the caller reloads the zone (GameReloadZoneMap,
+// OPENBOUNTY-SPEC REQ-415).
 SaveResult SaveGameRead(const char *path,
                         Game *game,
                         Map *map,
                         Fog *fog);
 
+// A short English description of a SaveResult, for logs.
 const char *SaveResultText(SaveResult r);
 
 // Lightweight header summary for the save-slot picker. No Map/Fog load.
@@ -51,6 +57,8 @@ typedef struct {
     char pack_hash[17];     // whole-pack zip hash (FNV1a-64 hex); advisory only
 } SaveHeader;
 
+// Read only the header fields above. SAVE_ERR_IO, with `*out` zeroed, when
+// there is no save at `path`.
 SaveResult SaveGameReadHeader(const char *path, SaveHeader *out);
 
 #endif

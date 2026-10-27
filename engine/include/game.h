@@ -116,7 +116,7 @@ typedef struct {
 typedef struct {
     char zone[24];
     int  x, y;
-    int  vertical;   // 1: runs north-south (bridge_v / bridge_river_ns); an int
+    int  vertical;   // 1: runs north-south (bridge_ns / bridge_river_ns); an int
                      // so the record has no padding for the fingerprint to read
 } BuiltBridge;
 
@@ -159,8 +159,7 @@ typedef struct {
     Unit garrison[GAME_ARMY_SLOTS];
     bool alive;
     bool friendly;          // true -> recruit dialog; false -> attack prompt
-    bool is_static;         // never moves (skipped by foes_follow); the fight
-                            // is forced on contact -- no decline (REQ-gate).
+    bool is_static;         // never moves (skipped by foes_follow): a guardian
     // A gate this army holds against everything but one arm: the fight is
     // refused unless that troop stands in the hero's army (Oriens' elephants).
     // Empty = anyone may attack.
@@ -243,7 +242,7 @@ typedef struct {
     // gold before the commission, upkeep and boat fare really taken.
     int              last_week_on_hand;
     int              last_week_army;
-    int              last_week_boat;      // 0 when the boat was repossessed
+    int              last_week_boat;      // the boat fare the purse paid
     // The stacks the most recent week-end could not pay and that left
     // (economy.unpaid_troops_leave, #141), for the report shown at once after
     // it; not saved.
@@ -414,6 +413,9 @@ bool GameReserveConsumed(Game *g, int need);
 bool GameReserveBridges(Game *g, int need);
 bool GameReserveEventsDone(Game *g, int need);
 bool GameReserveDwellings(Game *g, int need);
+// The zone army a foe was spawned from (zones[].wandering_armies, matched by
+// zone and placement id), or NULL for a salted or friendly foe.
+const ResZoneArmy *GameFoeArmy(const Game *g, const FoeState *f);
 
 // ----- Lifecycle ------------------------------------------------------------
 
@@ -496,9 +498,8 @@ void salt_spells(Game *g);
 // `armies[]` placements in the zone definition, which this function
 // also registers as foes.
 void salt_continent(Game *g, int continent, int artifacts, int navmaps, int orbs, int telecaves, int dwellings, int friendly_foes);
-void furnish_map(Game *g);
 void clear_fog(Game *g);
-// : walk the zone's tile grid row-major
+// walk the zone's tile grid row-major
 // and bury the scepter on a grass tile chosen by the supplied 0..N
 // fraction of grass tiles.
 void bury_scepter(Game *g, int continent);
@@ -575,16 +576,6 @@ ChestOutcome GameRollChest(Game *g, int zone_index, int x, int y,
                            char *out_body, int out_sz,
                            ChestPending *out_pending);
 
-// Read-only equivalent of GameRollChest: returns what *would* happen
-// if a chest at (x, y) in zone_index were opened, without mutating
-// any game state. Used by autoplay to pre-plan chest pick choices.
-// For CHEST_OUTCOME_GOLD, out_pending->pending_gold and
-// pending_leadership are populated (same values the prompt would
-// offer). For other outcomes, out_pending fields are 0 and the
-// effect value can be inferred from the outcome kind + zone tier.
-ChestOutcome GamePeekChest(const Game *g, int zone_index, int x, int y,
-                           ChestPending *out_pending);
-
 void GameAcceptChestGold(Game *g, int gold);
 void GameAcceptChestLeadership(Game *g, int leadership);
 
@@ -630,8 +621,18 @@ int GameUngarrisonTroopCount(Game *g, const char *castle_id, int slot, int count
 // dismiss, post-combat losses). Order is preserved.
 void GameCompactArmy(Game *g);
 
+// The army view's morale for one stack (REQ-271): 'H' alone; otherwise its
+// group looked up against every other stack's, any 'L' Low, all 'H' High,
+// else 'N'. 'N' for an empty or unknown slot.
+char GameArmySlotMorale(const Game *g, int slot);
+
 // Max troops the player can handle based on leadership (leadership / hp).
 int GameMaxRecruitable(const Game *g, const char *troop_id);
+
+// True when the home castle offers this troop: the hero's current leadership
+// is at least six times its hit points, King's Bounty's rule. A troop it
+// doesn't offer can't be bought there (GameBuyTroop rc 4).
+bool GameCastleOffersTroop(const Game *g, const TroopDef *t);
 
 // Max troops buyable AT THE HERO'S CURRENT LOCATION -- the same legality bound
 // GameBuyTroop enforces (rc=4): the dwelling's live population when standing on
@@ -646,14 +647,10 @@ int GameRecruitLocationCap(const Game *g, const char *troop_id);
 DwellingState *GameTouchDwelling(Game *g, const char *zone, int x, int y,
                                  const char *dwelling_kind);
 
-// Grow all dwellings by their troop's growth_per_week, capped at
-// max_population. Called at week-end when no astrology event applies.
-void GameGrowDwellings(Game *g);
-
 // Week-end astrology: dwellings whose troop matches the astrology
 // creature of the week are fully repopulated to max_population, and
 // absorb-ability troops (ghosts) in the player's army are replaced by
-// the astrology creature (). `troop_idx` is a
+// the astrology creature. `troop_idx` is a
 // troop catalog index; -1 = no astrology event (growth-only).
 // Returns the troop id that was broadcast, or empty on no-op.
 const char *GameApplyAstrology(Game *g, int troop_idx);

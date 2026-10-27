@@ -14,6 +14,10 @@
 
 void fast_quit_open(void);
 bool fast_quit_is_active(void);
+// The legacy Q save message ("Press Ctrl-Q to Quit") is up: Ctrl+Q there
+// quits at once, as its words say; on any other message it asks first.
+void fast_quit_set_save_message(bool open);
+bool fast_quit_save_message_open(void);
 
 // Per-frame pump. Returns true if a quit was confirmed (caller should
 // break the main loop). When returning false, caller should still

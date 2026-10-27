@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "tables.h"
+#include "tile.h"
 
 // Runtime copy of every value loaded from assets/game.json and the table
 // files it references. Mechanics code reads from here instead of holding
@@ -19,12 +20,11 @@
 #define RES_SIGN_BODY_LEN    256   // Rome's longest is 147 (#135)
 #define RES_PATH_LEN         128
 // Indexed by raw map byte, so the table spans the whole byte range: a map
-// file's code can be any of 256 values and always indexes this table. It was
-// 128 (printable ASCII and below) until Rome used 91 of them and the road
-// end pieces needed four more. A map that uses a code above 127 is no longer
-// plain ASCII -- the reader is byte-wise, so such a file is latin-1.
+// file's code can be any of 256 values and always indexes this table. A map
+// that uses a code above 127 is not plain ASCII -- the reader is byte-wise, so
+// such a file is latin-1.
 #define RES_TILE_CODE_COUNT  256
-#define RES_TILE_ART_LEN      24
+#define RES_TILE_ART_LEN      32
 // Animation cycle default: OB_ANIM_FRAMES_DEFAULT, in tables.h.
 #define RES_COMBAT_TILES      15     // combat tileset, fixed role order
 #define RES_END_BODY_LEN     512     // win/lose body text
@@ -83,7 +83,7 @@ typedef struct {
     int  temp_death_count;
 } ResTuning;
 
-// Score formula coefficients (). Each villain caught,
+// Score formula coefficients. Each villain caught,
 // artifact found, and player-owned castle scales by its coefficient; each
 // follower killed during play subtracts at the kill_penalty rate. The
 // running total is then scaled by difficulty:
@@ -101,7 +101,7 @@ typedef struct {
     bool easy_halves;
 } ResScoring;
 
-// Treasure-chest probability and value tables ().
+// Treasure-chest probability and value tables.
 // Indexed by zone tier 0..3. The chance_* arrays are cumulative thresholds
 // against a 1..100 roll; the engine walks them top-to-bottom and the first
 // branch whose threshold strictly exceeds the roll fires. gold_min/max,
@@ -184,11 +184,11 @@ typedef struct {
     bool   kind_curve_set[RES_SPAWN_TIERS];
     int   *kind_curve[RES_SPAWN_TIERS][RES_SPAWN_TIERS];   // [kind][tier]
     int    kind_curve_len[RES_SPAWN_TIERS][RES_SPAWN_TIERS];
-    // The calm start (2026-09-28, #69): a hostile foe whose spawn tile lies
+    // The calm start (#69): a hostile foe whose spawn tile lies
     // within calm_radius (Chebyshev) of its zone's hero_spawn rolls no pool
     // slot above calm_max_slot and no more than calm_max_stacks stacks.
     // calm_radius 0 (absent) disables it: the King's Bounty pack rolls as
-    // the original did. Glory of Rome sets 12 / 1 / 2.
+    // the original did. The Glory of Rome sets 12 / 1 / 2.
     int    calm_radius;
     int    calm_max_slot;
     int    calm_max_stacks;
@@ -252,10 +252,7 @@ typedef struct {
 
 typedef struct {
     char starting_zone[RES_ID_LEN];
-    char zone_noun[RES_ID_LEN];
-    char zone_noun_plural[RES_ID_LEN];
     char language[RES_ID_LEN];    // base locale code; strings load from strings/<language>.json
-    int  max_army_slots;
     // A cleared object (a fought foe, an opened chest, a fled army) gives the
     // cell back its own walkable ground, desert included, instead of the
     // original's plain grass (REQ-229f, #107). Absent or false, the cleared
@@ -283,7 +280,7 @@ typedef struct {
                                   // this town reports on. Empty = none.
     char pinned_spell[RES_ID_LEN];// spell id pre-placed here by salt_spells.
                                   // Empty = no pin (any town may pin in mods).
-    char art[RES_TILE_ART_LEN];   // tile art stem under art/tiles/ ("" = "town")
+    char art[RES_TILE_ART_LEN];   // object art stem under art/objects/ ("" = map_art's town)
     char informant[RES_ID_LEN];   // portraits[] id shown for the town's report ("" = none)
     char headman[RES_ID_LEN];     // portraits[] id of the figure on the town backdrop
     char townhead[RES_ID_LEN];    // portraits[] id of that person's portrait (Contracts, main page)
@@ -352,7 +349,7 @@ typedef struct {
                                   // roll_creature-style monster generation.
                                   //  castle_difficulty[].
     ResCastleFootprint footprint; // "footprint": "3x2" (default) or "1x1"
-    char art[RES_TILE_ART_LEN];   // 1x1 only: its own tile art stem under art/tiles/ ("" = "castle")
+    char art[RES_TILE_ART_LEN];   // 1x1 only: its own object art stem under art/objects/ ("" = map_art's castle_1x1)
     ResCastleSpecial special;
 } ResCastle;
 
@@ -374,7 +371,41 @@ typedef struct {
     // here is laid down first, so the tile's transparent parts show terrain
     // rather than black. Empty = the tile is its own ground, as terrain is.
     char ground[RES_TILE_ART_LEN];
+    // "object": true -- the art is a map object (a landmark, a set piece) under
+    // art/objects/, drawn over `ground`, and never taken from a zone's tile set.
+    bool object;
 } ResTileCode;
+
+// ---- Map art: every name the engine draws that no tile code carries --------
+// game.json "map_art" (PACK-FORMAT section "Map art"). Terrain names (default,
+// cleared_water, ground, bridges, details, aprons, fills) are stems under
+// art/tiles/ and take the zone's tile set; object names (the rest) are stems
+// under art/objects/. An entry left out takes the standard name below; an
+// empty name draws nothing.
+#define RES_MAP_DETAILS 8
+#define RES_MAP_APRONS  4
+enum { RES_DWELL_PLAINS, RES_DWELL_FOREST, RES_DWELL_HILLS, RES_DWELL_DUNGEON, RES_DWELL_COUNT };
+enum { RES_CASTLE_TL, RES_CASTLE_TM, RES_CASTLE_TR, RES_CASTLE_ML, RES_CASTLE_GATE, RES_CASTLE_MR,
+       RES_CASTLE_PARTS };
+typedef struct ResMapArt {
+    char def[RES_TILE_ART_LEN];                  // "default": a cell the map leaves unset ("grass")
+    char cleared_water[RES_TILE_ART_LEN];        // a cleared object at sea ("water")
+    char ground[TERRAIN_COUNT][RES_TILE_ART_LEN];// "terrain_ground": a terrain's plain tile (under an
+                                                 // object with no ground, the combat field)
+    char bridge[2][2][RES_TILE_ART_LEN];         // "bridges": [over a river][crossing north-south]
+    char chest[RES_TILE_ART_LEN], artifact_chest[RES_TILE_ART_LEN], artifact_ring[RES_TILE_ART_LEN];
+    char sign[RES_TILE_ART_LEN], town[RES_TILE_ART_LEN], wandering_army[RES_TILE_ART_LEN];
+    char alcove[RES_TILE_ART_LEN];
+    char dwelling[RES_DWELL_COUNT][RES_TILE_ART_LEN];
+    char castle_3x2[RES_CASTLE_PARTS][RES_TILE_ART_LEN];
+    char castle_1x1[RES_TILE_ART_LEN];
+    int  detail_count;                           // "details": the small open-ground details
+    char detail[RES_MAP_DETAILS][RES_TILE_ART_LEN];
+    int  apron_count[2][4];                      // "aprons": [forest, mountain][n, e, s, w]
+    char apron[2][4][RES_MAP_APRONS][RES_TILE_ART_LEN];
+    char fill[2][2][4][RES_TILE_ART_LEN];        // "fills": [forest, mountain][on grass, on sand]
+                                                 //          [ne, es, sw, nw]
+} ResMapArt;
 
 // ---- Per-zone object placements -------------------------------------------
 
@@ -433,7 +464,7 @@ typedef struct {
 typedef struct {
     int  x, y;
     char id[RES_ID_LEN];
-    bool is_static;                    // never moves; forced fight on contact
+    bool is_static;                    // never moves (a guardian)
     // Optional explicit garrison. If army_stacks == 0 the foe's garrison is
     // rolled by zone tier (default); otherwise these stacks are used verbatim
     // (a hand-tuned guardian).
@@ -451,7 +482,7 @@ typedef struct {
     char title[RES_NAME_LEN];
 } ResZoneArmy;
 
-// ---- Strings  -----
+// ---- Strings -----
 
 typedef struct {
     char id[RES_ID_LEN];
@@ -675,8 +706,6 @@ typedef struct {
     char town_menu_info[RES_BANNER_LEN];
     char town_menu_spell[RES_BANNER_LEN];
     char town_menu_siege[RES_BANNER_LEN];
-    char town_detail_boat_dock[RES_BANNER_LEN];  // %X% %Y%
-    char town_detail_intel[RES_BANNER_LEN];      // %CASTLE%
     char town_contract_confirm[RES_BANNER_LEN];
     char foe_fight[RES_BANNER_LEN];
     char foe_evade[RES_BANNER_LEN];
@@ -710,7 +739,6 @@ typedef struct {
     char castle_tribute_confirm[RES_BANNER_LEN];
     char castle_artifacts[RES_BANNER_LEN];
     char castle_over_leadership[RES_BANNER_LEN];
-    char castle_count_of[RES_BANNER_LEN];
     char castle_cost[RES_BANNER_LEN];
     char castle_no_troops[RES_BANNER_LEN];
     char town_temple_needs_rites[RES_BANNER_LEN]; // %HERO% %ZONE% %X% %Y% (the zone's alcove)
@@ -738,15 +766,11 @@ typedef struct {
     char spell_bridge_built[RES_BANNER_LEN];              // %COUNT%
     char spell_bridge_invalid[RES_BANNER_LEN];
     char spell_castle_gate_none[RES_BANNER_LEN];
-    char spell_castle_gate_choose[RES_BANNER_LEN];
     char spell_town_gate_none[RES_BANNER_LEN];
-    char spell_town_gate_choose[RES_BANNER_LEN];
     char spell_instant_army_fizzle[RES_BANNER_LEN];
     char spell_instant_army_no_room[RES_BANNER_LEN];
     char spell_instant_army_success[RES_BANNER_LEN];      // %QTY% %TROOP%
     char spell_raise_control_success[RES_BANNER_LEN];     // %AMOUNT%
-    char spell_gate_teleported[RES_BANNER_LEN];
-    char spell_gate_invalid[RES_BANNER_LEN];
 
     // Foe encounters .
     // Substitutions: %LABEL%, %COUNT%, %TROOP%, %COST%.
@@ -778,13 +802,11 @@ typedef struct {
     char gmd_unit[RES_BANNER_LEN];
     char fv_your_army[RES_BANNER_LEN];
     char loc_joined[RES_BANNER_LEN];
-    char loc_gold_change[RES_BANNER_LEN];
     char count_heading[RES_BANNER_LEN];
     char count_of_lead[RES_BANNER_LEN];
     char count_of_army[RES_BANNER_LEN];
     char count_of_garrison[RES_BANNER_LEN];
     char count_cost[RES_BANNER_LEN];
-    char count_gold_left[RES_BANNER_LEN];
     char count_recruit[RES_BANNER_LEN];
     char count_garrison[RES_BANNER_LEN];
     char count_withdraw[RES_BANNER_LEN];
@@ -797,11 +819,6 @@ typedef struct {
     char capture_promoted[RES_BANNER_LEN];
     char temple_intro[RES_BANNER_LEN];
     char dwelling_intro[RES_BANNER_LEN];
-    char loc_title_taught[RES_BANNER_LEN];
-    char loc_title_refused[RES_BANNER_LEN];
-    char loc_title_known[RES_BANNER_LEN];
-    char loc_title_joined[RES_BANNER_LEN];
-    char loc_title_none[RES_BANNER_LEN];
     char gmd_leave[RES_BANNER_LEN];
     char gmd_army[RES_BANNER_LEN];
     char gmd_character[RES_BANNER_LEN];
@@ -830,7 +847,6 @@ typedef struct {
     char gmd_combat_army[RES_BANNER_LEN];
     char gmd_combat_character[RES_BANNER_LEN];
     char gmd_give_up[RES_BANNER_LEN];
-    char gmd_slot[RES_BANNER_LEN];
     char gmr_no_troops[RES_BANNER_LEN];
     char gmr_not_sailing[RES_BANNER_LEN];
     char gmr_no_saves[RES_BANNER_LEN];
@@ -875,14 +891,7 @@ typedef struct {
     char combat_give_up_header[RES_BANNER_LEN];
     char combat_give_up_body[RES_BANNER_LEN];
 
-    // Pre-combat scout report. Substitutions: %COUNT% %TROOP%.
-    char combat_scouts_header[RES_BANNER_LEN];
-    char combat_scouts_count[RES_BANNER_LEN];
-    char combat_scouts_small_band[RES_BANNER_LEN];
-    char combat_header_siege[RES_BANNER_LEN];      // dialog title
-    char combat_header_default[RES_BANNER_LEN];    // dialog title
-
-    // Signposts .
+    // Signposts.
     // Substitutions: %TITLE%, %BODY%.
     char signpost_with_body[RES_BANNER_LEN];
     char signpost_title_only[RES_BANNER_LEN];
@@ -900,14 +909,6 @@ typedef struct {
 
     // Status bar (chrome.c). Substitutions: %DAYS%, %STEPS%.
     char status_days_left[RES_BANNER_LEN];
-    // Modern: the top bar opens the menu, so it reads "Menu" in place of
-    // "Options / Controls".
-    char status_days_left_modern[RES_BANNER_LEN];
-    char status_time_stop_modern[RES_BANNER_LEN];
-    char status_menu_prefix[RES_BANNER_LEN];
-    char status_game_menu[RES_BANNER_LEN];
-    char status_days_remaining[RES_BANNER_LEN];
-    char status_time_stop_remaining[RES_BANNER_LEN];
     char status_time_stop[RES_BANNER_LEN];
 
     // Composite prompt bodies (system flows that have %TOKEN%-style values).
@@ -918,9 +919,6 @@ typedef struct {
     char body_dismiss_pick[RES_BANNER_LEN];
     char body_dismiss_last[RES_BANNER_LEN];
     char body_home_castle[RES_BANNER_LEN];
-    char body_own_castle[RES_BANNER_LEN];           // %NAME%
-    char body_garrison_row_named[RES_BANNER_LEN];   // %INDEX% %TROOP% %COUNT%
-    char body_garrison_row_empty[RES_BANNER_LEN];   // %INDEX%
     char body_navigate_row[RES_BANNER_LEN];         // %INDEX% %ZONE%
     char body_navigate_confirm[RES_BANNER_LEN];     // %ZONE%: the sail-to confirmation
     char body_no_continents[RES_BANNER_LEN];
@@ -930,8 +928,6 @@ typedef struct {
     char cannot_garrison_last[RES_BANNER_LEN];
     char no_troop_slots[RES_BANNER_LEN];
     char army_cannot_handle[RES_BANNER_LEN];
-    char no_troops_to_garrison[RES_BANNER_LEN];
-    char castle_garrison_empty[RES_BANNER_LEN];
     char spell_unavailable[RES_BANNER_LEN];
     char spell_combat_only[RES_BANNER_LEN];  // %SPELL%; optional (#157)
     char spell_not_known[RES_BANNER_LEN];
@@ -959,10 +955,7 @@ typedef struct {
     char no_effect_msg[RES_BANNER_LEN];      // (no tokens)
     char fly[RES_BANNER_LEN];                // %TROOP%
     char move[RES_BANNER_LEN];               // %TROOP%
-    char wait[RES_BANNER_LEN];               // %TROOP%
-    char pass[RES_BANNER_LEN];               // %TROOP%
     char frozen[RES_BANNER_LEN];             // %TROOP%
-    char ooc[RES_BANNER_LEN];                // %TROOP%
     char immune[RES_BANNER_LEN];             // %TROOP%
     char cloned[RES_BANNER_LEN];             // %COUNT% %TROOP%
     char resurrected[RES_BANNER_LEN];        // %COUNT% %TROOP%
@@ -973,17 +966,9 @@ typedef struct {
     char cast_fireball[RES_BANNER_LEN];      // (no tokens)
     char cast_lightning[RES_BANNER_LEN];     // (no tokens)
     char cast_turn_undead[RES_BANNER_LEN];   // (no tokens)
-    char select_clone[RES_BANNER_LEN];
-    char select_freeze[RES_BANNER_LEN];
-    char select_resurrect[RES_BANNER_LEN];
-    char select_damage[RES_BANNER_LEN];      // %SPELL%
-    char select_teleport[RES_BANNER_LEN];
-    char select_dest[RES_BANNER_LEN];
     char cant_shoot[RES_BANNER_LEN];
     char no_ammo[RES_BANNER_LEN];
     char cant_fly[RES_BANNER_LEN];
-    char give_up_prompt[RES_BANNER_LEN];
-    char exit_hint[RES_BANNER_LEN];
 } ResCombatLog;
 
 // UI label strings (game.json strings.ui / strings.menu / strings.stats /
@@ -1014,11 +999,7 @@ typedef struct {
     char press_esc_to_exit[RES_UI_LABEL_LEN];
     // Modern foe view: short stat labels.
     char fv_hp[RES_UI_LABEL_LEN];
-    char fv_skill[RES_UI_LABEL_LEN];
     char fv_dmg[RES_UI_LABEL_LEN];
-    char fv_move[RES_UI_LABEL_LEN];
-    char fv_range[RES_UI_LABEL_LEN];
-    char fv_flies[RES_UI_LABEL_LEN];
     // Modern character view.
     char cv_army[RES_UI_LABEL_LEN];
     char cv_magic[RES_UI_LABEL_LEN];
@@ -1045,16 +1026,11 @@ typedef struct {
     char cv_next[RES_UI_LABEL_LEN];
     char cv_top_rank[RES_UI_LABEL_LEN];
     // Modern hint buttons: labels, key names by device, key-free texts.
-    char hint_back[RES_UI_LABEL_LEN];
-    char hint_quit[RES_UI_LABEL_LEN];
-    char hint_continue[RES_UI_LABEL_LEN];
     char key_esc[RES_UI_LABEL_LEN];
-    char key_ctrl_q[RES_UI_LABEL_LEN];
+    char key_space[RES_UI_LABEL_LEN];   // the Space key's name on screen
     char pad_back[RES_UI_LABEL_LEN];
-    char pad_confirm[RES_UI_LABEL_LEN];
     char give_up_header_modern[RES_UI_LABEL_LEN];
-    char save_confirm_modern[RES_UI_LABEL_LEN];
-    // Status-bar fast-quit prompt (). Rendered into the
+    // Status-bar fast-quit prompt. Rendered into the
     // top status bar via KB_TopBox, not a bottom dialog.
     char quit_to_dos_prompt[RES_UI_LABEL_LEN * 2];
     char out_of_control[RES_UI_LABEL_LEN];
@@ -1078,8 +1054,6 @@ typedef struct {
     char menu_contract[RES_UI_LABEL_LEN];
     char menu_puzzle[RES_UI_LABEL_LEN];
     char menu_view_map[RES_UI_LABEL_LEN];
-    char menu_screens[RES_UI_LABEL_LEN];   // modern game menu pages
-    char menu_actions[RES_UI_LABEL_LEN];
     // Modern game and combat menus.
     char gm_title[RES_UI_LABEL_LEN];
     char gm_hero[RES_UI_LABEL_LEN];
@@ -1177,27 +1151,18 @@ typedef struct {
     // Spell-flow headers come from spell_by_id()->name and are not stored
     // here; everything else (artifact pickups, system flows, fallbacks)
     // gets a slot.
-    char dt_treasure[RES_UI_LABEL_LEN];
     char dt_teleport_cave[RES_UI_LABEL_LEN];
     char dt_crystal_ball[RES_UI_LABEL_LEN];
     char dt_foes[RES_UI_LABEL_LEN];
     char dt_alcove_offer[RES_UI_LABEL_LEN];   // Archmage Aurange
     char dt_alcove_result[RES_UI_LABEL_LEN];  // Aurange
-    char dt_castle_default[RES_UI_LABEL_LEN]; // home-castle picker fallback
-    char dt_own_castle[RES_UI_LABEL_LEN];
     char dt_search[RES_UI_LABEL_LEN];
     char dt_dismiss_army[RES_UI_LABEL_LEN];
     char dt_dismiss_last[RES_UI_LABEL_LEN];
     char dt_navigate[RES_UI_LABEL_LEN];
-    char dt_garrison_pick[RES_UI_LABEL_LEN];
-    char dt_remove_pick[RES_UI_LABEL_LEN];
-    char dt_save_confirm[RES_UI_LABEL_LEN];
     char dt_lose_fallback[RES_UI_LABEL_LEN];   // header when win_text.header empty
     char dt_win_fallback[RES_UI_LABEL_LEN];
     char dt_combat_victory[RES_UI_LABEL_LEN];  // title of the post-battle spoils dialog
-
-    // Misc fallbacks.
-    char empty_slot[RES_UI_LABEL_LEN];   // garrison-row "Empty" placeholder
 
     // Combat spell-pick screen labels.
     char combat_spells_title[RES_UI_LABEL_LEN];
@@ -1234,8 +1199,6 @@ typedef struct {
     char own_castle_row_remove[RES_UI_LABEL_LEN];
     char worldmap_row_your_map[RES_UI_LABEL_LEN];
     char worldmap_row_whole_map[RES_UI_LABEL_LEN];
-    char class_select_load[RES_UI_LABEL_LEN];
-    char class_select_arrows[RES_UI_LABEL_LEN * 2];
     // Modern title menu (before class select) and the in-game New Game.
     char title_new_adventure[RES_UI_LABEL_LEN];
     char title_load_adventure[RES_UI_LABEL_LEN];
@@ -1243,12 +1206,6 @@ typedef struct {
     char title_intro[RES_UI_LABEL_LEN];      // "" unless the pack has an intro
     char new_game_confirm[RES_UI_LABEL_LEN * 2];
     char hero_name_label[RES_UI_LABEL_LEN];
-    char combat_act_wait[RES_UI_LABEL_LEN];
-    char combat_act_shoot[RES_UI_LABEL_LEN];
-    char combat_act_fly[RES_UI_LABEL_LEN];
-    char combat_act_cast[RES_UI_LABEL_LEN];
-    char combat_act_controls[RES_UI_LABEL_LEN];
-    char combat_act_give_up[RES_UI_LABEL_LEN];
 
     // Gate-landing view titles (town vs. castle gate).
     char gate_title_town[RES_UI_LABEL_LEN];
@@ -1401,15 +1358,15 @@ typedef struct {
     // art/tiles/ set. Empty means the whole folder. Heap, sized by the pack.
     int  tile_set_art_count;
     char (*tile_set_arts)[RES_TILE_ART_LEN];
-    // Optional wandering-army tile art for this zone (a stem under
-    // art/tiles/). Empty means the shared "wandering_army".
+    // Optional wandering-army art for this zone (a stem under art/objects/).
+    // Empty means map_art's shared wandering army.
     char army_art[RES_TILE_ART_LEN];
     // Optional open-field ground for fights on this zone: the prefix of its
     // 30 cells (see sprites.field_grid). Empty means the pack's field_grid.
     char field_grid[RES_PATH_LEN];
-    // The map tile the zone's magic alcove is drawn with. Empty falls back to
-    // the hills-dwelling sprite, which is what the alcove borrowed before it
-    // could name its own art.
+    // The object the zone's magic alcove is drawn with (art/objects/). Empty
+    // falls back to map_art's alcove (by default the hills-dwelling sprite,
+    // which is what the alcove borrowed before it could name its own art).
     char alcove_art[RES_TILE_ART_LEN];
     char pontifex[RES_ID_LEN];    // portraits[] id of the priest who sells spells here
     int  alcove_cost;             // this zone's alcove price; -1 = economy.alcove_cost
@@ -1497,11 +1454,24 @@ typedef struct {
 
     // Indexed by raw byte from the .dat. `present == false` means unused.
     ResTileCode tile_codes[RES_TILE_CODE_COUNT];
+    ResMapArt   map_art;
+    // Every stem drawn from art/objects/: map_art's objects, town, castle,
+    // army and alcove art, castle decorations, and "object" tile codes.
+    int         object_art_count;
+    char      (*object_arts)[RES_TILE_ART_LEN];
 
     // Catalogs (loaded from game.json top-level arrays).
     // Heap, troops_count entries: as many as the pack declares.
     int         troops_count;
     TroopDef   *troops;
+
+    // The troop ids a pack has renamed, each to the id it now uses
+    // (game.json "troop_aliases", {"old": "new"}). A save written before
+    // the rename loads through them (SaveGameRead). Heap, both
+    // troop_alias_count entries; none when the pack lists no aliases.
+    int         troop_alias_count;
+    char      (*troop_alias_from)[RES_ID_LEN];
+    char      (*troop_alias_to)[RES_ID_LEN];
 
     int         spells_count;
     SpellDef   *spells;               // heap, spells_count entries
@@ -1522,15 +1492,18 @@ typedef struct {
     // army view's rule (REQ-271: alone High; each OTHER slot looked up as
     // chart[mine][theirs]; any L Low, all H High, else Normal). Absent or
     // false = the behaviour ported from King's Bounty (REQ-385), kept for
-    // the legacy pack. Glory of Rome sets it (2026-09-27, #75).
+    // the legacy pack. The Glory of Rome sets it (#75).
     bool morale_as_army_view;
     // combat.field_obstacle_chance: the percent chance that each cell of an
     // open-field battle's middle columns holds an obstacle. Absent = 10, King's
     // Bounty's one in ten, drawn exactly as the original draws it.
     int field_obstacle_chance;
+    // combat.guardian_full_band: a fixed guardian (a zone army with "static")
+    // fields all five of its stacks on the open field. Absent or false = the
+    // first three, as King's Bounty fields every open-field band.
+    bool guardian_full_band;
 
     // Fuzzy-number labels for intelligence / enemy-sight text
-    // .
     // Entries are ordered high-to-low by threshold: the first entry
     // whose threshold is <= count wins. Up to 6 buckets.
     int   number_name_count;
@@ -1547,7 +1520,6 @@ typedef struct {
             char label[24];
             char type[16];       // "bool" or "numeric"
             int  range;          // numeric upper bound (exclusive)
-            int  def;            // default value
             bool hidden;         // not shown unless CGA mode active
             bool audio;          // needs a working audio device ("audio": true)
         } items[8];
@@ -1586,7 +1558,6 @@ typedef struct {
         char grass_tile[RES_PATH_LEN];   // GR_ENDTILE sub 0
         char carpet_tile[RES_PATH_LEN];  // GR_ENDTILE sub 1
         char hero_tile[RES_PATH_LEN];    // GR_ENDTILE sub 2
-        char throne_backdrop[RES_PATH_LEN]; // optional post-cartoon image
         int  grid_width;                 // default 6
         int  grid_height;                // default 5
         int  carpet_column;              // x-column the carpet/hero use
@@ -1672,6 +1643,9 @@ typedef struct {
         char scene_column_capital[RES_PATH_LEN];
         char scene_column_shaft[RES_PATH_LEN];
         char scene_column_base[RES_PATH_LEN];
+        // The troop drawn in the alcove's troop slot when the pack has no
+        // alcove_figure of its own ("alcove_troop"; "" = none).
+        char alcove_troop[RES_ID_LEN];
         char alcove_figure[RES_PATH_LEN];
         int  alcove_figure_animation_count;
         char (*alcove_figure_animation)[RES_PATH_LEN]; // heap
@@ -1740,7 +1714,6 @@ typedef struct {
         // cell; "terrain" draws the map tile the hero stands on instead and
         // combat[0] is not part of the pack.
         char combat_ground[16];
-        char orb[RES_PATH_LEN];              // orb of power tile overlay
     } sprites;
 
     // Background music tracks (OGG) and tune sound effects (WAV).
@@ -1754,6 +1727,7 @@ typedef struct {
         char tune_bump[RES_PATH_LEN];
         char tune_chest[RES_PATH_LEN];
         char tune_defeat[RES_PATH_LEN];
+        char tune_victory[RES_PATH_LEN];
     } audio;
 
     // Strict-strings bookkeeping: the engine ships NO hardcoded user-facing
@@ -1777,27 +1751,26 @@ typedef struct {
 void resources_resolve_path(const Resources *res, const char *rel,
                             char *out, size_t cap);
 
-// Load game.json at `manifest_path` and every referenced table file. Paths
-// inside game.json are resolved relative to the manifest file's directory.
-// Returns true on success; writes a human-readable error to stderr on
-// failure and leaves `*res` in an indeterminate state.
 // The tile code a tile_codes key names: the key's own byte for a
 // single-character key, or the byte a two-digit "\xNN" hex escape spells.
 // -1 if the key names no code. Pure; unit tested.
 int resources_tile_code_from_key(const char *key);
 
+// Load `manifest_path` (game.json) and every file it references from the pack
+// stack, and publish the result to the catalog lookups (tables.h). Returns
+// true on success; on failure it prints the reason to stdout, returns false
+// and leaves `*res` in an indeterminate state.
 bool resources_load(Resources *res, const char *manifest_path);
 
 // Every pack-relative art path this manifest resolves to, de-duplicated.
 // Returns the count written to `out` (capped at `cap`).
 //
 // This is the single source of truth for "what art does this pack use". Art
-// used to be reachable five different ways -- explicit paths here, bare
-// tile_codes names expanded under art/tiles/, a list hardcoded in the shell,
-// villain frames derived from a portrait filename, and the placed-object
-// names map.c stamps by interact kind -- so no caller could answer that
-// question without replicating all five. Tile names, the villain stem
-// fallback and the object names are expanded here so callers see real paths.
+// has been reachable four ways -- explicit paths, bare tile and object names
+// (tile_codes, map_art, the catalogs' own art) resolved under art/tiles/ or
+// art/objects/, the shell's own list, and villain frames derived from a
+// portrait filename -- and this list has resolved all four, so callers see
+// real paths.
 // The list grows to hold every path; free it with resources_art_list_free.
 typedef struct {
     char (*path)[RES_PATH_LEN];
@@ -1808,6 +1781,10 @@ int  resources_art_manifest(const Resources *res, ResArtList *out);
 // (the set is whole, or lists `stem` in "tile_set_arts") rather than from the
 // master art/tiles/ set.
 bool resources_tile_from_set(const Resources *res, const char *set, const char *stem);
+// Whether art `stem` is a map object (art/objects/) rather than terrain (art/tiles/).
+bool resources_art_is_object(const Resources *res, const char *stem);
+// The pack's map art, or the standard names when `res` is NULL.
+const ResMapArt *resources_map_art(const Resources *res);
 
 // Where a hero sailing in from zone `from` lands on zone `z`: the zone's
 // "arrivals" entry for that origin, else its hero_spawn.
@@ -1842,20 +1819,13 @@ void resources_republish(const Resources *res);
 
 // ---- Lookups ---------------------------------------------------------------
 
-// Global town lookup by (zone id, x, y). Returns NULL if no town sits at
-// those coords. () key.
-const ResTown   *resources_town_at(const Resources *r,
-                                   const char *zone, int x, int y);
 const ResTown   *resources_town_by_id(const Resources *r, const char *id);
-const ResTown   *resources_town_by_index(const Resources *r, int index);
 
 // Zone town enumeration over the authoritative catalog: `z->town_count` towns,
 // the n-th being `&r->towns[z->town_idx[n]]` (in the zone's JSON town order). The
 // accessor returns NULL on an out-of-range n or a stale index.
 const ResTown   *resources_zone_town(const Resources *r, const ResZone *z, int n);
 
-const ResCastle *resources_castle_at(const Resources *r,
-                                     const char *zone, int x, int y);
 const ResCastle *resources_castle_by_id(const Resources *r, const char *id);
 // Parse a castles[].footprint string. Absent/empty and "3x2" are the default;
 // "1x1" is the single-tile castle. Returns false (and writes the default) for
@@ -1920,5 +1890,9 @@ typedef struct {
 // tokens are left in place. Safe with NULL/empty `src`.
 void resources_format_template(char *out, int out_sz, const char *src,
                                const ResTemplateVar *vars, int nvars);
+
+// The id a renamed troop now has ("troop_aliases"), or NULL when `id` is
+// not one of the pack's old ids.
+const char *resources_troop_alias(const Resources *res, const char *id);
 
 #endif

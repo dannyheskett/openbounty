@@ -34,23 +34,23 @@ typedef enum {
     INTERACT_COUNT
 } Interact;
 
-// Look up a terrain category from an art name (e.g. "water_edge_03" -> TERRAIN_WATER).
+// Look up a terrain category from an art name (e.g. "water_edge_es" -> TERRAIN_WATER).
 // Returns TERRAIN_GRASS for unknown names.
 Terrain TerrainFromArt(const char *art);
-
-// Whether the art visually blocks pedestrian movement (true for castle walls,
-// in addition to natural blockers like trees/rocks which are handled via terrain).
-bool ArtBlocksFoot(const char *art);
-
-// Whether the art is a bridge (walkable in both walk and boat mode).
-bool ArtIsBridge(const char *art);
 
 // Parse an interactive string into the enum.
 Interact InteractFromString(const char *s);
 const char *InteractToString(Interact i);
 
+// A dwelling kind, as a zone's dwellings[].kind ("plains", "forest", "hills",
+// "dungeon") or a troop's catalog `dwelling` ("hill") names it, to its tile
+// interactive; INTERACT_NONE for any other string.
+Interact DwellingInteractFromKind(const char *kind);
+// A dwelling tile's kind as the troop catalog names it ("plains", "forest",
+// "hill", "dungeon"), or NULL for a tile that is no dwelling.
+const char *DwellingCatalogKind(Interact i);
+
 bool TerrainWalkable(Terrain t);
-int  TerrainMoveCost(Terrain t);
 
 const char *TerrainName(Terrain t);
 

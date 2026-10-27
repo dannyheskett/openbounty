@@ -363,6 +363,7 @@
 		"hint_quit":	"Quit",
 		"hint_continue":	"Continue",
 		"key_esc":	"Esc",
+		"key_space":	"Spc",
 		"key_ctrl_q":	"Ctrl-Q",
 		"pad_back":	"B",
 		"pad_confirm":	"A",

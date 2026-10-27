@@ -1,5 +1,5 @@
 {
- "_note": "Where tools/mapbuild.py place scatters Africa's chests and wandering armies. Boxes are inclusive tile ranges; only open grass and sand inside them is used. The two static guardians are placed by \"fixed\".",
+ "_note": "Where tools/romeart.py map place scatters Africa's chests and wandering armies. Boxes are inclusive tile ranges; only open grass and sand inside them is used. The two static guardians are placed by \"fixed\".",
  "seed": 2028,
  "spacing": 1,
  "fixed": {
@@ -10,6 +10,18 @@
   "guardian_amun": [
    51,
    22
+  ],
+  "guardian_oasis": [
+   12,
+   25
+  ],
+  "chest_oasis": [
+   12,
+   23
+  ],
+  "chest_tophet": [
+   21,
+   9
   ]
  },
  "regions": [
@@ -32,7 +44,7 @@
     25,
     12
    ],
-   "chests": 8,
+   "chests": 10,
    "armies": 3
   },
   {
@@ -54,7 +66,7 @@
     56,
     21
    ],
-   "chests": 5,
+   "chests": 6,
    "armies": 2
   },
   {
@@ -76,7 +88,7 @@
     63,
     27
    ],
-   "chests": 5,
+   "chests": 6,
    "armies": 3
   },
   {
@@ -87,8 +99,8 @@
     47,
     27
    ],
-   "chests": 6,
-   "armies": 4
+   "chests": 13,
+   "armies": 5
   }
  ]
 }

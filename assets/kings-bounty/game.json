@@ -9,10 +9,7 @@
 	},
 	"world":	{
 		"language":	"en",
-		"max_army_slots":	5,
 		"starting_zone":	"continentia",
-		"zone_noun":	"continent",
-		"zone_noun_plural":	"continents",
 		"default_name":	"Hero",
 		"default_options":	[4, 1, 1, 1, 1]
 	},
@@ -4217,19 +4214,19 @@
 		}],
 	"tile_codes":	{
 		"*":	{
-			"art":	"desert_edge_01",
+			"art":	"desert_edge_nw",
 			"terrain":	"desert"
 		},
 		"+":	{
-			"art":	"desert_edge_02",
+			"art":	"desert_edge_sw",
 			"terrain":	"desert"
 		},
 		",":	{
-			"art":	"grass_variant",
+			"art":	"grass_v1",
 			"terrain":	"grass"
 		},
 		"-":	{
-			"art":	"desert_edge_03",
+			"art":	"desert_edge_ne",
 			"terrain":	"desert"
 		},
 		".":	{
@@ -4237,78 +4234,78 @@
 			"terrain":	"grass"
 		},
 		"/":	{
-			"art":	"desert_edge_04",
+			"art":	"desert_edge_es",
 			"terrain":	"desert"
 		},
 		"0":	{
-			"art":	"desert_edge_05",
+			"art":	"desert_inner_es",
 			"terrain":	"desert"
 		},
 		"1":	{
-			"art":	"desert_edge_06",
+			"art":	"desert_inner_ne",
 			"terrain":	"desert"
 		},
 		"2":	{
-			"art":	"desert_edge_07",
+			"art":	"desert_inner_sw",
 			"terrain":	"desert"
 		},
 		"3":	{
-			"art":	"desert_edge_08",
+			"art":	"desert_inner_nw",
 			"terrain":	"desert"
 		},
 		"4":	{
-			"art":	"desert_edge_09",
+			"art":	"desert_edge_e",
 			"terrain":	"desert"
 		},
 		"5":	{
-			"art":	"desert_edge_10",
+			"art":	"desert_edge_w",
 			"terrain":	"desert"
 		},
 		"6":	{
-			"art":	"desert_edge_11",
+			"art":	"desert_edge_n",
 			"terrain":	"desert"
 		},
 		"7":	{
-			"art":	"desert_edge_12",
+			"art":	"desert_edge_s",
 			"terrain":	"desert"
 		},
 		"<":	{
-			"art":	"forest_edge_01",
+			"art":	"forest_edge_nw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"=":	{
-			"art":	"forest_edge_02",
+			"art":	"forest_edge_sw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		">":	{
-			"art":	"forest_edge_03",
+			"art":	"forest_edge_ne",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"?":	{
-			"art":	"forest_edge_04",
+			"art":	"forest_edge_es",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"@":	{
-			"art":	"forest_edge_05",
+			"art":	"forest_inner_es",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"A":	{
-			"art":	"forest_edge_06",
+			"art":	"forest_inner_ne",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"B":	{
-			"art":	"forest_edge_07",
+			"art":	"forest_inner_sw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"C":	{
-			"art":	"forest_edge_08",
+			"art":	"forest_inner_nw",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
@@ -4317,7 +4314,7 @@
 			"terrain":	"desert"
 		},
 		"E":	{
-			"art":	"forest_edge_09",
+			"art":	"forest_edge_e",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
@@ -4327,98 +4324,98 @@
 			"blocks_foot":	true
 		},
 		"G":	{
-			"art":	"forest_edge_10",
+			"art":	"forest_edge_w",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"H":	{
-			"art":	"forest_edge_11",
+			"art":	"forest_edge_n",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"I":	{
-			"art":	"forest_edge_12",
+			"art":	"forest_edge_s",
 			"terrain":	"forest",
 			"blocks_foot":	true
 		},
 		"J":	{
-			"art":	"mountain_edge_01",
+			"art":	"mountain_edge_nw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"K":	{
-			"art":	"mountain_edge_02",
+			"art":	"mountain_edge_sw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"L":	{
-			"art":	"mountain_edge_03",
+			"art":	"mountain_edge_ne",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"M":	{
-			"art":	"mountain_edge_04",
+			"art":	"mountain_edge_es",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"N":	{
-			"art":	"mountain_edge_05",
+			"art":	"mountain_inner_es",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"O":	{
-			"art":	"mountain_edge_06",
+			"art":	"mountain_inner_ne",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"P":	{
-			"art":	"mountain_edge_07",
+			"art":	"mountain_inner_sw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"Q":	{
-			"art":	"mountain_edge_08",
+			"art":	"mountain_inner_nw",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"R":	{
-			"art":	"mountain_edge_09",
+			"art":	"mountain_edge_e",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"S":	{
-			"art":	"mountain_edge_10",
+			"art":	"mountain_edge_w",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"T":	{
-			"art":	"mountain_edge_11",
+			"art":	"mountain_edge_n",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"U":	{
-			"art":	"mountain_edge_12",
+			"art":	"mountain_edge_s",
 			"terrain":	"mountain",
 			"blocks_foot":	true
 		},
 		"Y":	{
-			"art":	"water_edge_00",
+			"art":	"water_edge_ne",
 			"terrain":	"water"
 		},
 		"Z":	{
-			"art":	"water_edge_01",
+			"art":	"water_edge_nw",
 			"terrain":	"water"
 		},
 		"[":	{
-			"art":	"water_edge_02",
+			"art":	"water_edge_sw",
 			"terrain":	"water"
 		},
 		"\\":	{
-			"art":	"water_edge_03",
+			"art":	"water_edge_es",
 			"terrain":	"water"
 		},
 		"]":	{
-			"art":	"water_edge_04",
+			"art":	"water_inner_es",
 			"terrain":	"water"
 		},
 		"^":	{
@@ -4427,36 +4424,81 @@
 			"blocks_foot":	true
 		},
 		"_":	{
-			"art":	"water_edge_05",
+			"art":	"water_inner_ne",
 			"terrain":	"water"
 		},
 		"`":	{
-			"art":	"water_edge_06",
+			"art":	"water_inner_sw",
 			"terrain":	"water"
 		},
 		"a":	{
-			"art":	"water_edge_07",
+			"art":	"water_inner_nw",
 			"terrain":	"water"
 		},
 		"b":	{
-			"art":	"water_edge_08",
+			"art":	"water_edge_e",
 			"terrain":	"water"
 		},
 		"c":	{
-			"art":	"water_edge_09",
+			"art":	"water_edge_w",
 			"terrain":	"water"
 		},
 		"d":	{
-			"art":	"water_edge_10",
+			"art":	"water_edge_n",
 			"terrain":	"water"
 		},
 		"e":	{
-			"art":	"water_edge_11",
+			"art":	"water_edge_s",
 			"terrain":	"water"
 		},
 		"~":	{
 			"art":	"water",
 			"terrain":	"water"
+		}
+	},
+	"map_art":	{
+		"default":	"grass",
+		"cleared_water":	"water",
+		"terrain_ground":	{
+			"grass":	"grass",
+			"forest":	"forest",
+			"mountain":	"mountain",
+			"water":	"water",
+			"desert":	"desert",
+			"river":	""
+		},
+		"bridges":	{
+			"ew":	"bridge_ew",
+			"ns":	"bridge_ns",
+			"river_ew":	"",
+			"river_ns":	""
+		},
+		"objects":	{
+			"chest":	"chest",
+			"artifact_chest":	"artifact_chest",
+			"artifact_ring":	"artifact_ring",
+			"sign":	"sign",
+			"town":	"town",
+			"wandering_army":	"wandering_army",
+			"alcove":	"dwelling_hills",
+			"dwelling_plains":	"dwelling_plains",
+			"dwelling_forest":	"dwelling_forest",
+			"dwelling_hills":	"dwelling_hills",
+			"dwelling_dungeon":	"dwelling_dungeon"
+		},
+		"castle_3x2":	{
+			"tl":	"castle_tl",
+			"tm":	"castle_tm",
+			"tr":	"castle_tr",
+			"ml":	"castle_ml",
+			"gate":	"castle_gate",
+			"mr":	"castle_mr"
+		},
+		"castle_1x1":	"castle",
+		"details":	[],
+		"aprons":	{
+		},
+		"fills":	{
 		}
 	},
 	"spawn":	{
@@ -4472,44 +4514,37 @@
 				"id":	"delay",
 				"label":	"Delay",
 				"type":	"numeric",
-				"range":	10,
-				"default":	5
+				"range":	10
 			}, {
 				"id":	"sounds",
 				"audio":	true,
 				"label":	"Sounds",
-				"type":	"bool",
-				"default":	1
+				"type":	"bool"
 			}, {
 				"id":	"walk_beep",
 				"label":	"Walk Beep",
-				"type":	"bool",
-				"default":	1
+				"type":	"bool"
 			}, {
 				"id":	"animation",
 				"label":	"Animation",
-				"type":	"bool",
-				"default":	1
+				"type":	"bool"
 			}, {
 				"id":	"cga",
 				"label":	"CGA",
 				"type":	"numeric",
 				"range":	8,
-				"default":	0,
 				"hidden":	true
 			}, {
 				"id":	"music",
 				"audio":	true,
 				"label":	"Music",
-				"type":	"bool",
-				"default":	0
+				"type":	"bool"
 			}, {
 				"id":	"volume",
 				"audio":	true,
 				"label":	"Volume",
 				"type":	"numeric",
-				"range":	10,
-				"default":	5
+				"range":	10
 			}]
 	},
 	"sprites":	{
@@ -4525,6 +4560,7 @@
 			"forest_backdrop":	"art/ui/backdrop_forest.png",
 			"hillcave_backdrop":	"art/ui/backdrop_hillcave.png",
 			"dungeon_backdrop":	"art/ui/backdrop_dungeon.png",
+			"alcove_troop":	"gnomes",
 			"ending_win":	"art/ui/end_win_screen.png",
 			"ending_lose":	"art/ui/end_lose_screen.png",
 			"view_icons_extra":	["art/ui/inventory_zone_continentia.png", "art/ui/inventory_zone_forestria.png", "art/ui/inventory_zone_archipelia.png", "art/ui/inventory_zone_saharia.png"],
@@ -4549,7 +4585,6 @@
 		"grass_tile":	"art/ui/end_grass.png",
 		"carpet_tile":	"art/ui/end_carpet.png",
 		"hero_tile":	"art/ui/end_hero.png",
-		"throne_backdrop":	"art/ui/end_lose_screen.png",
 		"grid_width":	6,
 		"grid_height":	5,
 		"carpet_column":	4,
@@ -4597,7 +4632,8 @@
 			"walk":	"audio/tune_walk.wav",
 			"bump":	"audio/tune_bump.wav",
 			"chest":	"audio/tune_chest.wav",
-			"defeat":	"audio/tune_defeat.wav"
+			"defeat":	"audio/tune_defeat.wav",
+			"victory":	"audio/tune_victory.wav"
 		}
 	}
 }

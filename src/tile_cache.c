@@ -54,22 +54,23 @@ void tile_cache_attach(const Resources *res) {
 }
 
 Texture2D tile_cache_get(const char *art) {
-    if (!art || !art[0]) art = "grass";
+    if (!art || !art[0]) art = resources_map_art(s_res)->def;
     for (int i = 0; i < cache_n; i++)
         if (strcmp(cache[i].name, art) == 0) return cache[i].tex;
     if (!cache_reserve(cache_n + 1)) return (Texture2D){ 0 };
     TileTex *t = &cache[cache_n++];
     snprintf(t->name, sizeof t->name, "%s", art);   // the key is the name asked for
     char rel[160], path[256];
-    // Tile art lives in art/tiles/*.png. A zone's own set ("<set>/<art>") draws its own file only for the arts it
-    // overrides; every other name comes from the master art/tiles/ set.
+    // Terrain art lives in art/tiles/*.png. A zone's own set ("<set>/<art>") draws its own file only for the arts
+    // it overrides; every other name comes from the master art/tiles/ set. A map object (resources_art_is_object)
+    // is the same art in every zone, under art/objects/.
     const char *slash = strchr(art, '/');
     if (slash && s_res) {
         char set[TILE_ART_NAME_LEN];
         snprintf(set, sizeof set, "%.*s", (int)(slash - art), art);
         if (!resources_tile_from_set(s_res, set, slash + 1)) art = slash + 1;
     }
-    snprintf(rel, sizeof rel, "art/tiles/%s.png", art);
+    snprintf(rel, sizeof rel, "art/%s/%s.png", resources_art_is_object(s_res, art) ? "objects" : "tiles", art);
     resources_resolve_path(s_res, rel, path, sizeof path);
     t->tex = LoadAssetTexture(path);
     // POINT filter keeps pixel art crisp; CLAMP prevents color

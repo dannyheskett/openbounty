@@ -23,6 +23,10 @@ void fast_quit_open(void) {
 }
 bool fast_quit_is_active(void)    { return s_active; }
 
+static bool s_save_message = false;
+void fast_quit_set_save_message(bool open) { s_save_message = open; }
+bool fast_quit_save_message_open(void)     { return s_save_message; }
+
 // Exposed under the main_* name because it is part of the engine->host
 // surface (engine/include/ui_host.h), which engine/host_noop.c also stubs.
 // Only the legacy status-band question reads it.

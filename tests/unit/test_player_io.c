@@ -5,6 +5,7 @@
 // routing is covered by the e2e flow suites.
 
 #include "greatest.h"
+#include "prompt.h"     // prompt_dismiss
 #include "player_io.h"
 #include "game.h"
 #include "pending.h"   // pending_flow -- the routing source of truth

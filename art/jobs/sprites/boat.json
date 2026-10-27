@@ -1,0 +1,27 @@
+{
+  "id": "sprites/boat",
+  "prompt": "the oars sweep together from angled forward to angled back, hull, mast and sail still, smooth loop",
+  "style": "rd_advanced_animation__custom_action",
+  "width": 96,
+  "height": 96,
+  "seed": 7832,
+  "frames_duration": 4,
+  "return_spritesheet": true,
+  "input_image_path": "build/art/sprites/boat_still/run01/01_raw.png",
+  "input_image_keep_alpha": true,
+  "bypass_prompt_expansion": false,
+  "raw_only": true,
+  "figure": false,
+  "target": [
+    96,
+    96
+  ],
+  "_pack_path": "art/sprites/boat_00..03.png",
+  "_note": "Boat loop, reset 2026-09-07: custom action on the still, four frames, expansion on, one stroke named, hull and sail told to stay still.",
+  "pack": [
+    "art/sprites/boat_00.png",
+    "art/sprites/boat_01.png",
+    "art/sprites/boat_02.png",
+    "art/sprites/boat_03.png"
+  ]
+}

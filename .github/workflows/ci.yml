@@ -11,33 +11,55 @@ name: ci
 on:
   pull_request:
     branches: [main, staging]
+  # What lands on staging is checked as merged, not only as proposed.
+  push:
+    branches: [staging]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# bash -eo pipefail for every step: a failing command, including one inside a
+# pipe, fails its step.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   linux:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-linux-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-linux-ubuntu22-
       - name: Install raylib build + runtime deps
+        env:
+          APT_ARCHIVES: /home/runner/apt-archives
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
             libxcursor-dev libxi-dev libasound2-dev
       - name: Build raylib (Linux, static)
         run: ./scripts/build_raylib_linux.sh
       - name: Run tests
         run: make test
+      # The store scripts' failure handling: bounded retries, and replacing a
+      # pending App Review. Faked transport, no network.
+      - name: Test the store scripts
+        run: |
+          python3 -m pip install --quiet cryptography
+          python3 scripts/test_store_scripts.py
       - name: Build dev + release
         run: make all release
-      # A release packages Glory of Rome with its pack; build that package and
+      # A release packages The Glory of Rome with its pack; build that package and
       # run the release's pack rule on it here, so the release is never the
       # first time either has run.
-      - name: Package Glory of Rome (Linux) and check the pack rule
+      - name: Package The Glory of Rome (Linux) and check the pack rule
         run: |
           make dist-rome-linux
           ./scripts/verify_release_packs.sh dist
@@ -47,22 +69,34 @@ jobs:
       # live store.
       - name: Validate the store listings
         run: python3 scripts/store_listing.py --check
+      - name: Check the docs' links
+        run: python3 scripts/check_doc_links.py
+      - name: Check The Glory of Rome maps and art record
+        run: |
+          python3 -m pip install --user -r scripts/requirements-art.txt
+          scripts/check_maps.sh assets/glory-of-rome
 
   windows:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-windows-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-windows-ubuntu22-
       - name: Install mingw cross-toolchain
         env:
+          APT_ARCHIVES: /home/runner/apt-archives
           DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update
           # C99 cross-compile only: the two mingw C compilers + binutils directly. The
           # `mingw-w64` metapackage pulls the whole g++ toolchain (both arches x
           # posix/win32) + perl -- 39 packages / 241 MB, none of which this build uses.
           # binutils-mingw-w64 supplies the *-ar that build_raylib_windows.sh invokes.
-          sudo apt-get install -y --no-install-recommends \
+          ./scripts/apt_install.sh \
             gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 binutils-mingw-w64
       - name: Build raylib (mingw win64 + win32)
         run: ./scripts/build_raylib_windows.sh
@@ -81,20 +115,29 @@ jobs:
 
   web:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
       - name: Set up Emscripten
-        uses: emscripten-core/setup-emsdk@v16
+        uses: emscripten-core/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984  # v16
+        with:
+          version: 6.0.11
       # The Linux toolchain is required even though nothing native ships from this job.
       # In openbounty the web target transitively builds the NATIVE binary first: the pack
       # embedded in openbounty.data is zipped by ./build/debug/openbounty --pack-dir. The
       # other web repos do not need it; installing it unconditionally costs a little time
       # and keeps one job body for all of them.
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-web-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-web-ubuntu22-
       - name: Install Linux build deps
+        env:
+          APT_ARCHIVES: /home/runner/apt-archives
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
             libxcursor-dev libxi-dev libasound2-dev
       - name: Build raylib (Linux)
@@ -136,13 +179,20 @@ jobs:
           sdkmanager --install "ndk;${NDK_VERSION}" \
             "build-tools;${ANDROID_BUILD_TOOLS}" \
             "platforms;android-${ANDROID_PLATFORM_VER}"
-      # The APK embeds the Glory of Rome pack, and the pack is zipped by the
+      # The APK embeds The Glory of Rome pack, and the pack is zipped by the
       # NATIVE binary (./build/debug/openbounty --pack-dir), so the Linux
       # toolchain is required even though nothing native ships from this job.
+      - name: Cache the apt packages
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-android-ubuntu22-${{ hashFiles('scripts/apt_install.sh') }}-${{ github.run_id }}
+          restore-keys: apt-android-ubuntu22-
       - name: Install Linux build deps
+        env:
+          APT_ARCHIVES: /home/runner/apt-archives
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          ./scripts/apt_install.sh \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev \
             libxcursor-dev libxi-dev libasound2-dev
       - name: Build raylib (Linux)
@@ -163,8 +213,8 @@ jobs:
           grep -q "assets/glory-of-rome.openbounty" /tmp/apk-listing.txt
           grep -q "lib/arm64-v8a/libgloryofrome.so" /tmp/apk-listing.txt
           grep -q "classes.dex" /tmp/apk-listing.txt
-          # King's Bounty's pack is DOS-extracted and copyright-restricted: it
-          # must never reach a distributable artifact.
+          # The Android app is The Glory of Rome only: King's Bounty's pack has no
+          # place in it.
           if grep -q "kings-bounty" /tmp/apk-listing.txt; then
             echo "APK contains the King's Bounty pack"; exit 1
           fi
@@ -238,10 +288,12 @@ jobs:
     # checked below is the one Apple would actually receive. Apple refuses an
     # upload built against an SDK older than iOS 26.
     runs-on: macos-26
-    timeout-minutes: 15
+    # The job has taken 14-15 minutes on a busy macOS runner; the limit leaves
+    # room for that rather than failing a sound build.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
-      # The .app embeds the Glory of Rome pack, and the pack is zipped by the
+      # The .app embeds The Glory of Rome pack, and the pack is zipped by the
       # NATIVE binary (./build/debug/openbounty --pack-dir), which links
       # raylib. So the macOS toolchain is needed even though the app itself
       # links no raylib at all -- the same shape as the Android job needing
@@ -289,7 +341,8 @@ jobs:
           sleep 20
           xcrun simctl io "$UDID" screenshot ios-shot-late.png
           sips -r 270 ios-shot-late.png >/dev/null
-          xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || echo "gone by now"
+          alive=1
+          xcrun simctl spawn "$UDID" launchctl list | grep -i gloryofrome || { echo "gone by now"; alive=0; }
           echo "--- crash reports (host + simulator) ---"
           find ~/Library/Logs/DiagnosticReports ~/Library/Logs/CoreSimulator \
                -name '*GloryOfRome*' -newermt '-10 minutes' 2>/dev/null | head -5
@@ -301,7 +354,10 @@ jobs:
           xcrun simctl spawn "$UDID" log show --style compact --last 5m \
             --predicate 'eventMessage CONTAINS "gloryofrome" OR eventMessage CONTAINS "GloryOfRome"' \
             2>/dev/null | grep -iE "exit|terminat|crash|kill|jetsam|watchdog" | head -20 || true
+          # The app has to be running 30 s after launch.
+          [ "$alive" = 1 ]
       - name: Upload the Simulator screenshot and console
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: ios-sim-screenshot

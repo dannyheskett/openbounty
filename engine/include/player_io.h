@@ -13,9 +13,12 @@
 // both consumers is what keeps headless and visible play from diverging.
 //
 // STORAGE: the queue lives INSIDE the Game struct (PlayerIoQueue field), so
-// autoplay's full-world snapshot/restore captures it through GameCopy -- no
-// hidden mutable global. Its slots are heap, grown as requests arrive, and
-// released by GameFree.
+// autoplay's full-world snapshot/restore captures it through GameCopy. Its
+// slots are heap, grown as requests arrive, and released by GameFree. The
+// decision payload in pending.h and the adventure spells' continuations
+// (spells_adventure.h) are process globals outside the Game: GameCopy does not
+// capture them, a snapshot is taken only with no flow pending, and a restore
+// resets them (pending_reset, spells_adventure_reset_ui; AP-031, AP-033).
 //
 // Engine-pure: this header pulls only engine types and is callable from a
 // consumer that links libobengine.a with -lm -lpthread (no shell deps).
@@ -124,14 +127,9 @@ typedef struct {
     // Decision payload (superset of pending.h scratch; only the fields the
     // flow needs are set where the flow opens).
     char dwelling_troop[32];
-    char dwelling_zone[24];
     int  dwelling_x, dwelling_y;
-    int  friendly_count;
-    char friendly_foe_id[40];
-    char nav_zones[5][32];
-    int  nav_count;
     char castle_id[24];
-    char foe_id[24];
+    char foe_id[32];
     int  foe_x, foe_y;
     int  chest_gold, chest_leadership;
 
@@ -142,7 +140,6 @@ typedef struct {
     int  view_pop, view_cost, view_gold, view_cap;  // dwelling recruit numbers
     char view_record_key[24];     // VIEW_TOWN town record key
     int  view_boat_x, view_boat_y;// VIEW_TOWN boat spawn
-    bool view_won;                // VIEW_WIN/VIEW_LOSE outcome
 } PlayerRequest;
 
 // FIFO held inside Game: a ring over heap slots that doubles when full, so no
@@ -170,6 +167,8 @@ void player_io_reset(Game *g);
 // picker to the host (the shell opens its own numeric list), and
 // player_io_ask_self opens nothing -- it is for a caller that answers its own
 // decision at once (the autoplay replay), which no player ever sees.
+// Each helper raises the ReqKind of the same name (PIO_NOTE_FACE for
+// player_io_note_face, and so on): the kinds above say how each is drawn.
 
 PlayerRequest *player_io_note      (Game *g, const char *title, const char *body);
 PlayerRequest *player_io_note_face (Game *g, const char *title, const char *body,

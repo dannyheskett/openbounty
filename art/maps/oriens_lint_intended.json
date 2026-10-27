@@ -1,0 +1,51 @@
+{
+ "coast": [
+  {
+   "box": [
+    0,
+    0,
+    10,
+    6
+   ],
+   "reason": "the rock walls of the boat-only Thracian road pocket"
+  },
+  {
+   "box": [
+    42,
+    0,
+    52,
+    5
+   ],
+   "reason": "the Pontic mountains coming down to the Black Sea"
+  }
+ ],
+ "edge": [
+  {
+   "box": [
+    0,
+    0,
+    10,
+    1
+   ],
+   "reason": "the Thracian road pocket on the map's north edge"
+  },
+  {
+   "box": [
+    42,
+    0,
+    53,
+    1
+   ],
+   "reason": "the Pontic mountains on the map's north edge"
+  },
+  {
+   "box": [
+    62,
+    12,
+    63,
+    22
+   ],
+   "reason": "the Taurus running off the map's east edge"
+  }
+ ]
+}

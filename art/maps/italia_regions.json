@@ -1,5 +1,5 @@
 {
- "_note": "Where tools/mapbuild.py place scatters Italia's chests and wandering armies. Boxes are inclusive tile ranges; only walkable plain grass inside them is used. The four static guardians are placed by \"fixed\", on top of the scattered armies.",
+ "_note": "Where tools/romeart.py map place scatters Italia's chests and wandering armies. Boxes are inclusive tile ranges; only walkable plain grass inside them is used. The four static guardians are placed by \"fixed\", on top of the scattered armies.",
  "seed": 2026,
  "spacing": 2,
  "fixed": {
@@ -30,6 +30,18 @@
   "chest_cove_forest": [
    49,
    60
+  ],
+  "guardian_capri": [
+   31,
+   71
+  ],
+  "chest_capri": [
+   29,
+   71
+  ],
+  "chest_sibyl": [
+   37,
+   51
   ]
  },
  "regions": [
@@ -41,8 +53,8 @@
     30,
     15
    ],
-   "chests": 5,
-   "armies": 3
+   "chests": 14,
+   "armies": 4
   },
   {
    "name": "Cispadana, the Aemilia",
@@ -52,7 +64,7 @@
     30,
     27
    ],
-   "chests": 5,
+   "chests": 11,
    "armies": 4
   },
   {
@@ -63,7 +75,7 @@
     17,
     38
    ],
-   "chests": 2,
+   "chests": 4,
    "armies": 2
   },
   {
@@ -74,7 +86,7 @@
     27,
     56
    ],
-   "chests": 5,
+   "chests": 8,
    "armies": 4
   },
   {
@@ -85,7 +97,7 @@
     40,
     55
    ],
-   "chests": 4,
+   "chests": 8,
    "armies": 4
   },
   {
@@ -96,7 +108,7 @@
     45,
     75
    ],
-   "chests": 5,
+   "chests": 9,
    "armies": 3
   },
   {
@@ -107,8 +119,8 @@
     63,
     105
    ],
-   "chests": 7,
-   "armies": 5
+   "chests": 16,
+   "armies": 6
   },
   {
    "name": "Sardinia",
@@ -118,7 +130,7 @@
     18,
     82
    ],
-   "chests": 2,
+   "chests": 4,
    "armies": 2
   },
   {
@@ -129,7 +141,7 @@
     17,
     65
    ],
-   "chests": 2,
+   "chests": 5,
    "armies": 2
   },
   {
@@ -140,7 +152,7 @@
     50,
     126
    ],
-   "chests": 2,
+   "chests": 9,
    "armies": 2
   }
  ]

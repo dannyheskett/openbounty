@@ -1,0 +1,80 @@
+{
+ "castle castle_africa_1 (Carthago)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_africa_2 (Hippo Regius)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_africa_3 (Volubilis)": [
+  "NO",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_africa_4 (Leptis Magna)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_africa_5 (Ammonium)": [
+  "NO",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "castle castle_africa_6 (Alexandria)": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "the Augur": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town cirta": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town hadrumetum": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town memphis": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town oea": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town ptolemais": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ],
+ "town utica": [
+  "yes",
+  "yes",
+  "yes",
+  "yes"
+ ]
+}

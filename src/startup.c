@@ -493,9 +493,10 @@ static bool class_confirm_row(void *ctx, int i, char *label, char *right, int ca
 }
 
 // The title menu's rows, built for the pack: Introduction first, only when it
-// has one (REQ-430u). No Exit on a phone: iOS has no notion of quitting an app
-// and Apple rejects a control that claims otherwise, and on Android the
-// system handles it. Everywhere else the row stays exactly where it was.
+// has one (REQ-430u). No Exit on a phone or in a browser: iOS has no notion of
+// quitting an app and Apple rejects a control that claims otherwise, on
+// Android the system handles it, and a page that ends its program only
+// freezes on its last frame. Everywhere else the row stays where it was.
 enum { ROW_NEW, ROW_LOAD, ROW_INTRO, ROW_CREDITS, ROW_EXIT, ROW_MAX };
 
 // Fill ids[] and labels[] with the rows in order; returns how many.
@@ -506,7 +507,9 @@ static int title_menu_rows(const Resources *res, int ids[ROW_MAX], const char *l
     ids[n] = ROW_NEW;  labels[n++] = ui->title_new_adventure;
     ids[n] = ROW_LOAD; labels[n++] = ui->title_load_adventure;
     ids[n] = ROW_CREDITS; labels[n++] = ui->title_credits;
-#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID)
+// No Exit on a phone or in a browser: an app is not quit by its player, and a
+// page that ends its program only freezes on its last frame.
+#if !defined(PLATFORM_IOS) && !defined(PLATFORM_ANDROID) && !defined(PLATFORM_WEB)
     ids[n] = ROW_EXIT; labels[n++] = ui->menu_exit;
 #endif
     return n;
@@ -568,7 +571,9 @@ static bool run_title_menu(const Resources *res, const Sprites *sprites,
             continue;
         }
         if (menu_rt.id) { gfx_target_free(menu_rt); menu_rt = (RenderTexture2D){ 0 }; }
-        if (input_key_pressed(KEY_ESCAPE)) break;
+#if !defined(PLATFORM_WEB)
+        if (input_key_pressed(KEY_ESCAPE)) break;   // a page never ends its program
+#endif
         int row = -1;
         if (sel_input(&l, TOUCH_LIST_STARTUP, 0, &row) == SEL_CONFIRM && row >= 0 && row < rows) {
             advance_input_frame();

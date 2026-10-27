@@ -522,7 +522,8 @@ static void scan_one_dir(const char *dir, PackList *l) {
     while ((de = readdir(d)) != NULL) {
         if (!ends_with(de->d_name, ".openbounty")) continue;
         char stem[PACK_ENTRY_NAME_MAX];
-        snprintf(stem, sizeof stem, "%s", de->d_name);
+        // A name too long for a PackEntry is not a pack we can list.
+        if (snprintf(stem, sizeof stem, "%s", de->d_name) >= (int)sizeof stem) continue;
         strip_extension(stem);
         if (already_listed(l->e, l->n, stem)) continue;
         PackEntry *pe = list_push(l);

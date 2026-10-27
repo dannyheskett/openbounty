@@ -93,7 +93,6 @@ int dialog_face(int *index);
 
 // Dialog pagination (for multi-page text like at King's castle).
 int  dialog_page_current(void);
-void dialog_page_next(void);
 bool dialog_advance(void);  // Advance to next page if available; returns true if advanced
 
 // Toast accessors too.

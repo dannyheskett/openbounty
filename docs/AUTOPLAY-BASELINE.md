@@ -20,6 +20,7 @@ autoplay's behaviour has come with a new measurement here.
   `time.days_per_difficulty` (AP-015): easy 900, normal 600, hard 400,
   impossible 200. There has been no arbitrary calendar override.
 - **Hero:** the default knight (`AUTOPLAY_HERO_CLASS`).
+- **Build:** commit `680e4f0` on staging, release build.
 - **Result:** every seed has cleared every objective at every difficulty
   measured: easy, normal and hard.
 
@@ -32,43 +33,43 @@ the recorded `REC_MOVE` count (the turn tally).
 | seed | easy (900 days) | | | normal (600 days) | | | hard (400 days) | | |
 |-----:|-----:|------:|------:|-----:|------:|------:|-----:|------:|------:|
 | | days | score | moves | days | score | moves | days | score | moves |
-|    0 |  452 |  2734 | 17389 |  452 |  5469 | 17389 |  300 | 10804 | 12038 |
-|    1 |  275 |  3054 | 12434 |  275 |  6108 | 12434 |  275 | 12216 | 12434 |
-|    2 |  390 |  3813 | 17439 |  390 |  7627 | 17439 |  390 | 15254 | 17439 |
-|    3 |  899 |  1748 | 20901 |  511 |  5347 | 11657 |  398 | 12544 | 11274 |
-|    4 |  385 |  2955 | 16189 |  385 |  5910 | 16189 |  385 | 11820 | 16189 |
-|    5 |  390 |  3207 | 18665 |  390 |  6415 | 18665 |  390 | 12830 | 18665 |
-|    6 |  745 |  2166 | 18557 |  595 |  3862 | 16528 |  350 |  7836 | 17960 |
-|    7 |  440 |  3525 | 14719 |  440 |  7051 | 14719 |  255 | 15076 | 11484 |
-|    8 |  724 |  1375 | 20801 |  599 |  3041 | 19427 |  395 |  3834 | 14187 |
-|    9 |  445 |  1596 | 15837 |  445 |  3193 | 15837 |  396 |  7262 | 16162 |
-|   10 |  720 |  3284 | 16210 |  575 |  6227 | 14736 |  350 | 11540 | 10831 |
-| **mean** | **533** | **2677** | | **459** | **5477** | | **353** | **11001** | |
+|    0 |  450 |   629 | 16241 |  450 |  1259 | 16241 |  395 |  2500 | 15827 |
+|    1 |  270 |  3245 | 13641 |  270 |  6491 | 13641 |  270 | 12982 | 13641 |
+|    2 |  310 |  3863 | 14342 |  310 |  7727 | 14342 |  310 | 15454 | 14342 |
+|    3 |  665 |  1912 | 12784 |  453 |  8033 | 11438 |  380 |  5278 | 11988 |
+|    4 |  565 |  1920 | 14614 |  565 |  3840 | 14614 |  397 |  8792 | 14758 |
+|    5 |  770 |  2492 | 22067 |  496 |  1183 | 19659 |  366 | 14034 | 14640 |
+|    6 |  655 |  2374 | 18814 |  375 |  6741 | 13984 |  375 | 13482 | 13984 |
+|    7 |  415 |  3445 | 13781 |  415 |  6891 | 13781 |  399 | 13934 | 11756 |
+|    8 |  584 |  2025 | 19742 |  584 |  4051 | 19742 |  365 | 12406 | 13269 |
+|    9 |  540 |   817 | 15595 |  540 |  1635 | 15595 |  390 |  6892 | 17868 |
+|   10 |  662 |  2430 | 15201 |  502 |  6663 | 14001 |  342 | 12264 |  9777 |
+| **mean** | **535** | **2287** | | **451** | **4956** | | **363** | **10729** | |
 
 ## What the table has shown
 
 - **A budget that has not bound has not changed play.** Easy and normal have
   produced the IDENTICAL line, same days, same moves, to the number, on
-  seeds 0, 1, 2, 4, 5, 7 and 9: exactly the seeds whose easy run has fitted under
+  seeds 0, 1, 2, 4, 7, 8 and 9: exactly the seeds whose easy run has fitted under
   600 days. On those the search has explored the same tree and committed the
   same plan at both budgets, and only the score has differed, by the
   difficulty multiplier.
 - **A budget that has bound has changed the plan, not just the deadline.**
   The four seeds that have needed more than 600 days at easy have found
-  genuinely different, shorter lines at normal: seed 3 has cleared in 511
-  days instead of 899, seed 8 in 599 instead of 724. At hard's 400 days the
+  genuinely different, shorter lines at normal: seed 3 has cleared in 453
+  days instead of 665, seed 5 in 496 instead of 770. At hard's 400 days the
   same has happened again to every seed whose normal run has needed more:
-  seed 0 has cleared in 300 days instead of 452, its move count down from
-  17389 to 12038. Seeds 1, 2, 4 and 5, already under 400 at normal, have
+  seed 8 has cleared in 365 days instead of 584, its move count down from
+  19742 to 13269. Seeds 1, 2 and 6, already under 400 at normal, have
   reproduced exactly.
-- **Hard's budget has been tight.** Seed 3 has cleared in 398 of hard's 400
-  days, and seeds 8 and 9 in 395 and 396. The budget has been the pack's
+- **Hard's budget has been tight.** Seed 7 has cleared in 399 of hard's 400
+  days, and seeds 4 and 0 in 397 and 395. The budget has been the pack's
   (AP-015); these seeds have been the measure of how tight it is.
 - **Score has been the difficulty multiplier applied to one base figure**
   (`engine/game.c GameComputeScore`): easy has halved it with integer
   division, normal has multiplied by 1, hard by 2, impossible by 4. Where the
   line of play has been the same, the relationship has been exact: seed 2 has
-  scored 3813 / 7627 / 15254. Where the budget has forced a different line
+  scored 3863 / 7727 / 15454. Where the budget has forced a different line
   the scores have not been multiples of each other, because the run has
   captured a different set of castles and artifacts and spent different
   losses.

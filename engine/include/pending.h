@@ -5,7 +5,9 @@
 
 // Prompt-flow scratch state shared across modules: the same fields are
 // written by the step module and read by the prompt resolver, so they live
-// in one shared translation unit rather than in either caller.
+// in one shared translation unit rather than in either caller. They are
+// process globals, outside the Game: GameCopy and the save do not carry them,
+// and pending_reset clears them (a new game, a load, a world restore).
 //
 // The enum tags which prompt flow is pending; the pending_* fields carry
 // the parameters that the resolver needs after the user answers. Setting
@@ -58,8 +60,7 @@ extern int  pending_nav_count;
 extern char pending_castle_id[24];
 
 // Hostile-foe attack prompt state.
-extern char pending_foe_id[24];
-extern bool pending_foe_forced;   // static-foe fight: no decline, auto-confirm
+extern char pending_foe_id[32];
 // economy.evade_needs_free_square: no free square around the hero, so the
 // hostile foe cannot be evaded -- the fight is the only answer (GameFoeCanEvade).
 extern bool pending_foe_evade_blocked;

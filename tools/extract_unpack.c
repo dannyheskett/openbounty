@@ -2,7 +2,7 @@
 // public-domain unexecomp.c.
 //
 // KB.EXE is COMPRESSOR-packed (signature 0xE9 0x99 0x00 at offset
-// 0x200). The original tool was a CLI program; this is a library
+// 0x200), or already unpacked, which is passed through. The original tool was a CLI program; this is a library
 // function that takes the packed bytes and returns a freshly-malloc'd
 // unpacked buffer. The output layout has a 32-byte header followed by
 // the unpacked payload -- the same format unexecomp.c writes to disk.
@@ -157,11 +157,16 @@ int ex_unpack_kb_exe(const uint8_t *in, size_t in_len,
         fprintf(stderr, "extract: not an MZ executable\n");
         return -1;
     }
-    // COMPRESSOR signature at offset 0x200.
+    // COMPRESSOR signature at offset 0x200. Without it the executable is
+    // already unpacked (some distributions ship it that way): the downstream
+    // stages find their data by signature, so it is used as it is.
     if (in[0x200] != 0xE9 || in[0x201] != 0x99 || in[0x202] != 0x00) {
-        fprintf(stderr, "extract: KB.EXE not COMPRESSOR-packed (0x%02x %02x %02x at 0x200)\n",
-                in[0x200], in[0x201], in[0x202]);
-        return -1;
+        *out = malloc(in_len);
+        if (!*out) return -1;
+        memcpy(*out, in, in_len);
+        *out_len = in_len;
+        fprintf(stderr, "extract: KB.EXE is not COMPRESSOR-packed; reading it as it is\n");
+        return 0;
     }
 
     // Outer MZ header -> blocks_in_file + bytes_in_last_block -> packed-data offset.

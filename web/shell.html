@@ -111,7 +111,12 @@
       }],
 
       setStatus: function (text) {
+        // The loader reports progress in bytes, "(done/total)": show megabytes.
         if (text) {
+          text = text.replace(/\((\d+)\/(\d+)\)/, function (_, done, total) {
+            var mb = function (n) { return (n / 1048576).toFixed(1); };
+            return '(' + mb(done) + ' / ' + mb(total) + ' MB)';
+          });
           statusEl.textContent = text;
           statusEl.classList.remove('hidden');
         } else {

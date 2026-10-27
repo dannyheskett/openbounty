@@ -1,6 +1,7 @@
 #include "combat.h"
 #include "tables.h"
 #include "resources.h"
+#include "pending.h"   // pending_flow, pending_castle_id, pending_foe_id
 #include "ui_host.h"   // host callbacks: recorder_capture, etc.
 #include <stdio.h>
 #include <string.h>
@@ -71,6 +72,56 @@ unsigned char combat_player_powers(const Game *g) {
 // statistical shape, but the seeded state is independent so a battle
 // does not perturb post-combat overworld outcomes. The determinism
 // test verifies that identical inputs produce identical outcomes.
+
+void CombatTargetForFoe(const Game *g, const char *foe_id, CombatTarget *out) {
+    memset(out, 0, sizeof *out);
+    out->name = "Hostile band";
+    out->seed_key = foe_id;
+    const FoeState *foe = (g && foe_id && foe_id[0]) ? GameFindFoeConst(g, foe_id)
+                                                     : NULL;
+    if (!foe) return;
+    out->garrison = foe->garrison;
+    out->garrison_slots = GAME_ARMY_SLOTS;
+    out->full_band = CombatFoeFieldsFullBand(g, foe);
+}
+
+void CombatTargetForCastle(const Game *g, const char *castle_id,
+                           CombatTarget *out) {
+    memset(out, 0, sizeof *out);
+    out->name = castle_id;
+    out->seed_key = castle_id;
+    const CastleRecord *cr = (g && castle_id && castle_id[0])
+                               ? GameFindCastleConst(g, castle_id) : NULL;
+    const ResCastle *rc = (g && castle_id && castle_id[0])
+                            ? resources_castle_by_id(g->res, castle_id) : NULL;
+    const VillainDef *v = (cr && cr->villain_id[0]) ? villain_by_id(cr->villain_id)
+                                                     : NULL;
+    if (v && v->name[0]) out->name = v->name;
+    else if (rc && rc->name[0]) out->name = rc->name;
+    if (!cr) return;
+    out->garrison = cr->garrison;
+    out->garrison_slots = GAME_ARMY_SLOTS;
+}
+
+bool CombatTargetForPendingFlow(const Game *g, CombatMode *out_mode,
+                                CombatTarget *out) {
+    memset(out, 0, sizeof *out);
+    if (pending_flow == FLOW_SIEGE_MONSTER || pending_flow == FLOW_SIEGE_VILLAIN) {
+        *out_mode = COMBAT_MODE_CASTLE;
+        CombatTargetForCastle(g, pending_castle_id, out);
+        return true;
+    }
+    if (pending_flow == FLOW_ATTACK_FOE) {
+        *out_mode = COMBAT_MODE_FOE;
+        CombatTargetForFoe(g, pending_foe_id, out);
+        return true;
+    }
+    return false;
+}
+
+bool CombatFoeFieldsFullBand(const Game *g, const FoeState *foe) {
+    return g && g->res && foe && foe->is_static && g->res->guardian_full_band;
+}
 
 /* exposed for tests */ void combat_seed_rng(Combat *c, const Game *g, CombatMode mode,
                             const CombatTarget *target) {
@@ -181,7 +232,7 @@ typedef enum {
 //
 // Ported (combat.morale_as_army_view absent or false; the King's Bounty
 // pack). Mirrors play.c troop_morale exactly, including the documented
-// bug ( lines 2531-2545 + ): every live unit of the side is
+// bug: every live unit of the side is
 // looked up, the unit itself included, as morale_result(other, self) --
 // the chart read the other way round from the army view -- and the
 // loop adopts the *lower-ranked* morale via `<`, where the converter
@@ -190,7 +241,7 @@ typedef enum {
 // unless LOW is the only computed result. Reproduced faithfully --
 // instruction was "functionally identical ".
 //
-// Army view (combat.morale_as_army_view true; Glory of Rome). The rule the
+// Army view (combat.morale_as_army_view true; The Glory of Rome). The rule the
 // player reads on the army screen, REQ-271: alone is High; every OTHER
 // live unit is looked up as morale_result(self, other); any L is Low,
 // all H is High, else Normal. The label and the damage multiplier agree.
@@ -282,7 +333,7 @@ static inline unsigned char pack_uid(int side, int slot) {
     }
 }
 
-// AI side: open-field foe band -- the first 3 of 5 slots ( line 5216),
+// AI side: open-field foe band -- the first 3 of 5 slots,
 // unless the target asks for the full band (a fixed guardian in a modern
 // pack). Place at column W-1 = 5, rows 0..placed-1.
 // Castles use the full 5 slots (placement happens in reset_match).
@@ -348,7 +399,6 @@ static const unsigned char castle_omap[COMBAT_H][COMBAT_W] = {
 
 // reset_match: stamp obstacles, place units, refresh per-unit
 // per-match counters, prime the turn machinery. 
-// lines 5219-5230 +  + .
 /* exposed for tests */ void combat_reset_match(Combat *c) {
     memset(c->omap, 0, sizeof c->omap);
     memset(c->umap, 0, sizeof c->umap);
@@ -413,11 +463,11 @@ static const unsigned char castle_omap[COMBAT_H][COMBAT_W] = {
     c->banner[0] = '\0';
 }
 
-// ----- Damage formula () -----------------------------------------
+// ----- Damage formula -----------------------------------------
 //
 // deal_damage is the heart of the combat engine. The implementation
-// is a literal transcription of  (lines 5310-5380)
-// with each numbered step preserved as a comment. Order of operations
+// is a literal transcription of the original's damage routine, with each
+// numbered step preserved as a comment. Order of operations
 // is load-bearing -- every multiplicative step uses integer division
 // and floors before the next step, so reordering changes outcomes.
 //
@@ -629,7 +679,7 @@ int combat_hit_unit(Combat *c, int a_side, int a_id,
     return kills;
 }
 
-// ----- Movement, flight, melee driver () -------------------------
+// ----- Movement, flight, melee driver -------------------------
 
 bool combat_in_bounds(int x, int y) {
     return x >= 0 && x < COMBAT_W && y >= 0 && y < COMBAT_H;
@@ -669,7 +719,6 @@ int combat_move_unit(Combat *c, int side, int id, int dx, int dy) {
 }
 
 // Fly into a (nx, ny) target validated upstream by the picker.
-//  lines 5588-5593.
 int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     CombatUnit *u = &c->units[side][id];
     if (!combat_in_bounds(nx, ny)) return 0;
@@ -683,7 +732,7 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     return 1;
 }
 
-// ----- compact_units () ------------------------------------------
+// ----- compact_units ------------------------------------------
 // After deaths during a turn, dead stacks (count == 0) are cleared
 // from umap. The spec says "shifts trailing stacks up" for some
 // game modes -- we keep slot indices stable (resolved :
@@ -750,7 +799,22 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
 // Find the next actable unit on the current side. Scans
 // [unit_id+1 .. SLOTS-1], then wraps [0 .. unit_id] with phase++.
 // Returns slot or -1.
+// A stack out of control comes back under control as soon as its losses bring
+// it within the hero's leadership (hp x count <= leadership). Checked before
+// every unit acts, so it holds from the next move on.
+static void combat_refresh_control(Combat *c) {
+    const Game *g = c->heroes[COMBAT_SIDE_PLAYER];
+    if (!g) return;
+    for (int i = 0; i < COMBAT_SLOTS; i++) {
+        CombatUnit *u = &c->units[COMBAT_SIDE_PLAYER][i];
+        if (u->out_of_control && u->troop_idx >= 0 && u->count > 0 &&
+            unit_under_control(g, u->troop_idx, u->count))
+            u->out_of_control = false;
+    }
+}
+
 /* exposed for tests */ int combat_next_unit(Combat *c) {
+    combat_refresh_control(c);
     for (int i = c->unit_id + 1; i < COMBAT_SLOTS; i++) {
         const CombatUnit *u = &c->units[c->side][i];
         if (u->troop_idx >= 0 && u->count > 0 && !u->acted) {
@@ -801,7 +865,7 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
     return true;
 }
 
-// ----- Ranged + surround check () --------------------------------
+// ----- Ranged + surround check --------------------------------
 
 // True if any adjacent (8-neighbour) cell contains a hostile unit.
 // Ranged attacks are blocked while surrounded so a melee enemy
@@ -828,8 +892,8 @@ int combat_fly_unit(Combat *c, int side, int id, int nx, int ny) {
 
 // ----- Target picker -------------------------------------------
 
-// PickFilter enum moved to engine/include/combat.h so the shell-side
-// target picker (src/combat_loop.c) can name the filter values.
+// The PickFilter enum is in engine/include/combat.h, so the shell's target
+// picker (src/combat_loop.c) can name the filter values.
 
 /* exposed for tests */ bool combat_cell_passes_filter(const Combat *c, int x, int y,
                                       int caster_side, int filter) {
@@ -964,17 +1028,6 @@ static int combat_spell_damage_base(int spell_idx) {
     }
 }
 
-// Deterministic direct damage ONE cast of `spell_idx` deals to a non-IMMUNE
-// target stack -- the exact value combat_cast_spell applies. 0 for the enhancer
-// spells (clone/teleport/freeze/resurrect), whose value has no closed form.
-// turn_undead bites only UNDEAD targets; pass whether the intended target is one.
-int combat_spell_direct_damage(int spell_idx, int spell_power, bool target_undead) {
-    int base = combat_spell_damage_base(spell_idx);
-    if (base == 0) return 0;
-    if (spell_idx == COMBAT_SPELL_TURN_UNDEAD && !target_undead) return 0;
-    return spell_damage_value(base, spell_power);
-}
-
 // The legal target filter for each combat spell. Single source shared
 // by the shell picker (src/combat_loop.c) and the autoplay casting policy.
 int combat_spell_target_filter(int spell_idx) {
@@ -990,13 +1043,11 @@ int combat_spell_target_filter(int spell_idx) {
     }
 }
 
-// The single engine cast dispatcher. This IS the index->effect logic
-// that used to live in the shell's APPLY phase (src/combat_loop.c) -- moved here
-// verbatim so the shell and the autoplay policy share one implementation. The
-// shell now calls this from its APPLY phase (after its UI picks the spell +
-// target); the autoplay policy calls it directly. Damage values (25/10/50),
-// IMMUNE no-effect handling, charge decrement, and the spells_this_round latch
-// are identical to the old shell code.
+// The single engine cast dispatcher, the spell index -> effect logic, shared
+// by the shell and the autoplay policy. The shell calls it from its APPLY
+// phase (after its UI picks the spell and target); the autoplay policy calls
+// it directly. It owns the damage values (25/10/50), the IMMUNE no-effect
+// handling, the charge decrement and the spells_this_round latch.
 int combat_cast_spell(Combat *c, int side, int spell_idx,
                       int t_side, int t_slot, int dest_x, int dest_y) {
     // Preconditions -- return ILLEGAL (mutate nothing) if any fail. The NULL-hero
@@ -1010,6 +1061,16 @@ int combat_cast_spell(Combat *c, int side, int spell_idx,
     if (spell_idx < 0 || spell_idx > COMBAT_SPELL_TURN_UNDEAD)
         return COMBAT_CAST_ILLEGAL;
     if (gw->spells.counts[spell_idx] <= 0) return COMBAT_CAST_ILLEGAL;
+    // Turn Undead takes only an enemy undead, the picker's own filter, so a
+    // caller without the picker (autoplay, the demo) is held to it too.
+    if (spell_idx == COMBAT_SPELL_TURN_UNDEAD) {
+        if (t_side < 0 || t_side >= COMBAT_SIDES || t_slot < 0 || t_slot >= COMBAT_SLOTS)
+            return COMBAT_CAST_ILLEGAL;
+        const CombatUnit *tu = &c->units[t_side][t_slot];
+        if (tu->troop_idx < 0 || tu->count <= 0 ||
+            !combat_cell_passes_filter(c, tu->x, tu->y, side, PICK_FILTER_UNDEAD))
+            return COMBAT_CAST_ILLEGAL;
+    }
 
     int sp = gw->stats.spell_power;
     if (sp < 1) sp = 1;
@@ -1110,7 +1171,9 @@ int combat_cast_spell(Combat *c, int side, int spell_idx,
         // Under-control units skip own side.
         if (s == side && !ooc) continue;
         for (int i = 0; i < COMBAT_SLOTS; i++) {
-            if (s == side && i == slot && !ooc) continue;
+            // Never itself: an out-of-control unit that picked itself stepped
+            // "toward" its own cell, one square off and back each turn (#196).
+            if (s == side && i == slot) continue;
             const CombatUnit *t = &c->units[s][i];
             if (t->troop_idx < 0 || t->count == 0) continue;
             if (nearby && !unit_touching(self, t)) continue;

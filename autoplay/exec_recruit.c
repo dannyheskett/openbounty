@@ -39,10 +39,9 @@
                      AP_TROOPS_MAX + 1)
 // Candidate arena. Endgame enumerations saturate it (the "cand-arena"
 // watchdog counter measures how often), so the arena's edge participates
-// in which winner the funnel picks -- raising it to 65536 changed choices
-// enough to flip 3 of 30 validation seeds and was reverted. The value is
-// therefore behavior-locked at its long-validated size; treat any change
-// as a full re-validation.
+// in which winner the funnel picks: a larger arena changes choices enough to
+// flip validation seeds. The value is behavior-locked at its validated size;
+// treat any change as a full re-validation.
 #define MAX_CANDS   16384
 
 // ---- sources (AP-122) ---------------------------------------------------------

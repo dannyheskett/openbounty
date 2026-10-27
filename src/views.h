@@ -87,8 +87,8 @@ bool     views_menu_update(const MenuCallbacks *cbs, void *userdata);
 //   record_key:   map-local id ("town_000"), key into Game.towns[].
 //   boat_x/y:     where a rented boat should spawn.
 //
-// Declaration moved to engine/include/ui_host.h (engine step.c calls
-// it). The shell defines it in src/views.c.
+// Declared in engine/include/ui_host.h (engine step.c calls it); the shell
+// defines it in src/views.c.
 
 // Town input: cursor movement and A-E action keys. Mutates `g` directly.
 bool     views_town_update(Game *g);
@@ -271,7 +271,6 @@ void views_gate_open(const GateDestination *dests, int count,
 int  views_gate_count(void);
 // Modern: the gate picker's columns of standard rows, and rows in each.
 #define VIEWS_GATE_COLUMNS 3
-int  views_gate_rows_per_column(void);
 bool views_gate_is_town(void);
 // Modern: the list's cursor -- a destination, Travel (the count) or Cancel.
 int  views_gate_row(void);

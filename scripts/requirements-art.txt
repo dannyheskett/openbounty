@@ -1,0 +1,6 @@
+# tools/romeart.py: the Glory of Rome art and map tool (and scripts/check_maps.sh,
+# whose `provenance check --rebuild` re-runs the recipes pixel for pixel, so the
+# versions are the ones the shipped art was made with).
+pillow==12.2.0
+numpy==1.26.4
+opencv-python-headless==4.6.0.66
