@@ -18,8 +18,8 @@ AAC_INC      := -Ithird_party/vo-aacenc/aacenc/inc -Ithird_party/vo-aacenc/aacen
 # OPENBOUNTY_VERSION explicitly from the dispatched release-N tag. For
 # local dev builds with no override, derive from the most recent
 # release-N tag (digits only) and fall back to 0 if there are no tags.
-# RELEASE_VERSION is the project-neutral name the release workflow passes, so every
-# repo's release.yml is byte-identical. OPENBOUNTY_VERSION still works as an explicit
+# RELEASE_VERSION is the project-neutral name the build workflow passes, so every
+# repo's build.yml passes the same variable. OPENBOUNTY_VERSION still works as an explicit
 # override (command-line vars beat ?=), and a bare `make dist` still derives from tags.
 RELEASE_VERSION         ?= $(shell git tag --list 'release-*' 2>/dev/null | sed -n 's/^release-\([1-9][0-9]*\)$$/\1/p' | sort -n | tail -1 | grep . || echo 0)
 OPENBOUNTY_VERSION         ?= $(RELEASE_VERSION)

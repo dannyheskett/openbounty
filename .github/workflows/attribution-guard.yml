@@ -16,7 +16,7 @@ name: attribution-guard
 on:
   push:
   pull_request:
-  # Kept so this repo's own release.yml can gate on it via `uses:`.
+  # Kept so this repo's own build.yml can gate on it via `uses:`.
   workflow_call:
 
 permissions:

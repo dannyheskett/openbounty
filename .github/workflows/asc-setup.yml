@@ -28,8 +28,17 @@ on:
         type: boolean
         default: true
 
+# A dry run is labelled as one everywhere it appears.
+run-name: ${{ inputs.dry_run && format('DRY RUN - asc-setup {0} (nothing changed)', inputs.step) || format('asc-setup {0}', inputs.step) }}
+
 permissions:
   contents: read
+
+# bash -eo pipefail for every step: a failing command, including one inside a
+# pipe, fails its step.
+defaults:
+  run:
+    shell: bash
 
 concurrency:
   group: asc-setup
@@ -44,17 +53,18 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install the JWT dependency
         run: python3 -m pip install --quiet cryptography==50.0.2
-      - name: Gate on the API-key secrets
-        id: gate
+      - name: Require the API-key secrets
         env:
           K: ${{ secrets.ASC_KEY_P8 }}
           I: ${{ secrets.ASC_KEY_ID }}
           S: ${{ secrets.ASC_ISSUER_ID }}
         run: |
-          if [ -n "$K" ] && [ -n "$I" ] && [ -n "$S" ]; then echo "go=true" >> "$GITHUB_OUTPUT";
-          else echo "go=false" >> "$GITHUB_OUTPUT"; echo "No ASC_* secrets; skipping."; fi
+          missing=""
+          [ -n "$K" ] || missing="$missing ASC_KEY_P8"
+          [ -n "$I" ] || missing="$missing ASC_KEY_ID"
+          [ -n "$S" ] || missing="$missing ASC_ISSUER_ID"
+          [ -z "$missing" ] || { echo "::error::missing secret(s):$missing"; exit 1; }
       - name: Run the setup step
-        if: steps.gate.outputs.go == 'true'
         env:
           ASC_KEY_P8:    ${{ secrets.ASC_KEY_P8 }}
           ASC_KEY_ID:    ${{ secrets.ASC_KEY_ID }}
@@ -93,7 +103,7 @@ jobs:
       # logs are permanent, and an artifact can at least be deleted.
       # Download it, then: base64 -w0 profile.mobileprovision | gh secret set IOS_PROVISIONING_PROFILE
       - name: Upload the provisioning profile
-        if: steps.gate.outputs.go == 'true' && inputs.step == 'profile' && !inputs.dry_run
+        if: inputs.step == 'profile' && !inputs.dry_run
         uses: actions/upload-artifact@v7
         with:
           name: provisioning-profile

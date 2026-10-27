@@ -145,18 +145,14 @@ gh secret set ASC_ISSUER_ID  -b '69a6de70-....-....-....-........'
 (Or add them in the GitHub UI: **Settings → Secrets and variables → Actions →
 New repository secret**.)
 
-The two groups have gated independently:
+The two groups have been needed by different workflows:
 
 - `IOS_CERT_P12` + `IOS_CERT_PASSWORD` + `IOS_PROVISIONING_PROFILE` +
-  `IOS_TEAM_ID` → `build-ios` has produced a **signed** `.ipa` instead of an
-  unsigned one.
-- `ASC_KEY_P8` + `ASC_KEY_ID` + `ASC_ISSUER_ID` → `publish-testflight` has
-  validated and uploaded it, and `testflight-notes` has attached the release
-  notes.
-
-All seven have been needed end to end. With only the first four set, the
-release has attached a signed `.ipa` to the GitHub Release for uploading by
-hand.
+  `IOS_TEAM_ID` → `build-ios` (in `build.yml`) has produced the **signed**
+  `.ipa`; a missing one has failed the build.
+- `ASC_KEY_P8` + `ASC_KEY_ID` + `ASC_ISSUER_ID` → the `release` workflow has
+  validated and uploaded it, attached the TestFlight notes, and submitted it to
+  App Review; a missing one has failed the release.
 
 ## 6a. The app icon
 
@@ -167,16 +163,18 @@ reject.
 
 ## 7. Cut a release
 
-Merge the `staging` -> `main` pull request, or run the **release** workflow
-manually with `dry_run` **unchecked**. Then:
+Merge the `staging` -> `main` pull request: `build.yml` has signed the `.ipa`,
+verified it is App Store-shaped, tagged `release-N` and attached it to the
+GitHub Release. Then run the **release** workflow for that tag:
 
-1. `build-ios` has signed the `.ipa` and verified it is App Store-shaped.
-2. `publish` has tagged `release-N` and attached the artifacts.
-3. `publish-testflight` has run `altool --validate-app` first (its errors
-   have been far better than the upload path's) and then `--upload-app`.
-4. Apple has processed the build for 5–15 minutes.
-5. `testflight-notes` has polled until the build is `VALID`, then written the
-   commit message into "What to Test".
+1. `appstore-upload` has run `altool --validate-app` first (its errors have
+   been far better than the upload path's) and then `--upload-app` -- or has
+   said App Store Connect already had that build and skipped the upload.
+2. Apple has processed the build for 5–15 minutes.
+3. `appstore-submit` has polled until the build is `VALID`, written "What to
+   Test", checked the internal tester group gets it, withdrawn any earlier
+   version still pending App Review, submitted version 1.0.N, and read it
+   back.
 
 ## 8. Add internal testers
 
@@ -213,7 +211,7 @@ has been the legacy iOS Distribution type, or the `.p12` has not included the
 private key.
 Redo step 2, making sure `openssl pkcs12 -export` got both `-inkey` and `-in`.
 
-**"no app found for bundle id ..."** from `testflight-notes` — the App Store
+**"no app found for bundle id ..."** from `appstore-submit` — the App Store
 Connect app record (step 4) has not existed, or its bundle ID has not matched
 `ios/Info.plist`.
 
@@ -221,7 +219,7 @@ Connect app record (step 4) has not existed, or its bundle ID has not matched
 value"** — usually a duplicate `CFBundleVersion`. Each upload has needed a
 higher number; cut a new release rather than re-running the old one.
 
-**`publish-testflight` says "Skipping"** — one of the three `ASC_*` secrets
-has been missing, or the `.ipa` has come out unsigned (so one of the four
-`IOS_*` secrets has been missing). The step has printed which of the two
-conditions failed.
+**The release fails at "Require the App Store Connect secrets"** — one of the
+three `ASC_*` secrets has been missing; the error has named it. (A missing
+`IOS_*` secret has failed `build.yml` instead, so an unsigned `.ipa` has never
+reached a release.)
