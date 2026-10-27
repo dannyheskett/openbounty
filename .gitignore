@@ -58,15 +58,7 @@ __pycache__/
 *.pyc
 *:Zone.Identifier
 
-# Signing material, never committed (ios/app-store-assets/TESTFLIGHT.md)
-*.key
-*.csr
-*.cer
-*.pem
-*.p12
-*.p8
-*.keystore
-*.jks
+# Local environment variables; may hold credentials
 .env
 
 # Mobile build output
@@ -76,3 +68,18 @@ __pycache__/
 
 # The original game's files for --extract (KB.EXE and its data)
 legacy/
+
+# --- store signing material ---
+# Never commit these: the release workflow decodes the Play keystore and the
+# Apple distribution certificate from secrets at build time.
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+*.p8
+*.b64
+# ...and the material the signing certificate is built from.
+*.key
+*.csr
+*.cer
+*.pem
