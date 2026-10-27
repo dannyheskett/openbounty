@@ -80,7 +80,6 @@ step-by-step for creating them without a Mac.
 | `scripts/asc_release.py` | `status` (the current version, its state and builds); `listing [--skip-if-busy]` (text + screenshots); `release --build N [--submit] [--phased] [--whats-new TEXT] [--skip-if-busy]` (the build attached to version `1.0.N`, sent to App Review with `--submit`, released in phases with `--phased`). `--skip-if-busy` has exited 0 when no version is free to write onto; `listing` and `release` have taken `--dry-run`. |
 | `scripts/asc_next_build.py` | printed the next build number App Store Connect has not seen, so branch and release builds have never collided. |
 | `scripts/testflight_notes.py` | waited out Apple's processing window and written "What to Test" onto the build TestFlight has just received. |
-| `scripts/devicefarm_run.py` | uploaded the APK or `.ipa` to AWS Device Farm and fuzz-tested it on real phones. |
 | `scripts/android_smoke.sh` | installed the emulator APK in CI, launched it, and failed unless the process has been alive 20 s later. |
 
 | Workflow | Trigger |
@@ -88,7 +87,6 @@ step-by-step for creating them without a Mac.
 | `asc-setup.yml` | manual; one verb per run, `dry_run` on by default |
 | `store-release.yml` | manual; the listing pushed and a chosen build submitted, `dry_run` on by default |
 | `testflight.yml` | manual; the chosen branch built, signed and sent to TestFlight, with no tag and no release |
-| `devicefarm.yml` | manual; real-device fuzz test of both apps (AWS OIDC, no stored keys) |
 | `release.yml` — `build-ios`, `publish-testflight`, `testflight-notes`, `submit-appstore`, `build-android`, `publish-play` | every merge to `main` (a `staging` -> `main` promotion), each gated on its own secrets; `submit-appstore` only when asked for |
 
 Play has had no automation beyond the internal-track upload.

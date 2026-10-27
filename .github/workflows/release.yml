@@ -193,7 +193,7 @@ jobs:
       - name: Build the pack tool
         run: make mac
       # Signing is opt-in. Without the Apple secrets this still produces the
-      # unsigned .ipa, which is useful for a device farm and proves the build.
+      # unsigned .ipa, which proves the build.
       - name: Detect iOS signing secrets
         id: iossecret
         env:
