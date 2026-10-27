@@ -206,9 +206,65 @@ def test_replace():
                 "held for manual release -> run fails, naming the version", "1.0.7")
 
 
+class FakeSubmitted:
+    """App Store Connect right after a submission: READY_FOR_REVIEW for
+    `settle_polls` reads, then `final`."""
+
+    def __init__(self, settle_polls, final="WAITING_FOR_REVIEW", build="7"):
+        self.dry_run = False
+        self.reads = 0
+        self.settle_polls = settle_polls
+        self.final = final
+        self.build = build
+
+    def app_id(self):
+        return "app"
+
+    def versions(self, app):
+        self.reads += 1
+        state = "READY_FOR_REVIEW" if self.reads <= self.settle_polls else self.final
+        return [{"id": "v1", "attributes": {"versionString": "1.0.7", "appStoreState": state}}]
+
+    def version_state(self, app, vid):
+        return self.versions(app)[0]["attributes"]["appStoreState"]
+
+    def call(self, method, path, body=None, raise_errors=False):
+        if path.endswith("/build"):
+            return {"data": {"attributes": {"version": self.build}}}
+        raise AssertionError(f"unexpected call {method} {path}")
+
+
+def test_verify_submitted():
+    print("asc_release verify-submitted")
+    m = load_asc()
+
+    class Args:
+        build = 7
+    m.monotonic = lambda: 0.0
+    fake = FakeSubmitted(settle_polls=3)
+    check(m.cmd_verify_submitted(fake, Args()) == 0,
+          "READY_FOR_REVIEW right after submitting, then WAITING_FOR_REVIEW -> verified")
+
+    clock = {"t": 0.0}
+    m.monotonic = lambda: clock.__setitem__("t", clock["t"] + 60) or clock["t"]
+    fake = FakeSubmitted(settle_polls=10**6)
+    expect_exit(lambda: m.cmd_verify_submitted(fake, Args()),
+                "stuck at READY_FOR_REVIEW -> fails at the deadline", "still READY_FOR_REVIEW")
+
+    m.monotonic = lambda: 0.0
+    fake = FakeSubmitted(settle_polls=0, final="REJECTED")
+    expect_exit(lambda: m.cmd_verify_submitted(fake, Args()),
+                "REJECTED -> fails at once", "not in review")
+
+    fake = FakeSubmitted(settle_polls=0, build="6")
+    expect_exit(lambda: m.cmd_verify_submitted(fake, Args()),
+                "wrong build attached -> fails", "not 7")
+
+
 def main():
     test_retry()
     test_replace()
+    test_verify_submitted()
     if failures:
         print(f"FAILED: {failures} check(s)")
         return 1
