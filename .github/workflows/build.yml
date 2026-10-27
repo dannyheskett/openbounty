@@ -37,11 +37,6 @@ on:
       # workflow pushes the listing from the repo when it ships.
       - 'android/play-assets/**'
       - 'ios/app-store-assets/**'
-      # boto3 for the Device Farm runner, used only by the manual devicefarm
-      # workflow. It ends up in no shipped artifact, so a dependabot bump of it
-      # should not cut a release either. The rest of scripts/ is NOT ignored --
-      # build_raylib_*.sh, embed_ttf.py and gen_font_atlas.c all feed the builds.
-      - 'scripts/requirements.txt'
   # A manual run is a test, so it defaults to a dry run; a push to main is a build.
   workflow_dispatch:
     inputs:
