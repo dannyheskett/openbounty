@@ -33,7 +33,7 @@ import hashlib
 import os
 import sys
 
-from asc_release import ASC, BUNDLE_ID, is_placeholder
+from asc_release import ASC, ASCError, BUNDLE_ID, is_placeholder
 
 APP_NAME = "The Glory of Rome"
 PROFILE_NAME = "The Glory of Rome App Store"
@@ -231,12 +231,56 @@ def availability(asc, app):
         r = asc.call("GET", url)
         territories += [t["id"] for t in r.get("data", [])]
         url = r.get("links", {}).get("next")
+    want = {t: t not in EXCLUDED_TERRITORIES for t in territories}
+    on = sum(want.values())
+    summary = (f"{on} of {len(want)} territories "
+               f"(excluded: {', '.join(sorted(EXCLUDED_TERRITORIES))})")
+
+    # Apple allows one availability record per app: POST creates it, and a
+    # second POST is refused (409 "already exists"). Once it exists, each
+    # territory is its own territoryAvailabilities record, changed one by one.
+    try:
+        current = asc.call("GET", f"/v1/apps/{app}/appAvailabilityV2", raise_errors=True)
+    except ASCError as e:
+        if e.status != 404:
+            sys.exit(str(e))
+        current = {}
+    if current.get("data"):
+        avail = current["data"]
+        if not avail["attributes"].get("availableInNewTerritories"):
+            sys.exit("availability exists with availableInNewTerritories off, and Apple's API "
+                     "cannot change it; turn it on in the App Store Connect console")
+        have = {}
+        url = (f"/v2/appAvailabilities/{avail['id']}/territoryAvailabilities"
+               "?include=territory&limit=200")
+        while url:
+            r = asc.call("GET", url)
+            for ta in r.get("data", []):
+                have[ta["relationships"]["territory"]["data"]["id"]] = ta
+            url = r.get("links", {}).get("next")
+        missing = sorted(set(want) - set(have))
+        if missing:
+            sys.exit(f"availability has no record for {', '.join(missing)}; "
+                     f"Apple adds territories to it itself, so try again later")
+        changed = 0
+        for t, available in sorted(want.items()):
+            ta = have[t]
+            if ta["attributes"].get("available") == available:
+                continue
+            asc.call("PATCH", f"/v1/territoryAvailabilities/{ta['id']}",
+                     {"data": {"type": "territoryAvailabilities", "id": ta["id"],
+                               "attributes": {"available": available}}})
+            print(f"  {t}: {'on' if available else 'off'}")
+            changed += 1
+        print(f"availability: {summary}; {changed} territor{'y' if changed == 1 else 'ies'} changed")
+        return
+
     # Apple wants every territory in the request, so excluded ones are sent as
     # available=false rather than left out.
     items = [{"type": "territoryAvailabilities", "id": f"${{t{t}}}",
-              "attributes": {"available": t not in EXCLUDED_TERRITORIES},
+              "attributes": {"available": want[t]},
               "relationships": {"territory": {"data": {"type": "territories", "id": t}}}}
-             for t in sorted(territories)]
+             for t in sorted(want)]
     asc.call("POST", "/v2/appAvailabilities", {
         "data": {"type": "appAvailabilities",
                  "attributes": {"availableInNewTerritories": True},
@@ -246,8 +290,7 @@ def availability(asc, app):
                  }},
         "included": items,
     })
-    on = sum(1 for i in items if i["attributes"]["available"])
-    print(f"availability: {on} of {len(items)} territories (excluded: {', '.join(sorted(EXCLUDED_TERRITORIES))})")
+    print(f"availability: {summary}")
 
 
 def main():
