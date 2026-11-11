@@ -23,6 +23,7 @@ typedef struct {
     bool            *quit_flag;
     bool             hud_pref;
     int              slot;            // modern: the save slot the menu picked (0-based)
+    bool             saved;           // menu_save: the file was written
 } MenuCtx;
 
 bool menu_save(void *ud);
