@@ -20,12 +20,14 @@ bool menu_save(void *ud) {
     MenuCtx *c = (MenuCtx *)ud;
     char path[1024];
     const char *pid = c->res->pack_id[0] ? c->res->pack_id : NULL;
+    c->saved = false;
     if (!SavePathGetSlot(pid, c->slot, path, sizeof(path))) {
         toast_show(c->res->ui.toast_save_cancelled);
         return true;
     }
     SaveResult r = SaveGameWrite(path, c->game, c->map, c->fog);
     SavePathFlush();
+    c->saved = r == SAVE_OK;
     if (r == SAVE_OK) {
         // Modern says it in a message (src/main.c); legacy keeps the toast.
         if (!CL_IS_MODERN) toast_show(c->res->ui.toast_save_ok);

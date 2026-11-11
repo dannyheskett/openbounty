@@ -1034,6 +1034,7 @@ title:;
                         menu_ctx.slot = slot;
                         menu_save(&menu_ctx);
                         views_dismiss();
+                        if (!menu_ctx.saved) break;   // the toast has said why (issue #250)
                         char body[RES_BANNER_LEN], sb[12], db[12];
                         snprintf(sb, sizeof sb, "%d", slot + 1);
                         snprintf(db, sizeof db, "%d", game.stats.days_left);

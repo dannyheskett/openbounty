@@ -38,7 +38,9 @@ static bool ensure_dir(const char *path) {
 }
 
 // Make every parent of `path` (and `path` itself) exist. Treats both
-// '/' and '\\' as separators so the same code works on every OS.
+// '/' and '\\' as separators so the same code works on every OS. Only the
+// last component decides: Windows refuses to stat or make a bare "C:", and
+// a parent that is really missing fails the last mkdir anyway (issue #250).
 static bool ensure_dir_recursive(const char *path) {
     if (!path || !*path) return false;
     char buf[1024];
@@ -49,7 +51,7 @@ static bool ensure_dir_recursive(const char *path) {
         if (buf[i] == '/' || buf[i] == '\\') {
             char saved = buf[i];
             buf[i] = '\0';
-            if (!ensure_dir(buf)) return false;
+            ensure_dir(buf);
             buf[i] = saved;
         }
     }
